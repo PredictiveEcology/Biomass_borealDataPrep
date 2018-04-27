@@ -122,7 +122,7 @@ estimateParameters <- function(sim) {
   sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$specieslayers))
   sim$ecoRegion <- spTransform(sim$ecoRegion, crs(sim$specieslayers))
   sim$ecoZone <- spTransform(sim$ecoZone, crs(sim$specieslayers))
-  
+
   message("1: ", Sys.time())
   rstStudyRegionBinary <- raster(sim$rstStudyRegion)
   rstStudyRegionBinary[] <- NA
@@ -376,8 +376,7 @@ Save <- function(sim) {
   }
 
   cacheTags = c(currentModule(sim), "function:.inputObjects", "function:spades")
-  
-  browser()
+
   if (!suppliedElsewhere("biomassMap", sim)) {
     sim$biomassMap <- Cache(prepInputs,
                             targetFile = biomassMapFilename,
@@ -473,9 +472,9 @@ Save <- function(sim) {
 
   # 3. species maps
   sim$speciesTable <- prepInputs("speciesTraits.csv", destinationPath = dPath,
-                                 fun = "utils::read.csv", header = TRUE, stringsAsFactors = FALSE) %>% 
+                                 fun = "utils::read.csv", header = TRUE, stringsAsFactors = FALSE) %>%
     data.table()
-  
+
   sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
                                     X0 = 1,
                                     X1 = c(0.5, rep(1, 4)),
