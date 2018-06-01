@@ -155,6 +155,14 @@ estimateParameters <- function(sim) {
   activeStatusTable <- data.table(active = c(rep("yes", 15), rep("no", 25)),
                                   mapcode = 1:40)[mapcode %in% c(34, 35), active := "yes"]
   #simulationMaps <- sim$nonActiveEcoregionProducerCached(nonactiveRaster = sim$LCC2005,
+  if (is.null(sim$LCC2005)) {
+    stop("Sometimes LCC2005 is not correctly in the sim. This may be due to an incorrect recovery",
+         " of the LCC2005 from a module. Find which module created the LCC2005 that should be used",
+         " here, and clear the event or module cache that created it. If the LCC2005 was made ",
+         "in the init event of landWebDataPrep module, then try ",
+         "something like: reproducible::clearCache(userTags = c('landWebDataPrep', 'init'), x = 'cache/SMALL_All')")
+  }
+  
   simulationMaps <- Cache(nonActiveEcoregionProducer, nonactiveRaster = sim$LCC2005,
                           activeStatus = activeStatusTable,
                           ecoregionMap = ecoregionFiles$ecoregionMap,
