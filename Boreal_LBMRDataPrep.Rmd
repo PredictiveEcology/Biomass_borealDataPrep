@@ -25,7 +25,7 @@ Keeping these data preparations outside of the core LBMR module maintains the mo
 
 ```{r package_installation, eval = FALSE}
 devtools::install_github("PredictiveEcology/reproducible@development") # require bugfix for one step
-devtools::install_github("PredictiveEcology/SpaDES.tools@prepInputs") # prepInputs with alsoExtract argument
+devtools::install_github("PredictiveEcology/SpaDES.tools@development") # prepInputs with alsoExtract argument
 devtools::install_github("PredictiveEcology/webDatabases") # For fetching KNN layers from PFC repo
 ```
 
