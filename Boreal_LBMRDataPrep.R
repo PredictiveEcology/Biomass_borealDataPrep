@@ -2,7 +2,7 @@
 # are put into the simList. To use objects and functions, use sim$xxx.
 defineModule(sim, list(
   name = "Boreal_LBMRDataPrep",
-  description = "A data preparation module for running the LBMR module in the LandWeb project.",
+  description = "A data preparation module for parameterizing LBMR from open data sources, within the Boreal forest of Canada",
   keywords = c("LandWeb", "LBMR"),
   authors = c(person(c("Yong", "Luo"), email = "yong.luo@canada.ca", role = c("aut", "cre")),
               person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@canada.ca", role = c("aut"))),
@@ -387,6 +387,7 @@ Save <- function(sim) {
 
   if (!suppliedElsewhere("biomassMap", sim)) {
     sim$biomassMap <- Cache(prepInputs,
+                            url = extractURL("biomassMap"),
                             targetFile = biomassMapFilename,
                             archive = asPath(c("kNN-StructureBiomass.tar",
                                                "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
@@ -394,7 +395,7 @@ Save <- function(sim) {
                             studyArea = sim$shpStudySubRegion,
                             method = "bilinear",
                             datatype = "INT2U",
-                            postProcessedFilename = TRUE,
+                            filename2 = TRUE,
                             userTags = c("stable", currentModule(sim)))#,
     #dataset = "EOSD2000")
 
@@ -403,6 +404,7 @@ Save <- function(sim) {
   # LCC2005
   if (!suppliedElsewhere("LCC2005", sim)) {
     sim$LCC2005 <- Cache(prepInputs,
+                         url = extractURL("LCC2005"),
                          targetFile = lcc2005Filename,
                          archive = asPath("LandCoverOfCanada2005_V1_4.zip"),
                          destinationPath = dPath,
@@ -410,7 +412,7 @@ Save <- function(sim) {
                          rasterToMatch = sim$biomassMap,
                          method = "bilinear",
                          datatype = "INT2U",
-                         postProcessedFilename = TRUE,
+                         filename2 = TRUE,
                          userTags = currentModule(sim))
 
     projection(sim$LCC2005) <- projection(sim$biomassMap)
@@ -418,43 +420,47 @@ Save <- function(sim) {
 
   if (!suppliedElsewhere("ecoDistrict", sim)) {
     sim$ecoDistrict <- Cache(prepInputs,
+                             url = extractURL("ecoDistrict"),
                              targetFile = asPath(ecodistrictFilename),
                              archive = asPath("ecodistrict_shp.zip"),
                              alsoExtract = ecodistrictAE,
                              destinationPath = dPath,
                              studyArea = sim$shpStudyRegionFull,
                              fun = "raster::shapefile",
-                             postProcessedFilename = TRUE,
+                             filename2 = TRUE,
                              userTags = cacheTags)
   }
 
   if (!suppliedElsewhere("ecoRegion", sim)) {
     sim$ecoRegion <- Cache(prepInputs,
+                           url = extractURL("ecoRegion"),
                            targetFile = asPath(ecoregionFilename),
                            archive = asPath("ecoregion_shp.zip"),
                            alsoExtract = ecoregionAE,
                            destinationPath = dPath,
                            studyArea = sim$shpStudyRegionFull,
                            fun = "raster::shapefile",
-                           postProcessedFilename = TRUE,
+                           filename2 = TRUE,
                            userTags = cacheTags)
   }
 
   if (!suppliedElsewhere("ecoZone", sim)) {
     sim$ecoZone <- Cache(prepInputs, #notOlderThan = Sys.time(),
+                         url = extractURL("ecoZone"),
                          targetFile = asPath(ecozoneFilename),
                          archive = asPath("ecozone_shp.zip"),
                          alsoExtract = ecozoneAE,
                          destinationPath = dPath,
                          studyArea = sim$shpStudyRegionFull,
                          fun = "raster::shapefile",
-                         postProcessedFilename = TRUE,
+                         filename2 = TRUE,
                          userTags = cacheTags)
   }
 
   # stand age map
   if (!suppliedElsewhere("standAgeMap", sim)) {
     sim$standAgeMap <- Cache(prepInputs, #notOlderThan = Sys.time(),
+                             url = extractURL("standAgeMap"),
                              targetFile = standAgeMapFilename,
                              archive = asPath(c("kNN-StructureStandVolume.tar",
                                                 "NFI_MODIS250m_kNN_Structure_Stand_Age_v0.zip")),
@@ -464,12 +470,13 @@ Save <- function(sim) {
                              rasterToMatch = sim$biomassMap,
                              method = "bilinear",
                              datatype = "INT2U",
-                             postProcessedFilename = TRUE,
+                             filename2 = TRUE,
                              userTags = c("stable", currentModule(sim)))
   }
-
+  
   if (!suppliedElsewhere("specieslayers", sim)) {
     sim$specieslayers <- Cache(loadAllSpeciesLayers,
+                               url = extractURL("specieslayers"),
                                dataPath = dPath,
                                biomassMap = sim$biomassMap,
                                shpStudyRegionFull = sim$shpStudyRegionFull,
@@ -479,7 +486,9 @@ Save <- function(sim) {
   }
 
   # 3. species maps
-  sim$speciesTable <- prepInputs("speciesTraits.csv", destinationPath = dPath,
+  sim$speciesTable <- Cache(prepInputs, "speciesTraits.csv", 
+                                 url = extractURL("speciesTable"),
+                                 destinationPath = dPath,
                                  fun = "utils::read.csv", header = TRUE, stringsAsFactors = FALSE) %>%
     data.table()
 
@@ -509,15 +518,27 @@ Save <- function(sim) {
   }
   if (needRstSR) {
     message("  Rasterizing the shpStudyRegionFull polygon map")
-
+    if (!is(sim$shpStudyRegionFull, "SpatialPolygonsDataFrame")) {
+      dfData <- if (is.null(rownames(sim$shpStudyRegionFull))) {
+        data.frame("field" = as.character(seq_along(length(sim$shpStudyRegionFull))))
+      } else {
+        data.frame("field" = rownames(sim$shpStudyRegionFull))
+      }
+      sim$shpStudyRegionFull <- SpatialPolygonsDataFrame(sim$shpStudyRegionFull, data = dfData)
+    }
     fieldName <- if ("LTHRC" %in% names(sim$shpStudyRegionFull)) {
       "LTHRC"
     } else {
       names(sim$shpStudyRegionFull)[1]
     }
-
+    
+                
     fasterizeFromSp <- function(sp, raster, fieldName) {
-      fasterize::fasterize(sf::st_as_sf(sp), raster, field = fieldName)
+      sfObj <- sf::st_as_sf(sp)
+      if (!any( fieldName %in% colnames(sfObj))) {
+        fieldName <- colnames(sfObj)[1]
+      }
+      fasterize::fasterize(sfObj, raster, field = fieldName)
     }
     sim$rstStudyRegion <- crop(fasterizeFromSp(sim$shpStudyRegionFull, sim$biomassMap, fieldName),
                                sim$shpStudyRegionFull)

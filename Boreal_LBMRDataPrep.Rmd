@@ -14,70 +14,116 @@ knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
 
 # Overview
 
-This module converts open datasets that are available for all of Canada's forests, into the input requirements for Landis Biomass Succession Model in R (LBMR). 
+This module converts open datasets that are available for all of Canada's forests, into the input requirements for Land-R-Biomass, a forest landscape succession model derived from the Landis-II Biomass Succession Model. 
 This has been partially tested for some parts of the Western Boreal Forest. 
 
 Specifically, it takes the Eco* maps (Ecozone, Ecoprovince, Ecoregion) maps of Canada, and species specific biomass maps of Canada (from Beaudoin et al. 2014).
 
 Keeping these data preparations outside of the core LBMR module maintains the modularity of LBMR.
 
-# Usage
+# Install packages, if necessary
 
 ```{r package_installation, eval = FALSE}
-devtools::install_github("PredictiveEcology/reproducible@development") # require bugfix for one step
-devtools::install_github("PredictiveEcology/SpaDES.tools@prepInputs") # prepInputs with alsoExtract argument
-devtools::install_github("PredictiveEcology/webDatabases") # For fetching KNN layers from PFC repo
+if (packageVersion("SpaDES") < "2.0.0") 
+  install.packages("SpaDES") # prepInputs with alsoExtract argument
+
+# The most recent version of reproducible package is necessary -- check if reproducible is at least 0.2.0.9002 on your system. 
+if (packageVersion("reproducible") < "0.2.0.9002") 
+  devtools::install_github("PredictiveEcology/reproducible@development", dependencies = FALSE) # uses version of prepInputs that is still in development branch only
+if (packageVersion("SpaDES.core") < "0.2.0.9000") 
+  devtools::install_github("PredictiveEcology/SpaDES.core@development", dependencies = FALSE) # uses extractURL that is still in development branch only
 ```
 
-```{r module_usage}
+# Load libraries
+
+```{r load-libraries}
 library(magrittr) # for %>% pipe
 library(SpaDES)
+
+```
+
+# Set up paths
+```{r module_usage}
+
+moduleName <- "Boreal_LBMRDataPrep"
+spadesModulesDirectory <- "modules" # where the module will be downloaded
+
+inputPath <- file.path(dirname(spadesModulesDirectory), "inputs") %>% checkPath(create = TRUE)
+outputPath <- file.path(dirname(spadesModulesDirectory), "outputs") 
+cachePath = file.path(outputPath, "cache")
+         
+setPaths(cachePath = cachePath,
+         modulePath = spadesModulesDirectory,
+         inputPath = inputPath,
+         outputPath = outputPath)
+paths <- getPaths()
+
+```
+
+
+# Choose a study area
+
+```{r get-study-area}
 library(raster)
-cachePath <- "C:/Ian/Campbell/Cariboo RIA/Land-R/cache/"
-modulePath <- "C:/Ian/Campbell/Cariboo RIA/Land-R/modules/"
-if (nchar(modulePath) == 0) modulePath <- getPaths()$modulePath
-# canadaMap <- Cache(getData, 'GADM', country = 'CAN', level = 1,
-#                    cacheRepo = cachePath, digestPathContent = FALSE) 
+canadaMap <- Cache(getData, 'GADM', country = 'CAN', level = 1,
+                   cacheRepo = cachePath) 
 dev()
 clearPlot()
-# Plot(canadaMap, speedup = 5, visualSqueeze = 0.9) # 5 seemed optimal
-# shpStudyRegionFull <- shapefile("C:/Ian/Campbell/Cariboo RIA/GIS/RIA_testArea/FortStJohn_TSA.shp")
-# if (!exists("shpStudyRegionFull")) {
-#   message("Since there is no object called 'shpStudyRegionFull', please draw a study area with 10 points")
-#   severalrandompoints <- Cache(clickCoordinates, 10, cacheRepo = cachePath)
-#   if (startsWith(attr(severalrandompoints, "tags"), "cache"))
-#     message("Taking shpStudyRegionFull from Cache")
-#   shpStudyRegionFull <- SpatialPolygons(list(
-#     Polygons(list(Polygon(severalrandompoints$coords)), ID = 1)
-#   ), proj4string = crs(canadaMap))
-# }
-# Plot(shpStudyRegionFull, addTo = "canadaMap", col = "red")
-inputDir <- file.path(tempdir(), "inputs") %>% checkPath(create = TRUE)
-outputDir <- file.path(tempdir(), "outputs")
+Plot(canadaMap, speedup = 5, visualSqueeze = 0.9) # 5 seemed optimal
+if (!exists("shpStudyRegionFull")) {
+  message("Since there is no object called 'shpStudyRegionFull', please draw a study area with 10 points")
+  severalrandompoints <- Cache(clickCoordinates, 10, cacheRepo = cachePath)
+  shpStudyRegionFull <- SpatialPolygons(list(
+    Polygons(list(Polygon(severalrandompoints$coords)), ID = 1)
+  ), proj4string = crs(canadaMap))
+}
+Plot(shpStudyRegionFull, addTo = "canadaMap", col = "red")
+
+```
+
+# Run SpaDES call
+
+```{r}
 times <- list(start = 0, end = 10)
-modules <- list("Boreal_LBMRDataPrep")
-objects <- list("shpStudyRegionFull" = shpStudyRegionFull,
-                "shpStudySubRegion" = shpStudyRegionFull)
-paths <- list(
-  cachePath = cachePath,
-  modulePath = modulePath,
-  inputPath = inputDir,
-  outputPath = outputDir
+parameters <- list(
+  #.progress = list(type = "text", interval = 1), # for a progress bar
+  ## If there are further modules, each can have its own set of parameters:
+  #module1 = list(param1 = value1, param2 = value2),
+  #module2 = list(param1 = value1, param2 = value2)
 )
-
-parameters <- list(LBMR = list(successionTimestep = 2, useCache = TRUE))
-
-Cache(downloadData, "Boreal_LBMRDataPrep", path = "..")
-
+modules <- list(moduleName)
+times <- list(start = 0, end = 10)
+objects <- list("shpStudyRegionFull" = shpStudyRegionFull,
+                "shpStudySubRegion" = shpStudyRegionFull) # There is the option of 2 scales for studyArea, here shpStudyRegionFull and shpStudySubRegion
 mySim <- simInit(times = times, params = parameters, modules = modules,
                  objects = objects, paths = paths)
 
+```
+
+# Run `spades`
+
+This module is about data preparation, so there is no stochastic elements. The `spades` call will only cause one event to occur (the `init' event)
+
+```{r run-spades}
 simOut <- spades(mySim)
+
+```
+
+# Visualize
+
+The `Plot` function will visualize all known .quickPlot type objects, which includes `Raster*` and `SpatialPolygons*` objects. After running this module, these are the outputs, which would likely be used as inputs to `LBMR`.
+
+```{r visualize}
+dev()
+clearPlot()
+
+# 
+Plot(simOut)
 ```
 
 # Downloads
 
-There are 3 `.tar` files (~2 GB each) and 1 `.zip` file (~45 MB) downloaded from the internet.
+During the `simInit` call, if the user does not provide alternatives for the expected inputs, the module will download 3 large `.tar` files (~2 GB each) and 1 `.zip` file (~45 MB) from the internet.
 
 # Inputs
 
