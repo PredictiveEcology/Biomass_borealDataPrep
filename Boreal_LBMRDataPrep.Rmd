@@ -65,19 +65,22 @@ paths <- getPaths()
 
 ```{r get-study-area}
 library(raster)
+library(sp)
 canadaMap <- Cache(getData, 'GADM', country = 'CAN', level = 1,
-                   cacheRepo = cachePath) 
+                   cacheRepo = cachePath)
+shpStudyRegionFull <- shapefile("C:/Ian/Campbell/Cariboo RIA/GIS/RIA_testArea/FortStJohn_TSA.shp")
+shpStudyRegionFull <- spProject(shpStudyRegionFull, canadaMap@proj4string)
 dev()
 clearPlot()
-Plot(canadaMap, speedup = 5, visualSqueeze = 0.9) # 5 seemed optimal
-if (!exists("shpStudyRegionFull")) {
-  message("Since there is no object called 'shpStudyRegionFull', please draw a study area with 10 points")
-  severalrandompoints <- Cache(clickCoordinates, 10, cacheRepo = cachePath)
-  shpStudyRegionFull <- SpatialPolygons(list(
-    Polygons(list(Polygon(severalrandompoints$coords)), ID = 1)
-  ), proj4string = crs(canadaMap))
-}
-Plot(shpStudyRegionFull, addTo = "canadaMap", col = "red")
+# Plot(canadaMap, speedup = 5, visualSqueeze = 0.9) # 5 seemed optimal
+# if (!exists("shpStudyRegionFull")) {
+#   message("Since there is no object called 'shpStudyRegionFull', please draw a study area with 10 points")
+#   severalrandompoints <- Cache(clickCoordinates, 10, cacheRepo = cachePath)
+#   shpStudyRegionFull <- SpatialPolygons(list(
+#     Polygons(list(Polygon(severalrandompoints$coords)), ID = 1)
+#   ), proj4string = crs(canadaMap))
+# }
+# Plot(shpStudyRegionFull, addTo = "canadaMap", col = "red")
 
 ```
 
