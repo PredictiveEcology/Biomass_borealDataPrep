@@ -117,7 +117,7 @@ doEvent.Boreal_LBMRDataPrep = function(sim, eventTime, eventType, debug = FALSE)
 ### template initialization
 estimateParameters <- function(sim) {
   # # ! ----- EDIT BELOW ----- ! #
-  cpath <- cachePath(sim)
+  cPath <- cachePath(sim)
   sim$studyArea <- spTransform(sim$studyArea, crs(sim$specieslayers))
   sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$specieslayers))
   sim$ecoRegion <- spTransform(sim$ecoRegion, crs(sim$specieslayers))
@@ -339,7 +339,7 @@ Save <- function(sim) {
   #  defaultColor <- 'red'
   # }
   # ! ----- EDIT BELOW ----- ! #
-  cpath <- cachePath(sim)
+  cPath <- cachePath(sim)
   dPath <- asPath(dataPath(sim), 1)
 
   # 1. test if all input objects are already present (e.g., from inputs, objects or another module)
@@ -466,7 +466,7 @@ Save <- function(sim) {
                                biomassMap = sim$biomassMap,
                                shpStudyRegionFull = sim$shpStudyRegionFull,
                                moduleName = currentModule(sim),
-                               cachePath = asPath(cpath),
+                               cachePath = asPath(cPath),
                                userTags = cacheTags)
   }
 
