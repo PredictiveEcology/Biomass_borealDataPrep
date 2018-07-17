@@ -1,41 +1,103 @@
-loadAllSpeciesLayers <- function(dataPath, biomassMap, shpStudyRegionFull, moduleName,
-                                 cachePath, ...) {
-  speciesNamesEnd <- c("Abie_sp", "Pice_Gla", "Pice_Mar", "Pinu_sp", "Popu_Tre")
-  speciesnamesRaw <- c("Abie_Las", "Pice_Gla", "Pice_Mar", "Pinu_Ban", "Pinu_Con", "Popu_Tre")
+## ------------------------------------------------------------------
+## Function to load kNN species layers from online data repository
+## ------------------------------------------------------------------
+
+## dataPath: directory to data folder
+## rasterToMatch: passed to prepInputs
+## studyArea: passed to prepInputs
+## species is either a character vector of species names to download,
+##    or a two-column matrix with the species names to download and final names, with column names = c("speciesnamesRaw", "speciesNamesEnd") 
+##    should two raw species names share the same final name, their biomass data will be considered as the "same species"
+
+loadAllSpeciesLayers <- function(dataPath, rasterToMatch, studyArea, 
+                                 species = "all", cachePath, ...) {
+  require(magrittr)
+  
+  ## check if species is a vector/matrix
+  if (class(species) == "character") {
+    if (species == "all") {
+      ## get all species layers from .tar
+      species <- untar(tarfile = file.path(dataPath, "kNN-Species.tar"), list = TRUE) %>%
+        grep(".zip", ., value = TRUE) %>%
+        sub("_v0.zip", "", .) %>%
+        sub(".*Species_", "", .)
+    }
+    
+    ## make a matrix of raw and final species names
+    species <-  matrix(data = rep(species, 2),
+                       nrow = length(species), ncol = 2, byrow = FALSE)
+    colnames(species) = c("speciesnamesRaw", "speciesNamesEnd")
+    
+  } else if(class(species) == "matrix") {
+    ## check column names
+    if(!setequal(colnames(species), c("speciesnamesRaw", "speciesNamesEnd")))
+      stop("names(species) must be c('speciesnamesRaw', 'speciesNamesEnd'), for raw species names and final species names respectively")
+  } else stop("species must be a character vector or a two-column matrix")
+  
   species1 <- list()
   a11 <- 1
-  suffix <- if (basename(cachePath) == "cache") paste0(as.character(ncell(biomassMap)),"px") else
+  suffix <- if (basename(cachePath) == "cache") paste0(as.character(ncell(rasterToMatch)),"px") else
     basename(cachePath)
   suffix <- paste0("_", suffix)
-  for (sp in speciesnamesRaw) {
+  
+  for (sp in species[, "speciesnamesRaw"]) {
     targetFile <- paste0("NFI_MODIS250m_kNN_Species_", sp, "_v0.tif")
     postProcessedFilename <- .suffix(targetFile, suffix = suffix)
+    
     species1[[sp]] <- prepInputs(
       targetFile = targetFile,
       archive = asPath(c("kNN-Species.tar", paste0("NFI_MODIS250m_kNN_Species_", sp, "_v0.zip"))),
       #alsoExtract = if (sp == speciesnamesRaw[1]) paste0("NFI_MODIS250m_kNN_Species_", speciesnamesRaw[-1], "_v0.tif"),
       destinationPath = asPath(dataPath),
       fun = "raster::raster",
-      studyArea = shpStudyRegionFull,
-      rasterToMatch = biomassMap,
+      studyArea = studyArea,
+      rasterToMatch = rasterToMatch,
       method = "bilinear",
       datatype = "INT2U",
       postProcessedFilename = postProcessedFilename
     )
   }
-
-  sumSpecies <- c("Pinu_Ban", "Pinu_Con")
-  newLayerName <- grep("Pinu", speciesNamesEnd, value = TRUE)
-  fname <- .suffix(file.path(dataPath, "KNNPinu_sp.tif"), suffix)
-  a <- Cache(sumRastersBySpecies,
-             species1[sumSpecies], newLayerName = newLayerName,
-             filenameToSave = asPath(fname),
-             ...)
-  a <- raster(fname) ## ensure a gets a filename
-  species1[sumSpecies] <- NULL
-  species1[[newLayerName]] <- a
-  names(species1)[grep("Abie", names(species1))] <- grep("Abie", speciesNamesEnd, value = TRUE)
-  names(species1) <- toSentenceCase(names(species1))
-
+  
+  ## Sum species that share same final name
+  if(any(duplicated(species[, 2]))) {
+    dubs <- species[duplicated(species[, 2]), 2]   ## get the duplicated final names
+    
+    ## make a list of species that will be summed (those with duplicated final names)
+    spp2sum <- lapply(dubs, FUN = function(x) {
+      species[species[, 2] %in% dubs, 1]
+    })
+    
+    names(spp2sum) = dubs     
+  }
+  
+  for(i in 1:length(spp2sum)) {
+    sumSpecies <- spp2sum[[i]]
+    newLayerName <- names(spp2sum)[i]
+    
+    fname <- .suffix(file.path(dataPath, "KNNPinu_sp.tif"), suffix)
+    a <- Cache(sumRastersBySpecies,
+               speciesLayers = species1[sumSpecies], 
+               newLayerName = newLayerName,
+               filenameToSave = asPath(fname),
+               ...)
+    a <- raster(fname) ## ensure a gets a filename
+    
+    ## replace spp rasters by the summed one
+    species1[sumSpecies] <- NULL
+    species1[[newLayerName]] <- a
+  }
+  
+  ## Rename species whose raw and final names differ
+  nameReplace <- species[!species[, 2] %in% dubs,, drop = FALSE] %>%
+    .[which(.[, 1] != .[,2]),, drop = FALSE]
+  rownames(nameReplace) = nameReplace[, 1]
+  toReplace <- names(species1)[names(species1) %in% nameReplace[,1]]
+  names(species1)[names(species1) %in% toReplace] <- nameReplace[toReplace, 2]
+  
+  ## remove layers that have no data (i.e. spp absent in study area)
+  # HERE
+  browser()
+  
+  ## return stack
   stack(species1)
 }

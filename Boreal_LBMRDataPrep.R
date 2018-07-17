@@ -461,12 +461,18 @@ Save <- function(sim) {
   }
 
   if (!suppliedElsewhere("specieslayers", sim)) {
+    
+    ## pre-select 5 species
+    species = as.matrix(data.frame(speciesnamesRaw = c("Abie_Las", "Pice_Gla", "Pice_Mar", "Pinu_Ban", "Pinu_Con", "Popu_Tre"),
+                                   speciesNamesEnd =  c("Abie_sp", "Pice_Gla", "Pice_Mar", "Pinu_sp", "Pinu_sp", "Popu_Tre")))
+    
     sim$specieslayers <- Cache(loadAllSpeciesLayers,
-                               dataPath = dPath,
-                               biomassMap = sim$biomassMap,
-                               shpStudyRegionFull = sim$shpStudyRegionFull,
-                               moduleName = currentModule(sim),
-                               cachePath = asPath(cPath),
+                               dataPath = dataPath(sim), 
+                               rasterToMatch = sim$biomassMap, 
+                               studyArea = sim$shpStudyRegionFull,
+                               # species = "all",
+                               species = species,
+                               cachePath = cachePath(sim),
                                userTags = cacheTags)
   }
 
