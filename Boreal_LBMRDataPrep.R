@@ -466,7 +466,7 @@ Save <- function(sim) {
     species = as.matrix(data.frame(speciesnamesRaw = c("Abie_Las", "Pice_Gla", "Pice_Mar", "Pinu_Ban", "Pinu_Con", "Popu_Tre"),
                                    speciesNamesEnd =  c("Abie_sp", "Pice_Gla", "Pice_Mar", "Pinu_sp", "Pinu_sp", "Popu_Tre")))
     
-    sim$specieslayers <- Cache(loadAllSpeciesLayers,
+    sim$specieslayers <- Cache(loadkNNSpeciesLayers,
                                dataPath = dataPath(sim), 
                                rasterToMatch = sim$biomassMap, 
                                studyArea = sim$shpStudyRegionFull,
