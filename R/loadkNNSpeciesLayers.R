@@ -8,9 +8,11 @@
 ## species is either a character vector of species names to download,
 ##    or a two-column matrix with the species names to download and final names, with column names = c("speciesnamesRaw", "speciesNamesEnd") 
 ##    should two raw species names share the same final name, their biomass data will be considered as the "same species"
+## thresh: is the minimum number of pixels where the species must have biomass > 0 to be considered present in the study area. 
+##    Defaults to 1
 
 loadkNNSpeciesLayers <- function(dataPath, rasterToMatch, studyArea, 
-                                 species = "all", cachePath, ...) {
+                                 species = "all", thresh = 1, cachePath, ...) {
   require(magrittr)
   
   ## check if species is a vector/matrix
@@ -68,35 +70,38 @@ loadkNNSpeciesLayers <- function(dataPath, rasterToMatch, studyArea,
     })
     
     names(spp2sum) = dubs     
+    
+    for(i in 1:length(spp2sum)) {
+      sumSpecies <- spp2sum[[i]]
+      newLayerName <- names(spp2sum)[i]
+      
+      fname <- .suffix(file.path(dataPath, "KNNPinu_sp.tif"), suffix)
+      a <- Cache(sumRastersBySpecies,
+                 speciesLayers = species1[sumSpecies], 
+                 newLayerName = newLayerName,
+                 filenameToSave = asPath(fname),
+                 ...)
+      a <- raster(fname) ## ensure a gets a filename
+      
+      ## replace spp rasters by the summed one
+      species1[sumSpecies] <- NULL
+      species1[[newLayerName]] <- a
+    }
+    
+    ## Rename species whose raw and final names differ
+    nameReplace <- species[!species[, 2] %in% dubs,, drop = FALSE] %>%
+      .[which(.[, 1] != .[,2]),, drop = FALSE]
+    rownames(nameReplace) = nameReplace[, 1]
+    toReplace <- names(species1)[names(species1) %in% nameReplace[,1]]
+    names(species1)[names(species1) %in% toReplace] <- nameReplace[toReplace, 2]
   }
   
-  for(i in 1:length(spp2sum)) {
-    sumSpecies <- spp2sum[[i]]
-    newLayerName <- names(spp2sum)[i]
-    
-    fname <- .suffix(file.path(dataPath, "KNNPinu_sp.tif"), suffix)
-    a <- Cache(sumRastersBySpecies,
-               speciesLayers = species1[sumSpecies], 
-               newLayerName = newLayerName,
-               filenameToSave = asPath(fname),
-               ...)
-    a <- raster(fname) ## ensure a gets a filename
-    
-    ## replace spp rasters by the summed one
-    species1[sumSpecies] <- NULL
-    species1[[newLayerName]] <- a
-  }
+  ## remove layers that have less data than thresh (i.e. spp absent in study area)
+  ## count no. of pixels that have biomass
+  layerData <- Cache(sapply, X = species1, function(x) sum(x[] > 0, na.rm = TRUE))
   
-  ## Rename species whose raw and final names differ
-  nameReplace <- species[!species[, 2] %in% dubs,, drop = FALSE] %>%
-    .[which(.[, 1] != .[,2]),, drop = FALSE]
-  rownames(nameReplace) = nameReplace[, 1]
-  toReplace <- names(species1)[names(species1) %in% nameReplace[,1]]
-  names(species1)[names(species1) %in% toReplace] <- nameReplace[toReplace, 2]
-  
-  ## remove layers that have no data (i.e. spp absent in study area)
-  # HERE
-  browser()
+  ## remove layers that had < thresh pixels with biomass
+  species1[layerData < thresh] <- NULL
   
   ## return stack
   stack(species1)
