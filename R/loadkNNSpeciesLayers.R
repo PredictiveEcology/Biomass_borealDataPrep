@@ -10,9 +10,10 @@
 ##    should two raw species names share the same final name, their biomass data will be considered as the "same species"
 ## thresh: is the minimum number of pixels where the species must have biomass > 0 to be considered present in the study area. 
 ##    Defaults to 1
+## url: is the source url for the data, passed to prepInputs.
 
 loadkNNSpeciesLayers <- function(dataPath, rasterToMatch, studyArea, 
-                                 species = "all", thresh = 1, cachePath, ...) {
+                                 species = "all", thresh = 1, url, cachePath, ...) {
   require(magrittr)
   
   ## check if species is a vector/matrix
@@ -48,7 +49,7 @@ loadkNNSpeciesLayers <- function(dataPath, rasterToMatch, studyArea,
 
     species1[[sp]] <- prepInputs(
       targetFile = targetFile,
-      url = extractURL(objectName = "specieslayers"),
+      url = url,
       archive = asPath(c("kNN-Species.tar", paste0("NFI_MODIS250m_kNN_Species_", sp, "_v0.zip"))),
       destinationPath = asPath(dataPath),
       fun = "raster::raster",
