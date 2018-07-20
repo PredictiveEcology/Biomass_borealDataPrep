@@ -45,6 +45,7 @@ loadkNNSpeciesLayers <- function(dataPath, rasterToMatch, studyArea,
   for (sp in species[, "speciesnamesRaw"]) {
     targetFile <- paste0("NFI_MODIS250m_kNN_Species_", sp, "_v0.tif")
     postProcessedFilename <- .suffix(targetFile, suffix = suffix)
+    # postProcessedFilename <- basename(.suffix(targetFile, suffix = suffix))   ## remove root appended by suffix
     
     species1[[sp]] <- prepInputs(
       targetFile = targetFile,
@@ -56,7 +57,7 @@ loadkNNSpeciesLayers <- function(dataPath, rasterToMatch, studyArea,
       rasterToMatch = rasterToMatch,
       method = "bilinear",
       datatype = "INT2U",
-      postProcessedFilename = postProcessedFilename
+      filename2 = postProcessedFilename
     )
   }
   
@@ -105,4 +106,22 @@ loadkNNSpeciesLayers <- function(dataPath, rasterToMatch, studyArea,
   
   ## return stack
   stack(species1)
+}
+
+
+## ------------------------------------------------------------------
+## Function to sum rasters of species layers
+## ------------------------------------------------------------------
+
+## speciesLayers: stack of species layers rasters
+## layersToSum: names/indices of layers to be summed - optional
+## filenameToSave: file path to save output raster
+## newLayerName: name of the output raster layer
+
+sumRastersBySpecies <- function(speciesLayers, layersToSum,
+                                filenameToSave, newLayerName) {
+  ras_out <- raster::calc(raster::stack(speciesLayers[layersToSum]), sum) 
+  names(ras_out) <- newLayerName 
+  writeRaster(ras_out, filename = filenameToSave, datatype = "INT2U", overwrite = TRUE) 
+  ras_out # Work around for Cache 
 }
