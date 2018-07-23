@@ -46,7 +46,7 @@ loadkNNSpeciesLayers <- function(dataPath, rasterToMatch, studyArea,
   for (sp in species[, "speciesnamesRaw"]) {
     targetFile <- paste0("NFI_MODIS250m_kNN_Species_", sp, "_v0.tif")
     postProcessedFilename <- .suffix(targetFile, suffix = suffix)
-
+    
     species1[[sp]] <- prepInputs(
       targetFile = targetFile,
       url = url,
@@ -88,14 +88,14 @@ loadkNNSpeciesLayers <- function(dataPath, rasterToMatch, studyArea,
       species1[sumSpecies] <- NULL
       species1[[newLayerName]] <- a
     }
-    
-    ## Rename species whose raw and final names differ
-    nameReplace <- species[!species[, 2] %in% dubs,, drop = FALSE] %>%
-      .[which(.[, 1] != .[,2]),, drop = FALSE]
-    rownames(nameReplace) = nameReplace[, 1]
-    toReplace <- names(species1)[names(species1) %in% nameReplace[,1]]
-    names(species1)[names(species1) %in% toReplace] <- nameReplace[toReplace, 2]
   }
+  
+  ## Rename species layers - note: merged species were renamed already
+  nameReplace <- as.matrix(species[,2])
+  rownames(nameReplace) = species[, 1]
+  
+  toReplace <- names(species1)[names(species1) %in% rownames(nameReplace)]
+  names(species1)[names(species1) %in% toReplace] <- nameReplace[toReplace, 1]
   
   ## remove layers that have less data than thresh (i.e. spp absent in study area)
   ## count no. of pixels that have biomass
@@ -104,8 +104,8 @@ loadkNNSpeciesLayers <- function(dataPath, rasterToMatch, studyArea,
   ## remove layers that had < thresh pixels with biomass
   species1[layerData < thresh] <- NULL
   
-  ## return stack
-  stack(species1)
+  ## return stack and final species matrix
+  list(specieslayers = stack(species1), species = species)
 }
 
 

@@ -38,6 +38,9 @@ defineModule(sim, list(
     expectsInput(objectName = "standAgeMap", objectClass = "RasterLayer",
                  desc = "stand age map in study area, default is Canada national stand age map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
+    expectsInput(objectName = "species", objectClass = c("character", "matrix"),
+                 desc = "vector or matrix of species to select. 
+                 If matrix, should have two columns of raw and 'end' species names", sourceURL = ""),
     expectsInput(objectName = "specieslayers", objectClass = "RasterStack",
                  desc = "biomass percentage raster layers by species in Canada species map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
@@ -466,21 +469,25 @@ Save <- function(sim) {
                              userTags = c("stable", currentModule(sim)))
   }
 
+  if (!suppliedElsewhere("species", sim)) {
+    ## default to 6 species, one changing name, and two merged into one
+    sim$species <- as.matrix(data.frame(speciesnamesRaw = c("Abie_Las", "Pice_Gla", "Pice_Mar", "Pinu_Ban", "Pinu_Con", "Popu_Tre"),
+                                        speciesNamesEnd =  c("Abie_sp", "Pice_gla", "Pice_mar", "Pinu_sp", "Pinu_sp", "Popu_tre")))
+  }
+  
   if (!suppliedElsewhere("specieslayers", sim)) {
-    
-    ## pre-select 5 species
-    species = as.matrix(data.frame(speciesnamesRaw = c("Abie_Las", "Pice_Gla", "Pice_Mar", "Pinu_Ban", "Pinu_Con", "Popu_Tre"),
-                                   speciesNamesEnd =  c("Abie_sp", "Pice_Gla", "Pice_Mar", "Pinu_sp", "Pinu_sp", "Popu_Tre")))
-    
-    sim$specieslayers <- Cache(loadkNNSpeciesLayers,
-                               dataPath = dataPath(sim), 
+    specieslayersList <- Cache(loadkNNSpeciesLayers,
+                               dataPath = asPath(dPath), 
                                rasterToMatch = sim$biomassMap, 
                                studyArea = sim$shpStudyRegionFull,
-                               # species = "all",
-                               species = species,
+                               species = sim$species,
+                               thresh = 10,
                                url = extractURL("specieslayers"),
                                cachePath = cachePath(sim),
-                               userTags = cacheTags)
+                               userTags = c(cacheTags, "specieslayers"))
+    
+    sim$specieslayers <- specieslayersList$specieslayers
+    sim$species <- specieslayersList$species
   }
 
   # 3. species maps
