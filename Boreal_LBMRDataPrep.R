@@ -265,7 +265,7 @@ estimateParameters <- function(sim) {
                            "mortalityshape", "growthcurve", "leafLignin", "hardsoft")
   speciesTable[, ':='(Area = NULL, hardsoft = NULL)]
   speciesTable$species1 <- as.character(substring(speciesTable$species, 1, 4))
-  speciesTable$species2 <- as.character(substring(speciesTable$species, 6, nchar(speciesTable$species)))
+  speciesTable$species2 <- as.character(substring(speciesTable$species, 6, nchar(as.character(speciesTable$species))))
   speciesTable[, ':='(species = paste(as.character(substring(species1, 1, 1)),
                                       tolower(as.character(substring(species1, 2, nchar(species1)))),
                                       "_", as.character(substring(species2, 1, 1)),
