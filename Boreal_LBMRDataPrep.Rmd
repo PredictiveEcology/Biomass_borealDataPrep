@@ -18,11 +18,6 @@ Keeping these data preparations outside of the core LBMR module maintains the mo
 
 There is one
 ```{r module_usage}
-devtools::install_github("PredictiveEcology/reproducible@development")
-devtools::install_github("PredictiveEcology/SpaDES.core@development") 
-devtools::install_github("PredictiveEcology/SpaDES.tools@development") 
-devtools::install_github("ygc2l/webDatabases") # For fetching KNN layers from PFC repo
-
 library(magrittr) # for %>% pipe
 library(SpaDES)
 library(raster)
