@@ -38,7 +38,7 @@ defineModule(sim, list(
     expectsInput(objectName = "standAgeMap", objectClass = "RasterLayer",
                  desc = "stand age map in study area, default is Canada national stand age map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
-    expectsInput(objectName = "species", objectClass = c("character", "matrix"),
+    expectsInput(objectName = "speciesList", objectClass = c("character", "matrix"),
                  desc = "vector or matrix of species to select. 
                  If matrix, should have two columns of raw and 'end' species names", sourceURL = ""),
     expectsInput(objectName = "specieslayers", objectClass = "RasterStack",
@@ -491,9 +491,9 @@ Save <- function(sim) {
                              userTags = c("stable", currentModule(sim)))
   }
 
-  if (!suppliedElsewhere("species", sim)) {
+  if (!suppliedElsewhere("speciesList", sim)) {
     ## default to 6 species, one changing name, and two merged into one
-    sim$species <- as.matrix(data.frame(speciesnamesRaw = c("Abie_Las", "Pice_Gla", "Pice_Mar", "Pinu_Ban", "Pinu_Con", "Popu_Tre"),
+    sim$speciesList <- as.matrix(data.frame(speciesnamesRaw = c("Abie_Las", "Pice_Gla", "Pice_Mar", "Pinu_Ban", "Pinu_Con", "Popu_Tre"),
                                         speciesNamesEnd =  c("Abie_sp", "Pice_gla", "Pice_mar", "Pinu_sp", "Pinu_sp", "Popu_tre")))
   }
   
@@ -502,14 +502,14 @@ Save <- function(sim) {
                                dataPath = asPath(dPath), 
                                rasterToMatch = sim$biomassMap, 
                                studyArea = sim$shpStudyRegionFull,
-                               species = sim$species,
+                               speciesList = sim$speciesList,
                                thresh = 10,
                                url = extractURL("specieslayers"),
                                cachePath = cachePath(sim),
                                userTags = c(cacheTags, "specieslayers"))
     
     sim$specieslayers <- specieslayersList$specieslayers
-    sim$species <- specieslayersList$species
+    sim$speciesList <- specieslayersList$speciesList
   }
 
   # 3. species maps
@@ -553,8 +553,6 @@ Save <- function(sim) {
       names(sim$shpStudyRegionFull)[1]
     }
 
-    browser()
-    
     sim$rstStudyRegion <- crop(fasterizeFromSp(sim$shpStudyRegionFull, sim$biomassMap, fieldName),
                                sim$shpStudyRegionFull)
     sim$rstStudyRegion <- Cache(writeRaster, sim$rstStudyRegion, filename = file.path(dataPath(sim), "rstStudyRegion.tif"),
