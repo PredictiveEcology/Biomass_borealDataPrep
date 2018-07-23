@@ -368,7 +368,7 @@ Save <- function(sim) {
   ecozoneAE <- basename(paste0(tools::file_path_sans_ext(ecozoneFilename), ".", fexts))
 
   # This is from sim$biomassMap
-  crsUsed <- "+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
+  crsUsed <- "+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"
 
   if (!suppliedElsewhere("shpStudyRegionFull", sim)) {
     message("'shpStudyRegionFull' was not provided by user. Using a polygon in Southwestern Alberta, Canada")
@@ -378,8 +378,13 @@ Save <- function(sim) {
     smallPolygonCoords = list(coords = data.frame(x = c(-115.9022,-114.9815,-114.3677,-113.4470,-113.5084,-114.4291,-115.3498,-116.4547,-117.1298,-117.3140), 
                                                   y = c(50.45516,50.45516,50.51654,50.51654,51.62139,52.72624,52.54210,52.48072,52.11243,51.25310)))
     
-    sim$shpStudyRegionFull <- SpatialPolygons(list(Polygons(list(Polygon(smallPolygonCoords$coords)), ID = 1)),
+    sim$shpStudyRegionFull <- SpatialPolygons(list(Polygons(list(Polygon(smallPolygonCoords$coords)), ID = "swAB_polygon")),
                                               proj4string = crs(canadaMap))
+    
+    ## use CRS of biomassMap
+    sim$shpStudyRegionFull <- spTransform(sim$shpStudyRegionFull,
+                                          CRSobj = "+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
+    
   }
 
   if (!suppliedElsewhere("shpStudySubRegion", sim)) {
@@ -548,9 +553,8 @@ Save <- function(sim) {
       names(sim$shpStudyRegionFull)[1]
     }
 
-    fasterizeFromSp <- function(sp, raster, fieldName) {
-      fasterize::fasterize(sf::st_as_sf(sp), raster, field = fieldName)
-    }
+    browser()
+    
     sim$rstStudyRegion <- crop(fasterizeFromSp(sim$shpStudyRegionFull, sim$biomassMap, fieldName),
                                sim$shpStudyRegionFull)
     sim$rstStudyRegion <- Cache(writeRaster, sim$rstStudyRegion, filename = file.path(dataPath(sim), "rstStudyRegion.tif"),
