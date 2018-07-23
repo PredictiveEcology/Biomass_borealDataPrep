@@ -30,6 +30,7 @@ cachePath <- file.path("Boreal_LBMRDataPrep", "cache")
 modulePath <- Cache(readline, paste0("Where is the module path? (e.g., ~/module, with no quotes).\n",
                                      "Press Enter to accept the path in getPaths()$modulePath: "),
                     cacheRepo = cachePath)
+setPaths(cachePath = cachePath, modulePath = modulePath)
 
 ## do you want to hand-draw a map or use defaults?
 # - note that large areas will take longer to compute
@@ -54,31 +55,17 @@ if(handDrawMap) {
   }
 }
 
-
-inputDir <- file.path(tempdir(), "inputs") %>% checkPath(create = TRUE)
-outputDir <- file.path(tempdir(), "outputs")
 times <- list(start = 0, end = 10)
 modules <- list("Boreal_LBMRDataPrep")
 objects <- if(handDrawMap) list("shpStudyRegionFull" = shpStudyRegionFull,
                                 "shpStudySubRegion" = shpStudyRegionFull) else list()
-paths <- list(
-  cachePath = cachePath,
-  modulePath = modulePath,
-  inputPath = inputDir,
-  outputPath = outputDir
-)
 
 parameters <- list(LBMR = list(successionTimestep = 2, useCache = TRUE))
 
-# Cache(downloadData, module = "Boreal_LBMRDataPrep", path = "..")
-
 mySim <- simInit(times = times, params = parameters, modules = modules,
-                 objects = objects, paths = paths)
+                 objects = objects)
 
 simOut <- spades(mySim)
-
-
-
 
 ```
 
