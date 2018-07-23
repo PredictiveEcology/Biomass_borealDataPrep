@@ -22,6 +22,10 @@ devtools::install_github("PredictiveEcology/reproducible@development") # require
 devtools::install_github("PredictiveEcology/SpaDES.tools@prepInputs") # prepInputs with alsoExtract argument
 devtools::install_github("ygc2l/webDatabases") # For fetching KNN layers from PFC repo
 
+ 
+try(detach("package:SpaDES.core", unload = TRUE)); try(detach("package:SpaDES.tools", unload = TRUE)); try(detach("package:reproducible", unload = TRUE)); devtools::load_all("E:/GitHub/reproducible"); devtools::load_all("E:/GitHub/SpaDES.tools"); devtools::load_all("E:/GitHub/SpaDES.core")
+
+
 library(magrittr) # for %>% pipe
 library(SpaDES)
 library(raster)
@@ -29,26 +33,37 @@ cachePath <- file.path("Boreal_LBMRDataPrep", "cache")
 modulePath <- Cache(readline, paste0("Where is the module path? (e.g., ~/module, with no quotes).\n",
                                      "Press Enter to accept the path in getPaths()$modulePath: "),
                     cacheRepo = cachePath)
-if(nchar(modulePath)==0) modulePath <- getPaths()$modulePath
-canadaMap <- Cache(getData, 'GADM', country = 'CAN', level = 1,
-                   cacheRepo = cachePath, digestPathContent = FALSE) 
-dev()
-clearPlot()
-Plot(canadaMap, speedup = 5, visualSqueeze = 0.9) # 5 seemed optimal
-if(!exists("shpStudyRegionFull")) {
-  message("Since there is no object called 'shpStudyRegionFull', please draw a study area with 10 points")
-  severalrandompoints <- Cache(clickCoordinates, 10, cacheRepo = cachePath)
-  if(startsWith(attr(severalrandompoints, "tags"), "cache")) message("Taking shpStudyRegionFull from Cache")
-  shpStudyRegionFull <- SpatialPolygons(list(Polygons(list(Polygon(severalrandompoints$coords)), ID = 1)),
-                               proj4string = crs(canadaMap))
+
+## do you want to hand-draw a map or use defaults?
+# - note that large areas will take longer to compute
+handDrawMap <- FALSE
+
+if(handDrawMap) {
+  dev()
+  clearPlot()
+  canadaMap <- Cache(getData, 'GADM', country = 'CAN', level = 1, path = "data/",
+                     cacheRepo = getPaths()$cachePath, quick = FALSE)
+  LIM_SA <- shapefile("../LandscapesInMotion/data/maps/Foothills_study_area.shp")
+  Plot(canadaMap, speedup = 5, visualSqueeze = 0.9) # 5 seemed optimal
+  Plot(LIM_SA, addTo = "canadaMap", col = "green")
+  
+  ## hand-drawn study area
+  if(!exists("shpStudyRegionFull")) {
+    message("Since there is no object called 'shpStudyRegionFull', please draw a study area with 10 points")
+    severalrandompoints <- clickCoordinates(10)
+    if(startsWith(attr(severalrandompoints, "tags"), "cache")) message("Taking shpStudyRegionFull from Cache")
+    shpStudyRegionFull <- SpatialPolygons(list(Polygons(list(Polygon(severalrandompoints$coords)), ID = 1)),
+                                          proj4string = crs(canadaMap))
+  }
 }
-Plot(shpStudyRegionFull, addTo = "canadaMap", col = "red")
+
+
 inputDir <- file.path(tempdir(), "inputs") %>% checkPath(create = TRUE)
 outputDir <- file.path(tempdir(), "outputs")
 times <- list(start = 0, end = 10)
 modules <- list("Boreal_LBMRDataPrep")
-objects <- list("shpStudyRegionFull" = shpStudyRegionFull,
-                "shpStudySubRegion" = shpStudyRegionFull)
+objects <- if(handDrawMap) list("shpStudyRegionFull" = shpStudyRegionFull,
+                                "shpStudySubRegion" = shpStudyRegionFull) else list()
 paths <- list(
   cachePath = cachePath,
   modulePath = modulePath,
@@ -58,7 +73,7 @@ paths <- list(
 
 parameters <- list(LBMR = list(successionTimestep = 2, useCache = TRUE))
 
-Cache(downloadData, "Boreal_LBMRDataPrep", path = "..")
+# Cache(downloadData, module = "Boreal_LBMRDataPrep", path = "..")
 
 mySim <- simInit(times = times, params = parameters, modules = modules,
                  objects = objects, paths = paths)

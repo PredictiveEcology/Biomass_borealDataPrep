@@ -370,6 +370,23 @@ Save <- function(sim) {
   # This is from sim$biomassMap
   crsUsed <- "+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
 
+  if (!suppliedElsewhere("shpStudyRegionFull", sim)) {
+    message("'shpStudyRegionFull' was not provided by user. Using a polygon in Southwestern Alberta, Canada")
+    
+    canadaMap <- Cache(getData, 'GADM', country = 'CAN', level = 1, path = asPath(dPath),
+                       cacheRepo = getPaths()$cachePath, quick = FALSE) 
+    smallPolygonCoords = list(coords = data.frame(x = c(-115.9022,-114.9815,-114.3677,-113.4470,-113.5084,-114.4291,-115.3498,-116.4547,-117.1298,-117.3140), 
+                                                  y = c(50.45516,50.45516,50.51654,50.51654,51.62139,52.72624,52.54210,52.48072,52.11243,51.25310)))
+    
+    sim$shpStudyRegionFull <- SpatialPolygons(list(Polygons(list(Polygon(smallPolygonCoords$coords)), ID = 1)),
+                                              proj4string = crs(canadaMap))
+  }
+
+  if (!suppliedElsewhere("shpStudySubRegion", sim)) {
+    message("'shpStudySubRegion' was not provided by user. Using the same as 'shpStudyRegionFull'")
+    sim$shpStudySubRegion <- sim$shpStudyRegionFull
+  }
+  
   if (!identical(crsUsed, crs(sim$shpStudyRegionFull))) {
     sim$shpStudyRegionFull <- spTransform(sim$shpStudyRegionFull, crsUsed) #faster without Cache
   }
@@ -491,8 +508,11 @@ Save <- function(sim) {
   }
 
   # 3. species maps
-  sim$speciesTable <- prepInputs("speciesTraits.csv", destinationPath = dPath,
-                                 fun = "utils::read.csv", header = TRUE, stringsAsFactors = FALSE) %>%
+  sim$speciesTable <- prepInputs("speciesTraits.csv", 
+                                 destinationPath = dPath,
+                                 url = extractURL("speciesTable"),
+                                 fun = "utils::read.csv", 
+                                 header = TRUE, stringsAsFactors = FALSE) %>%
     data.table()
 
   sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
