@@ -550,7 +550,9 @@ Save <- function(sim) {
     fieldName <- if ("LTHRC" %in% names(sim$shpStudyRegionFull)) {
       "LTHRC"
     } else {
-      names(sim$shpStudyRegionFull)[1]
+      if(length(names(sim$shpStudyRegionFull)) > 1) {   ## study region may be a simple polygon
+        names(sim$shpStudyRegionFull)[1]
+      } else NULL
     }
 
     sim$rstStudyRegion <- crop(fasterizeFromSp(sim$shpStudyRegionFull, sim$biomassMap, fieldName),
