@@ -43,8 +43,8 @@ defineModule(sim, list(
                  desc = "stand age map in study area, default is Canada national stand age map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
     expectsInput(objectName = "speciesList", objectClass = c("character", "matrix"),
-                 desc = "vector or matrix of species to select. 
-                 If matrix, should have two columns of raw and 'end' species names", sourceURL = ""),
+                 desc = "vector or matrix of species to select, provided by the user or BiomassSpeciesData. 
+                 If a matrix, should have two columns of raw and 'end' species names", sourceURL = NA),
     expectsInput(objectName = "specieslayers", objectClass = "RasterStack",
                  desc = "biomass percentage raster layers by species in Canada species map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
