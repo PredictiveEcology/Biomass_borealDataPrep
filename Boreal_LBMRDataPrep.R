@@ -138,7 +138,7 @@ estimateParameters <- function(sim) {
   message("2: ", Sys.time())
   initialCommFiles <- Cache(initialCommunityProducer,
                             speciesLayers = sim$specieslayers,
-                            speciesPresence = 50,
+                            speciesPresence = 0,
                             studyArea = sim$studyArea,
                             rstStudyArea = rstStudyRegionBinary,
                             userTags = "stable")
@@ -169,7 +169,6 @@ estimateParameters <- function(sim) {
                           initialCommunityMap = initialCommFiles$initialCommunityMap,
                           initialCommunity = initialCommFiles$initialCommunity,
                           userTags = "stable")
-  
   .gc()
   
   message("4: ", Sys.time())
@@ -277,15 +276,26 @@ estimateParameters <- function(sim) {
                                       tolower(as.character(substring(species2, 2, nchar(species2)))),
                                       sep = ""))]
   
-  ## TODO species renaming should follow speciesList
-  speciesTable[species == "Pinu_Con.lat", species := "Pinu_Con"]
+  speciesTable$species <- toSentenceCase(speciesTable$species)
+  speciesTable[species == "Pinu_con.con", species := "Pinu_con"]
+  speciesTable[species == "Pinu_con.lat", species := "Pinu_con"]
+  speciesTable[species == "Betu_all", species := "Betu_sp"]
   
-  newNames <- toSentenceCase(speciesTable$species)
+  ## convert species names to match user-input list
+  speciesList <- sim$speciesList
+  rownames(speciesList) <- sapply(strsplit(speciesList[,1], "_"), function(x) {
+    x[1] <- substring(x[1], 1, 4)
+    x[2] <-  substring(x[2], 1, 3)
+    paste(x, collapse = "_")
+  }) 
   
-  speciesTable$species <- newNames
+  rownames(speciesList) <- sub("_spp", "_sp", rownames(speciesList))
   
-  speciesTable[species %in% c("Abie_las", "Abie_bal"), species := "Abie_sp"]
-  speciesTable[species %in% c("Pinu_ban", "Pinu_con", "Pinu_con.con"), species := "Pinu_sp"]
+  matchNames <- speciesTable[species %in% rownames(speciesList), species]
+  speciesTable[species %in% rownames(speciesList), species := speciesList[matchNames,2]]
+  
+  ## filter table to existing species layers
+  speciesTable <- speciesTable[species %in% names(sim$specieslayers)]
   
   message("10: ", Sys.time())
   
@@ -299,10 +309,13 @@ estimateParameters <- function(sim) {
   initialCommunities <- data.frame(initialCommunities)
   message("11: ", Sys.time())
   
+  ## filter communities to species that have traits
+  initialCommunities <- initialCommunities[initialCommunities$species %in% speciesTable$species,]
+  
   initialCommunitiesFn <- function(initialCommunities, speciesTable) {
     for (i in 1:nrow(initialCommunities)) {
       agelength <- sample(1:15, 1)
-      ages <- sort(sample(1:speciesTable[species == initialCommunities$species[i],]$longevity,
+      ages <- sort(sample(1:speciesTable[species == initialCommunities$species[i],longevity],
                           agelength))
       initialCommunities[i, 4:(agelength + 3)] <- ages
     }
