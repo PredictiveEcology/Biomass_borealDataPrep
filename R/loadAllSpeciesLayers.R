@@ -20,7 +20,7 @@ loadAllSpeciesLayers <- function(dataPath, biomassMap, shpStudyRegionFull, modul
       rasterToMatch = biomassMap,
       method = "bilinear",
       datatype = "INT2U",
-      postProcessedFilename = postProcessedFilename
+      filename2 postProcessedFilename
     )
   }
 
