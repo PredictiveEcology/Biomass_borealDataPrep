@@ -431,7 +431,7 @@ Save <- function(sim) {
                             studyArea = sim$shpStudySubRegion,
                             method = "bilinear",
                             datatype = "INT2U",
-                            filename2 TRUE,
+                            filename2 = TRUE,
                             userTags = c("stable", currentModule(sim)))#,
     #dataset = "EOSD2000")
     
@@ -448,7 +448,7 @@ Save <- function(sim) {
                          rasterToMatch = sim$biomassMap,
                          method = "bilinear",
                          datatype = "INT2U",
-                         filename2 TRUE,
+                         filename2 = TRUE,
                          userTags = currentModule(sim))
     
     projection(sim$LCC2005) <- projection(sim$biomassMap)
@@ -463,7 +463,7 @@ Save <- function(sim) {
                              destinationPath = dPath,
                              studyArea = sim$shpStudyRegionFull,
                              fun = "raster::shapefile",
-                             filename2 TRUE,
+                             filename2 = TRUE,
                              userTags = cacheTags)
   }
   
@@ -476,7 +476,7 @@ Save <- function(sim) {
                            destinationPath = dPath,
                            studyArea = sim$shpStudyRegionFull,
                            fun = "raster::shapefile",
-                           filename2 TRUE,
+                           filename2 = TRUE,
                            userTags = cacheTags)
   }
   
@@ -489,7 +489,7 @@ Save <- function(sim) {
                          destinationPath = dPath,
                          studyArea = sim$shpStudyRegionFull,
                          fun = "raster::shapefile",
-                         filename2 TRUE,
+                         filename2 = TRUE,
                          userTags = cacheTags)
   }
   
@@ -506,7 +506,7 @@ Save <- function(sim) {
                              rasterToMatch = sim$biomassMap,
                              method = "bilinear",
                              datatype = "INT2U",
-                             filename2 TRUE,
+                             filename2 = TRUE,
                              userTags = c("stable", currentModule(sim)))
   }
   
