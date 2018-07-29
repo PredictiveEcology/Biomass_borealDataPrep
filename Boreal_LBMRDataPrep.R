@@ -416,7 +416,7 @@ Save <- function(sim) {
   }
   
   if (!identical(P(sim)$crsUsed, crs(sim$shpStudySubRegion))) {
-    shpStudySubRegion <- spTransform(sim$shpStudySubRegion, P(sim)$crsUsed) #faster without Cache
+    sim$shpStudySubRegion <- spTransform(sim$shpStudySubRegion, P(sim)$crsUsed) #faster without Cache
   }
   
   cacheTags = c(currentModule(sim), "function:.inputObjects", "function:spades")
