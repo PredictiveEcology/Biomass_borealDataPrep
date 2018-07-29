@@ -402,7 +402,7 @@ Save <- function(sim) {
     
     ## use CRS of biomassMap
     sim$shpStudyRegionFull <- spTransform(sim$shpStudyRegionFull,
-                                          CRSobj = "+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
+                                          CRSobj = P(sim)$crsUsed)
     
   }
   
@@ -429,6 +429,7 @@ Save <- function(sim) {
                             url = extractURL("biomassMap"), 
                             destinationPath = dPath,
                             studyArea = sim$shpStudySubRegion,
+                            useSAcrs = TRUE,
                             method = "bilinear",
                             datatype = "INT2U",
                             filename2 = TRUE,
@@ -462,6 +463,7 @@ Save <- function(sim) {
                              alsoExtract = ecodistrictAE,
                              destinationPath = dPath,
                              studyArea = sim$shpStudyRegionFull,
+                             useSAcrs = TRUE,
                              fun = "raster::shapefile",
                              filename2 = TRUE,
                              userTags = cacheTags)
@@ -475,6 +477,7 @@ Save <- function(sim) {
                            url = extractURL("ecoRegion"),
                            destinationPath = dPath,
                            studyArea = sim$shpStudyRegionFull,
+                           useSAcrs = TRUE,
                            fun = "raster::shapefile",
                            filename2 = TRUE,
                            userTags = cacheTags)
@@ -488,6 +491,7 @@ Save <- function(sim) {
                          alsoExtract = ecozoneAE,
                          destinationPath = dPath,
                          studyArea = sim$shpStudyRegionFull,
+                         useSAcrs = TRUE,
                          fun = "raster::shapefile",
                          filename2 = TRUE,
                          userTags = cacheTags)
