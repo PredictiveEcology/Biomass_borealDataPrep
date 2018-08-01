@@ -269,8 +269,9 @@ estimateParameters <- function(sim) {
                            "resproutage_max", "postfireregen", "leaflongevity", "wooddecayrate",
                            "mortalityshape", "growthcurve", "leafLignin", "hardsoft")
   speciesTable[, ':='(Area = NULL, hardsoft = NULL)]
-  speciesTable$species1 <- as.character(substring(speciesTable$species, 1, 4))
-  speciesTable$species2 <- as.character(substring(speciesTable$species, 6, nchar(speciesTable$species)))
+  species_char <- as.character(speciesTable$species)
+  speciesTable$species1 <- substring(species_char, 1, 4)
+  speciesTable$species2 <- substring(species_char, 6, nchar(species_char))
   speciesTable[, ':='(species = paste(as.character(substring(species1, 1, 1)),
                                       tolower(as.character(substring(species1, 2, nchar(species1)))),
                                       "_", as.character(substring(species2, 1, 1)),
