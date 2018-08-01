@@ -160,10 +160,10 @@ estimateParameters <- function(sim) {
     stop("Sometimes LCC2005 is not correctly in the sim. This may be due to an incorrect recovery",
          " of the LCC2005 from a module. Find which module created the LCC2005 that should be used",
          " here, and clear the event or module cache that created it. If the LCC2005 was made ",
-         "in the init event of landWebDataPrep module, then try ",
-         "something like: reproducible::clearCache(userTags = c('landWebDataPrep', 'init'), x = 'cache/SMALL_All')")
+         "in the init event of LandWebDataPrep module, then try ",
+         "something like: reproducible::clearCache(userTags = c('LandWebDataPrep', 'init'), x = 'cache/SMALL_All')")
   }
-  
+
   simulationMaps <- Cache(nonActiveEcoregionProducer, nonactiveRaster = sim$LCC2005,
                           activeStatus = activeStatusTable,
                           ecoregionMap = ecoregionFiles$ecoregionMap,
@@ -270,8 +270,9 @@ estimateParameters <- function(sim) {
                            "resproutage_max", "postfireregen", "leaflongevity", "wooddecayrate",
                            "mortalityshape", "growthcurve", "leafLignin", "hardsoft")
   speciesTable[, ':='(Area = NULL, hardsoft = NULL)]
-  speciesTable$species1 <- as.character(substring(speciesTable$species, 1, 4))
-  speciesTable$species2 <- as.character(substring(speciesTable$species, 6, nchar(speciesTable$species)))
+  species_char <- as.character(speciesTable$species)
+  speciesTable$species1 <- substring(species_char, 1, 4)
+  speciesTable$species2 <- substring(species_char, 6, nchar(species_char))
   speciesTable[, ':='(species = paste(as.character(substring(species1, 1, 1)),
                                       tolower(as.character(substring(species1, 2, nchar(species1)))),
                                       "_", as.character(substring(species2, 1, 1)),
@@ -476,7 +477,7 @@ Save <- function(sim) {
                              filename2 = TRUE,
                              userTags = c("stable", currentModule(sim)))
   }
-  
+
   if (!suppliedElsewhere("specieslayers", sim)) {
     sim$specieslayers <- Cache(loadAllSpeciesLayers,
                                url = extractURL("specieslayers"),
@@ -489,7 +490,7 @@ Save <- function(sim) {
   }
 
   # 3. species maps
-  sim$speciesTable <- Cache(prepInputs, "speciesTraits.csv", 
+  sim$speciesTable <- Cache(prepInputs, "speciesTraits.csv",
                                  url = extractURL("speciesTable"),
                                  destinationPath = dPath,
                                  fun = "utils::read.csv", header = TRUE, stringsAsFactors = FALSE) %>%
@@ -535,7 +536,8 @@ Save <- function(sim) {
     } else {
       names(sim$shpStudyRegionFull[1])
     }
-    
+
+
     fasterizeFromSp <- function(sp, raster, fieldName) {
       sfObj <- sf::st_as_sf(sp)
   
