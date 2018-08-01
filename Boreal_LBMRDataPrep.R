@@ -118,6 +118,7 @@ doEvent.Boreal_LBMRDataPrep = function(sim, eventTime, eventType, debug = FALSE)
 estimateParameters <- function(sim) {
   # # ! ----- EDIT BELOW ----- ! #
   cpath <- cachePath(sim)
+  
   sim$studyArea <- spTransform(sim$studyArea, crs(sim$specieslayers))
   sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$specieslayers))
   sim$ecoRegion <- spTransform(sim$ecoRegion, crs(sim$specieslayers))
@@ -386,8 +387,10 @@ Save <- function(sim) {
   cacheTags = c(currentModule(sim), "function:.inputObjects", "function:spades")
 
   if (!suppliedElsewhere("biomassMap", sim)) {
+    
     sim$biomassMap <- Cache(prepInputs,
                             url = extractURL("biomassMap"),
+                            alsoExtract = NA,
                             targetFile = biomassMapFilename,
                             archive = asPath(c("kNN-StructureBiomass.tar",
                                                "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
@@ -526,18 +529,26 @@ Save <- function(sim) {
       }
       sim$shpStudyRegionFull <- SpatialPolygonsDataFrame(sim$shpStudyRegionFull, data = dfData)
     }
+    
     fieldName <- if ("LTHRC" %in% names(sim$shpStudyRegionFull)) {
       "LTHRC"
     } else {
-      names(sim$shpStudyRegionFull)[1]
+      names(sim$shpStudyRegionFull[1])
     }
     
-                
     fasterizeFromSp <- function(sp, raster, fieldName) {
       sfObj <- sf::st_as_sf(sp)
+  
       if (!any( fieldName %in% colnames(sfObj))) {
         fieldName <- colnames(sfObj)[1]
-      }
+        }
+     
+      if (!class(attributes(sfObj)$agr[1]) == "numeric"){
+        
+        a <- paste("sfObj$", fieldName," <- as.numeric(as.factor(sfObj$", fieldName,"))", sep = "")
+        eval(parse(text = a))
+        }
+      
       fasterize::fasterize(sfObj, raster, field = fieldName)
     }
     sim$rstStudyRegion <- crop(fasterizeFromSp(sim$shpStudyRegionFull, sim$biomassMap, fieldName),

@@ -28,7 +28,7 @@ if (packageVersion("SpaDES") < "2.0.0")
   install.packages("SpaDES") # prepInputs with alsoExtract argument
 
 # The most recent version of reproducible package is necessary -- check if reproducible is at least 0.2.0.9002 on your system. 
-if (packageVersion("reproducible") < "0.2.0.9002") 
+if (packageVersion("reproducible") < "0.2.1") 
   devtools::install_github("PredictiveEcology/reproducible@development", dependencies = FALSE) # uses version of prepInputs that is still in development branch only
 if (packageVersion("SpaDES.core") < "0.2.0.9000") 
   devtools::install_github("PredictiveEcology/SpaDES.core@development", dependencies = FALSE) # uses extractURL that is still in development branch only
@@ -108,7 +108,7 @@ mySim <- simInit(times = times, params = parameters, modules = modules,
 This module is about data preparation, so there is no stochastic elements. The `spades` call will only cause one event to occur (the `init' event)
 
 ```{r run-spades}
-simOut <- spades(mySim)
+simOut <- spades(mySim, debug = TRUE)
 
 ```
 
