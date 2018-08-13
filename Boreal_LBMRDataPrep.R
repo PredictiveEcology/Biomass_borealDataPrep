@@ -257,7 +257,6 @@ estimateParameters <- function(sim) {
                                      as.integer(simulationMaps$initialCommunityMap[]),
                                      file.path(outputPath(sim), "initialCommunitiesMap.tif"),
                                      userTags = "stable")
-
   .gc()
 
   message("9: ", Sys.time())
@@ -488,9 +487,10 @@ Save <- function(sim) {
 
   # 3. species maps
   sim$speciesTable <- Cache(prepInputs, "speciesTraits.csv",
-                                 url = extractURL("speciesTable"),
-                                 destinationPath = dPath,
-                                 fun = "utils::read.csv", header = TRUE, stringsAsFactors = FALSE) %>%
+                            url = extractURL("speciesTable"),
+                            destinationPath = dPath,
+                            fun = "utils::read.csv", header = TRUE,
+                            stringsAsFactors = FALSE) %>%
     data.table()
 
   sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
