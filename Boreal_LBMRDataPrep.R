@@ -516,7 +516,7 @@ Save <- function(sim) {
   
   if (!suppliedElsewhere("speciesList", sim)) {
     ## default to 6 species, one changing name, and two merged into one
-    sim$speciesList <- as.matrix(data.frame(speciesnamesRaw = c("Abie_Las", "Pice_Gla", "Pice_Mar", "Pinu_Ban", "Pinu_Con", "Popu_Tre"),
+    sim$speciesList <- as.matrix(data.frame(speciesNamesRaw = c("Abie_Las", "Pice_Gla", "Pice_Mar", "Pinu_Ban", "Pinu_Con", "Popu_Tre"),
                                             speciesNamesEnd =  c("Abie_sp", "Pice_gla", "Pice_mar", "Pinu_sp", "Pinu_sp", "Popu_tre")))
   }
   
