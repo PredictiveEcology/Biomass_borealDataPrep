@@ -16,7 +16,7 @@ defineModule(sim, list(
   reqdPkgs = list("data.table", "dplyr", "gdalUtils", "raster", "rgeos", "ecohealthalliance/fasterize",
                   "PredictiveEcology/SpaDES.core@development",
                   "PredictiveEcology/SpaDES.tools@development",
-                  "CeresBarros/reproducible@development",
+                  "PredictiveEcology/reproducible@development",
                   "ygc2l/webDatabases"),
   parameters = rbind(
     #defineParameter("paramName", "paramClass", value, min, max, "parameter description")),
@@ -102,7 +102,7 @@ defineModule(sim, list(
 ## event types
 #   - type `init` is required for initialiazation
 
-doEvent.Boreal_LBMRDataPrep = function(sim, eventTime, eventType, debug = FALSE) {
+doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE) {
   if (eventType == "init") {
     sim <- estimateParameters(sim)
     
@@ -140,7 +140,7 @@ estimateParameters <- function(sim) {
   message("2: ", Sys.time())
   initialCommFiles <- Cache(initialCommunityProducer,
                             speciesLayers = sim$specieslayers,
-                            speciesPresence = 0,
+                            speciesPresence = 50,
                             studyArea = sim$studyArea,
                             rstStudyArea = rstStudyRegionBinary,
                             userTags = "stable")
@@ -349,7 +349,7 @@ Save <- function(sim) {
 
 ## see other helper functions in R/ subdirectory
 
-.inputObjects = function(sim) {
+.inputObjects <- function(sim) {
   # Any code written here will be run during the simInit for the purpose of creating
   # any objects required by this module and identified in the inputObjects element of defineModule.
   # This is useful if there is something required before simulation to produce the module
@@ -360,7 +360,7 @@ Save <- function(sim) {
   # Note: the module developer can use 'sim$.userSuppliedObjNames' in their function below to
   # selectively skip unnecessary steps because the user has provided those inputObjects in the
   # simInit call. e.g.,
-  # if(!('defaultColor' %in% sim$userSuppliedObjNames)) {
+  # if (!('defaultColor' %in% sim$userSuppliedObjNames)) {
   #  defaultColor <- 'red'
   # }
   # ! ----- EDIT BELOW ----- ! #
@@ -392,19 +392,11 @@ Save <- function(sim) {
   if (!suppliedElsewhere("shpStudyRegionFull", sim)) {
     message("'shpStudyRegionFull' was not provided by user. Using a polygon in Southwestern Alberta, Canada")
     
-    canadaMap <- Cache(getData, 'GADM', country = 'CAN', level = 1, path = asPath(dPath),
-                       cacheRepo = getPaths()$cachePath, quick = FALSE) 
-    smallPolygonCoords = list(coords = data.frame(x = c(-115.9022,-114.9815,-114.3677,-113.4470,-113.5084,-114.4291,-115.3498,-116.4547,-117.1298,-117.3140), 
-                                                  y = c(50.45516,50.45516,50.51654,50.51654,51.62139,52.72624,52.54210,52.48072,52.11243,51.25310)))
-    
-    sim$shpStudyRegionFull <- SpatialPolygons(list(Polygons(list(Polygon(smallPolygonCoords$coords)), ID = "swAB_polygon")),
-                                              proj4string = crs(canadaMap))
-    
-    ## use CRS of biomassMap
-    sim$shpStudyRegionFull <- spTransform(sim$shpStudyRegionFull,
-                                          CRSobj = P(sim)$.crsUsed)
-    
+    polyCenter <- SpatialPoints(coords = data.frame(x = c(-1349980),y = c(6986895)),
+                                proj4string = crs(P(sim)$.crsUsed))
+    sim$shpStudyRegionFull <- SpaDES.tools::randomPolygon(x = polyCenter, hectares = 10000)
   }
+  
   
   if (!suppliedElsewhere("shpStudySubRegion", sim)) {
     message("'shpStudySubRegion' was not provided by user. Using the same as 'shpStudyRegionFull'")
@@ -429,7 +421,7 @@ Save <- function(sim) {
                             url = extractURL("biomassMap"), 
                             destinationPath = dPath,
                             studyArea = sim$shpStudySubRegion,
-                            useSAcrs = TRUE,
+                            # useSAcrs = TRUE,
                             method = "bilinear",
                             datatype = "INT2U",
                             filename2 = TRUE,
@@ -463,7 +455,7 @@ Save <- function(sim) {
                              alsoExtract = ecodistrictAE,
                              destinationPath = dPath,
                              studyArea = sim$shpStudyRegionFull,
-                             useSAcrs = TRUE,
+                             # useSAcrs = TRUE,
                              fun = "raster::shapefile",
                              filename2 = TRUE,
                              userTags = cacheTags)
@@ -477,7 +469,7 @@ Save <- function(sim) {
                            url = extractURL("ecoRegion"),
                            destinationPath = dPath,
                            studyArea = sim$shpStudyRegionFull,
-                           useSAcrs = TRUE,
+                           # useSAcrs = TRUE,
                            fun = "raster::shapefile",
                            filename2 = TRUE,
                            userTags = cacheTags)
@@ -491,7 +483,7 @@ Save <- function(sim) {
                          alsoExtract = ecozoneAE,
                          destinationPath = dPath,
                          studyArea = sim$shpStudyRegionFull,
-                         useSAcrs = TRUE,
+                         # useSAcrs = TRUE,
                          fun = "raster::shapefile",
                          filename2 = TRUE,
                          userTags = cacheTags)
@@ -526,7 +518,7 @@ Save <- function(sim) {
                                rasterToMatch = sim$biomassMap, 
                                studyArea = sim$shpStudyRegionFull,
                                speciesList = sim$speciesList,
-                               thresh = 10,
+                               # thresh = 10,
                                url = extractURL("specieslayers"),
                                cachePath = cachePath(sim),
                                userTags = c(cacheTags, "specieslayers"))
@@ -570,10 +562,19 @@ Save <- function(sim) {
   if (needRstSR) {
     message("  Rasterizing the shpStudyRegionFull polygon map")
     
+    if (!is(sim$shpStudyRegionFull, "SpatialPolygonsDataFrame")) {
+      dfData <- if (is.null(rownames(sim$shpStudyRegionFull))) {
+        data.frame("field" = as.character(seq_along(length(sim$shpStudyRegionFull))))
+      } else {
+        data.frame("field" = rownames(sim$shpStudyRegionFull))
+      }
+      sim$shpStudyRegionFull <- SpatialPolygonsDataFrame(sim$shpStudyRegionFull, data = dfData)
+    }
+    
     fieldName <- if ("LTHRC" %in% names(sim$shpStudyRegionFull)) {
       "LTHRC"
     } else {
-      if(length(names(sim$shpStudyRegionFull)) > 1) {   ## study region may be a simple polygon
+      if (length(names(sim$shpStudyRegionFull)) > 1) {   ## study region may be a simple polygon
         names(sim$shpStudyRegionFull)[1]
       } else NULL
     }
