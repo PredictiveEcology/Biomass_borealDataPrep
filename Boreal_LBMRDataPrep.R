@@ -268,8 +268,8 @@ estimateParameters <- function(sim) {
                            "seeddistance_eff", "seeddistance_max", "resproutprob", "resproutage_min",
                            "resproutage_max", "postfireregen", "leaflongevity", "wooddecayrate",
                            "mortalityshape", "growthcurve", "leafLignin", "hardsoft")
-  # speciesTable[, ':='(Area = NULL, hardsoft = NULL)]
-  speciesTable[, ':='(Area = NULL)]   ## hardsoft used in fire model
+  speciesTable[, ':='(Area = NULL, hardsoft = NULL)]
+  # speciesTable[, ':='(Area = NULL)]   ## hardsoft used in fire model
   speciesTable$species1 <- as.character(substring(speciesTable$species, 1, 4))
   speciesTable$species2 <- as.character(substring(speciesTable$species, 6, nchar(as.character(speciesTable$species))))
   speciesTable[, ':='(species = paste(as.character(substring(species1, 1, 1)),
