@@ -293,7 +293,7 @@ estimateParameters <- function(sim) {
     .[, lapply(.SD, function(x) if (is.numeric(x)) min(x, na.rm = TRUE) else x[1]), by = "species"]
 
   initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species)]
-  set(initialCommunities, , paste("age", 1:15, sep = ""), NA)
+  set(initialCommunities, NULL, paste("age", 1:15, sep = ""), NA)
   initialCommunities <- data.frame(initialCommunities)
   message("11: ", Sys.time())
 
@@ -310,8 +310,6 @@ estimateParameters <- function(sim) {
 
   sim$initialCommunities <- Cache(initialCommunitiesFn, initialCommunities, speciesTable,
                                   userTags = "stable")
-
-  # assign("species", speciesTable, envir = .GlobalEnv)
 
   sim$species <- speciesTable
   sim$minRelativeB <- data.frame(ecoregion = sim$ecoregion[active == "yes",]$ecoregion,
@@ -532,7 +530,6 @@ Save <- function(sim) {
     } else {
       names(sim$shpStudyRegionFull)[1]
     }
-
 
     fasterizeFromSp <- function(sp, raster, fieldName) {
       sfObj <- sf::st_as_sf(sp)
