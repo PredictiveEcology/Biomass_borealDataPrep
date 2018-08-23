@@ -276,14 +276,11 @@ estimateParameters <- function(sim) {
                                       "_", as.character(substring(species2, 1, 1)),
                                       tolower(as.character(substring(species2, 2, nchar(species2)))),
                                       sep = ""))]
-  speciesTable[species == "Pinu_Con.lat", species := "Pinu_Con"]
 
-  newNames <- toSentenceCase(speciesTable$species)
-
-  speciesTable$species <- newNames
+  speciesTable$species <- toSentenceCase(speciesTable$species)
 
   speciesTable[species %in% c("Abie_las", "Abie_bal"), species := "Abie_sp"]
-  speciesTable[species %in% c("Pinu_ban", "Pinu_con", "Pinu_con.con"), species := "Pinu_sp"]
+  speciesTable[species %in% c("Pinu_ban", "Pinu_con", "Pinu_con.con", "Pinu_con.lat"), species := "Pinu_sp"]
 
   message("10: ", Sys.time())
 
