@@ -421,7 +421,6 @@ Save <- function(sim) {
   
   if (!suppliedElsewhere("biomassMap", sim)) {
     sim$biomassMap <- Cache(prepInputs,
-                            url = extractURL("biomassMap"),
                             targetFile = biomassMapFilename,
                             archive = asPath(c("kNN-StructureBiomass.tar",
                                                "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
@@ -440,7 +439,6 @@ Save <- function(sim) {
   # LCC2005
   if (!suppliedElsewhere("LCC2005", sim)) {
     sim$LCC2005 <- Cache(prepInputs,
-                         url = extractURL("LCC2005"),
                          targetFile = lcc2005Filename,
                          archive = asPath("LandCoverOfCanada2005_V1_4.zip"),
                          url = extractURL("LCC2005"),
@@ -457,7 +455,6 @@ Save <- function(sim) {
   
   if (!suppliedElsewhere("ecoDistrict", sim)) {
     sim$ecoDistrict <- Cache(prepInputs,
-                             url = extractURL("ecoDistrict"),
                              targetFile = asPath(ecodistrictFilename),
                              archive = asPath("ecodistrict_shp.zip"),
                              url = extractURL("ecoDistrict"),
@@ -472,7 +469,6 @@ Save <- function(sim) {
   
   if (!suppliedElsewhere("ecoRegion", sim)) {
     sim$ecoRegion <- Cache(prepInputs,
-                           url = extractURL("ecoRegion"),
                            targetFile = asPath(ecoregionFilename),
                            archive = asPath("ecoregion_shp.zip"),
                            alsoExtract = ecoregionAE,
@@ -486,8 +482,7 @@ Save <- function(sim) {
   }
   
   if (!suppliedElsewhere("ecoZone", sim)) {
-    sim$ecoZone <- Cache(prepInputs, #notOlderThan = Sys.time(),
-                         url = extractURL("ecoZone"),
+    sim$ecoZone <- Cache(prepInputs, #notOlderThan = Sys.time(),,
                          targetFile = asPath(ecozoneFilename),
                          archive = asPath("ecozone_shp.zip"),
                          url = extractURL("ecoZone"),
@@ -503,7 +498,6 @@ Save <- function(sim) {
   # stand age map
   if (!suppliedElsewhere("standAgeMap", sim)) {
     sim$standAgeMap <- Cache(prepInputs, #notOlderThan = Sys.time(),
-                             url = extractURL("standAgeMap"),
                              targetFile = standAgeMapFilename,
                              archive = asPath(c("kNN-StructureStandVolume.tar",
                                                 "NFI_MODIS250m_kNN_Structure_Stand_Age_v0.zip")),
