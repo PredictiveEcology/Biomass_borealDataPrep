@@ -7,13 +7,13 @@ defineModule(sim, list(
   authors = c(person(c("Yong", "Luo"), email = "yong.luo@canada.ca", role = c("aut", "cre")),
               person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@canada.ca", role = c("aut"))),
   childModules = character(0),
-  version = numeric_version("1.3.1"),
+  version = numeric_version("1.3.2"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
-  reqdPkgs = list("data.table", "dplyr", "gdalUtils", "raster", "rgeos", "ecohealthalliance/fasterize"),
+  reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos"),
   parameters = rbind(
     #defineParameter("paramName", "paramClass", value, min, max, "parameter description")),
     defineParameter(".plotInitialTime", "numeric", NA, NA, NA, "This describes the simulation time at which the first plot event should occur"),
@@ -170,7 +170,6 @@ estimateParameters <- function(sim) {
                           initialCommunityMap = initialCommFiles$initialCommunityMap,
                           initialCommunity = initialCommFiles$initialCommunity,
                           userTags = "stable")
-
   .gc()
 
   message("4: ", Sys.time())
@@ -180,7 +179,6 @@ estimateParameters <- function(sim) {
                                  SALayer = sim$standAgeMap,
                                  ecoregionMap = simulationMaps$ecoregionMap,
                                  userTags = "stable")
-
   .gc()
 
   message("5: ", Sys.time())
@@ -220,7 +218,6 @@ estimateParameters <- function(sim) {
     NON_NAdata <- rbind(NON_NAdata, biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)])
     NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass),.(ecoregion, species, maxBiomass, maxANPP, SEP)]
   }
-
   .gc()
 
   message("7: ", Sys.time())
@@ -237,7 +234,6 @@ estimateParameters <- function(sim) {
     NON_NAdata <- rbind(NON_NAdata, biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)])
     NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass),.(ecoregion, species, maxBiomass, maxANPP, SEP)]
   }
-
   .gc()
 
   message("8: ", Sys.time())
@@ -391,9 +387,7 @@ Save <- function(sim) {
                             method = "bilinear",
                             datatype = "INT2U",
                             filename2 = TRUE,
-                            userTags = c("stable", currentModule(sim)))#,
-    #dataset = "EOSD2000")
-
+                            userTags = c("stable", currentModule(sim)))
   }
 
   # LCC2005
