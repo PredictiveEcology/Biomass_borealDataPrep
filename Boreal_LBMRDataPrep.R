@@ -2,7 +2,7 @@
 # are put into the simList. To use objects and functions, use sim$xxx.
 defineModule(sim, list(
   name = "Boreal_LBMRDataPrep",
-  description = "A data preparation module for running the LBMR module in the LandWeb project",
+  description = "A data preparation module for parameterizing LBMR from open data sources, within the Boreal forest of Canada",
   keywords = c("LandWeb", "LBMR"),
   authors = c(person(c("Yong", "Luo"), email = "yong.luo@canada.ca", role = c("aut", "cre")),
               person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@canada.ca", role = c("aut"))),
@@ -164,6 +164,14 @@ estimateParameters <- function(sim) {
   activeStatusTable <- data.table(active = c(rep("yes", 15), rep("no", 25)),
                                   mapcode = 1:40)[mapcode %in% c(34, 35), active := "yes"]
   #simulationMaps <- sim$nonActiveEcoregionProducerCached(nonactiveRaster = sim$LCC2005,
+  if (!file.exists(filename(sim$LCC2005))) {
+    stop("Sometimes LCC2005 is not correctly in the sim. This may be due to an incorrect recovery",
+         " of the LCC2005 from a module. Find which module created the LCC2005 that should be used",
+         " here, and clear the event or module cache that created it. If the LCC2005 was made ",
+         "in the init event of LandWebDataPrep module, then try ",
+         "something like: reproducible::clearCache(userTags = c('LandWebDataPrep', 'init'), x = 'cache/SMALL_All')")
+  }
+
   simulationMaps <- Cache(nonActiveEcoregionProducer, nonactiveRaster = sim$LCC2005,
                           activeStatus = activeStatusTable,
                           ecoregionMap = ecoregionFiles$ecoregionMap,
@@ -307,7 +315,7 @@ estimateParameters <- function(sim) {
     .[, lapply(.SD, function(x) if (is.numeric(x)) min(x, na.rm = TRUE) else x[1]), by = "species"]
   
   initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species)]
-  set(initialCommunities, , paste("age", 1:15, sep = ""), NA)
+  set(initialCommunities, NULL, paste("age", 1:15, sep = ""), NA)
   initialCommunities <- data.frame(initialCommunities)
   message("11: ", Sys.time())
   
@@ -327,9 +335,7 @@ estimateParameters <- function(sim) {
   
   sim$initialCommunities <- Cache(initialCommunitiesFn, initialCommunities, speciesTable,
                                   userTags = "stable")
-  
-  # assign("species", speciesTable, envir = .GlobalEnv)
-  
+
   sim$species <- speciesTable
   sim$minRelativeB <- data.frame(ecoregion = sim$ecoregion[active == "yes",]$ecoregion,
                                  X1 = 0.2, X2 = 0.4, X3 = 0.5,
@@ -415,6 +421,7 @@ Save <- function(sim) {
   
   if (!suppliedElsewhere("biomassMap", sim)) {
     sim$biomassMap <- Cache(prepInputs,
+                            url = extractURL("biomassMap"),
                             targetFile = biomassMapFilename,
                             archive = asPath(c("kNN-StructureBiomass.tar",
                                                "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
@@ -433,6 +440,7 @@ Save <- function(sim) {
   # LCC2005
   if (!suppliedElsewhere("LCC2005", sim)) {
     sim$LCC2005 <- Cache(prepInputs,
+                         url = extractURL("LCC2005"),
                          targetFile = lcc2005Filename,
                          archive = asPath("LandCoverOfCanada2005_V1_4.zip"),
                          url = extractURL("LCC2005"),
@@ -449,6 +457,7 @@ Save <- function(sim) {
   
   if (!suppliedElsewhere("ecoDistrict", sim)) {
     sim$ecoDistrict <- Cache(prepInputs,
+                             url = extractURL("ecoDistrict"),
                              targetFile = asPath(ecodistrictFilename),
                              archive = asPath("ecodistrict_shp.zip"),
                              url = extractURL("ecoDistrict"),
@@ -463,6 +472,7 @@ Save <- function(sim) {
   
   if (!suppliedElsewhere("ecoRegion", sim)) {
     sim$ecoRegion <- Cache(prepInputs,
+                           url = extractURL("ecoRegion"),
                            targetFile = asPath(ecoregionFilename),
                            archive = asPath("ecoregion_shp.zip"),
                            alsoExtract = ecoregionAE,
@@ -477,6 +487,7 @@ Save <- function(sim) {
   
   if (!suppliedElsewhere("ecoZone", sim)) {
     sim$ecoZone <- Cache(prepInputs, #notOlderThan = Sys.time(),
+                         url = extractURL("ecoZone"),
                          targetFile = asPath(ecozoneFilename),
                          archive = asPath("ecozone_shp.zip"),
                          url = extractURL("ecoZone"),
@@ -492,6 +503,7 @@ Save <- function(sim) {
   # stand age map
   if (!suppliedElsewhere("standAgeMap", sim)) {
     sim$standAgeMap <- Cache(prepInputs, #notOlderThan = Sys.time(),
+                             url = extractURL("standAgeMap"),
                              targetFile = standAgeMapFilename,
                              archive = asPath(c("kNN-StructureStandVolume.tar",
                                                 "NFI_MODIS250m_kNN_Structure_Stand_Age_v0.zip")),
