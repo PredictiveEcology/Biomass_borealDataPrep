@@ -171,7 +171,7 @@ estimateParameters <- function(sim) {
          "in the init event of LandWebDataPrep module, then try ",
          "something like: reproducible::clearCache(userTags = c('LandWebDataPrep', 'init'), x = 'cache/SMALL_All')")
   }
-
+  
   simulationMaps <- Cache(nonActiveEcoregionProducer, nonactiveRaster = sim$LCC2005,
                           activeStatus = activeStatusTable,
                           ecoregionMap = ecoregionFiles$ecoregionMap,
@@ -335,7 +335,7 @@ estimateParameters <- function(sim) {
   
   sim$initialCommunities <- Cache(initialCommunitiesFn, initialCommunities, speciesTable,
                                   userTags = "stable")
-
+  
   sim$species <- speciesTable
   sim$minRelativeB <- data.frame(ecoregion = sim$ecoregion[active == "yes",]$ecoregion,
                                  X1 = 0.2, X2 = 0.4, X3 = 0.5,
@@ -482,7 +482,7 @@ Save <- function(sim) {
   }
   
   if (!suppliedElsewhere("ecoZone", sim)) {
-    sim$ecoZone <- Cache(prepInputs, #notOlderThan = Sys.time(),,
+    sim$ecoZone <- Cache(prepInputs, #notOlderThan = Sys.time(),
                          targetFile = asPath(ecozoneFilename),
                          archive = asPath("ecozone_shp.zip"),
                          url = extractURL("ecoZone"),
@@ -572,6 +572,7 @@ Save <- function(sim) {
         polyID <- sapply(slot(sim$shpStudyRegionFull, "polygons"), function(x) slot(x, "ID")) 
         data.frame("field" = as.character(seq_along(length(sim$shpStudyRegionFull))), row.names = polyID)
       } else {
+        polyID <- sapply(slot(sim$shpStudyRegionFull, "polygons"), function(x) slot(x, "ID")) 
         data.frame("field" = rownames(sim$shpStudyRegionFull), row.names = polyID)
       }
       sim$shpStudyRegionFull <- SpatialPolygonsDataFrame(sim$shpStudyRegionFull, data = dfData)
