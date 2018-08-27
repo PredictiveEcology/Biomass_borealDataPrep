@@ -7,13 +7,13 @@ defineModule(sim, list(
   authors = c(person(c("Yong", "Luo"), email = "yong.luo@canada.ca", role = c("aut", "cre")),
               person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@canada.ca", role = c("aut"))),
   childModules = character(0),
-  version = numeric_version("1.3.1"),
+  version = numeric_version("1.3.2"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
-  reqdPkgs = list("data.table", "dplyr", "gdalUtils", "raster", "rgeos", "ecohealthalliance/fasterize"),
+  reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos"),
   parameters = rbind(
     #defineParameter("paramName", "paramClass", value, min, max, "parameter description")),
     defineParameter(".plotInitialTime", "numeric", NA, NA, NA, "This describes the simulation time at which the first plot event should occur"),
@@ -93,7 +93,7 @@ defineModule(sim, list(
 ## event types
 #   - type `init` is required for initialiazation
 
-doEvent.Boreal_LBMRDataPrep = function(sim, eventTime, eventType, debug = FALSE) {
+doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE) {
   if (eventType == "init") {
     sim <- estimateParameters(sim)
 
@@ -171,7 +171,6 @@ estimateParameters <- function(sim) {
                           initialCommunityMap = initialCommFiles$initialCommunityMap,
                           initialCommunity = initialCommFiles$initialCommunity,
                           userTags = "stable")
-
   .gc()
 
   message("4: ", Sys.time())
@@ -181,7 +180,6 @@ estimateParameters <- function(sim) {
                                  SALayer = sim$standAgeMap,
                                  ecoregionMap = simulationMaps$ecoregionMap,
                                  userTags = "stable")
-
   .gc()
 
   message("5: ", Sys.time())
@@ -221,7 +219,6 @@ estimateParameters <- function(sim) {
     NON_NAdata <- rbind(NON_NAdata, biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)])
     NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass),.(ecoregion, species, maxBiomass, maxANPP, SEP)]
   }
-
   .gc()
 
   message("7: ", Sys.time())
@@ -238,7 +235,6 @@ estimateParameters <- function(sim) {
     NON_NAdata <- rbind(NON_NAdata, biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)])
     NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass),.(ecoregion, species, maxBiomass, maxANPP, SEP)]
   }
-
   .gc()
 
   message("8: ", Sys.time())
@@ -258,7 +254,6 @@ estimateParameters <- function(sim) {
                                      as.integer(simulationMaps$initialCommunityMap[]),
                                      file.path(outputPath(sim), "initialCommunitiesMap.tif"),
                                      userTags = "stable")
-
   .gc()
 
   message("9: ", Sys.time())
@@ -278,14 +273,11 @@ estimateParameters <- function(sim) {
                                       "_", as.character(substring(species2, 1, 1)),
                                       tolower(as.character(substring(species2, 2, nchar(species2)))),
                                       sep = ""))]
-  speciesTable[species == "Pinu_Con.lat", species := "Pinu_Con"]
 
-  newNames <- toSentenceCase(speciesTable$species)
-
-  speciesTable$species <- newNames
+  speciesTable$species <- toSentenceCase(speciesTable$species)
 
   speciesTable[species %in% c("Abie_las", "Abie_bal"), species := "Abie_sp"]
-  speciesTable[species %in% c("Pinu_ban", "Pinu_con", "Pinu_con.con"), species := "Pinu_sp"]
+  speciesTable[species %in% c("Pinu_ban", "Pinu_con", "Pinu_con.con", "Pinu_con.lat"), species := "Pinu_sp"]
 
   message("10: ", Sys.time())
 
@@ -295,7 +287,7 @@ estimateParameters <- function(sim) {
     .[, lapply(.SD, function(x) if (is.numeric(x)) min(x, na.rm = TRUE) else x[1]), by = "species"]
 
   initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species)]
-  set(initialCommunities, , paste("age", 1:15, sep = ""), NA)
+  set(initialCommunities, NULL, paste("age", 1:15, sep = ""), NA)
   initialCommunities <- data.frame(initialCommunities)
   message("11: ", Sys.time())
 
@@ -312,8 +304,6 @@ estimateParameters <- function(sim) {
 
   sim$initialCommunities <- Cache(initialCommunitiesFn, initialCommunities, speciesTable,
                                   userTags = "stable")
-
-  # assign("species", speciesTable, envir = .GlobalEnv)
 
   sim$species <- speciesTable
   sim$minRelativeB <- data.frame(ecoregion = sim$ecoregion[active == "yes",]$ecoregion,
@@ -334,7 +324,7 @@ Save <- function(sim) {
 
 ## see other helper functions in R/ subdirectory
 
-.inputObjects = function(sim) {
+.inputObjects <- function(sim) {
   # Any code written here will be run during the simInit for the purpose of creating
   # any objects required by this module and identified in the inputObjects element of defineModule.
   # This is useful if there is something required before simulation to produce the module
@@ -400,9 +390,7 @@ Save <- function(sim) {
                             method = "bilinear",
                             datatype = "INT2U",
                             filename2 = TRUE,
-                            userTags = c("stable", currentModule(sim)))#,
-    #dataset = "EOSD2000")
-
+                            userTags = c("stable", currentModule(sim)))
   }
 
   # LCC2005
@@ -491,9 +479,10 @@ Save <- function(sim) {
 
   # 3. species maps
   sim$speciesTable <- Cache(prepInputs, "speciesTraits.csv",
-                                 url = extractURL("speciesTable"),
-                                 destinationPath = dPath,
-                                 fun = "utils::read.csv", header = TRUE, stringsAsFactors = FALSE) %>%
+                            url = extractURL("speciesTable"),
+                            destinationPath = dPath,
+                            fun = "utils::read.csv", header = TRUE,
+                            stringsAsFactors = FALSE) %>%
     data.table()
 
   sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
@@ -537,7 +526,6 @@ Save <- function(sim) {
       names(sim$shpStudyRegionFull[1])
     }
 
-
     fasterizeFromSp <- function(sp, raster, fieldName) {
       sfObj <- sf::st_as_sf(sp)
   
@@ -555,8 +543,9 @@ Save <- function(sim) {
     }
     sim$rstStudyRegion <- crop(fasterizeFromSp(sim$shpStudyRegionFull, sim$biomassMap, fieldName),
                                sim$shpStudyRegionFull)
-    sim$rstStudyRegion <- Cache(writeRaster, sim$rstStudyRegion, filename = file.path(dataPath(sim), "rstStudyRegion.tif"),
-                                          datatype = "INT2U", overwrite = TRUE)
+    sim$rstStudyRegion <- Cache(writeRaster, sim$rstStudyRegion,
+                                filename = file.path(dataPath(sim), "rstStudyRegion.tif"),
+                                datatype = "INT2U", overwrite = TRUE)
 
   }
 
