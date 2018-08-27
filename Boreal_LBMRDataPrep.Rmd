@@ -66,38 +66,45 @@ paths <- getPaths()
 
 ```{r get-study-area}
 library(raster)
-canadaMap <- Cache(getData, "GADM", country = "CAN", level = 1, path = "inputs",
-                   cacheRepo = cachePath) 
-dev()
-clearPlot()
-# Plot(canadaMap, speedup = 5, visualSqueeze = 0.9) # 5 seemed optimal
-# if (!exists("shpStudyRegionFull")) {
-#   message("Since there is no object called 'shpStudyRegionFull', please draw a study area with 10 points")
-#   severalrandompoints <- Cache(clickCoordinates, 10, cacheRepo = cachePath)
-#   shpStudyRegionFull <- SpatialPolygons(list(
-#     Polygons(list(Polygon(severalrandompoints$coords)), ID = 1)
-#   ), proj4string = crs(canadaMap))
-# }
-# Plot(shpStudyRegionFull, addTo = "canadaMap", col = "red")
+cachePath <- file.path("Boreal_LBMRDataPrep", "cache")
+modulePath <- Cache(readline, paste0("Where is the module path? (e.g., ~/module, with no quotes).\n",
+                                     "Press Enter to accept the path in getPaths()$modulePath: "),
+                    cacheRepo = cachePath)
+setPaths(cachePath = cachePath, modulePath = modulePath)
+
+## do you want to hand-draw a map or use defaults?
+# - note that large areas will take longer to compute
+handDrawMap <- FALSE
+
+if(handDrawMap) {
+  dev()
+  clearPlot()
+  canadaMap <- Cache(getData, 'GADM', country = 'CAN', level = 1, path = "data/",
+                     cacheRepo = getPaths()$cachePath, quick = FALSE)
+  LIM_SA <- shapefile("../LandscapesInMotion/data/maps/Foothills_study_area.shp")
+  Plot(canadaMap, speedup = 5, visualSqueeze = 0.9) # 5 seemed optimal
+  Plot(LIM_SA, addTo = "canadaMap", col = "green")
+  
+  ## hand-drawn study area
+  if(!exists("shpStudyRegionFull")) {
+    message("Since there is no object called 'shpStudyRegionFull', please draw a study area with 10 points")
+    severalrandompoints <- clickCoordinates(10)
+    if(startsWith(attr(severalrandompoints, "tags"), "cache")) message("Taking shpStudyRegionFull from Cache")
+    shpStudyRegionFull <- SpatialPolygons(list(Polygons(list(Polygon(severalrandompoints$coords)), ID = 1)),
+                                          proj4string = crs(canadaMap))
+  }
+}
+Plot(shpStudyRegionFull, addTo = "canadaMap", col = "red")
+
+times <- list(start = 0, end = 10)
+modules <- list("Boreal_LBMRDataPrep")
+objects <- if(handDrawMap) list("shpStudyRegionFull" = shpStudyRegionFull,
+                                "shpStudySubRegion" = shpStudyRegionFull) else list()
 
 ```
 
-# Run SpaDES call
-
-```{r}
-times <- list(start = 0, end = 10)
-parameters <- list(
-  #.progress = list(type = "text", interval = 1), # for a progress bar
-  ## If there are further modules, each can have its own set of parameters:
-  #module1 = list(param1 = value1, param2 = value2),
-  #module2 = list(param1 = value1, param2 = value2)
-)
-modules <- list(moduleName)
-times <- list(start = 0, end = 10)
-objects <- list("shpStudyRegionFull" = shpStudyRegionFull,
-                "shpStudySubRegion" = shpStudyRegionFull) # There is the option of 2 scales for studyArea, here shpStudyRegionFull and shpStudySubRegion
 mySim <- simInit(times = times, params = parameters, modules = modules,
-                 objects = objects, paths = paths)
+                 objects = objects)
 
 ```
 

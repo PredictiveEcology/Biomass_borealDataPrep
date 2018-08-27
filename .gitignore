@@ -11,11 +11,5 @@
 ## misc OS files
 Thumbs.db
 
-## !! Module data should be gitignored in the respective module's data dir !!
-
-
-*.pdf
-
-data/LC_2005_Legend_39Classes\.pdf
-
-data/Canada_2005_metadata_v1_4\.doc
+## cache dir
+cache
