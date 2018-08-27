@@ -4,7 +4,7 @@ loadAllSpeciesLayers <- function(dataPath, biomassMap, shpStudyRegionFull, modul
   speciesnamesRaw <- c("Abie_Las", "Pice_Gla", "Pice_Mar", "Pinu_Ban", "Pinu_Con", "Popu_Tre")
   species1 <- list()
   a11 <- 1
-  suffix <- if (basename(cachePath) == "cache") paste0(as.character(ncell(biomassMap)),"px") else
+  suffix <- if (basename(cachePath) == "cache") paste0(as.character(ncell(biomassMap)), "px") else
     basename(cachePath)
   suffix <- paste0("_", suffix)
   for (sp in speciesnamesRaw) {
