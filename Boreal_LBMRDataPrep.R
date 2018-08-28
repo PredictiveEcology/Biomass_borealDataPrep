@@ -291,8 +291,14 @@ estimateParameters <- function(sim) {
     paste(x, collapse = "_")
   }) 
   
-  rownames(speciesList) <- sub("_spp", "_sp", rownames(speciesList))
+  ## replace eventual "spp" and "all" by sp (currently used instead of spp)
+  rownames(speciesList) <- sub("_spp*", "_sp", rownames(speciesList))
+  rownames(speciesList) <- sub("_all", "_sp", rownames(speciesList))
   
+  ## match rownames to speciesTable$species
+  rownames(speciesList) <- toSentenceCase(rownames(speciesList))  
+  
+  ## find matching names to replace in speciesTable 
   matchNames <- speciesTable[species %in% rownames(speciesList), species]
   speciesTable[species %in% rownames(speciesList), species := speciesList[matchNames,2]]
   
