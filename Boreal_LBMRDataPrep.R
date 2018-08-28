@@ -20,8 +20,7 @@ defineModule(sim, list(
                     NA, NA, "CRS to be used. Defaults to the biomassMap projection"),
     defineParameter(".plotInitialTime", "numeric", NA, NA, NA, "This describes the simulation time at which the first plot event should occur"),
     defineParameter(".plotInterval", "numeric", NA, NA, NA, "This describes the simulation time interval between plot events"),
-    defineParameter(ts
-                    ".saveInitialTime", "numeric", NA, NA, NA, "This describes the simulation time at which the first save event should occur"),
+    defineParameter(".saveInitialTime", "numeric", NA, NA, NA, "This describes the simulation time at which the first save event should occur"),
     defineParameter(".saveInterval", "numeric", NA, NA, NA, "This describes the simulation time interval between save events")
   ),
   inputObjects = bind_rows(
@@ -43,7 +42,7 @@ defineModule(sim, list(
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
     expectsInput(objectName = "speciesList", objectClass = c("character", "matrix"),
                  desc = "vector or matrix of species to select, provided by the user or BiomassSpeciesData. 
-                 If a matrix, should have two columns of raw and 'end' species names", sourceURL = NA),
+                 If a matrix, should have two columns of raw and 'end' species names. Note that 'sp' is used instead of 'spp'", sourceURL = NA),
     expectsInput(objectName = "specieslayers", objectClass = "RasterStack",
                  desc = "biomass percentage raster layers by species in Canada species map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
@@ -292,8 +291,14 @@ estimateParameters <- function(sim) {
     paste(x, collapse = "_")
   }) 
   
-  rownames(speciesList) <- sub("_spp", "_sp", rownames(speciesList))
+  ## replace eventual "spp" and "all" by sp (currently used instead of spp)
+  rownames(speciesList) <- sub("_spp*", "_sp", rownames(speciesList))
+  rownames(speciesList) <- sub("_all", "_sp", rownames(speciesList))
   
+  ## match rownames to speciesTable$species
+  rownames(speciesList) <- toSentenceCase(rownames(speciesList))  
+  
+  ## find matching names to replace in speciesTable 
   matchNames <- speciesTable[species %in% rownames(speciesList), species]
   speciesTable[species %in% rownames(speciesList), species := speciesList[matchNames,2]]
   
@@ -343,7 +348,6 @@ Save <- function(sim) {
   sim <- saveFiles(sim)
   return(invisible(sim))
 }
-
 .gc <- function() for (i in 1:10) gc() ## free memory if possible
 
 ## see other helper functions in R/ subdirectory
@@ -526,11 +530,12 @@ Save <- function(sim) {
   }
   
   # 3. species maps
-  sim$speciesTable <- prepInputs("speciesTraits.csv", 
-                                 destinationPath = dPath,
-                                 url = extractURL("speciesTable"),
-                                 fun = "utils::read.csv", 
-                                 header = TRUE, stringsAsFactors = FALSE) %>%
+  sim$speciesTable <- Cache(prepInputs, "speciesTraits.csv", 
+                            destinationPath = dPath,
+                            url = extractURL("speciesTable"),
+                            fun = "utils::read.csv", 
+                            header = TRUE, stringsAsFactors = FALSE,
+                            userTags = c(cacheTags, "speciesTable")) %>%
     data.table()
   
   sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
@@ -580,7 +585,7 @@ Save <- function(sim) {
     
     sim$rstStudyRegion <- crop(fasterizeFromSp(sim$shpStudyRegionFull, sim$biomassMap, fieldName),
                                sim$shpStudyRegionFull)
-    sim$rstStudyRegion <- Cache(writeRaster, sim$rstStudyRegion,
+    sim$rstStudyRegion <- Cache(writeRaster, sim$rstStudyRegion, 
                                 filename = file.path(dataPath(sim), "rstStudyRegion.tif"),
                                 datatype = "INT2U", overwrite = TRUE)
   }
