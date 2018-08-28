@@ -7,17 +7,13 @@ defineModule(sim, list(
   authors = c(person(c("Yong", "Luo"), email = "yong.luo@canada.ca", role = c("aut", "cre")),
               person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@canada.ca", role = c("aut"))),
   childModules = character(0),
-  version = numeric_version("1.3.1"),
+  version = numeric_version("1.3.2"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
-  reqdPkgs = list("data.table", "dplyr", "gdalUtils", "raster", "rgeos", "ecohealthalliance/fasterize",
-                  "PredictiveEcology/SpaDES.core@development",
-                  "PredictiveEcology/SpaDES.tools@development",
-                  "PredictiveEcology/reproducible@development",
-                  "PredictiveEcology/webDatabases"),
+  reqdPkgs = list("data.table", "dplyr", "gdalUtils", "raster", "rgeos"),
   parameters = rbind(
     #defineParameter("paramName", "paramClass", value, min, max, "parameter description")),
     defineParameter(".crsUsed", "character", "+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0",
@@ -46,7 +42,7 @@ defineModule(sim, list(
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
     expectsInput(objectName = "speciesList", objectClass = c("character", "matrix"),
                  desc = "vector or matrix of species to select, provided by the user or BiomassSpeciesData. 
-                 If a matrix, should have two columns of raw and 'end' species names", sourceURL = NA),
+                 If a matrix, should have two columns of raw and 'end' species names. Note that 'sp' is used instead of 'spp'", sourceURL = NA),
     expectsInput(objectName = "specieslayers", objectClass = "RasterStack",
                  desc = "biomass percentage raster layers by species in Canada species map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
@@ -188,7 +184,6 @@ estimateParameters <- function(sim) {
                                  SALayer = sim$standAgeMap,
                                  ecoregionMap = simulationMaps$ecoregionMap,
                                  userTags = "stable")
-  
   .gc()
   
   message("5: ", Sys.time())
@@ -228,7 +223,6 @@ estimateParameters <- function(sim) {
     NON_NAdata <- rbind(NON_NAdata, biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)])
     NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass),.(ecoregion, species, maxBiomass, maxANPP, SEP)]
   }
-  
   .gc()
   
   message("7: ", Sys.time())
@@ -245,7 +239,6 @@ estimateParameters <- function(sim) {
     NON_NAdata <- rbind(NON_NAdata, biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)])
     NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass),.(ecoregion, species, maxBiomass, maxANPP, SEP)]
   }
-  
   .gc()
   
   message("8: ", Sys.time())
@@ -265,7 +258,6 @@ estimateParameters <- function(sim) {
                                      as.integer(simulationMaps$initialCommunityMap[]),
                                      file.path(outputPath(sim), "initialCommunitiesMap.tif"),
                                      userTags = "stable")
-  
   .gc()
   
   message("9: ", Sys.time())
@@ -350,7 +342,6 @@ Save <- function(sim) {
   sim <- saveFiles(sim)
   return(invisible(sim))
 }
-
 .gc <- function() for (i in 1:10) gc() ## free memory if possible
 
 ## see other helper functions in R/ subdirectory
@@ -431,9 +422,7 @@ Save <- function(sim) {
                             method = "bilinear",
                             datatype = "INT2U",
                             filename2 = TRUE,
-                            userTags = c("stable", currentModule(sim)))#,
-    #dataset = "EOSD2000")
-    
+                            userTags = c("stable", currentModule(sim)))
   }
   
   # LCC2005
@@ -534,11 +523,12 @@ Save <- function(sim) {
   }
   
   # 3. species maps
-  sim$speciesTable <- prepInputs("speciesTraits.csv", 
-                                 destinationPath = dPath,
-                                 url = extractURL("speciesTable"),
-                                 fun = "utils::read.csv", 
-                                 header = TRUE, stringsAsFactors = FALSE) %>%
+  sim$speciesTable <- Cache(prepInputs, "speciesTraits.csv", 
+                            destinationPath = dPath,
+                            url = extractURL("speciesTable"),
+                            fun = "utils::read.csv", 
+                            header = TRUE, stringsAsFactors = FALSE,
+                            userTags = c(cacheTags, "speciesTable")) %>%
     data.table()
   
   sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
@@ -588,9 +578,9 @@ Save <- function(sim) {
     
     sim$rstStudyRegion <- crop(fasterizeFromSp(sim$shpStudyRegionFull, sim$biomassMap, fieldName),
                                sim$shpStudyRegionFull)
-    sim$rstStudyRegion <- Cache(writeRaster, sim$rstStudyRegion, filename = file.path(dataPath(sim), "rstStudyRegion.tif"),
+    sim$rstStudyRegion <- Cache(writeRaster, sim$rstStudyRegion, 
+                                filename = file.path(dataPath(sim), "rstStudyRegion.tif"),
                                 datatype = "INT2U", overwrite = TRUE)
-    
   }
   
   return(invisible(sim))
