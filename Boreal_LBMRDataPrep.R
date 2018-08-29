@@ -156,11 +156,13 @@ estimateParameters <- function(sim) {
                                   mapcode = 1:40)[mapcode %in% c(34, 35), active := "yes"]
   #simulationMaps <- sim$nonActiveEcoregionProducerCached(nonactiveRaster = sim$LCC2005,
   if (!file.exists(filename(sim$LCC2005))) {
-    stop("Sometimes LCC2005 is not correctly in the sim. This may be due to an incorrect recovery",
-         " of the LCC2005 from a module. Find which module created the LCC2005 that should be used",
-         " here, and clear the event or module cache that created it. If the LCC2005 was made ",
-         "in the init event of LandWebDataPrep module, then try ",
-         "something like: reproducible::clearCache(userTags = c('LandWebDataPrep', 'init'), x = 'cache/SMALL_All')")
+    stop("Sometimes LCC2005 is not correctly in the sim. ",
+         "This may be due to an incorrect recovery of the LCC2005 from a module. ",
+         "Find which module created the LCC2005 that should be used here, ",
+         "and clear the event or module cache that created it. ",
+         "If the LCC2005 was made in the init event of LandWeb_dataPrep module, ",
+         "then try something like:\n",
+         "reproducible::clearCache(userTags = c('LandWeb_dataPrep', 'init'), x = 'cache/SMALL_All')")
   }
 
   simulationMaps <- Cache(nonActiveEcoregionProducer, nonactiveRaster = sim$LCC2005,
