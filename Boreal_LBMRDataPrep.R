@@ -227,7 +227,7 @@ estimateParameters <- function(sim) {
                                   userTags = "stable")
     message("  6b obtainMaxBandANPPFormBiggerEcoArea: ", Sys.time())
     NON_NAdata <- rbind(NON_NAdata, biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)])
-    NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass),.(ecoregion, species, maxBiomass, maxANPP, SEP)]
+    NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)]
   }
   .gc()
 
@@ -250,7 +250,7 @@ estimateParameters <- function(sim) {
 
   message("8: ", Sys.time())
   NAdata[, `:=`(maxBiomass = 0, maxANPP = 0, SEP = 0)]
-  speciesEcoregion <- rbind(NON_NAdata,NAdata)
+  speciesEcoregion <- rbind(NON_NAdata, NAdata)
   setnames(speciesEcoregion, "ecoregion", "mapcode")
   speciesEcoregion <- setkey(speciesEcoregion,
                              mapcode)[setkey(simulationMaps$ecoregion, mapcode),
