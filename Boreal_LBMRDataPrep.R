@@ -171,7 +171,7 @@ estimateParameters <- function(sim) {
          "and clear the event or module cache that created it. ",
          "If the LCC2005 was made in the init event of LandWeb_dataPrep module, ",
          "then try something like:\n",
-         "reproducible::clearCache(userTags = c('LandWebDataPrep', 'init'), x = 'cache/SMALL_All')")
+         "reproducible::clearCache(userTags = c('LandWeb_dataPrep', 'init'), x = 'cache/SMALL_All')")
   }
 
   simulationMaps <- Cache(nonActiveEcoregionProducer, nonactiveRaster = sim$LCC2005,
