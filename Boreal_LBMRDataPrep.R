@@ -58,13 +58,13 @@ defineModule(sim, list(
                  sourceURL = "https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv"),
     expectsInput(objectName = "shpStudyRegionFull", objectClass = "SpatialPolygonsDataFrame",
                  desc = "this shape file contains two informaton: Full study area with fire return interval attribute",
-                 sourceURL = ""), # i guess this is study area and fire return interval
+                 sourceURL = NA), # i guess this is study area and fire return interval
     expectsInput(objectName = "shpStudySubRegion", objectClass = "SpatialPolygonsDataFrame",
                  desc = "this shape file contains two informaton: Sub study area with fire return interval attribute",
-                 sourceURL = ""), # i guess this is study area and fire return interval
+                 sourceURL = NA), # i guess this is study area and fire return interval
     expectsInput(objectName = "rstStudyRegion", objectClass = "RasterLayer",
                  desc = "this raster contains two pieces of informaton: Full study area with fire return interval attribute",
-                 sourceURL = ""), # i guess this is study area and fire return interval
+                 sourceURL = NA), # i guess this is study area and fire return interval
     expectsInput("sufficientLight", "data.frame",
                  desc = "define how the species with different shade tolerance respond to stand shadeness"),
     expectsInput("seedingAlgorithm", "character",
@@ -553,12 +553,14 @@ Save <- function(sim) {
 
   if (!suppliedElsewhere("seedingAlgorithm", sim))
     sim$seedingAlgorithm <- "wardDispersal"
+
   if (!suppliedElsewhere("successionTimestep", sim))
     sim$successionTimestep <- 10
 
   if (!suppliedElsewhere(sim$studyArea)) {
     sim$studyArea <- sim$shpStudyRegionFull
   }
+
   if (!suppliedElsewhere(sim$rstStudyRegion)) {
     needRstSR <- TRUE
   } else {
