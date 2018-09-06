@@ -28,74 +28,70 @@ defineModule(sim, list(
     defineParameter(".saveInterval", "numeric", NA, NA, NA, "This describes the simulation time interval between save events")
   ),
   inputObjects = bind_rows(
-    #expectsInput("objectName", "objectClass", "input object description", sourceURL, ...),
-    expectsInput(objectName = "ecoDistrict", objectClass = "SpatialPolygonsDataFrame",
-                 desc = "ecodistricts in study area, default is Canada national ecodistricts",
-                 sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip"),
-    expectsInput(objectName = "ecoRegion", objectClass = "SpatialPolygonsDataFrame",
-                 desc = "ecoregions in study area, default is Canada national ecoregions",
-                 sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/region/ecoregion_shp.zip"),
-    expectsInput(objectName = "ecoZone", objectClass = "SpatialPolygonsDataFrame",
-                 desc = "ecozones in study area, default is Canada national ecozones",
-                 sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/zone/ecozone_shp.zip"),
-    expectsInput(objectName = "biomassMap", objectClass = "RasterLayer",
+    expectsInput("biomassMap", "RasterLayer",
                  desc = "total biomass raster layer in study area, default is Canada national biomass map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureBiomass.tar"),
-    expectsInput(objectName = "standAgeMap", objectClass = "RasterLayer",
-                 desc = "stand age map in study area, default is Canada national stand age map",
-                 sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
-    expectsInput(objectName = "speciesList", objectClass = c("character", "matrix"),
-                 desc = "vector or matrix of species to select, provided by the user or BiomassSpeciesData.
-                 If a matrix, should have two columns of raw and 'end' species names. Note that 'sp' is used instead of 'spp'", sourceURL = NA),
-    expectsInput(objectName = "specieslayers", objectClass = "RasterStack",
-                 desc = "biomass percentage raster layers by species in Canada species map",
-                 sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
-    expectsInput(objectName = "LCC2005", objectClass = "RasterLayer",
+    expectsInput("ecoDistrict", "SpatialPolygonsDataFrame",
+                 desc = "ecodistricts in study area, default is Canada national ecodistricts",
+                 sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip"),
+    expectsInput("ecoRegion", "SpatialPolygonsDataFrame",
+                 desc = "ecoregions in study area, default is Canada national ecoregions",
+                 sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/region/ecoregion_shp.zip"),
+    expectsInput("ecoZone", "SpatialPolygonsDataFrame",
+                 desc = "ecozones in study area, default is Canada national ecozones",
+                 sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/zone/ecozone_shp.zip"),
+    expectsInput("LCC2005", "RasterLayer",
                  desc = "2005 land classification map in study area, default is Canada national land classification in 2005",
                  sourceURL = "ftp://ftp.ccrs.nrcan.gc.ca/ad/NLCCLandCover/LandcoverCanada2005_250m/LandCoverOfCanada2005_V1_4.zip"),
-    expectsInput(objectName = "speciesTable", objectClass = "data.table",
-                 desc = "species attributes table, default is from Dominic and Yan's project",
-                 sourceURL = "https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv"),
-    expectsInput(objectName = "shpStudyRegionFull", objectClass = "SpatialPolygonsDataFrame",
-                 desc = "this shape file contains two informaton: Full study area with fire return interval attribute",
-                 sourceURL = NA), # i guess this is study area and fire return interval
-    expectsInput(objectName = "shpStudySubRegion", objectClass = "SpatialPolygonsDataFrame",
-                 desc = "this shape file contains two informaton: Sub study area with fire return interval attribute",
-                 sourceURL = NA), # i guess this is study area and fire return interval
-    expectsInput(objectName = "rstStudyRegion", objectClass = "RasterLayer",
+    expectsInput("rstStudyRegion", "RasterLayer",
                  desc = "this raster contains two pieces of informaton: Full study area with fire return interval attribute",
                  sourceURL = NA), # i guess this is study area and fire return interval
-    expectsInput("sufficientLight", "data.frame",
-                 desc = "define how the species with different shade tolerance respond to stand shadeness"),
     expectsInput("seedingAlgorithm", "character",
                  desc = "choose which seeding algorithm will be used among noDispersal, universalDispersal,
                  and wardDispersal, default is wardDispersal"),
-    expectsInput(objectName = "studyArea", objectClass = "SpatialPolygons",
-                 desc = "study area",
-                 sourceURL = NA)
+    expectsInput("shpStudySubRegion", "SpatialPolygonsDataFrame",
+                 desc = "this shape file contains two informaton: Sub study area with fire return interval attribute",
+                 sourceURL = NA), # i guess this is study area and fire return interval
+    expectsInput("shpStudyRegionFull", "SpatialPolygonsDataFrame",
+                 desc = "this shape file contains two informaton: Full study area with fire return interval attribute",
+                 sourceURL = NA), # i guess this is study area and fire return interval
+    expectsInput("specieslayers", "RasterStack",
+                 desc = "biomass percentage raster layers by species in Canada species map",
+                 sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
+    expectsInput("speciesList", c("character", "matrix"),
+                 desc = "vector or matrix of species to select, provided by the user or BiomassSpeciesData.
+                 If a matrix, should have two columns of raw and 'end' species names. Note that 'sp' is used instead of 'spp'", sourceURL = NA),
+    expectsInput("speciesTable", "data.table",
+                 desc = "species attributes table, default is from Dominic and Yan's project",
+                 sourceURL = "https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv"),
+    expectsInput("standAgeMap", "RasterLayer",
+                 desc = "stand age map in study area, default is Canada national stand age map",
+                 sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
+    expectsInput("studyArea", "SpatialPolygons", desc = "study area", sourceURL = NA),
+    expectsInput("sufficientLight", "data.frame",
+                 desc = "define how the species with different shade tolerance respond to stand shadeness")
   ),
   outputObjects = bind_rows(
-    #createsOutput("objectName", "objectClass", "output object description", ...),
-    createsOutput(objectName = "initialCommunities", objectClass = "data.table",
-                  desc = "initial community table"),
-    createsOutput(objectName = "species", objectClass = "data.table",
-                  desc = "a table that has species traits such as longevity..."),
-    createsOutput(objectName = "ecoregionMap", objectClass = "RasterLayer",
-                  desc = "ecoregion map that has mapcodes match ecoregion table and speciesEcoregion table"),
-    createsOutput(objectName = "initialCommunitiesMap", objectClass = "RasterLayer",
-                  desc = "initial community map that has mapcodes match initial community table"),
-    createsOutput(objectName = "ecoregion", objectClass = "data.table",
+    createsOutput("ecoDistrict", "", desc = ""),
+    createsOutput("ecoRegion", "", desc = ""),
+    createsOutput("ecoregion", "data.table",
                   desc = "ecoregion look up table"),
-    createsOutput(objectName = "speciesEcoregion", objectClass = "data.table",
-                  desc = "define the maxANPP, maxB and SEP change with both ecoregion and simulation time"),
-    createsOutput(objectName = "minRelativeB", objectClass = "data.frame",
+    createsOutput("ecoregionMap", "RasterLayer",
+                  desc = "ecoregion map that has mapcodes match ecoregion table and speciesEcoregion table"),
+    createsOutput("ecoZone", "", desc = ""),
+    createsOutput("initialCommunities", "data.table",
+                  desc = "initial community table"),
+    createsOutput("initialCommunitiesMap", "RasterLayer",
+                  desc = "initial community map that has mapcodes match initial community table"),
+    createsOutput("minRelativeB", "data.frame",
                   desc = "define the cut points to classify stand shadeness"),
-    createsOutput(objectName = "useCache", objectClass = "logic",
-                  desc = "define which the caching for spinup simulation should be used, default is TRUE"),
-    createsOutput("studyArea", "", ""),
-    createsOutput("ecoDistrict", "", ""),
-    createsOutput("ecoRegion", "", ""),
-    createsOutput("ecoZone", "", "")
+    createsOutput("species", "data.table",
+                  desc = "a table that has species traits such as longevity..."),
+    createsOutput("speciesEcoregion", "data.table",
+                  desc = "define the maxANPP, maxB and SEP change with both ecoregion and simulation time"),
+    createsOutput("studyArea", "", desc = ""),
+    createsOutput("useCache", "logic",
+                  desc = "define which the caching for spinup simulation should be used, default is TRUE")
   )
 ))
 
@@ -564,6 +560,7 @@ Save <- function(sim) {
   if (!suppliedElsewhere(sim$rstStudyRegion)) {
     needRstSR <- TRUE
   } else {
+    browser()
     if (!identical(extent(sim$rstStudyRegion), extent(biomassMap))) {
       needRstSR <- TRUE
     } else {
