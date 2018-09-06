@@ -17,10 +17,9 @@ knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
 This module converts open datasets that are available for all of Canada's forests, into the input requirements for Land-R-Biomass, a forest landscape succession model derived from the Landis-II Biomass Succession Model. 
 This has been partially tested for some parts of the Western Boreal Forest. 
 
-Specifically, it takes the Eco* maps (Ecozone, Ecoprovince, Ecoregion) maps of Canada, and species specific biomass maps of Canada (from Beaudoin et al. 2014).
+Specifically, it takes the Eco\* maps (Ecozone, Ecoprovince, Ecoregion) maps of Canada, and species specific biomass maps of Canada (from Beaudoin *et al.* 2014).
 
 Keeping these data preparations outside of the core LBMR module maintains the modularity of LBMR.
-
 
 # Install packages, if necessary
 
@@ -40,12 +39,10 @@ if (packageVersion("SpaDES.core") < "0.2.0")
 ```{r load-libraries}
 library(magrittr) # for %>% pipe
 library(SpaDES)
-
 ```
 
 # Set up paths
 ```{r module_usage}
-
 moduleName <- "Boreal_LBMRDataPrep"
 spadesModulesDirectory <- "modules" # where the module will be downloaded
 
@@ -58,7 +55,6 @@ setPaths(cachePath = cachePath,
          inputPath = inputPath,
          outputPath = outputPath)
 paths <- getPaths()
-
 ```
 
 
@@ -76,7 +72,7 @@ setPaths(cachePath = cachePath, modulePath = modulePath)
 # - note that large areas will take longer to compute
 handDrawMap <- FALSE
 
-if(handDrawMap) {
+if (handDrawMap) {
   dev()
   clearPlot()
   canadaMap <- Cache(getData, 'GADM', country = 'CAN', level = 1, path = "data/",
@@ -98,19 +94,17 @@ Plot(shpStudyRegionFull, addTo = "canadaMap", col = "red")
 
 times <- list(start = 0, end = 10)
 modules <- list("Boreal_LBMRDataPrep")
-objects <- if(handDrawMap) list("shpStudyRegionFull" = shpStudyRegionFull,
-                                "shpStudySubRegion" = shpStudyRegionFull) else list()
-
-```
+objects <- if (handDrawMap) list("shpStudyRegionFull" = shpStudyRegionFull,
+                                 "shpStudySubRegion" = shpStudyRegionFull) else list()
 
 mySim <- simInit(times = times, params = parameters, modules = modules,
                  objects = objects)
-
 ```
 
 # Run `spades`
 
-This module is about data preparation, so there is no stochastic elements. The `spades` call will only cause one event to occur (the `init' event)
+This module is about data preparation, so there is no stochastic elements.
+The `spades` call will only cause one event to occur (the `init` event)
 
 ```{r run-spades}
 simOut <- spades(mySim, debug = TRUE)
@@ -119,13 +113,13 @@ simOut <- spades(mySim, debug = TRUE)
 
 # Visualize
 
-The `Plot` function will visualize all known .quickPlot type objects, which includes `Raster*` and `SpatialPolygons*` objects. After running this module, these are the outputs, which would likely be used as inputs to `LBMR`.
+The `Plot` function will visualize all known .quickPlot type objects, which includes `Raster*` and `SpatialPolygons*` objects.
+After running this module, these are the outputs, which would likely be used as inputs to `LBMR`.
 
 ```{r visualize}
 dev()
 clearPlot()
 
-# 
 Plot(simOut)
 ```
 
@@ -136,7 +130,8 @@ During the `simInit` call, if the user does not provide alternatives for the exp
 # Inputs
 
 This module has several input requirements. 
-One is a study area, which should be provided as a SpatialPolygonsDataFrame, and named `shpStudyRegionFull`. This should be inside the boundaries of the boreal forest of Canada. 
+One is a study area, which should be provided as a SpatialPolygonsDataFrame, and named `shpStudyRegionFull`.
+This should be inside the boundaries of the boreal forest of Canada. 
 When first running the code in this `.Rmd` file, you will be prompted to draw a polygon if none is provided as an input.
 
 ## Creates Inputs
