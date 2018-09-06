@@ -560,7 +560,6 @@ Save <- function(sim) {
   if (!suppliedElsewhere(sim$rstStudyRegion)) {
     needRstSR <- TRUE
   } else {
-    browser()
     if (!identical(extent(sim$rstStudyRegion), extent(biomassMap))) {
       needRstSR <- TRUE
     } else {
