@@ -19,8 +19,8 @@ obtainMaxBandANPP <- function(speciesLayers, biomassLayer, SALayer, ecoregionMap
     indispeciesraster <- raster::subset(speciesLayers, species)
     speciesTable[, percentage := getValues(indispeciesraster)]
     speciesTable_narmed <- speciesTable[!is.na(ecoregion), ]
-    speciesTable_narmed[, speciesBiomass := biomass*percentage*0.01] 
-    speciesTable_narmed <- speciesTable_narmed[percentage > pctCoverMinThresh, ] # TODO -- was hard coded to 50 -- why use this? Shouldn't we use max(speciesBiomass)? Also, we propose that there should be a minimum number of data points e.g., prod(res(indispeciesraster))/1e4 * NROW(speciesTable_narmed) > 1e4 in order to accept max(speciesBiomass), rather than a threshold based on percent cover. Using pct cover suggests we don't trust the dataset. Using minimum area means we want a larger sample size. Since the quality of the map will always be in question, we think that it shouldn't be at this stage that it is questioned; rather, it is at the data source stage.
+    speciesTable_narmed[, speciesBiomass := biomass*percentage*0.01] ## TODO: see #9
+    speciesTable_narmed <- speciesTable_narmed[percentage > pctCoverMinThresh, ] ## TODO: see #10
     speciesTable_narmed[,species := species]
     
     # This takes 
