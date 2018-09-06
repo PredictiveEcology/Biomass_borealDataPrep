@@ -136,7 +136,6 @@
 "SmallNFI_MODIS250m_kNN_Species_Popu_Tre_v0.tif" "c62d1a93475a3379" "183548" "xxhash64"
 "SmallNFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.tif" "3158360d8e4eaaf1" "167515" "xxhash64"
 "SmallNFI_MODIS250m_kNN_Structure_Stand_Age_v0.tif" "3f7d96d5cd28184f" "188279" "xxhash64"
-"speciesTraits.csv" "155e633022e134cf" "9994" "xxhash64"
 "SPP_1990_FILLED_100m_NAD83_LCC_BYTE_VEG.dat" "bf7f215abc64dcc4" "361056624" "xxhash64"
 "SPP_1990_FILLED_100m_NAD83_LCC_BYTE_VEG.dat.aux.xml" "87f669675c809639" "2300" "xxhash64"
 "SPP_1990_FILLED_100m_NAD83_LCC_BYTE_VEG.hdr" "0b80bd00a8070db3" "1107" "xxhash64"

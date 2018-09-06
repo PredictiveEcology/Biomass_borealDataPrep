@@ -158,7 +158,8 @@ estimateParameters <- function(sim) {
   # LCC05 -- land covers 1 to 15 are forested with tree dominated... 34 and 35 are recent burns
   # this is based on description in LCC05
   activeStatusTable <- data.table(active = c(rep("yes", 15), rep("no", 25)),
-                                  mapcode = 1:40)[mapcode %in% c(34, 35), active := "yes"]
+                                  mapcode = 1:40)[mapcode %in% c(20, 32, 34, 35),
+                                                  active := "yes"]
   #simulationMaps <- sim$nonActiveEcoregionProducerCached(nonactiveRaster = sim$LCC2005,
   if (!file.exists(filename(sim$LCC2005))) {
     stop("Sometimes LCC2005 is not correctly in the sim. ",
@@ -185,6 +186,7 @@ estimateParameters <- function(sim) {
                                  biomassLayer = sim$biomassMap,
                                  SALayer = sim$standAgeMap,
                                  ecoregionMap = simulationMaps$ecoregionMap,
+                                 pctCoverMinThresh = 50,
                                  userTags = "stable")
   .gc()
 
@@ -192,26 +194,29 @@ estimateParameters <- function(sim) {
   #septable <- sim$obtainSEPCached(ecoregionMap = simulationMaps$ecoregionMap,
   septable <- Cache(obtainSEP, ecoregionMap = simulationMaps$ecoregionMap,
                     speciesLayers = sim$specieslayers,
+                    SEPMinThresh = 10,
                     userTags = "stable")
-  names(septable) <- c("ecoregion", "species", "SEP")
-  septable[, SEP := round(SEP, 2)]
+  septable[, SEP := round(SEP, 4)]
   .gc()
 
   message("6: ", Sys.time())
   speciesEcoregionTable[, species := as.character(species)]
   septable[, species := as.character(species)]
-  speciesEcoregionTable <- left_join(speciesEcoregionTable, septable, by = c("ecoregion", "species")) %>%
-    data.table()
-  speciesEcoregionTable[SEP == 0, `:=`(maxBiomass = 0, maxANPP = 0)]
+  speciesEcoregionTable <- septable[speciesEcoregionTable, on = c("ecoregion", "species")]
+  # speciesEcoregionTable <- left_join(speciesEcoregionTable, septable, by = c("ecoregion", "species")) %>%
+  #   data.table()
+
+  # Fill in 0 for maxBiomass and maxANPP when SEP was estimated to be 0
+  speciesEcoregionTable[SEP == 0, ':='(maxBiomass = 0, maxANPP = 0)]
   NON_NAdata <- speciesEcoregionTable[!is.na(maxBiomass),]
   NAdata <- speciesEcoregionTable[is.na(maxBiomass),]
 
   if (nrow(NAdata) > 1) {
     # # replace NA values with ecoregion  value
-    #biomassFrombiggerMap <- sim$obtainMaxBandANPPFormBiggerEcoAreaCached(speciesLayers = sim$specieslayers,
+    #biomassFrombiggerMap <- sim$obtainMaxBandANPPFromBiggerEcoArea(speciesLayers = sim$specieslayers,
 
-    message("  6a obtainMaxBandANPPFormBiggerEcoArea: ", Sys.time())
-    biomassFrombiggerMap <- Cache(obtainMaxBandANPPFormBiggerEcoArea,
+    message("  6a obtainMaxBandANPPFromBiggerEcoArea: ", Sys.time())
+    biomassFrombiggerMap <- Cache(obtainMaxBandANPPFromBiggerEcoArea,
                                   speciesLayers = sim$specieslayers,
                                   biomassLayer = sim$biomassMap,
                                   SALayer = sim$standAgeMap,
@@ -220,32 +225,36 @@ estimateParameters <- function(sim) {
                                   biggerEcoAreaSource = "ecoRegion",
                                   NAData = NAdata,
                                   maskFn = fastMask,
+                                  pctCoverMinThresh = 50,
                                   userTags = "stable")
-    message("  6b obtainMaxBandANPPFormBiggerEcoArea: ", Sys.time())
-    NON_NAdata <- rbind(NON_NAdata, biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)])
+    message("  6b obtainMaxBandANPPFromBiggerEcoArea: ", Sys.time())
+    NON_NAdata <- rbind(NON_NAdata,
+                        biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)])
     NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)]
   }
   .gc()
 
   message("7: ", Sys.time())
   if (nrow(NAdata) > 1) {
-    #biomassFrombiggerMap <- sim$obtainMaxBandANPPFormBiggerEcoAreaCached(speciesLayers = sim$specieslayers,
-    message("  7a obtainMaxBandANPPFormBiggerEcoArea if NAdata exist: ", Sys.time())
-    biomassFrombiggerMap <- Cache(obtainMaxBandANPPFormBiggerEcoArea,
+    #biomassFrombiggerMap <- sim$obtainMaxBandANPPFromBiggerEcoArea(speciesLayers = sim$specieslayers,
+    message("  7a obtainMaxBandANPPFromBiggerEcoArea if NAdata exist: ", Sys.time())
+    biomassFrombiggerMap <- Cache(obtainMaxBandANPPFromBiggerEcoArea,
                                   speciesLayers = sim$specieslayers, biomassLayer = sim$biomassMap,
                                   SALayer = sim$standAgeMap, ecoregionMap = simulationMaps$ecoregionMap,
                                   biggerEcoArea = sim$ecoZone, biggerEcoAreaSource = "ecoZone",
                                   NAData = NAdata, maskFn = fastMask,
+                                  pctCoverMinThresh = 50,
                                   userTags = "stable")
-    message("  7b obtainMaxBandANPPFormBiggerEcoArea if NAdata exist: ", Sys.time())
-    NON_NAdata <- rbind(NON_NAdata,
-                        biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)])
-    NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass),.(ecoregion, species, maxBiomass, maxANPP, SEP)]
+    message("  7b obtainMaxBandANPPFromBiggerEcoArea if NAdata exist: ", Sys.time())
+    NON_NAdata <- rbind(NON_NAdata, biomassFrombiggerMap$addData[!is.na(maxBiomass),
+                                                                 .(ecoregion, species, maxBiomass, maxANPP, SEP)])
+    NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass),
+                                           .(ecoregion, species, maxBiomass, maxANPP, SEP)]
   }
   .gc()
 
   message("8: ", Sys.time())
-  NAdata[, `:=`(maxBiomass = 0, maxANPP = 0, SEP = 0)]
+  NAdata[, ':='(maxBiomass = 0, maxANPP = 0, SEP = 0)]
   speciesEcoregion <- rbind(NON_NAdata, NAdata)
   setnames(speciesEcoregion, "ecoregion", "mapcode")
   speciesEcoregion <- setkey(speciesEcoregion,
@@ -271,11 +280,11 @@ estimateParameters <- function(sim) {
                            "seeddistance_eff", "seeddistance_max", "resproutprob", "resproutage_min",
                            "resproutage_max", "postfireregen", "leaflongevity", "wooddecayrate",
                            "mortalityshape", "growthcurve", "leafLignin", "hardsoft")
-  speciesTable[, `:=`(Area = NULL, hardsoft = NULL)]
-  # speciesTable[, `:=`(Area = NULL)]   ## hardsoft used in fire model
+  speciesTable[, ':='(Area = NULL, hardsoft = NULL)]
+  # speciesTable[, ':='(Area = NULL)]   ## hardsoft used in fire model
   speciesTable$species1 <- as.character(substring(speciesTable$species, 1, 4))
   speciesTable$species2 <- as.character(substring(speciesTable$species, 6, nchar(as.character(speciesTable$species))))
-  speciesTable[, `:=`(species = paste(as.character(substring(species1, 1, 1)),
+  speciesTable[, ':='(species = paste(as.character(substring(species1, 1, 1)),
                                       tolower(as.character(substring(species1, 2, nchar(species1)))),
                                       "_", as.character(substring(species2, 1, 1)),
                                       tolower(as.character(substring(species2, 2, nchar(species2)))),
@@ -312,7 +321,7 @@ estimateParameters <- function(sim) {
 
   # Take the smallest values of every column, within species, because it is northern boreal forest
   speciesTable <- speciesTable[species %in% names(sim$specieslayers), ][
-    , `:=`(species1 = NULL, species2 = NULL)] %>%
+    , ':='(species1 = NULL, species2 = NULL)] %>%
     .[, lapply(.SD, function(x) if (is.numeric(x)) min(x, na.rm = TRUE) else x[1]), by = "species"]
 
   initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species)]
@@ -399,7 +408,7 @@ Save <- function(sim) {
     message("'shpStudyRegionFull' was not provided by user. Using a polygon in southwestern Alberta, Canada,")
 
     polyCenter <- SpatialPoints(coords = data.frame(x = c(-1349980),y = c(6986895)),
-                                proj4string = crs(P(sim)$.crsUsed))
+                                proj4string = crs(G(sim)$.crsUsed))
     sim$shpStudyRegionFull <- SpaDES.tools::randomPolygon(x = polyCenter, hectares = 10000)
   }
 
@@ -420,6 +429,7 @@ Save <- function(sim) {
   cacheTags = c(currentModule(sim), "function:.inputObjects", "function:spades")
 
   if (!suppliedElsewhere("biomassMap", sim)) {
+
     sim$biomassMap <- Cache(prepInputs,
                             targetFile = biomassMapFilename,
                             archive = asPath(c("kNN-StructureBiomass.tar",
@@ -593,6 +603,9 @@ Save <- function(sim) {
     sim$rstStudyRegion <- Cache(writeRaster, sim$rstStudyRegion,
                                 filename = file.path(dataPath(sim), "rstStudyRegion.tif"),
                                 datatype = "INT2U", overwrite = TRUE)
+  }
+  if (!suppliedElsewhere("speciesThreshold", sim = sim)) {
+    sim$speciesThreshold <- 50
   }
 
   return(invisible(sim))
