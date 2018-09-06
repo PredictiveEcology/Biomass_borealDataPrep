@@ -1,13 +1,13 @@
 initialCommunityProducer <- function(speciesLayers, speciesPresence, studyArea, rstStudyArea) {
-  specieslayerInStudyArea <- crop(speciesLayers, studyArea)
+  specieslayerInStudyArea <- crop(speciesLayers, studyArea)  ## TODO: Ceres: this is probably no longer necessary
   #if(isTRUE(tryCatch(getCluster(), error=function(x) TRUE, silent=TRUE))) beginCluster()
-  specieslayerInStudyArea <- specieslayerInStudyArea * rstStudyArea
-  names(specieslayerInStudyArea) <- names(speciesLayers)
+  specieslayerInStudyArea <- specieslayerInStudyArea * rstStudyArea  ## TODO: Ceres: this is probably no longer necessary
+  names(specieslayerInStudyArea) <- names(speciesLayers)  ## TODO: Ceres: this is probably no longer necessary
 
   #specieslayerInStudyArea <- specieslayerInStudyArea*(!is.na(rstStudyArea))
   # specieslayerInStudyArea <- suppressWarnings(fastMask(specieslayerInStudyArea, #                                                  studyArea))
-  speciesNames <- names(specieslayerInStudyArea)[which(maxValue(specieslayerInStudyArea) >= speciesPresence)]
-  specieslayerBySpecies <- raster::subset(specieslayerInStudyArea, speciesNames[1])
+  speciesNames <- names(specieslayerInStudyArea)[which(maxValue(specieslayerInStudyArea) >= speciesPresence)]   ## TODO: Ceres: this is probably no longer necessary
+  specieslayerBySpecies <- raster::subset(specieslayerInStudyArea, speciesNames[1])    ## TODO: Ceres: this is probably no longer necessary
   specieslayerBySpecies[which(is.na(specieslayerBySpecies[]) & specieslayerBySpecies[] <= 5)] <- 0    ##  Ceres: this is weird, shouldn't this be OR?
   # specieslayerBySpecies[Which(is.na(specieslayerBySpecies) & specieslayerBySpecies<=5,
   #                             cells = TRUE)] <- 0 # 5% or less presence removed
