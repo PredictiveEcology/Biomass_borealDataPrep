@@ -4,6 +4,9 @@
 .Rproj.user
 *.Rproj
 
+## module cache files
+cache/
+
 ## OAuth tokens
 .httr-oauth
 .httr-oauth-SUSPENDED
@@ -12,6 +15,3 @@
 Thumbs.db
 
  ## !! Module data should be gitignored in the respective module's data dir !! 
- 
-## cache dir
-cache
