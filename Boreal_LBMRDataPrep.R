@@ -19,9 +19,10 @@ defineModule(sim, list(
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
   reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos"),
   parameters = rbind(
-    #defineParameter("paramName", "paramClass", value, min, max, "parameter description")),
-    defineParameter(".crsUsed", "character", "+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0",
-                    NA, NA, "CRS to be used. Defaults to the biomassMap projection"),
+    defineParameter(".crsUsed", "CRS", raster::crs(
+      paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
+            "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
+    ), NA, NA, "CRS to be used. Defaults to the biomassMap projection"),
     defineParameter(".plotInitialTime", "numeric", NA, NA, NA, "This describes the simulation time at which the first plot event should occur"),
     defineParameter(".plotInterval", "numeric", NA, NA, NA, "This describes the simulation time interval between plot events"),
     defineParameter(".saveInitialTime", "numeric", NA, NA, NA, "This describes the simulation time at which the first save event should occur"),
@@ -386,9 +387,12 @@ Save <- function(sim) {
   a <- depends(sim)
   whThisMod <- which(unlist(lapply(a@dependencies, function(x) x@name)) == "Boreal_LBMRDataPrep")
   objNames <- a@dependencies[[whThisMod]]@inputObjects$objectName
-  objExists <- !unlist(lapply(objNames,
-                              function(x) is.null(sim[[x]])))
+  objExists <- !unlist(lapply(objNames, function(x) is.null(sim[[x]])))
   names(objExists) <- objNames
+
+  ## TODO: use the shorthand way instead of long way
+  crsUsed <- params(sim)[["Boreal_LBMRDataPrep"]][[".crsUsed"]]
+  #crsUsed <- P(sim)[[".crsUsed"]]
 
   # Filenames
   ecoregionFilename <-   file.path(dPath, "ecoregions.shp")
@@ -407,23 +411,22 @@ Save <- function(sim) {
   if (!suppliedElsewhere("shpStudyRegionFull", sim)) {
     message("'shpStudyRegionFull' was not provided by user. Using a polygon in southwestern Alberta, Canada,")
 
-    polyCenter <- SpatialPoints(coords = data.frame(x = c(-1349980),y = c(6986895)),
-                                proj4string = crs(G(sim)$.crsUsed))
+    polyCenter <- SpatialPoints(coords = data.frame(x = c(-1349980), y = c(6986895)),
+                                proj4string = crsUsed)
     sim$shpStudyRegionFull <- SpaDES.tools::randomPolygon(x = polyCenter, hectares = 10000)
   }
-
 
   if (!suppliedElsewhere("shpStudySubRegion", sim)) {
     message("'shpStudySubRegion' was not provided by user. Using the same as 'shpStudyRegionFull'")
     sim$shpStudySubRegion <- sim$shpStudyRegionFull
   }
 
-  if (!identical(P(sim)$.crsUsed, crs(sim$shpStudyRegionFull))) {
-    sim$shpStudyRegionFull <- spTransform(sim$shpStudyRegionFull, P(sim)$.crsUsed) #faster without Cache
+  if (!identical(crsUsed, crs(sim$shpStudyRegionFull))) {
+    sim$shpStudyRegionFull <- spTransform(sim$shpStudyRegionFull, crsUsed) #faster without Cache
   }
 
-  if (!identical(P(sim)$.crsUsed, crs(sim$shpStudySubRegion))) {
-    sim$shpStudySubRegion <- spTransform(sim$shpStudySubRegion, P(sim)$.crsUsed) #faster without Cache
+  if (!identical(crsUsed, crs(sim$shpStudySubRegion))) {
+    sim$shpStudySubRegion <- spTransform(sim$shpStudySubRegion, crsUsed) #faster without Cache
   }
 
   cacheTags = c(currentModule(sim), "function:.inputObjects", "function:spades")
