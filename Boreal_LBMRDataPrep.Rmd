@@ -14,12 +14,12 @@ knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
 
 # Overview
 
-This module converts open datasets that are available for all of Canada's forests, into the input requirements for Land-R-Biomass, a forest landscape succession model derived from the Landis-II Biomass Succession Model. 
+This module converts open datasets that are available for all of Canada's forests, into the input requirements for LandR_BiomassCore, a forest landscape succession model derived from the Landis-II Biomass Succession Model. 
 This has been partially tested for some parts of the Western Boreal Forest. 
 
-Specifically, it takes the Eco\* maps (Ecozone, Ecoprovince, Ecoregion) maps of Canada, and species specific biomass maps of Canada (from Beaudoin *et al.* 2014).
+Specifically, it takes the Ecozone, Ecoprovince, and Ecoregion maps of Canada, and species specific biomass maps of Canada (from Beaudoin *et al.* 2014).
 
-Keeping these data preparations outside of the core LBMR module maintains the modularity of LBMR.
+Keeping these data preparations outside of the LandR_BiomassCore module maintains the modularity of LandR_BiomassCore.
 
 # Install packages, if necessary
 
