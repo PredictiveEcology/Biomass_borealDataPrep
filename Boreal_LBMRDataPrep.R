@@ -430,8 +430,8 @@ Save <- function(sim) {
   }
 
   cacheTags = c(currentModule(sim), "function:.inputObjects", "function:spades")
-
-  if (!suppliedElsewhere("biomassMap", sim)) {
+  # !suppliedElsewhere("biomassMap", sim | #Removed this line temporarily due to this bug
+  if (is.null(sim$biomassMap) == TRUE) {
     sim$biomassMap <- Cache(prepInputs,
                             targetFile = biomassMapFilename,
                             archive = asPath(c("kNN-StructureBiomass.tar",
