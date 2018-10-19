@@ -390,9 +390,8 @@ Save <- function(sim) {
   objExists <- !unlist(lapply(objNames, function(x) is.null(sim[[x]])))
   names(objExists) <- objNames
 
-  ## TODO: use the shorthand way instead of long way
-  crsUsed <- params(sim)[["Boreal_LBMRDataPrep"]][[".crsUsed"]]
-  #crsUsed <- P(sim)[[".crsUsed"]]
+
+  crsUsed <- P(sim)[[".crsUsed"]]
 
   # Filenames
   ecoregionFilename <-   file.path(dPath, "ecoregions.shp")
@@ -439,7 +438,7 @@ Save <- function(sim) {
                             url = extractURL("biomassMap"),
                             destinationPath = dPath,
                             studyArea = sim$shpStudySubRegion,
-                            # useSAcrs = TRUE,
+                            useSAcrs = TRUE,
                             method = "bilinear",
                             datatype = "INT2U",
                             filename2 = TRUE,
@@ -462,7 +461,6 @@ Save <- function(sim) {
 
     projection(sim$LCC2005) <- projection(sim$biomassMap)
   }
-
   if (!suppliedElsewhere("ecoDistrict", sim)) {
     sim$ecoDistrict <- Cache(prepInputs,
                              targetFile = asPath(ecodistrictFilename),
@@ -471,7 +469,8 @@ Save <- function(sim) {
                              alsoExtract = ecodistrictAE,
                              destinationPath = dPath,
                              studyArea = sim$shpStudyRegionFull,
-                             # useSAcrs = TRUE,
+                             overwrite = TRUE,
+                             useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
                              fun = "raster::shapefile",
                              filename2 = TRUE,
                              userTags = cacheTags)
@@ -485,7 +484,8 @@ Save <- function(sim) {
                            url = extractURL("ecoRegion"),
                            destinationPath = dPath,
                            studyArea = sim$shpStudyRegionFull,
-                           # useSAcrs = TRUE,
+                           overwrite = TRUE,
+                           useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
                            fun = "raster::shapefile",
                            filename2 = TRUE,
                            userTags = cacheTags)
@@ -499,7 +499,8 @@ Save <- function(sim) {
                          alsoExtract = ecozoneAE,
                          destinationPath = dPath,
                          studyArea = sim$shpStudyRegionFull,
-                         # useSAcrs = TRUE,
+                         overwrite = TRUE,
+                         useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
                          fun = "raster::shapefile",
                          filename2 = TRUE,
                          userTags = cacheTags)
@@ -531,6 +532,7 @@ Save <- function(sim) {
   }
 
   if (!suppliedElsewhere("specieslayers", sim)) {
+    #opts <- options(reproducible.useCache = "overwrite")
     specieslayersList <- Cache(loadkNNSpeciesLayers,
                                dataPath = asPath(dPath),
                                rasterToMatch = sim$biomassMap,
@@ -541,6 +543,7 @@ Save <- function(sim) {
                                cachePath = cachePath(sim),
                                userTags = c(cacheTags, "specieslayers"))
 
+    #options(opts)
     sim$specieslayers <- specieslayersList$specieslayers
     sim$speciesList <- specieslayersList$speciesList
   }
@@ -593,8 +596,10 @@ Save <- function(sim) {
       sim$shpStudyRegionFull <- SpatialPolygonsDataFrame(sim$shpStudyRegionFull, data = dfData)
     }
 
-    fieldName <- if ("LTHRC" %in% names(sim$shpStudyRegionFull)) {
-      "LTHRC"
+    # Layers provided by David Andison sometimes have LTHRC, sometimes LTHFC ... chose whichever
+    LTHxC <- grep("(LTH.+C)",names(sim$shpStudyRegionFull), value= TRUE)
+    fieldName <- if (length(LTHxC)) {
+      LTHxC
     } else {
       if (length(names(sim$shpStudyRegionFull)) > 1) {   ## study region may be a simple polygon
         names(sim$shpStudyRegionFull)[1]
