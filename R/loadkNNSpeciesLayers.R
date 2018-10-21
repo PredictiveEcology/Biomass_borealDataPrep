@@ -13,32 +13,19 @@
 ## url: is the source url for the data, passed to prepInputs.
 
 loadkNNSpeciesLayers <- function(dataPath, rasterToMatch, studyArea,
-                                 speciesList = "all", thresh = 1, url, cachePath, ...) {
+                                 speciesList = NULL, thresh = 1, url, cachePath, ...) {
 
-  ## get all kNN species
-  allSpp <- Cache(untar, tarfile = file.path(dataPath, "kNN-Species.tar"), list = TRUE)
-  allSpp <- allSpp %>%
-    grep(".zip", ., value = TRUE) %>%
-    sub("_v0.zip", "", .) %>%
-    sub(".*Species_", "", .)
 
-  ## check if species is a vector/matrix
-  if (class(speciesList) == "character") {
-    if (speciesList == "all") {
-      ## get all species layers from .tar
-      speciesList <- allSpp
-    }
-
-    ## make a matrix of raw and final species names
-    speciesList <-  matrix(data = rep(speciesList, 2),
-                           nrow = length(speciesList), ncol = 2, byrow = FALSE)
-    colnames(speciesList) = c("speciesNamesRaw", "speciesNamesEnd")
-
-  } else if(class(speciesList) == "matrix") {
+  if(class(speciesList) == "matrix") {
     ## check column names
     if(!setequal(colnames(speciesList), c("speciesNamesRaw", "speciesNamesEnd")))
       stop("names(species) must be c('speciesNamesRaw', 'speciesNamesEnd'), for raw species names and final species names respectively")
-  } else stop("species must be a character vector or a two-column matrix")
+  }
+
+  # Changed by Eliot Oct 20 2018 -- can't start with untar because tar file may not be present
+  suffix <- if (basename(cachePath) == "cache") paste0(as.character(ncell(rasterToMatch)),"px") else
+    basename(cachePath)
+  suffix <- paste0("_", suffix)
 
   ## Make sure raw names are compatible with kNN names
   kNNnames <- lapply(strsplit(speciesList[,1], "_"), function(x) {
@@ -48,42 +35,38 @@ loadkNNSpeciesLayers <- function(dataPath, rasterToMatch, studyArea,
   })
   kNNnames <- sapply(kNNnames, function(x) paste(x, collapse = "_"))
   speciesList[, 1] <- kNNnames
-
-  ## check for missing species
-  if(any(!speciesList[,1] %in% allSpp)) {
-    warning("Some species not present in kNN database.
-            /n  Check if this is correct")
-    speciesList <- speciesList[speciesList[, 1] %in% allSpp,]
-  }
-
-  suffix <- if (basename(cachePath) == "cache") paste0(as.character(ncell(rasterToMatch)),"px") else
-    basename(cachePath)
-  suffix <- paste0("_", suffix)
-
-  loadFun <- function(sp) {
-    targetFile <- paste0("NFI_MODIS250m_kNN_Species_", sp, "_v0.tif")
-    postProcessedFilename <- .suffix(targetFile, suffix = suffix)
-
-    species1 <- prepInputs(
-      targetFile = targetFile,
-      url = url,
-      archive = asPath(c("kNN-Species.tar", paste0("NFI_MODIS250m_kNN_Species_", sp, "_v0.zip"))),
-      destinationPath = asPath(dataPath),
-      fun = "raster::raster",
-      studyArea = studyArea,
-      rasterToMatch = rasterToMatch,
-      method = "bilinear",
-      datatype = "INT2U",
-      filename2 = postProcessedFilename)
-
-    names(species1) <- sp
-    return(species1)
-  }
-
-  species1 <- Cache(lapply,
-                    speciesList[, "speciesNamesRaw"],
-                    loadFun,
+  
+  species1 <- Cache(loadFun, url = url, spp = speciesList, #[, "speciesNamesRaw"],
+                    #loadFun,
+                    dataPath = dataPath,
+                    suffix = suffix,
+                    studyArea = studyArea, rasterToMatch = rasterToMatch,
                     userTags = "kNN_SppLoad")
+  browser()
+  
+  # species1 <- Cache(lapply, seq_len(NROW(speciesList)),
+  #                   spp = speciesList, #[, "speciesNamesRaw"],
+  #                   loadFun, url = url, dataPath = dataPath,
+  #                   suffix = suffix,
+  #                   studyArea = studyArea, rasterToMatch = rasterToMatch,
+  #                   userTags = "kNN_SppLoad")
+
+  ## get all kNN species
+  if (FALSE) { #TODO This no longer does all species }
+    allSpp <- Cache(untar, tarfile = file.path(dataPath, "kNN-Species.tar"), list = TRUE)
+    allSpp <- allSpp %>%
+      grep(".zip", ., value = TRUE) %>%
+      sub("_v0.zip", "", .) %>%
+      sub(".*Species_", "", .)
+    
+    
+    ## check for missing species
+    if(any(!speciesList[,1] %in% allSpp)) {
+      warning("Some species not present in kNN database.
+            /n  Check if this is correct")
+      speciesList <- speciesList[speciesList[, 1] %in% allSpp,]
+    }
+  }
 
   names(species1) <- speciesList[, "speciesNamesRaw"]
 
@@ -152,4 +135,98 @@ sumRastersBySpecies <- function(speciesLayers, layersToSum,
   names(ras_out) <- newLayerName
   writeRaster(ras_out, filename = filenameToSave, datatype = "INT2U", overwrite = TRUE)
   ras_out # Work around for Cache
+}
+
+loadFun <- function(speciesListIndex, spp, suffix, url, dataPath,
+                    studyArea, rasterToMatch) {
+
+  if (is.null(spp)) {
+    knownSp <- c("Abie_Ama", "Abie_Bal", "Abie_Gra", "Abie_Las", "Abie_Spp", 
+                 "Acer_Cir", "Acer_Mac", "Acer_Neg", "Acer_Pen", "Acer_Rub", "Acer_Sac", 
+                 "Acer_Sah", "Acer_Spi", "Acer_Spp", "Alnu_Inc_Rug", "Alnu_Inc_Ten", 
+                 "Alnu_Inc", "Alnu_Rub", "Alnu_Spp", "Arbu_Men", "Asim_Tri", "Betu_All", 
+                 "Betu_Pap", "Betu_Pop", "Betu_Spp", "Carp_Car", "Cary_Cor", "Cast_Den", 
+                 "Cham_Noo", "Crat_Spp", "Fagu_Gra", "Frax_Ame", "Frax_Nig", "Frax_Pen_Sub", 
+                 "Frax_Pen", "Frax_Spp", "Generic_BroadLeaf_Spp", "Generic_NeedleLeaf_Spp", 
+                 "Gled_Tri", "Jugl_Cin", "Jugl_Nig", "Juni_Vir", "Lari_Kae", "Lari_Lar", 
+                 "Lari_Lya", "Lari_Occ", "Lari_Spp", "Malu_Fus", "Malu_Spp", "Ostr_Vir", 
+                 "Pice_Abi", "Pice_Eng_Gla", "Pice_Eng", "Pice_Gla", "Pice_Mar", 
+                 "Pice_Rub", "Pice_Sit", "Pice_Spp", "Pinu_Alb", "Pinu_Ban", "Pinu_Con_Lat", 
+                 "Pinu_Con", "Pinu_Fle", "Pinu_Mon", "Pinu_Pon", "Pinu_Res", "Pinu_Rig", 
+                 "Pinu_Spp", "Pinu_Str", "Pinu_Syl", "Plat_Occ", "Popu_Bal", "Popu_Del", 
+                 "Popu_Gra", "Popu_Spp", "Popu_Tre", "Popu_Tri", "Prun_Pen", "Prun_Ser", 
+                 "Prun_Vir", "Pseu_Men_Gla", "Pseu_Men_Men", "Pseu_Men", "Quer_Alb", 
+                 "Quer_Bic", "Quer_Gar", "Quer_Mac", "Quer_Rub", "Robi_Pse", "Sali_Beb", 
+                 "Sali_Nig", "Sali_Spp", "Sass_Alb", "Sorb_Ame", "Sorb_Dec", "Sorb_Spp", 
+                 "Thuj_Occ", "Thuj_Pli", "Thuj_Spp", "Tili_Ame", "Tsug_Can", "Tsug_Het", 
+                 "Tsug_Mer_Het", "Tsug_Mer", "Tsug_Spp", "Ulmu_Ame", "Ulmu_Rub", 
+                 "Ulmu_Spp", "Ulmu_Tho")
+    stop("This loadFun has not been tested for all species. Please specify the actual species desired by name",
+         " Known species are:\n", paste(knownSp, collapse = "\n"))
+  }
+  archive <- asPath("kNN-Species.tar")
+  ## check if species is a vector/matrix
+  if (is.null(spp)) {
+      ## set to NULL so prepInputs extracts all of them
+    targetFile <- NULL
+    
+    # just get tar file, no crop/reproject etc. Too many
+    tarFile <- prepInputs(
+      targetFile = targetFile,
+      url = url,
+      archive = archive,
+      destinationPath = asPath(dataPath),
+      fun = "raster::raster")#,
+      #studyArea = studyArea,
+      #rasterToMatch = rasterToMatch,
+      #method = "bilinear",
+      #datatype = "INT2U",
+      #filename2 = postProcessedFilename
+
+
+    ## make a matrix of raw and final species names
+    spp <-  matrix(data = rep(spp, 2),
+                   nrow = length(spp), ncol = 2, byrow = FALSE)
+    colnames(spp) = c("speciesNamesRaw", "speciesNamesEnd")
+
+  } else if (class(spp) == "matrix") {
+    ## check column names
+    if(!setequal(colnames(spp), c("speciesNamesRaw", "speciesNamesEnd")))
+      stop("names(species) must be c('speciesNamesRaw', 'speciesNamesEnd'), for raw species names and final species names respectively")
+    targetFiles <- paste0("NFI_MODIS250m_kNN_Species_", spp[, "speciesNamesRaw"], "_v0.tif")
+    names(targetFiles) <- targetFiles
+    archives <- cbind(archive1 = archive, archive2 = paste0("NFI_MODIS250m_kNN_Species_", spp[, "speciesNamesRaw"], "_v0.zip"))
+    archives <- split(archives, archives[, "archive2"])
+  } else stop("species must be a character vector or a two-column matrix")
+
+  postProcessedFilenames <- .suffix(targetFiles, suffix = suffix)
+  
+
+  species1 <- Map(targetFile = targetFiles, archive = archives,
+                  filename2 = postProcessedFilenames,
+                  MoreArgs = list(url = url,
+                                  destinationPath = asPath(dataPath),
+                                  fun = "raster::raster",
+                                  studyArea = studyArea,
+                                  rasterToMatch = rasterToMatch,
+                                  method = "bilinear",
+                                  datatype = "INT2U"
+                  ),
+                  prepInputs)
+  
+  # species1 <- prepInputs(
+  #   targetFile = targetFile,
+  #   url = url,
+  #   archive = archive,
+  #   destinationPath = asPath(dataPath),
+  #   fun = "raster::raster",
+  #   studyArea = studyArea,
+  #   rasterToMatch = rasterToMatch,
+  #   method = "bilinear",
+  #   datatype = "INT2U",
+  #   filename2 = postProcessedFilename
+  #   )
+
+  names(species1) <- spp[, "speciesNamesRaw"]
+  return(species1)
 }
