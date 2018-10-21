@@ -61,7 +61,8 @@ defineModule(sim, list(
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
     expectsInput("speciesList", c("character", "matrix"),
                  desc = "vector or matrix of species to select, provided by the user or BiomassSpeciesData.
-                 If a matrix, should have two columns of raw and 'end' species names. Note that 'sp' is used instead of 'spp'", sourceURL = NA),
+                 If a matrix, should have two columns of raw and 'end' species names. Note that 'sp' is used instead of 'spp'",
+                 sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
     expectsInput("speciesTable", "data.table",
                  desc = "species attributes table, default is from Dominic and Yan's project",
                  sourceURL = "https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv"),
