@@ -575,14 +575,12 @@ Save <- function(sim) {
     sim$studyArea <- sim$shpStudyRegionFull
   }
 
+  needRstSR <- FALSE
   if (!suppliedElsewhere(sim$rstStudyRegion)) {
     needRstSR <- TRUE
   } else {
-    if (!identical(extent(sim$rstStudyRegion), extent(sim$biomassMap))) {
+    if (!is.null(sim$biomassMap))
       needRstSR <- TRUE
-    } else {
-      needRstSR <- FALSE
-    }
   }
   if (needRstSR) {
     message("  Rasterizing the shpStudyRegionFull polygon map")
