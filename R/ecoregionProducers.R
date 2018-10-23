@@ -2,7 +2,7 @@ ecoregionProducer <- function(studyAreaRaster, ecoregionMapFull, ecoregionName,
                               ecoregionActiveStatus, studyArea, rstStudyArea, maskFn) {
   # change the coordinate reference for all spatialpolygons
   message("ecoregionProducer 1: ", Sys.time())
-  ecoregionMapInStudy <- raster::intersect(ecoregionMapFull, aggregate(studyArea))
+  ecoregionMapInStudy <- raster::intersect(ecoregionMapFull, fixErrors(aggregate(studyArea)))
   # ecoregions <- ecoregionMapInStudy@data[,ecoregionName]
   # ecoregionTable <- data.table(mapcode = numeric(),
   #                              ecoregion = character())
