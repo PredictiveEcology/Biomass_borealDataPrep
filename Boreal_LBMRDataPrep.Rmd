@@ -95,7 +95,7 @@ Plot(shpStudyAreaLarge, addTo = "canadaMap", col = "red")
 times <- list(start = 0, end = 10)
 modules <- list("Boreal_LBMRDataPrep")
 objects <- if (handDrawMap) list("shpStudyAreaLarge" = shpStudyAreaLarge,
-                                 "shpStudySubRegion" = shpStudyAreaLarge) else list()
+                                 "shpStudyArea" = shpStudyAreaLarge) else list()
 
 mySim <- simInit(times = times, params = parameters, modules = modules,
                  objects = objects)

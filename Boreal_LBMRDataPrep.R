@@ -50,7 +50,7 @@ defineModule(sim, list(
     expectsInput("seedingAlgorithm", "character",
                  desc = "choose which seeding algorithm will be used among noDispersal, universalDispersal,
                  and wardDispersal, default is wardDispersal"),
-    expectsInput("shpStudySubRegion", "SpatialPolygonsDataFrame",
+    expectsInput("shpStudyArea", "SpatialPolygonsDataFrame",
                  desc = "this shape file contains two informaton: Sub study area with fire return interval attribute",
                  sourceURL = NA), # i guess this is study area and fire return interval
     expectsInput("shpStudyRegionFull", "SpatialPolygonsDataFrame",
@@ -416,17 +416,17 @@ Save <- function(sim) {
     sim$shpStudyRegionFull <- SpaDES.tools::randomPolygon(x = polyCenter, hectares = 10000)
   }
 
-  if (!suppliedElsewhere("shpStudySubRegion", sim)) {
-    message("'shpStudySubRegion' was not provided by user. Using the same as 'shpStudyRegionFull'")
-    sim$shpStudySubRegion <- sim$shpStudyRegionFull
+  if (!suppliedElsewhere("shpStudyArea", sim)) {
+    message("'shpStudyArea' was not provided by user. Using the same as 'shpStudyRegionFull'")
+    sim$shpStudyArea <- sim$shpStudyRegionFull
   }
 
   if (!identical(crsUsed, crs(sim$shpStudyRegionFull))) {
     sim$shpStudyRegionFull <- spTransform(sim$shpStudyRegionFull, crsUsed) #faster without Cache
   }
 
-  if (!identical(crsUsed, crs(sim$shpStudySubRegion))) {
-    sim$shpStudySubRegion <- spTransform(sim$shpStudySubRegion, crsUsed) #faster without Cache
+  if (!identical(crsUsed, crs(sim$shpStudyArea))) {
+    sim$shpStudyArea <- spTransform(sim$shpStudyArea, crsUsed) #faster without Cache
   }
 
   cacheTags = c(currentModule(sim), "function:.inputObjects", "function:spades")
@@ -438,7 +438,7 @@ Save <- function(sim) {
                                                "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
                             url = extractURL("biomassMap"),
                             destinationPath = dPath,
-                            studyArea = sim$shpStudySubRegion,
+                            studyArea = sim$shpStudyArea,
                             useSAcrs = TRUE,
                             method = "bilinear",
                             datatype = "INT2U",
@@ -453,7 +453,7 @@ Save <- function(sim) {
                          archive = asPath("LandCoverOfCanada2005_V1_4.zip"),
                          url = extractURL("LCC2005"),
                          destinationPath = dPath,
-                         studyArea = sim$shpStudySubRegion,
+                         studyArea = sim$shpStudyArea,
                          rasterToMatch = sim$biomassMap,
                          method = "bilinear",
                          datatype = "INT2U",
