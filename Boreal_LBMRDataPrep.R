@@ -190,7 +190,7 @@ estimateParameters <- function(sim) {
                                  pctCoverMinThresh = 50,
                                  userTags = "stable")
   if (ncell(sim$rasterToMatch) > 3e6)  .gc()
-  
+
   message("5: ", Sys.time())
   #septable <- sim$obtainSEPCached(ecoregionMap = simulationMaps$ecoregionMap,
   septable <- Cache(obtainSEP, ecoregionMap = simulationMaps$ecoregionMap,
@@ -199,7 +199,7 @@ estimateParameters <- function(sim) {
                     userTags = "stable")
   septable[, SEP := round(SEP, 4)]
   if (ncell(sim$rasterToMatch) > 3e6)  .gc()
-  
+
   message("6: ", Sys.time())
   speciesEcoregionTable[, species := as.character(species)]
   septable[, species := as.character(species)]
@@ -234,7 +234,7 @@ estimateParameters <- function(sim) {
     NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)]
   }
   if (ncell(sim$rasterToMatch) > 3e6)  .gc()
-  
+
   message("7: ", Sys.time())
   if (nrow(NAdata) > 1) {
     #biomassFrombiggerMap <- sim$obtainMaxBandANPPFromBiggerEcoArea(speciesLayers = sim$specieslayers,
@@ -253,7 +253,7 @@ estimateParameters <- function(sim) {
                                            .(ecoregion, species, maxBiomass, maxANPP, SEP)]
   }
   if (ncell(sim$rasterToMatch) > 3e6)  .gc()
-  
+
   message("8: ", Sys.time())
   NAdata[, ':='(maxBiomass = 0, maxANPP = 0, SEP = 0)]
   speciesEcoregion <- rbind(NON_NAdata, NAdata)
@@ -272,7 +272,7 @@ estimateParameters <- function(sim) {
                                      file.path(outputPath(sim), "initialCommunitiesMap.tif"),
                                      userTags = "stable")
   if (ncell(sim$rasterToMatch) > 3e6)  .gc()
-  
+
   message("9: ", Sys.time())
 
   # species traits inputs
@@ -414,11 +414,11 @@ Save <- function(sim) {
                                 proj4string = crsUsed)
     sim$shpStudyAreaLarge <- SpaDES.tools::randomPolygon(x = polyCenter, hectares = 10000)
   }
-  
+
   needRstSR <- FALSE
   if (!suppliedElsewhere("rasterToMatch", sim)) {
     needRstSR <- TRUE
-  } 
+  }
   if (needRstSR) {
     message("  Rasterizing the shpStudyAreaLarge polygon map")
     if (!is(sim$shpStudyAreaLarge, "SpatialPolygonsDataFrame")) {
@@ -431,7 +431,7 @@ Save <- function(sim) {
       }
       sim$shpStudyAreaLarge <- SpatialPolygonsDataFrame(sim$shpStudyAreaLarge, data = dfData)
     }
-    
+
     # Layers provided by David Andison sometimes have LTHRC, sometimes LTHFC ... chose whichever
     LTHxC <- grep("(LTH.+C)",names(sim$shpStudyAreaLarge), value= TRUE)
     fieldName <- if (length(LTHxC)) {
@@ -441,13 +441,13 @@ Save <- function(sim) {
         names(sim$shpStudyAreaLarge)[1]
       } else NULL
     }
-    
+
     sim$rasterToMatch <- crop(fasterizeFromSp(sim$shpStudyAreaLarge, sim$rasterToMatch, fieldName),
                               sim$shpStudyAreaLarge)
     sim$rasterToMatch <- Cache(writeRaster, sim$rasterToMatch,
                                filename = file.path(dataPath(sim), "rasterToMatch.tif"),
                                datatype = "INT2U", overwrite = TRUE)
-  }  
+  }
 
   if (!suppliedElsewhere("shpStudyArea", sim)) {
     message("'shpStudyArea' was not provided by user. Using the same as 'shpStudyAreaLarge'")
