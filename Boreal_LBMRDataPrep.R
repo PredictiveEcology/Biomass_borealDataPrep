@@ -102,6 +102,7 @@ defineModule(sim, list(
 
 doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE) {
   if (eventType == "init") {
+    sim$specieslayers <- checkSpeciesLayerNames(sim$specieslayers)
     sim <- estimateParameters(sim)
 
     # schedule future event(s)
@@ -122,6 +123,37 @@ doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE
 #   - keep event functions short and clean, modularize by calling subroutines from section below.
 
 ### template initialization
+
+checkSpeciesLayerNames <- function(specieslayers) {
+  if (!all(names(specieslayers) %in% c("Pice_mar", "Pice_gla", "Abie_sp", "Pinu_sp", "Popu_tre", "Mixed"))) {
+    speciesEquivalencyTable <- data.table(Common = c("Black.Spruce", "White.Spruce", "Fir", "Pine", "Deciduous", "Mixed"),
+                                          Latin = c("Pice_mar", "Pice_gla", "Abie_sp", "Pinu_sp", "Popu_tre", "Mixed"))
+    matches <- pmatch(names(specieslayers), speciesEquivalencyTable$Common)
+    if (any(is.na(matches))) {
+      stop("specieslayers is expecting the species names to be Pice_mar, Pice_gla, Abie_sp, Pinu_sp, Popu_tre, Mixed.",
+           "Please rename them to these names")
+    }
+    names(specieslayers) <- speciesEquivalencyTable$Latin[matches]
+  }
+    
+
+  if (FALSE) {
+    # not needed, but this is for calculating vegetation type maps, from a species abundances stack
+    VTM <- Cache(pemisc::makeVegTypeMap, sim$specieslayers, sim$vegLeadingProportion)
+    tableCC <- table(factorValues(CCvtm, CCvtm[], att = "Species"))
+    tablePP <- table(factorValues(VTM, VTM[], att = "Species"))
+    
+    propCC <- round(tableCC/sum(tableCC),2)
+    propPP <- round(tablePP/sum(tablePP),2)
+    names(propPP) <- speciesEquivalencyTable$Common[pmatch(names(propPP), speciesEquivalencyTable$Latin)]
+    
+    propCC[match(names(propPP), names(propCC))]
+    propPP
+  }  
+
+  return(specieslayers)  
+}
+
 estimateParameters <- function(sim) {
   # # ! ----- EDIT BELOW ----- ! #
   cPath <- cachePath(sim)
@@ -581,7 +613,7 @@ Save <- function(sim) {
     writeRaster(specieslayersList$specieslayers, file.path(outputPath(sim), "speciesLayers.grd"), overwrite = TRUE)
     sim$specieslayers <- specieslayersList$specieslayers
     sim$speciesList <- specieslayersList$speciesList
-  }
+  } 
 
   # 3. species maps
   sim$speciesTable <- Cache(prepInputs, "speciesTraits.csv",
