@@ -223,8 +223,8 @@ estimateParameters <- function(sim) {
                                  userTags = "stable")
   if (ncell(sim$rasterToMatch) > 3e6)  .gc()
 
-  message("5: ", Sys.time())
-  #septable <- sim$obtainSEPCached(ecoregionMap = simulationMaps$ecoregionMap,
+  browser()
+  message("5: Derive Species Establishment Probability (SEP) from sim$specieslayers", Sys.time())
   septable <- Cache(obtainSEP, ecoregionMap = simulationMaps$ecoregionMap,
                     speciesLayers = sim$specieslayers,
                     SEPMinThresh = 10,
