@@ -135,23 +135,23 @@ checkSpeciesLayerNames <- function(specieslayers) {
     }
     names(specieslayers) <- speciesEquivalencyTable$Latin[matches]
   }
-    
+
 
   if (FALSE) {
     # not needed, but this is for calculating vegetation type maps, from a species abundances stack
     VTM <- Cache(pemisc::makeVegTypeMap, sim$specieslayers, sim$vegLeadingProportion)
     tableCC <- table(factorValues(CCvtm, CCvtm[], att = "Species"))
     tablePP <- table(factorValues(VTM, VTM[], att = "Species"))
-    
+
     propCC <- round(tableCC/sum(tableCC),2)
     propPP <- round(tablePP/sum(tablePP),2)
     names(propPP) <- speciesEquivalencyTable$Common[pmatch(names(propPP), speciesEquivalencyTable$Latin)]
-    
+
     propCC[match(names(propPP), names(propCC))]
     propPP
-  }  
+  }
 
-  return(specieslayers)  
+  return(specieslayers)
 }
 
 estimateParameters <- function(sim) {
@@ -178,14 +178,19 @@ estimateParameters <- function(sim) {
                                 ecoregion = 1:1031)
 
   message("ecoregionProducer: ", Sys.time())
+  # Note: this ecoregionMap is NOT the Canadian EcoRegion -- it is for LBMR, which uses "ecoregion"
+  ecoregionMap <- Cache( postProcess, sim$ecoDistrict,
+                         studyArea = sim$shpStudyArea)
   ecoregionFiles <- Cache(ecoregionProducer,
-                          studyAreaRaster = initialCommFiles$initialCommunityMap,
-                          ecoregionMapFull = sim$ecoDistrict,
+                          #studyAreaRaster = initialCommFiles$initialCommunityMap,
+                          #ecoregionMapFull = sim$ecoDistrict,
+                          ecoregionMap = ecoregionMap,
                           ecoregionName = "ECODISTRIC",
                           ecoregionActiveStatus = ecoregionstatus,
-                          studyArea = sim$studyArea,
-                          rstStudyArea = rstStudyRegionBinary,
-                          maskFn = fastMask,
+                          rasterToMatch = initialCommFiles$initialCommunityMap, #sim$rasterToMatch,
+                          #studyArea = sim$studyArea,
+                          #rstStudyArea = rstStudyRegionBinary,
+                          #maskFn = fastMask,
                           userTags = "stable")
 
   message("3: ", Sys.time())
@@ -444,14 +449,50 @@ Save <- function(sim) {
 
     polyCenter <- SpatialPoints(coords = data.frame(x = c(-1349980), y = c(6986895)),
                                 proj4string = crsUsed)
+
+    seedToKeep <- .GlobalEnv$.Random.seed
+    set.seed(1234)
     sim$shpStudyAreaLarge <- SpaDES.tools::randomPolygon(x = polyCenter, hectares = 10000)
+    .GlobalEnv$.Random.seed <- seedToKeep
   }
 
-  needRstSR <- FALSE
-  if (!suppliedElsewhere("rasterToMatch", sim)) {
-    needRstSR <- TRUE
+  if (!suppliedElsewhere("shpStudyArea", sim)) {
+    message("'shpStudyArea' was not provided by user. Using the same as 'shpStudyAreaLarge'")
+    sim$shpStudyArea <- sim$shpStudyAreaLarge
   }
-  if (needRstSR) {
+
+  needRTM <- FALSE
+  if (is.null(sim$rasterToMatch)) {
+    if (!suppliedElsewhere("rasterToMatch", sim)) {
+      needRTM <- TRUE
+      message("There is no rasterToMatch supplied; will attempt to use biomassMap")
+    } else {
+      stop("rasterToMatch is going to be supplied, but ", currentModule(sim), " requires it ",
+           "as part of its .inputObjects. Please make it accessible to ", currentModule(sim),
+           " in the .inputObjects by passing it in as an object in simInit(objects = list(rasterToMatch = aRaster)",
+           " or in a module that gets loaded prior to ", currentModule(sim))
+    }
+  }
+
+  if (!suppliedElsewhere("biomassMap", sim) || needRTM) {
+    sim$biomassMap <- Cache(prepInputs,
+                            targetFile = asPath(basename(biomassMapFilename)),
+                            archive = asPath(c("kNN-StructureBiomass.tar",
+                                               "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
+                            #url = extractURL("biomassMap"),
+                            destinationPath = dPath,
+                            studyArea = sim$shpStudyArea,
+                            rasterToMatch = sim$rasterToMatch,
+                            useSAcrs = TRUE,
+                            method = "bilinear",
+                            datatype = "INT2U",
+                            filename2 = TRUE, overwrite = TRUE,
+                            userTags = c("stable", currentModule(sim)))
+  }
+
+  if (needRTM) {
+    # if we need rasterToMatch, that means a) we don't have it, but b) we will have biomassMap
+    sim$rasterToMatch <- sim$biomassMap
     message("  Rasterizing the shpStudyAreaLarge polygon map")
     if (!is(sim$shpStudyAreaLarge, "SpatialPolygonsDataFrame")) {
       dfData <- if (is.null(rownames(sim$shpStudyAreaLarge))) {
@@ -481,11 +522,6 @@ Save <- function(sim) {
                                datatype = "INT2U", overwrite = TRUE)
   }
 
-  if (!suppliedElsewhere("shpStudyArea", sim)) {
-    message("'shpStudyArea' was not provided by user. Using the same as 'shpStudyAreaLarge'")
-    sim$shpStudyArea <- sim$shpStudyAreaLarge
-  }
-
   if (!identical(crsUsed, crs(sim$shpStudyAreaLarge))) {
     sim$shpStudyAreaLarge <- spTransform(sim$shpStudyAreaLarge, crsUsed) #faster without Cache
   }
@@ -495,21 +531,6 @@ Save <- function(sim) {
   }
 
   cacheTags = c(currentModule(sim), "function:.inputObjects", "function:spades")
-
-  if (!suppliedElsewhere("biomassMap", sim)) {
-    sim$biomassMap <- Cache(prepInputs,
-                            targetFile = biomassMapFilename,
-                            archive = asPath(c("kNN-StructureBiomass.tar",
-                                               "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
-                            url = extractURL("biomassMap"),
-                            destinationPath = dPath,
-                            studyArea = sim$shpStudyArea,
-                            useSAcrs = TRUE,
-                            method = "bilinear",
-                            datatype = "INT2U",
-                            filename2 = TRUE,
-                            userTags = c("stable", currentModule(sim)))
-  }
 
   # LCC2005
   if (!suppliedElsewhere("LCC2005", sim)) {
@@ -522,7 +543,7 @@ Save <- function(sim) {
                          rasterToMatch = sim$rasterToMatch,
                          method = "bilinear",
                          datatype = "INT2U",
-                         filename2 = TRUE,
+                         filename2 = TRUE, overwrite = TRUE,
                          userTags = currentModule(sim))
 
     projection(sim$LCC2005) <- projection(sim$rasterToMatch)
@@ -575,17 +596,17 @@ Save <- function(sim) {
   # stand age map
   if (!suppliedElsewhere("standAgeMap", sim)) {
     sim$standAgeMap <- Cache(prepInputs, #notOlderThan = Sys.time(),
-                             targetFile = standAgeMapFilename,
+                             targetFile = basename(standAgeMapFilename),
                              archive = asPath(c("kNN-StructureStandVolume.tar",
                                                 "NFI_MODIS250m_kNN_Structure_Stand_Age_v0.zip")),
                              destinationPath = dPath,
-                             url = extractURL("standAgeMap"),
+                             #url = extractURL("standAgeMap"),
                              fun = "raster::raster",
                              studyArea = sim$shpStudyAreaLarge,
                              rasterToMatch = sim$rasterToMatch,
                              method = "bilinear",
                              datatype = "INT2U",
-                             filename2 = TRUE,
+                             filename2 = TRUE, overwrite = TRUE,
                              userTags = c("stable", currentModule(sim)))
   }
 
@@ -613,7 +634,7 @@ Save <- function(sim) {
     writeRaster(specieslayersList$specieslayers, file.path(outputPath(sim), "speciesLayers.grd"), overwrite = TRUE)
     sim$specieslayers <- specieslayersList$specieslayers
     sim$speciesList <- specieslayersList$speciesList
-  } 
+  }
 
   # 3. species maps
   sim$speciesTable <- Cache(prepInputs, "speciesTraits.csv",
