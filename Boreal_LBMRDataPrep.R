@@ -418,7 +418,6 @@ Save <- function(sim) {
   ecodistrictAE <- basename(paste0(tools::file_path_sans_ext(ecodistrictFilename), ".", fexts))
   ecozoneAE <- basename(paste0(tools::file_path_sans_ext(ecozoneFilename), ".", fexts))
 
-  browser()
   if (!suppliedElsewhere("shpStudyAreaLarge", sim)) {
     message("'shpStudyAreaLarge' was not provided by user. Using a polygon in southwestern Alberta, Canada,")
 
