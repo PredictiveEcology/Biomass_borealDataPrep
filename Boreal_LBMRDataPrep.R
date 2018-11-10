@@ -447,13 +447,13 @@ Save <- function(sim) {
            " or in a module that gets loaded prior to ", currentModule(sim))
     }
   }
-  
+
   if (!suppliedElsewhere("biomassMap", sim) || needRTM) {
     sim$biomassMap <- Cache(prepInputs,
                             targetFile = asPath(basename(biomassMapFilename)),
                             archive = asPath(c("kNN-StructureBiomass.tar",
                                                "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
-                            #url = extractURL("biomassMap"),
+                            url = extractURL("biomassMap"),
                             destinationPath = dPath,
                             studyArea = sim$shpStudyArea,
                             rasterToMatch = sim$rasterToMatch,
