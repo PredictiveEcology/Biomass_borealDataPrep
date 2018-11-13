@@ -328,6 +328,7 @@ estimateParameters <- function(sim) {
 
   ## adjust some species-specific values
   speciesTable[species == "Pice_gla", seeddistance_max := 2000] ## (see LandWeb#96)
+  #speciesTable[species == "Popu_tre", longevity := 80] ## (see LandWeb#67)
 
   message("10: ", Sys.time())
 
