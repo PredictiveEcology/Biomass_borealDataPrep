@@ -326,12 +326,16 @@ estimateParameters <- function(sim) {
   ## filter table to existing species layers
   speciesTable <- speciesTable[species %in% names(sim$specieslayers)]
 
+  ## adjust some species-specific values
+  speciesTable[species == "Pice_gla", seeddistance_max := 2000] ## (see LandWeb#96)
+
   message("10: ", Sys.time())
 
   # Take the smallest values of every column, within species, because it is northern boreal forest
   speciesTable <- speciesTable[species %in% names(sim$specieslayers), ][
     , ':='(species1 = NULL, species2 = NULL)] %>%
     .[, lapply(.SD, function(x) if (is.numeric(x)) min(x, na.rm = TRUE) else x[1]), by = "species"]
+  sim$species <- speciesTable
 
   initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species)]
   set(initialCommunities, NULL, paste("age", 1:15, sep = ""), NA)
@@ -339,7 +343,7 @@ estimateParameters <- function(sim) {
   message("11: ", Sys.time())
 
   ## filter communities to species that have traits
-  initialCommunities <- initialCommunities[initialCommunities$species %in% speciesTable$species,]
+  initialCommunities <- initialCommunities[initialCommunities$species %in% sim$species$species,]
 
   initialCommunitiesFn <- function(initialCommunities, speciesTable) {
     for (i in 1:nrow(initialCommunities)) {
@@ -352,10 +356,9 @@ estimateParameters <- function(sim) {
   }
   message("12: ", Sys.time())
 
-  sim$initialCommunities <- Cache(initialCommunitiesFn, initialCommunities, speciesTable,
+  sim$initialCommunities <- Cache(initialCommunitiesFn, initialCommunities, sim$species,
                                   userTags = "stable")
 
-  sim$species <- speciesTable
   sim$minRelativeB <- data.frame(ecoregion = sim$ecoregion[active == "yes",]$ecoregion,
                                  X1 = 0.2, X2 = 0.4, X3 = 0.5,
                                  X4 = 0.7, X5 = 0.9)
