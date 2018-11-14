@@ -151,18 +151,12 @@ estimateParameters <- function(sim) {
 
   message("ecoregionProducer: ", Sys.time())
   # Note: this ecoregionMap is NOT the Canadian EcoRegion -- it is for LBMR, which uses "ecoregion"
-  ecoregionMap <- Cache( postProcess, sim$ecoDistrict,
-                         studyArea = sim$shpStudyArea)
+  ecoregionMap <- Cache(postProcess, sim$ecoDistrict, studyArea = sim$shpStudyArea, filename2 = NULL)
   ecoregionFiles <- Cache(ecoregionProducer,
-                          #studyAreaRaster = initialCommFiles$initialCommunityMap,
-                          #ecoregionMapFull = sim$ecoDistrict,
                           ecoregionMap = ecoregionMap,
                           ecoregionName = "ECODISTRIC",
                           ecoregionActiveStatus = ecoregionstatus,
                           rasterToMatch = initialCommFiles$initialCommunityMap, #sim$rasterToMatch,
-                          #studyArea = sim$studyArea,
-                          #rstStudyArea = rstStudyRegionBinary,
-                          #maskFn = fastMask,
                           userTags = "stable")
 
   message("3: ", Sys.time())
