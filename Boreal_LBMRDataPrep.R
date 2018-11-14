@@ -19,6 +19,9 @@ defineModule(sim, list(
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
   reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos"),
   parameters = rbind(
+    defineParameter("runName", "character", NA_character_, NA, NA,
+                    paste("The name of the current simulation run, used to override",
+                          "certain default input values (see override functions below).")),
     defineParameter(".crsUsed", "CRS", raster::crs(
       paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
             "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
@@ -342,7 +345,7 @@ estimateParameters <- function(sim) {
   initialCommunitiesFn <- function(initialCommunities, speciesTable) {
     for (i in 1:nrow(initialCommunities)) {
       agelength <- sample(1:15, 1)
-      ages <- sort(sample(1:speciesTable[species == initialCommunities$species[i],longevity],
+      ages <- sort(sample(1:speciesTable[species == initialCommunities$species[i], longevity],
                           agelength))
       initialCommunities[i, 4:(agelength + 3)] <- ages
     }
@@ -637,16 +640,15 @@ Save <- function(sim) {
     sim$speciesThreshold <- 50
   }
 
-  if (!is.null(sim$override.Boreal_LBMRDataPrep.inputObjects))
-    sim <- sim$override.Boreal_LBMRDataPrep.inputObjects(sim)
+  if (!is.null(override.Boreal_LBMRDataPrep.inputObjects))
+    sim <- override.Boreal_LBMRDataPrep.inputObjects(sim)
 
   return(invisible(sim))
 }
 
 override.Boreal_LBMRDataPrep.inputObjects <- function(sim) {
-  if (grepl("aspen80", sim$runName)) {
-    speciesTable[species == "Popu_tre", longevity := 80] ## (see LandWeb#67)
-    sim$speciesTable[species == "Popu_tre", longevity := 80] ## (see LandWeb#67)
+  if (grepl("aspen80", P(sim)$runName)) {
+    speciesTable[LandisCode == "POPU.TRE", Longevity := 80] ## (see LandWeb#67)
   }
   sim
 }
