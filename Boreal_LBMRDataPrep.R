@@ -328,7 +328,6 @@ estimateParameters <- function(sim) {
 
   ## adjust some species-specific values
   speciesTable[species == "Pice_gla", seeddistance_max := 2000] ## (see LandWeb#96)
-  #speciesTable[species == "Popu_tre", longevity := 80] ## (see LandWeb#67)
 
   message("10: ", Sys.time())
 
@@ -484,7 +483,7 @@ Save <- function(sim) {
     }
 
     # Layers provided by David Andison sometimes have LTHRC, sometimes LTHFC ... chose whichever
-    LTHxC <- grep("(LTH.+C)",names(sim$shpStudyAreaLarge), value= TRUE)
+    LTHxC <- grep("(LTH.+C)",names(sim$shpStudyAreaLarge), value = TRUE)
     fieldName <- if (length(LTHxC)) {
       LTHxC
     } else {
@@ -640,10 +639,20 @@ Save <- function(sim) {
     sim$studyArea <- sim$shpStudyAreaLarge
   }
 
-
   if (!suppliedElsewhere("speciesThreshold", sim = sim)) {
     sim$speciesThreshold <- 50
   }
 
+  if (!is.null(sim$override.Boreal_LBMRDataPrep.inputObjects))
+    sim <- sim$override.Boreal_LBMRDataPrep.inputObjects(sim)
+
   return(invisible(sim))
+}
+
+override.Boreal_LBMRDataPrep.inputObjects <- function(sim) {
+  if (grepl("aspen80", sim$runName)) {
+    speciesTable[species == "Popu_tre", longevity := 80] ## (see LandWeb#67)
+    sim$speciesTable[species == "Popu_tre", longevity := 80] ## (see LandWeb#67)
+  }
+  sim
 }
