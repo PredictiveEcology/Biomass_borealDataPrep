@@ -1,10 +1,10 @@
-loadAllSpeciesLayers <- function(dataPath, biomassMap, shpStudyRegionFull, moduleName,
+loadAllSpeciesLayers <- function(dataPath, rasterToMatch, shpStudyAreaLarge, moduleName,
                                  cachePath, ...) {
   speciesNamesEnd <- c("Abie_sp", "Pice_Gla", "Pice_Mar", "Pinu_sp", "Popu_Tre")
   speciesnamesRaw <- c("Abie_Las", "Pice_Gla", "Pice_Mar", "Pinu_Ban", "Pinu_Con", "Popu_Tre")
   species1 <- list()
   a11 <- 1
-  suffix <- if (basename(cachePath) == "cache") paste0(as.character(ncell(biomassMap)), "px") else
+  suffix <- if (basename(cachePath) == "cache") paste0(as.character(ncell(rasterToMatch)), "px") else
     basename(cachePath)
   suffix <- paste0("_", suffix)
   for (sp in speciesnamesRaw) {
@@ -16,8 +16,8 @@ loadAllSpeciesLayers <- function(dataPath, biomassMap, shpStudyRegionFull, modul
       #alsoExtract = if (sp == speciesnamesRaw[1]) paste0("NFI_MODIS250m_kNN_Species_", speciesnamesRaw[-1], "_v0.tif"),
       destinationPath = asPath(dataPath),
       fun = "raster::raster",
-      studyArea = shpStudyRegionFull,
-      rasterToMatch = biomassMap,
+      studyArea = shpStudyAreaLarge,
+      rasterToMatch = rasterToMatch,
       method = "bilinear",
       datatype = "INT2U",
       filename2 =postProcessedFilename
