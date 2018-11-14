@@ -19,6 +19,9 @@ defineModule(sim, list(
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
   reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos"),
   parameters = rbind(
+    defineParameter("runName", "character", NA_character_, NA, NA,
+                    paste("The name of the current simulation run, used to override",
+                          "certain default input values (see override functions below).")),
     defineParameter(".crsUsed", "CRS", raster::crs(
       paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
             "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
@@ -151,18 +154,12 @@ estimateParameters <- function(sim) {
 
   message("ecoregionProducer: ", Sys.time())
   # Note: this ecoregionMap is NOT the Canadian EcoRegion -- it is for LBMR, which uses "ecoregion"
-  ecoregionMap <- Cache( postProcess, sim$ecoDistrict,
-                         studyArea = sim$shpStudyArea)
+  ecoregionMap <- Cache(postProcess, sim$ecoDistrict, studyArea = sim$shpStudyArea, filename2 = NULL)
   ecoregionFiles <- Cache(ecoregionProducer,
-                          #studyAreaRaster = initialCommFiles$initialCommunityMap,
-                          #ecoregionMapFull = sim$ecoDistrict,
                           ecoregionMap = ecoregionMap,
                           ecoregionName = "ECODISTRIC",
                           ecoregionActiveStatus = ecoregionstatus,
                           rasterToMatch = initialCommFiles$initialCommunityMap, #sim$rasterToMatch,
-                          #studyArea = sim$studyArea,
-                          #rstStudyArea = rstStudyRegionBinary,
-                          #maskFn = fastMask,
                           userTags = "stable")
 
   message("3: ", Sys.time())
@@ -326,12 +323,16 @@ estimateParameters <- function(sim) {
   ## filter table to existing species layers
   speciesTable <- speciesTable[species %in% names(sim$specieslayers)]
 
+  ## adjust some species-specific values
+  speciesTable[species == "Pice_gla", seeddistance_max := 2000] ## (see LandWeb#96)
+
   message("10: ", Sys.time())
 
   # Take the smallest values of every column, within species, because it is northern boreal forest
   speciesTable <- speciesTable[species %in% names(sim$specieslayers), ][
     , ':='(species1 = NULL, species2 = NULL)] %>%
     .[, lapply(.SD, function(x) if (is.numeric(x)) min(x, na.rm = TRUE) else x[1]), by = "species"]
+  sim$species <- speciesTable
 
   initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species)]
   set(initialCommunities, NULL, paste("age", 1:15, sep = ""), NA)
@@ -339,12 +340,12 @@ estimateParameters <- function(sim) {
   message("11: ", Sys.time())
 
   ## filter communities to species that have traits
-  initialCommunities <- initialCommunities[initialCommunities$species %in% speciesTable$species,]
+  initialCommunities <- initialCommunities[initialCommunities$species %in% sim$species$species,]
 
   initialCommunitiesFn <- function(initialCommunities, speciesTable) {
     for (i in 1:nrow(initialCommunities)) {
       agelength <- sample(1:15, 1)
-      ages <- sort(sample(1:speciesTable[species == initialCommunities$species[i],longevity],
+      ages <- sort(sample(1:speciesTable[species == initialCommunities$species[i], longevity],
                           agelength))
       initialCommunities[i, 4:(agelength + 3)] <- ages
     }
@@ -352,10 +353,9 @@ estimateParameters <- function(sim) {
   }
   message("12: ", Sys.time())
 
-  sim$initialCommunities <- Cache(initialCommunitiesFn, initialCommunities, speciesTable,
+  sim$initialCommunities <- Cache(initialCommunitiesFn, initialCommunities, sim$species,
                                   userTags = "stable")
 
-  sim$species <- speciesTable
   sim$minRelativeB <- data.frame(ecoregion = sim$ecoregion[active == "yes",]$ecoregion,
                                  X1 = 0.2, X2 = 0.4, X3 = 0.5,
                                  X4 = 0.7, X5 = 0.9)
@@ -480,7 +480,7 @@ Save <- function(sim) {
     }
 
     # Layers provided by David Andison sometimes have LTHRC, sometimes LTHFC ... chose whichever
-    LTHxC <- grep("(LTH.+C)",names(sim$shpStudyAreaLarge), value= TRUE)
+    LTHxC <- grep("(LTH.+C)",names(sim$shpStudyAreaLarge), value = TRUE)
     fieldName <- if (length(LTHxC)) {
       LTHxC
     } else {
@@ -636,10 +636,19 @@ Save <- function(sim) {
     sim$studyArea <- sim$shpStudyAreaLarge
   }
 
-
   if (!suppliedElsewhere("speciesThreshold", sim = sim)) {
     sim$speciesThreshold <- 50
   }
 
+  if (!is.null(override.Boreal_LBMRDataPrep.inputObjects))
+    sim <- override.Boreal_LBMRDataPrep.inputObjects(sim)
+
   return(invisible(sim))
+}
+
+override.Boreal_LBMRDataPrep.inputObjects <- function(sim) {
+  if (grepl("aspen80", P(sim)$runName)) {
+    sim$speciesTable[LandisCode == "POPU.TRE", Longevity := 80] ## (see LandWeb#67)
+  }
+  sim
 }

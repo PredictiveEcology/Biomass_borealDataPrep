@@ -11,8 +11,10 @@ ecoregionProducer <- function(ecoregionMap, ecoregionName,
 
   ecoregionFactorValues <- na.omit(unique(ecoregionMap[]))
 
-  ecoregionTable <- data.table(mapcode = seq_along(ecoregionFactorValues[!is.na(ecoregionFactorValues)]),
-                               ecoregion = as.numeric(ecoregionFactorValues[!is.na(ecoregionFactorValues)]))
+  ecoregionTable <- data.table(
+    mapcode = seq_along(ecoregionFactorValues[!is.na(ecoregionFactorValues)]),
+    ecoregion = as.numeric(ecoregionFactorValues[!is.na(ecoregionFactorValues)])
+  )
   message("ecoregionProducer mapvalues: ", Sys.time())
   ecoregionMap[] <- plyr::mapvalues(ecoregionMap[], from = ecoregionTable$ecoregion, to = ecoregionTable$mapcode)
   ecoregionActiveStatus[, ecoregion := as.character(ecoregion)]
@@ -21,7 +23,7 @@ ecoregionProducer <- function(ecoregionMap, ecoregionName,
   ecoregionTable <- dplyr::left_join(ecoregionTable,
                                      ecoregionActiveStatus,
                                      by = "ecoregion") %>%
-    data.table
+    data.table()
   ecoregionTable[is.na(active), active := "no"]
   ecoregionTable <- ecoregionTable[,.(active, mapcode, ecoregion)]
   return(list(ecoregionMap = ecoregionMap,
