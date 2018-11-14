@@ -648,7 +648,7 @@ Save <- function(sim) {
 
 override.Boreal_LBMRDataPrep.inputObjects <- function(sim) {
   if (grepl("aspen80", P(sim)$runName)) {
-    speciesTable[LandisCode == "POPU.TRE", Longevity := 80] ## (see LandWeb#67)
+    sim$speciesTable[LandisCode == "POPU.TRE", Longevity := 80] ## (see LandWeb#67)
   }
   sim
 }
