@@ -50,3 +50,5 @@
 "rasterToMatch.tif" "91fa9043d26d93e9" "1212" "xxhash64"
 "rstStudyRegion.tif" "264e9fd679127ec5" "175651" "xxhash64"
 "speciesTraits.csv" "155e633022e134cf" "9994" "xxhash64"
+"kNN-StructureStandVolume.tar" "9a1a0a8ef7356ec4" "1808496640" "xxhash64"
+"NFI_MODIS250m_kNN_Structure_Stand_Age_v0.zip" "22cd9a6a9e4cdf1d" "407564483" "xxhash64"
