@@ -62,11 +62,10 @@ paths <- getPaths()
 
 ```{r get-study-area}
 library(raster)
-cachePath <- file.path("Boreal_LBMRDataPrep", "cache")
-modulePath <- Cache(readline, paste0("Where is the module path? (e.g., ~/module, with no quotes).\n",
-                                     "Press Enter to accept the path in getPaths()$modulePath: "),
-                    cacheRepo = cachePath)
-setPaths(cachePath = cachePath, modulePath = modulePath)
+# modulePath <- Cache(readline, paste0("Where is the module path? (e.g., ~/module, with no quotes).\n",
+#                                      "Press Enter to accept the path in getPaths()$modulePath: "),
+#                     cacheRepo = cachePath)
+# setPaths(cachePath = cachePath, modulePath = modulePath)
 
 ## do you want to hand-draw a map or use defaults?
 # - note that large areas will take longer to compute
@@ -82,23 +81,24 @@ if (handDrawMap) {
   Plot(LIM_SA, addTo = "canadaMap", col = "green")
   
   ## hand-drawn study area
-  if(!exists("shpStudyRegionFull")) {
-    message("Since there is no object called 'shpStudyRegionFull', please draw a study area with 10 points")
+  if(!exists("shpStudyAreaLarge")) {
+    message("Since there is no object called 'shpStudyAreaLarge', please draw a study area with 10 points")
     severalrandompoints <- clickCoordinates(10)
-    if(startsWith(attr(severalrandompoints, "tags"), "cache")) message("Taking shpStudyRegionFull from Cache")
-    shpStudyRegionFull <- SpatialPolygons(list(Polygons(list(Polygon(severalrandompoints$coords)), ID = 1)),
+    if(startsWith(attr(severalrandompoints, "tags"), "cache")) message("Taking shpStudyAreaLarge from Cache")
+    shpStudyAreaLarge <- SpatialPolygons(list(Polygons(list(Polygon(severalrandompoints$coords)), ID = 1)),
                                           proj4string = crs(canadaMap))
   }
+  Plot(shpStudyAreaLarge, addTo = "canadaMap", col = "red")
 }
-Plot(shpStudyRegionFull, addTo = "canadaMap", col = "red")
 
 times <- list(start = 0, end = 10)
 modules <- list("Boreal_LBMRDataPrep")
-objects <- if (handDrawMap) list("shpStudyRegionFull" = shpStudyRegionFull,
-                                 "shpStudySubRegion" = shpStudyRegionFull) else list()
+objects <- if (handDrawMap) list("shpStudyAreaLarge" = shpStudyAreaLarge,
+                                 "shpStudyArea" = shpStudyAreaLarge) else list()
 
-mySim <- simInit(times = times, params = parameters, modules = modules,
-                 objects = objects)
+mySim <- simInit(times = times, #params = parameters, 
+                 modules = append(modules, "LBMR"),
+                 objects = objects, paths = getPaths())
 ```
 
 # Run `spades`
@@ -130,7 +130,7 @@ During the `simInit` call, if the user does not provide alternatives for the exp
 # Inputs
 
 This module has several input requirements. 
-One is a study area, which should be provided as a SpatialPolygonsDataFrame, and named `shpStudyRegionFull`.
+One is a study area, which should be provided as a SpatialPolygonsDataFrame, and named `shpStudyAreaLarge`.
 This should be inside the boundaries of the boreal forest of Canada. 
 When first running the code in this `.Rmd` file, you will be prompted to draw a polygon if none is provided as an input.
 
@@ -152,8 +152,8 @@ ls(simOut)
 # Examine a few tables a visuals
 simOut$speciesTable
 Plot(simOut$biomassMap)
-simOut$shpStudyRegionFull <- spTransform(simOut$shpStudyRegionFull, crs(simOut$biomassMap))
-Plot(simOut$shpStudyRegionFull, addTo = "simOut$biomassMap")
+simOut$shpStudyAreaLarge <- spTransform(simOut$shpStudyAreaLarge, crs(simOut$biomassMap))
+Plot(simOut$shpStudyAreaLarge, addTo = "simOut$biomassMap")
 ```
 
 # References
