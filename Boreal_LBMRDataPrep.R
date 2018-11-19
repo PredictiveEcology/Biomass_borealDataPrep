@@ -19,9 +19,6 @@ defineModule(sim, list(
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
   reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos"),
   parameters = rbind(
-    defineParameter("runName", "character", NA_character_, NA, NA,
-                    paste("The name of the current simulation run, used to override",
-                          "certain default input values (see override functions below).")),
     defineParameter(".crsUsed", "CRS", raster::crs(
       paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
             "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
@@ -281,58 +278,8 @@ estimateParameters <- function(sim) {
   message("9: ", Sys.time())
 
   # species traits inputs
-  speciesTable <- sim$speciesTable
-  names(speciesTable) <- c("species", "Area", "longevity", "sexualmature", "shadetolerance", "firetolerance",
-                           "seeddistance_eff", "seeddistance_max", "resproutprob", "resproutage_min",
-                           "resproutage_max", "postfireregen", "leaflongevity", "wooddecayrate",
-                           "mortalityshape", "growthcurve", "leafLignin", "hardsoft")
-  speciesTable[, ':='(Area = NULL, hardsoft = NULL)]
-  # speciesTable[, ':='(Area = NULL)]   ## hardsoft used in fire model
-  speciesTable$species1 <- as.character(substring(speciesTable$species, 1, 4))
-  speciesTable$species2 <- as.character(substring(speciesTable$species, 6, nchar(as.character(speciesTable$species))))
-  speciesTable[, ':='(species = paste(as.character(substring(species1, 1, 1)),
-                                      tolower(as.character(substring(species1, 2, nchar(species1)))),
-                                      "_", as.character(substring(species2, 1, 1)),
-                                      tolower(as.character(substring(species2, 2, nchar(species2)))),
-                                      sep = ""))]
-
-  speciesTable$species <- toSentenceCase(speciesTable$species)
-  speciesTable[species == "Pinu_con.con", species := "Pinu_con"]
-  speciesTable[species == "Pinu_con.lat", species := "Pinu_con"]
-  speciesTable[species == "Betu_all", species := "Betu_sp"]
-
-  ## convert species names to match user-input list
-  speciesList <- sim$speciesList
-  rownames(speciesList) <- sapply(strsplit(speciesList[,1], "_"), function(x) {
-    x[1] <- substring(x[1], 1, 4)
-    x[2] <-  substring(x[2], 1, 3)
-    paste(x, collapse = "_")
-  })
-
-  ## replace eventual "spp" and "all" by sp (currently used instead of spp)
-  rownames(speciesList) <- sub("_spp*", "_sp", rownames(speciesList))
-  rownames(speciesList) <- sub("_all", "_sp", rownames(speciesList))
-
-  ## match rownames to speciesTable$species
-  rownames(speciesList) <- toSentenceCase(rownames(speciesList))
-
-  ## find matching names to replace in speciesTable
-  matchNames <- speciesTable[species %in% rownames(speciesList), species]
-  speciesTable[species %in% rownames(speciesList), species := speciesList[matchNames, 2]]
-
-  ## filter table to existing species layers
-  speciesTable <- speciesTable[species %in% names(sim$specieslayers)]
-
-  ## adjust some species-specific values
-  speciesTable[species == "Pice_gla", seeddistance_max := 2000] ## (see LandWeb#96)
-
+  sim$species <- prepSpeciesTable(sim$speciesTable, sim$speciesList, sim$speciesLayers)
   message("10: ", Sys.time())
-
-  # Take the smallest values of every column, within species, because it is northern boreal forest
-  speciesTable <- speciesTable[species %in% names(sim$specieslayers), ][
-    , ':='(species1 = NULL, species2 = NULL)] %>%
-    .[, lapply(.SD, function(x) if (is.numeric(x)) min(x, na.rm = TRUE) else x[1]), by = "species"]
-  sim$species <- speciesTable
 
   initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species)]
   set(initialCommunities, NULL, paste("age", 1:15, sep = ""), NA)
@@ -640,15 +587,78 @@ Save <- function(sim) {
     sim$speciesThreshold <- 50
   }
 
-  if (!is.null(override.Boreal_LBMRDataPrep.inputObjects))
-    sim <- override.Boreal_LBMRDataPrep.inputObjects(sim)
-
   return(invisible(sim))
 }
 
-override.Boreal_LBMRDataPrep.inputObjects <- function(sim) {
-  if (grepl("aspen80", P(sim)$runName)) {
-    sim$speciesTable[LandisCode == "POPU.TRE", Longevity := 80] ## (see LandWeb#67)
-  }
-  sim
+prepSpeciesTable <- function(speciesTable, speciesList, speciesLayers, ...) {
+  dots <- list(...)
+  names(speciesTable) <- c(
+    "species",
+    "Area",
+    "longevity",
+    "sexualmature",
+    "shadetolerance",
+    "firetolerance",
+    "seeddistance_eff",
+    "seeddistance_max",
+    "resproutprob",
+    "resproutage_min",
+    "resproutage_max",
+    "postfireregen",
+    "leaflongevity",
+    "wooddecayrate",
+    "mortalityshape",
+    "growthcurve",
+    "leafLignin",
+    "hardsoft"
+  )
+  speciesTable[, ':='(Area = NULL, hardsoft = NULL)]
+  # speciesTable[, ':='(Area = NULL)]   ## hardsoft used in fire model
+  speciesTable$species1 <- as.character(substring(speciesTable$species, 1, 4))
+  speciesTable$species2 <- as.character(substring(speciesTable$species, 6,
+                                                  nchar(as.character(speciesTable$species))))
+  speciesTable[, ':='(species = paste(as.character(substring(species1, 1, 1)),
+                                      tolower(as.character(substring(species1, 2, nchar(species1)))),
+                                      "_", as.character(substring(species2, 1, 1)),
+                                      tolower(as.character(substring(species2, 2, nchar(species2)))),
+                                      sep = ""))]
+
+  speciesTable$species <- toSentenceCase(speciesTable$species)
+  speciesTable[species == "Pinu_con.con", species := "Pinu_con"]
+  speciesTable[species == "Pinu_con.lat", species := "Pinu_con"]
+  speciesTable[species == "Betu_all", species := "Betu_sp"]
+
+  ## convert species names to match user-input list
+  rownames(speciesList) <- sapply(strsplit(speciesList[,1], "_"), function(x) {
+    x[1] <- substring(x[1], 1, 4)
+    x[2] <-  substring(x[2], 1, 3)
+    paste(x, collapse = "_")
+  })
+
+  ## replace eventual "spp" and "all" by sp (currently used instead of spp)
+  rownames(speciesList) <- sub("_spp*", "_sp", rownames(speciesList))
+  rownames(speciesList) <- sub("_all", "_sp", rownames(speciesList))
+
+  ## match rownames to speciesTable$species
+  rownames(speciesList) <- toSentenceCase(rownames(speciesList))
+
+  ## find matching names to replace in speciesTable
+  matchNames <- speciesTable[species %in% rownames(speciesList), species]
+  speciesTable[species %in% rownames(speciesList), species := speciesList[matchNames, 2]]
+
+  ## filter table to existing species layers
+  speciesTable <- speciesTable[species %in% names(specieslayers)]
+browser()
+  ## adjust some species-specific values
+  speciesTable[species == "Pice_gla", seeddistance_max := 2000] ## (see LandWeb#96)
+
+  if (isTRUE(dots$aspen80))
+    speciesTable[species == "Popu_tre", longevity := 80] ## (see LandWeb#67)
+
+  ## Take the smallest values of every column, within species, because it is northern boreal forest
+  speciesTable <- speciesTable[species %in% names(specieslayers), ][
+    , ':='(species1 = NULL, species2 = NULL)] %>%
+    .[, lapply(.SD, function(x) if (is.numeric(x)) min(x, na.rm = TRUE) else x[1]), by = "species"]
+
+  speciesTable
 }
