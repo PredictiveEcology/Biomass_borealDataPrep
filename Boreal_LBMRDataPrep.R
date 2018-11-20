@@ -392,6 +392,8 @@ Save <- function(sim) {
   cPath <- cachePath(sim)
   dPath <- asPath(dataPath(sim), 1)
   
+  cacheTags = c(currentModule(sim), "function:.inputObjects", "function:spades")
+  
   # 1. test if all input objects are already present (e.g., from inputs, objects or another module)
   a <- depends(sim)
   whThisMod <- which(unlist(lapply(a@dependencies, function(x) x@name)) == "Boreal_LBMRDataPrep")
@@ -468,7 +470,7 @@ Save <- function(sim) {
                               method = "bilinear",
                               datatype = "INT2U",
                               filename2 = TRUE, overwrite = TRUE,
-                              userTags = c("stable", currentModule(sim)))
+                              userTags = cacheTags)
     } else {
       sim$biomassMap <- Cache(prepInputs,
                               targetFile = asPath(basename(biomassMapFilename)),
@@ -481,7 +483,7 @@ Save <- function(sim) {
                               method = "bilinear",
                               datatype = "INT2U",
                               filename2 = TRUE, overwrite = TRUE,
-                              userTags = c("stable", currentModule(sim)))
+                              userTags = cacheTags)
     }
     
   }
@@ -521,8 +523,6 @@ Save <- function(sim) {
                                datatype = "INT2U", overwrite = TRUE)
   }
   
-  cacheTags = c(currentModule(sim), "function:.inputObjects", "function:spades")
-  
   # LCC2005
   if (!suppliedElsewhere("LCC2005", sim)) {
     sim$LCC2005 <- Cache(prepInputs,
@@ -535,7 +535,7 @@ Save <- function(sim) {
                          method = "bilinear",
                          datatype = "INT2U",
                          filename2 = TRUE, overwrite = TRUE,
-                         userTags = currentModule(sim))
+                         userTags = cacheTags)
     
     projection(sim$LCC2005) <- projection(sim$rasterToMatch)
   }
