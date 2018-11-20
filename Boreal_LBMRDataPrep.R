@@ -401,7 +401,7 @@ Save <- function(sim) {
                             targetFile = asPath(basename(biomassMapFilename)),
                             archive = asPath(c("kNN-StructureBiomass.tar",
                                                "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
-                            #url = extractURL("biomassMap"),
+                            url = extractURL("biomassMap"),
                             destinationPath = dPath,
                             studyArea = sim$shpStudyArea,
                             rasterToMatch = sim$rasterToMatch,

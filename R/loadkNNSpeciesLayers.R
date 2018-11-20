@@ -2,7 +2,7 @@
 ## Function to load kNN species layers from online data repository
 ## ------------------------------------------------------------------
 
-## dataPath: directory to data folder
+## dPath: directory to data folder
 ## rasterToMatch: passed to prepInputs
 ## studyArea: passed to prepInputs
 ## species is either a character vector of species names to download,
@@ -12,7 +12,7 @@
 ##    Defaults to 1
 ## url: is the source url for the data, passed to prepInputs.
 
-loadkNNSpeciesLayers <- function(dataPath, rasterToMatch, studyArea,
+loadkNNSpeciesLayers <- function(dPath, rasterToMatch, studyArea,
                                  speciesList = NULL, thresh = 1, url, cachePath, ...) {
   if (class(speciesList) == "matrix") {
     ## check column names
@@ -40,20 +40,20 @@ loadkNNSpeciesLayers <- function(dataPath, rasterToMatch, studyArea,
 
   species1 <- Cache(loadFun, url = url, spp = speciesList, #[, "speciesNamesRaw"],
                     #loadFun,
-                    dataPath = dataPath,
+                    dPath = dPath,
                     suffix = suffix,
                     studyArea = studyArea, rasterToMatch = rasterToMatch,
                     userTags = "kNN_SppLoad")
   # species1 <- Cache(lapply, seq_len(NROW(speciesList)),
   #                   spp = speciesList, #[, "speciesNamesRaw"],
-  #                   loadFun, url = url, dataPath = dataPath,
+  #                   loadFun, url = url, dPath = dPath,
   #                   suffix = suffix,
   #                   studyArea = studyArea, rasterToMatch = rasterToMatch,
   #                   userTags = "kNN_SppLoad")
 
   ## get all kNN species
   if (FALSE) { # TODO: This no longer does all species
-    allSpp <- Cache(untar, tarfile = file.path(dataPath, "kNN-Species.tar"), list = TRUE)
+    allSpp <- Cache(untar, tarfile = file.path(dPath, "kNN-Species.tar"), list = TRUE)
     allSpp <- allSpp %>%
       grep(".zip", ., value = TRUE) %>%
       sub("_v0.zip", "", .) %>%
@@ -84,7 +84,7 @@ loadkNNSpeciesLayers <- function(dataPath, rasterToMatch, studyArea,
       sumSpecies <- spp2sum[[i]]
       newLayerName <- names(spp2sum)[i]
 
-      fname <- .suffix(file.path(dataPath, paste0("KNN", newLayerName, ".tif")), suffix)
+      fname <- .suffix(file.path(dPath, paste0("KNN", newLayerName, ".tif")), suffix)
       a <- Cache(sumRastersBySpecies,
                  speciesLayers = species1[sumSpecies],
                  newLayerName = newLayerName,
@@ -135,7 +135,7 @@ sumRastersBySpecies <- function(speciesLayers, layersToSum,
   ras_out # Work around for Cache
 }
 
-loadFun <- function(speciesListIndex, spp, suffix, url, dataPath,
+loadFun <- function(speciesListIndex, spp, suffix, url, dPath,
                     studyArea, rasterToMatch) {
 
   if (is.null(spp)) {
@@ -173,7 +173,7 @@ loadFun <- function(speciesListIndex, spp, suffix, url, dataPath,
       targetFile = targetFile,
       url = url,
       archive = archive,
-      destinationPath = asPath(dataPath),
+      destinationPath = asPath(dPath),
       fun = "raster::raster")#,
       #studyArea = studyArea,
       #rasterToMatch = rasterToMatch,
@@ -203,7 +203,7 @@ loadFun <- function(speciesListIndex, spp, suffix, url, dataPath,
   species1 <- Map(targetFile = targetFiles, archive = archives,
                   filename2 = postProcessedFilenames,
                   MoreArgs = list(url = url,
-                                  destinationPath = asPath(dataPath),
+                                  destinationPath = asPath(dPath),
                                   fun = "raster::raster",
                                   studyArea = studyArea,
                                   rasterToMatch = rasterToMatch,
@@ -216,7 +216,7 @@ loadFun <- function(speciesListIndex, spp, suffix, url, dataPath,
   #   targetFile = targetFile,
   #   url = url,
   #   archive = archive,
-  #   destinationPath = asPath(dataPath),
+  #   destinationPath = asPath(dPath),
   #   fun = "raster::raster",
   #   studyArea = studyArea,
   #   rasterToMatch = rasterToMatch,
