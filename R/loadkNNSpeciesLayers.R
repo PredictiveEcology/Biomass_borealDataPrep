@@ -1,17 +1,22 @@
-## ------------------------------------------------------------------
-## Function to load kNN species layers from online data repository
-## ------------------------------------------------------------------
-
-## dPath: directory to data folder
-## rasterToMatch: passed to prepInputs
-## studyArea: passed to prepInputs
-## species is either a character vector of species names to download,
-##    or a two-column matrix with the species names to download and final names, with column names = c("speciesNamesRaw", "speciesNamesEnd")
-##    should two raw species names share the same final name, their biomass data will be considered as the "same species"
-## thresh: is the minimum number of pixels where the species must have biomass > 0 to be considered present in the study area.
-##    Defaults to 1
-## url: is the source url for the data, passed to prepInputs.
-
+#' Function to load kNN species layers from online data repository
+#'
+#' @param dPath directory to data folder
+#' @param rasterToMatch passed to \code{prepInputs}
+#' @param studyArea passed to \code{prepInputs}
+#' @param speciesList either a character vector of species names to download,
+#'                    or a two-column matrix with the species names to download
+#'                    and final names, with column names
+#'                    \code{c("speciesNamesRaw", "speciesNamesEnd")}.
+#'                    Should two raw species names share the same final name,
+#'                    their biomass data will be considered as the "same species".
+#' @param thresh the minimum number of pixels where the species must have
+#'               \code{biomass > 0} to be considered present in the study area.
+#'               Defaults to 1.
+#' @param url the source url for the data, passed to \code{prepInputs}
+#'
+#' @return a list of two elements: \code{speciesLayer}, a raster stack; and
+#'         \code{speciesList}, a vector(?) of species names. TODO: verify this
+#'
 loadkNNSpeciesLayers <- function(dPath, rasterToMatch, studyArea,
                                  speciesList = NULL, thresh = 1, url, cachePath, ...) {
   if (class(speciesList) == "matrix") {
