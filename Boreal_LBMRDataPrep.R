@@ -194,7 +194,7 @@ estimateParameters <- function(sim) {
                                  userTags = "stable")
   if (ncell(sim$rasterToMatch) > 3e6)  .gc()
 
-  message("5: Derive Species Establishment Probability (SEP) from sim$speciesLayers", Sys.time())
+  message("5: Derive Species Establishment Probability (SEP) from sim$speciesLayers: ", Sys.time())
   septable <- Cache(obtainSEP, ecoregionMap = simulationMaps$ecoregionMap,
                     speciesLayers = sim$speciesLayers,
                     SEPMinThresh = 10,
@@ -543,7 +543,7 @@ Save <- function(sim) {
   if (!suppliedElsewhere("speciesLayers", sim)) {
     #opts <- options(reproducible.useCache = "overwrite")
     speciesLayersList <- Cache(loadkNNSpeciesLayers,
-                               dataPath = asPath(dPath),
+                               dPath = asPath(dPath),
                                rasterToMatch = sim$rasterToMatch,
                                studyArea = sim$shpStudyAreaLarge,
                                speciesList = sim$speciesList,
@@ -553,7 +553,9 @@ Save <- function(sim) {
                                userTags = c(cacheTags, "speciesLayers"))
 
     #options(opts)
-    writeRaster(speciesLayersList$speciesLayers, file.path(outputPath(sim), "speciesLayers.grd"), overwrite = TRUE)
+    writeRaster(speciesLayersList$speciesLayers,
+                file.path(outputPath(sim), "speciesLayers.grd"),
+                overwrite = TRUE)
     sim$speciesLayers <- speciesLayersList$speciesLayers
     sim$speciesList <- speciesLayersList$speciesList
   }
