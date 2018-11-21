@@ -60,7 +60,7 @@ initialCommunityProducer <- function(speciesLayers, speciesPresence, studyArea, 
                                             nomatch = 0]
   speciesComMap[indexTable$pixelIndex] <- indexTable$newMapCode
   initialCommunities[, ':='(mapcode = newMapCode, newMapCode = NULL, speciesPresence = NULL)]
-  
+
   return(list(initialCommunityMap = speciesComMap,
               initialCommunity = initialCommunities))
 }
