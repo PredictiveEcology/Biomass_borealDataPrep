@@ -340,6 +340,7 @@ Save <- function(sim) {
   #  defaultColor <- 'red'
   # }
   # ! ----- EDIT BELOW ----- ! #
+  cacheTags <- c(currentModule(sim), "function:.inputObjects", "function:spades")
   cPath <- cachePath(sim)
   dPath <- asPath(dataPath(sim), 1)
 
@@ -409,7 +410,7 @@ Save <- function(sim) {
                             method = "bilinear",
                             datatype = "INT2U",
                             filename2 = TRUE, overwrite = TRUE,
-                            userTags = c("stable", currentModule(sim)))
+                            userTags = c(cacheTags, "stable"))
   }
 
   if (needRTM) {
@@ -452,8 +453,6 @@ Save <- function(sim) {
   if (!identical(crsUsed, crs(sim$shpStudyArea))) {
     sim$shpStudyArea <- spTransform(sim$shpStudyArea, crsUsed) #faster without Cache
   }
-
-  cacheTags <- c(currentModule(sim), "function:.inputObjects", "function:spades")
 
   # LCC2005
   if (!suppliedElsewhere("LCC2005", sim)) {
