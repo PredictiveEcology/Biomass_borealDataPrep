@@ -242,11 +242,14 @@ estimateParameters <- function(sim) {
     #biomassFrombiggerMap <- sim$obtainMaxBandANPPFromBiggerEcoArea(speciesLayers = sim$speciesLayers,
     message("  7a obtainMaxBandANPPFromBiggerEcoArea if NAdata exist: ", Sys.time())
     biomassFrombiggerMap <- Cache(obtainMaxBandANPPFromBiggerEcoArea,
-                                  speciesLayers = sim$speciesLayers, biomassLayer = sim$biomassMap,
-                                  SALayer = sim$standAgeMap, ecoregionMap = simulationMaps$ecoregionMap,
-                                  biggerEcoArea = sim$ecoZone, biggerEcoAreaSource = "ecoZone",
+                                  speciesLayers = sim$speciesLayers,
+                                  biomassLayer = sim$biomassMap,
+                                  SALayer = sim$standAgeMap,
+                                  ecoregionMap = simulationMaps$ecoregionMap,
+                                  biggerEcoArea = sim$ecoZone,
+                                  biggerEcoAreaSource = "ecoZone",
                                   NAData = NAdata, maskFn = fastMask,
-                                  pctCoverMinThresh = 50,
+                                  pctCoverMinThresh = 50, ## TODO: pass as parameter (with #10)
                                   userTags = "stable")
     message("  7b obtainMaxBandANPPFromBiggerEcoArea if NAdata exist: ", Sys.time())
     NON_NAdata <- rbind(NON_NAdata, biomassFrombiggerMap$addData[!is.na(maxBiomass),
