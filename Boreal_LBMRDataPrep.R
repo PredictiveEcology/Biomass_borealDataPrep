@@ -124,9 +124,6 @@ doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE
 #   - `modulenameInit()` function is required for initiliazation;
 #   - keep event functions short and clean, modularize by calling subroutines from section below.
 
-### template initialization
-
-
 estimateParameters <- function(sim) {
   # # ! ----- EDIT BELOW ----- ! #
   cPath <- cachePath(sim)
@@ -186,7 +183,7 @@ estimateParameters <- function(sim) {
                           initialCommunityMap = initialCommFiles$initialCommunityMap,
                           initialCommunity = initialCommFiles$initialCommunity,
                           userTags = "stable")
-  if (ncell(sim$rasterToMatch) > 3e6)  .gc()
+  if (ncell(sim$rasterToMatch) > 3e6) .gc()
 
   message("4: ", Sys.time())
   speciesEcoregionTable <- Cache(obtainMaxBandANPP, speciesLayers = sim$speciesLayers,
@@ -234,8 +231,10 @@ estimateParameters <- function(sim) {
                                   pctCoverMinThresh = 50,
                                   userTags = "stable")
     message("  6b obtainMaxBandANPPFromBiggerEcoArea: ", Sys.time())
-    NON_NAdata <- rbind(NON_NAdata,
-                        biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)])
+    NON_NAdata <- rbind(
+      NON_NAdata,
+      biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)]
+    )
     NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)]
   }
   if (ncell(sim$rasterToMatch) > 3e6)  .gc()
