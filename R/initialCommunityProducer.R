@@ -46,10 +46,10 @@ initialCommunityProducer <- function(speciesLayers, speciesPresence, rstStudyAre
                                                         seq(1, digits * n, 2),
                                                         seq(2, digits * n, 2)),
                             species = speciesNames[1:length(speciesNames)],
-                            age = strtoi(rep(substring(initialCommunities$mapCodeStr[i],
-                                                       2 + digits * n - 1,
-                                                       2 + digits * n), 3),
-                                         base = 10) * 10)
+                            age1 = strtoi(rep(substring(initialCommunities$mapCodeStr[i],
+                                                        2 + digits * n - 1,
+                                                        2 + digits * n), 3),
+                                          base = 10) * 10)
 
     output <- rbind(output, outputAdd)
   }

@@ -285,7 +285,7 @@ estimateParameters <- function(sim) {
   sim$species <- prepSpeciesTable(sim$speciesTable, speciesList = sim$speciesList,
                                   speciesLayers = sim$speciesLayers)
   message("10: ", Sys.time())
-  initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species, age)]
+  initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species, age1)]
   #initialCommunities <- data.frame(initialCommunities) ## TODO: remove this; LBMR expects data.table not data.frame
 
   message("11: ", Sys.time())
