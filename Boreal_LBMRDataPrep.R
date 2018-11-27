@@ -46,16 +46,16 @@ defineModule(sim, list(
                  desc = "2005 land classification map in study area, default is Canada national land classification in 2005",
                  sourceURL = "ftp://ftp.ccrs.nrcan.gc.ca/ad/NLCCLandCover/LandcoverCanada2005_250m/LandCoverOfCanada2005_V1_4.zip"),
     expectsInput("rasterToMatch", "RasterLayer",
-                 desc = "this raster contains two pieces of informaton: Full study area with fire return interval attribute",
+                 desc = "this raster contains two pieces of information: Full study area with fire return interval attribute",
                  sourceURL = NA), # i guess this is study area and fire return interval
     expectsInput("seedingAlgorithm", "character",
                  desc = "choose which seeding algorithm will be used among noDispersal, universalDispersal,
                  and wardDispersal, default is wardDispersal"),
     expectsInput("shpStudyArea", "SpatialPolygonsDataFrame",
-                 desc = "this shape file contains two information: Sub study area with fire return interval attribute",
+                 desc = "this shape file contains two pieces of information: Sub study area with fire return interval attribute",
                  sourceURL = NA), # i guess this is study area and fire return interval
     expectsInput("shpStudyAreaLarge", "SpatialPolygonsDataFrame",
-                 desc = "this shape file contains two information: Full study area with fire return interval attribute",
+                 desc = "this shapefile contains two pieces information: Full study area with fire return interval attribute",
                  sourceURL = NA), # i guess this is study area and fire return interval
     expectsInput("speciesLayers", "RasterStack",
                  desc = "biomass percentage raster layers by species in Canada species map",
