@@ -53,6 +53,7 @@ initialCommunityProducer <- function(speciesLayers, speciesPresence, rstStudyAre
 
     output <- rbind(output, outputAdd)
   }
+
   initialCommunities <- output[speciesPresence != "00",]
   initialCommunities[, newMapCode := as.numeric(as.factor(mapcode))]
   mapcodeconnection <- unique(initialCommunities[, .(mapcode, newMapCode)], by = "mapcode")
