@@ -19,6 +19,7 @@ defineModule(sim, list(
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
   reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos"),
   parameters = rbind(
+    defineParameter("speciesPresence", "numeric", 50, NA, NA, "minimum percent cover required to classify a species as present"),
     defineParameter(".crsUsed", "CRS", raster::crs(
       paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
             "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
@@ -134,6 +135,8 @@ estimateParameters <- function(sim) {
   sim$ecoRegion <- spTransform(sim$ecoRegion, crs(sim$speciesLayers))
   sim$ecoZone <- spTransform(sim$ecoZone, crs(sim$speciesLayers))
 
+  sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
+
   message("1: ", Sys.time())
   rstStudyRegionBinary <- raster(sim$rasterToMatch)
   rstStudyRegionBinary[] <- NA
@@ -142,9 +145,9 @@ estimateParameters <- function(sim) {
   message("2: ", Sys.time())
   initialCommFiles <- Cache(initialCommunityProducer,
                             speciesLayers = sim$speciesLayers,
-                            speciesPresence = 50,
-                            studyArea = sim$studyArea,
+                            speciesPresence = P(sim)$speciesPresence,
                             rstStudyArea = rstStudyRegionBinary,
+                            standAgeMap = sim$standAgeMap,
                             userTags = "stable")
   ecoregionstatus <- data.table(active = "yes",
                                 ecoregion = 1:1031)
