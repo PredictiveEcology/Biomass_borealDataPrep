@@ -51,10 +51,10 @@ defineModule(sim, list(
                  desc = "choose which seeding algorithm will be used among noDispersal, universalDispersal,
                  and wardDispersal, default is wardDispersal"),
     expectsInput("shpStudyArea", "SpatialPolygonsDataFrame",
-                 desc = "this shape file contains two informaton: Sub study area with fire return interval attribute",
+                 desc = "this shape file contains two information: Sub study area with fire return interval attribute",
                  sourceURL = NA), # i guess this is study area and fire return interval
     expectsInput("shpStudyAreaLarge", "SpatialPolygonsDataFrame",
-                 desc = "this shape file contains two informaton: Full study area with fire return interval attribute",
+                 desc = "this shape file contains two information: Full study area with fire return interval attribute",
                  sourceURL = NA), # i guess this is study area and fire return interval
     expectsInput("speciesLayers", "RasterStack",
                  desc = "biomass percentage raster layers by species in Canada species map",
