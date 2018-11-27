@@ -39,7 +39,7 @@ initialCommunityProducer <- function(speciesLayers, speciesPresence, rstStudyAre
   initialCommunities <- data.table(mapcode = sort(unique(mapCodesInt)))
   initialCommunities[, mapCodeStr := sort(unique(mapCodes))]
   output <- data.table(mapcode = numeric(), speciesPresence = character(),
-                       species = character(), age = numeric())
+                       species = character(), age1 = numeric())
   for (i in 1:nrow(initialCommunities)) {
     outputAdd <- data.table(mapcode = initialCommunities$mapcode[i],
                             speciesPresence = substring(initialCommunities$mapCodeStr[i],

@@ -286,7 +286,6 @@ estimateParameters <- function(sim) {
                                   speciesLayers = sim$speciesLayers)
   message("10: ", Sys.time())
   initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species, age1)]
-  #initialCommunities <- data.frame(initialCommunities) ## TODO: remove this; LBMR expects data.table not data.frame
 
   message("11: ", Sys.time())
   ## filter communities to species that have traits
