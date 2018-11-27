@@ -4,8 +4,8 @@ initialCommunityProducer <- function(speciesLayers, speciesPresence, studyArea, 
   specieslayerInStudyArea <- specieslayerInStudyArea * rstStudyArea  ## TODO: Ceres: this is probably no longer necessary
   names(specieslayerInStudyArea) <- names(speciesLayers)  ## TODO: Ceres: this is probably no longer necessary
 
-  #specieslayerInStudyArea <- specieslayerInStudyArea*(!is.na(rstStudyArea))
-  # specieslayerInStudyArea <- suppressWarnings(fastMask(specieslayerInStudyArea, #                                                  studyArea))
+  # specieslayerInStudyArea <- specieslayerInStudyArea*(!is.na(rstStudyArea))
+  # specieslayerInStudyArea <- suppressWarnings(fastMask(specieslayerInStudyArea, studyArea))
   speciesNames <- names(specieslayerInStudyArea)[which(maxValue(specieslayerInStudyArea) >= speciesPresence)]   ## TODO: Ceres: this is probably no longer necessary
   specieslayerBySpecies <- raster::subset(specieslayerInStudyArea, speciesNames[1])    ## TODO: Ceres: this is probably no longer necessary
   specieslayerBySpecies[which(is.na(specieslayerBySpecies[]) & specieslayerBySpecies[] <= 5)] <- 0    ##  Ceres: this is weird, shouldn't this be OR?
@@ -60,7 +60,7 @@ initialCommunityProducer <- function(speciesLayers, speciesPresence, studyArea, 
                                             nomatch = 0]
   speciesComMap[indexTable$pixelIndex] <- indexTable$newMapCode
   initialCommunities[, ':='(mapcode = newMapCode, newMapCode = NULL, speciesPresence = NULL)]
-  
+
   return(list(initialCommunityMap = speciesComMap,
               initialCommunity = initialCommunities))
 }

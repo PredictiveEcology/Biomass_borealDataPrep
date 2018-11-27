@@ -3,12 +3,6 @@ createInitCommMap <- function(initCommMap, values, filename) {
   raster::writeRaster(map, overwrite = TRUE, filename = filename, datatype = "INT2U")
 }
 
-toSentenceCase <- function(x) {
-  newNames <- tolower(x)
-  substr(newNames, 1, 1) <- toupper(substr(newNames, 1, 1))
-  newNames
-}
-
 ## ------------------------------------------------------------------------
 ## FASTERIZE POLYGONS USING FASTERIZE
 
@@ -19,14 +13,14 @@ toSentenceCase <- function(x) {
 
 fasterizeFromSp <- function(sp, raster, fieldName) {
   ## check if projections are the same
-  if(!identical(crs(sp), crs(raster))) 
+  if (!identical(crs(sp), crs(raster)))
     stop("fasterize will probably be wrong, as shp and raster projections do not match")
-  
+
   tempSf <- sf::st_as_sf(sp)
-  
-  if(all(names(tempSf) == "geometry")) {
+
+  if (all(names(tempSf) == "geometry")) {
     ## if there are no fields, ignore fieldname
     fasterize::fasterize(tempSf, raster)
-  } else 
+  } else
     fasterize::fasterize(tempSf, raster, field = fieldName)
 }
