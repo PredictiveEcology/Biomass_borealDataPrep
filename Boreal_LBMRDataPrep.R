@@ -281,34 +281,18 @@ estimateParameters <- function(sim) {
   if (ncell(sim$rasterToMatch) > 3e6)  .gc()
 
   message("9: ", Sys.time())
-
-  # species traits inputs
+  ## species traits inputs
   sim$species <- prepSpeciesTable(sim$speciesTable, speciesList = sim$speciesList,
                                   speciesLayers = sim$speciesLayers)
   message("10: ", Sys.time())
+  initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species, age)]
+  #initialCommunities <- data.frame(initialCommunities) ## TODO: remove this; LBMR expects data.table not data.frame
 
-  initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species)]
-  set(initialCommunities, NULL, paste("age", 1:15, sep = ""), NA)
-  initialCommunities <- data.frame(initialCommunities)
   message("11: ", Sys.time())
-
   ## filter communities to species that have traits
-  initialCommunities <- initialCommunities[initialCommunities$species %in% sim$species$species,]
+  sim$initialCommunities <- initialCommunities[initialCommunities$species %in% sim$species$species,]
 
-  initialCommunitiesFn <- function(initialCommunities, speciesTable) {
-    for (i in 1:nrow(initialCommunities)) {
-      agelength <- sample(1:15, 1)
-      ages <- sort(sample(1:speciesTable[species == initialCommunities$species[i], longevity],
-                          agelength))
-      initialCommunities[i, 4:(agelength + 3)] <- ages
-    }
-    data.table::data.table(initialCommunities)
-  }
   message("12: ", Sys.time())
-
-  sim$initialCommunities <- Cache(initialCommunitiesFn, initialCommunities, sim$species,
-                                  userTags = "stable")
-
   sim$minRelativeB <- data.frame(ecoregion = sim$ecoregion[active == "yes",]$ecoregion,
                                  X1 = 0.2, X2 = 0.4, X3 = 0.5,
                                  X4 = 0.7, X5 = 0.9)
@@ -548,7 +532,7 @@ Save <- function(sim) {
   if (!suppliedElsewhere("speciesLayers", sim)) {
     #opts <- options(reproducible.useCache = "overwrite")
     speciesLayersList <- Cache(loadkNNSpeciesLayers,
-                               dPath = asPath(dPath),
+                               dPath = dPath,
                                rasterToMatch = sim$rasterToMatch,
                                studyArea = sim$shpStudyAreaLarge,
                                speciesList = sim$speciesList,
