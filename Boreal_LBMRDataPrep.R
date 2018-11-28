@@ -46,7 +46,8 @@ defineModule(sim, list(
                  desc = "2005 land classification map in study area, default is Canada national land classification in 2005",
                  sourceURL = "ftp://ftp.ccrs.nrcan.gc.ca/ad/NLCCLandCover/LandcoverCanada2005_250m/LandCoverOfCanada2005_V1_4.zip"),
     expectsInput("rasterToMatch", "RasterLayer",
-                 desc = "this raster contains two pieces of information: Full study area with fire return interval attribute",
+                 #desc = "this raster contains two pieces of information: Full study area with fire return interval attribute",
+                 desc = "DESCRIPTION NEEDED", # TODO: is this correct?
                  sourceURL = NA), # i guess this is study area and fire return interval
     expectsInput("seedingAlgorithm", "character",
                  desc = "choose which seeding algorithm will be used among noDispersal, universalDispersal,
