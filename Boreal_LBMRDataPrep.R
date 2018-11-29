@@ -193,7 +193,7 @@ estimateParameters <- function(sim) {
                                  ecoregionMap = simulationMaps$ecoregionMap,
                                  pctCoverMinThresh = 50,
                                  userTags = "stable")
-  if (ncell(sim$rasterToMatch) > 3e6)  .gc()
+  if (ncell(sim$rasterToMatch) > 3e6) .gc()
 
   message("5: Derive Species Establishment Probability (SEP) from sim$speciesLayers: ", Sys.time())
   sepTable <- Cache(obtainSEP, ecoregionMap = simulationMaps$ecoregionMap,
@@ -201,7 +201,9 @@ estimateParameters <- function(sim) {
                     SEPMinThresh = 10,
                     userTags = "stable")
   sepTable[, SEP := round(SEP, 4)]
-  if (ncell(sim$rasterToMatch) > 3e6)  .gc()
+  if (ncell(sim$rasterToMatch) > 3e6) .gc()
+
+  sim$speciesEstablishmentProbMap <- sim$speciesLayers / 100
 
   message("6: ", Sys.time())
   speciesEcoregionTable[, species := as.character(species)]
@@ -293,7 +295,6 @@ estimateParameters <- function(sim) {
                                  X1 = 0.2, X2 = 0.4, X3 = 0.5,
                                  X4 = 0.7, X5 = 0.9)
 
-  sim$speciesEstablishmentProbMap <- sim$speciesLayers / 100
   sim$speciesLayers <- NULL
   message("Done Boreal_LBMRDataPrep: ", Sys.time())
 
