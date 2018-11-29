@@ -71,10 +71,9 @@ defineModule(sim, list(
     expectsInput("standAgeMap", "RasterLayer",
                  desc = "stand age map in study area, default is Canada national stand age map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
-    expectsInput("studyArea", "SpatialPolygons", desc = "study area", sourceURL = NA),
     expectsInput("sufficientLight", "data.frame",
                  desc = "define how the species with different shade tolerance respond to stand shadeness")
-    ),
+  ),
   outputObjects = bind_rows(
     createsOutput("ecoDistrict", "", desc = ""),
     createsOutput("ecoRegion", "", desc = ""),
@@ -128,7 +127,6 @@ doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE
 estimateParameters <- function(sim) {
   # # ! ----- EDIT BELOW ----- ! #
   cPath <- cachePath(sim)
-  sim$studyArea <- spTransform(sim$studyArea, crs(sim$speciesLayers))
   sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$speciesLayers))
   sim$ecoRegion <- spTransform(sim$ecoRegion, crs(sim$speciesLayers))
   sim$ecoZone <- spTransform(sim$ecoZone, crs(sim$speciesLayers))
@@ -536,14 +534,15 @@ Save <- function(sim) {
                                url = extractURL("speciesLayers"),
                                cachePath = cachePath(sim),
                                userTags = c(cacheTags, "speciesLayers"))
-
     #options(opts)
     writeRaster(speciesLayersList$speciesLayers,
                 file.path(outputPath(sim), "speciesLayers.grd"),
                 overwrite = TRUE)
     sim$speciesLayers <- speciesLayersList$speciesLayers
-    sim$speciesList <- speciesLayersList$speciesList
   }
+
+  if (!suppliedElsewhere("speciesList", sim))
+    sim$speciesList <- speciesLayersList$speciesList
 
   # 3. species maps
   if (!suppliedElsewhere("speciesTable", sim)) {
@@ -563,13 +562,8 @@ Save <- function(sim) {
   if (!suppliedElsewhere("successionTimestep", sim))
     sim$successionTimestep <- 10
 
-  if (!suppliedElsewhere(sim$studyArea)) {
-    sim$studyArea <- sim$shpStudyAreaLarge
-  }
-
-  if (!suppliedElsewhere("speciesThreshold", sim = sim)) {
+  if (!suppliedElsewhere("speciesThreshold", sim = sim))
     sim$speciesThreshold <- 50
-  }
 
   return(invisible(sim))
 }
