@@ -295,7 +295,6 @@ estimateParameters <- function(sim) {
                                  X1 = 0.2, X2 = 0.4, X3 = 0.5,
                                  X4 = 0.7, X5 = 0.9)
 
-  sim$speciesLayers <- NULL
   message("Done Boreal_LBMRDataPrep: ", Sys.time())
 
   # ! ----- STOP EDITING ----- ! #
