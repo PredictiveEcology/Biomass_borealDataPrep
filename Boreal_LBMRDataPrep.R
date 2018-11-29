@@ -523,7 +523,8 @@ Save <- function(sim) {
     ))
   }
 
-  if (!suppliedElsewhere("speciesLayers", sim)) {
+  if (!suppliedElsewhere("speciesLayers", sim) |
+      !suppliedElsewhere("speciesList", sim)) {
     #opts <- options(reproducible.useCache = "overwrite")
     speciesLayersList <- Cache(loadkNNSpeciesLayers,
                                dPath = dPath,
@@ -539,10 +540,8 @@ Save <- function(sim) {
                 file.path(outputPath(sim), "speciesLayers.grd"),
                 overwrite = TRUE)
     sim$speciesLayers <- speciesLayersList$speciesLayers
-  }
-
-  if (!suppliedElsewhere("speciesList", sim))
     sim$speciesList <- speciesLayersList$speciesList
+  }
 
   # 3. species maps
   if (!suppliedElsewhere("speciesTable", sim)) {
@@ -554,7 +553,8 @@ Save <- function(sim) {
                                     X1 = c(0.5, rep(1, 4)),
                                     X2 = c(0, 0.5, rep(1, 3)),
                                     X3 = c(rep(0, 2), 0.5, rep(1, 2)),
-                                    X4 = c(rep(0, 3), 0.5, 1), X5 = c(rep(0, 4), 1))
+                                    X4 = c(rep(0, 3), 0.5, 1),
+                                    X5 = c(rep(0, 4), 1))
 
   if (!suppliedElsewhere("seedingAlgorithm", sim))
     sim$seedingAlgorithm <- "wardDispersal"
