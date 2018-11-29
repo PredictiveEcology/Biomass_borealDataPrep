@@ -196,18 +196,18 @@ estimateParameters <- function(sim) {
   if (ncell(sim$rasterToMatch) > 3e6)  .gc()
 
   message("5: Derive Species Establishment Probability (SEP) from sim$speciesLayers: ", Sys.time())
-  septable <- Cache(obtainSEP, ecoregionMap = simulationMaps$ecoregionMap,
+  sepTable <- Cache(obtainSEP, ecoregionMap = simulationMaps$ecoregionMap,
                     speciesLayers = sim$speciesLayers,
                     SEPMinThresh = 10,
                     userTags = "stable")
-  septable[, SEP := round(SEP, 4)]
+  sepTable[, SEP := round(SEP, 4)]
   if (ncell(sim$rasterToMatch) > 3e6)  .gc()
 
   message("6: ", Sys.time())
   speciesEcoregionTable[, species := as.character(species)]
-  septable[, species := as.character(species)]
-  speciesEcoregionTable <- septable[speciesEcoregionTable, on = c("ecoregion", "species")]
-  # speciesEcoregionTable <- left_join(speciesEcoregionTable, septable, by = c("ecoregion", "species")) %>%
+  sepTable[, species := as.character(species)]
+  speciesEcoregionTable <- sepTable[speciesEcoregionTable, on = c("ecoregion", "species")]
+  # speciesEcoregionTable <- left_join(speciesEcoregionTable, sepTable, by = c("ecoregion", "species")) %>%
   #   data.table()
 
   # Fill in 0 for maxBiomass and maxANPP when SEP was estimated to be 0
@@ -216,9 +216,6 @@ estimateParameters <- function(sim) {
   NAdata <- speciesEcoregionTable[is.na(maxBiomass),]
 
   if (nrow(NAdata) > 1) {
-    # # replace NA values with ecoregion  value
-    #biomassFrombiggerMap <- sim$obtainMaxBandANPPFromBiggerEcoArea(speciesLayers = sim$speciesLayers,
-
     message("  6a obtainMaxBandANPPFromBiggerEcoArea: ", Sys.time())
     biomassFrombiggerMap <- Cache(obtainMaxBandANPPFromBiggerEcoArea,
                                   speciesLayers = sim$speciesLayers,
@@ -242,7 +239,6 @@ estimateParameters <- function(sim) {
 
   message("7: ", Sys.time())
   if (nrow(NAdata) > 1) {
-    #biomassFrombiggerMap <- sim$obtainMaxBandANPPFromBiggerEcoArea(speciesLayers = sim$speciesLayers,
     message("  7a obtainMaxBandANPPFromBiggerEcoArea if NAdata exist: ", Sys.time())
     biomassFrombiggerMap <- Cache(obtainMaxBandANPPFromBiggerEcoArea,
                                   speciesLayers = sim$speciesLayers,
