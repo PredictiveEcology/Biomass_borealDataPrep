@@ -53,13 +53,19 @@ defineModule(sim, list(
                  desc = "Larger study area, enclosing the simulation study area. Used to derive vegetation model parameters that require
                  a larger dataset. Defaults to a square polygon in Southwestern Alberta, Canada",
                  sourceURL = NA), 
+    expectsInput("speciesEquivalency", c("data.table"),
+                 desc = "table of species equivalencies. See pemisc::sppEquivalencies_CA for further information",
+                 sourceURL = ""),
     expectsInput("speciesLayers", "RasterStack",
                  desc = "biomass percentage raster layers by species in Canada species map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
-    expectsInput("speciesList", c("character", "matrix"),
-                 desc = "vector or matrix of species to select, provided by the user or BiomassSpeciesData.
-                 If a matrix, should have two columns of raw and 'end' species names. Note that 'sp' is used instead of 'spp'",
-                 sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
+    expectsInput("sppMerge", c("list"),
+                 desc = paste("list of kNN species layers that should be merged.",
+                              "If none, create an empty list. Defaults to merging",
+                              "of Pinus contorta and P. banksiana into Pinus sp."),
+                 sourceURL = ""),
+    expectsInput("sppNameVector", c("character"),
+                 desc = "vector of species to select", sourceURL = ""),
     expectsInput("speciesTable", "data.table",
                  desc = "species attributes table, default is from Dominic and Yan's project",
                  sourceURL = "https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv"),
@@ -278,7 +284,7 @@ estimateParameters <- function(sim) {
   message("9: ", Sys.time())
   
   # species traits inputs
-  sim$species <- prepSpeciesTable(sim$speciesTable, speciesList = sim$speciesList,
+  sim$species <- prepSpeciesTable(sim$speciesTable, speciesList = sim$sppNameVector, ## TODO: adapt prepSpeciesTable to use sppNameVector, speciesEquivalency and equivalentName
                                   speciesLayers = sim$speciesLayers)
   message("10: ", Sys.time())
 
@@ -487,6 +493,7 @@ Save <- function(sim) {
     
     projection(sim$LCC2005) <- projection(sim$rasterToMatch)
   }
+  
   if (!suppliedElsewhere("ecoDistrict", sim)) {
     sim$ecoDistrict <- Cache(prepInputs,
                              targetFile = asPath(ecodistrictFilename),
@@ -548,33 +555,45 @@ Save <- function(sim) {
                              filename2 = TRUE, overwrite = TRUE,
                              userTags = c("stable", currentModule(sim)))
   }
-  
-  if (!suppliedElsewhere("speciesList", sim)) {
-    ## default to 6 species, one changing name, and two merged into one
-    sim$speciesList <- as.matrix(data.frame(
-      speciesNamesRaw = c("Abie_Las", "Pice_Gla", "Pice_Mar", "Pinu_Ban", "Pinu_Con", "Popu_Tre"),
-      speciesNamesEnd =  c("Abie_sp", "Pice_gla", "Pice_mar", "Pinu_sp", "Pinu_sp", "Popu_tre")
-    ))
-  }
 
-  if (!suppliedElsewhere("speciesLayers", sim)) {
-    #opts <- options(reproducible.useCache = "overwrite")
+  ## 5. get species  layers  
+  if (!suppliedElsewhere("sppNameVector", sim)) {
+    ## default to 6 species (see below)
+    sim$sppNameVector <- c("Abie_sp", "Pice_gla", "Pice_mar", "Pinu_ban", "Pinu_con", "Popu_tre")
+  }
+  
+  if (!suppliedElsewhere("sppMerge", sim)) {
+    ## two merged into one (Pinu_ban, Pinu_con to Pinu_sp)
+    sim$sppMerge <- list(Pinu_sp = c("Pinu_Ban", "Pinu_Con"))
+  }
+  
+  if (!suppliedElsewhere("speciesEquivalency", sim)) {
+    data("sppEquivalencies_CA", package = "pemisc")
+    sim$speciesEquivalency <- as.data.table(sppEquivalencies_CA)
+    
+    ## By default, Abies_las is renamed to Abies_sp
+    sim$speciesEquivalency[KNN == "Abie_Las", LandR := "Abie_sp"]
+  }
+  
+  if (!suppliedElsewhere("speciesLayers")) {
     speciesLayersList <- Cache(loadkNNSpeciesLayers,
-                               dPath = asPath(dPath),
+                               dPath = dPath,
                                rasterToMatch = sim$rasterToMatch,
                                studyArea = sim$studyAreaLarge,
-                               speciesList = sim$speciesList,
-                               # thresh = 10,
+                               sppNameVector = sim$sppNameVector,
+                               speciesEquivalency = sim$speciesEquivalency,
+                               sppMerge = sim$sppMerge,
+                               knnNamesCol = "KNN",
+                               sppEndNamesCol = "LandR",
+                               thresh = 10, 
                                url = extractURL("speciesLayers"),
-                               cachePath = cachePath(sim),
                                userTags = c(cacheTags, "speciesLayers"))
-
-    #options(opts)
-    writeRaster(speciesLayersList$speciesLayers,
-                file.path(outputPath(sim), "speciesLayers.grd"),
-                overwrite = TRUE)
+    
     sim$speciesLayers <- speciesLayersList$speciesLayers
-    sim$speciesList <- speciesLayersList$speciesList
+    
+    ## update the list of original species to use;
+    ## as kNN is the lowest resolution, if species weren't found they will be excluded
+    sim$sppNameVector <- speciesLayersList$sppNameVector
   }
   
   # 3. species maps
