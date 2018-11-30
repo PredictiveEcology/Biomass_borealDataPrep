@@ -46,16 +46,17 @@ defineModule(sim, list(
                  sourceURL = "ftp://ftp.ccrs.nrcan.gc.ca/ad/NLCCLandCover/LandcoverCanada2005_250m/LandCoverOfCanada2005_V1_4.zip"),
     expectsInput("rasterToMatch", "RasterLayer",
                  desc = "this raster contains two pieces of informaton: Full study area with fire return interval attribute",
-                 sourceURL = NA), # i guess this is study area and fire return interval
+                 sourceURL = NA), 
     expectsInput("seedingAlgorithm", "character",
                  desc = "choose which seeding algorithm will be used among noDispersal, universalDispersal,
                  and wardDispersal, default is wardDispersal"),
     expectsInput("studyArea", "SpatialPolygonsDataFrame",
-                 desc = "this shape file contains two informaton: Sub study area with fire return interval attribute",
-                 sourceURL = NA), # i guess this is study area and fire return interval
+                 desc = "Study area used for the simulation, including deriving vegetation model parameters. Defaults to `studyAreaLarge`",
+                 sourceURL = NA), 
     expectsInput("studyAreaLarge", "SpatialPolygonsDataFrame",
-                 desc = "this shape file contains two informaton: Full study area with fire return interval attribute",
-                 sourceURL = NA), # i guess this is study area and fire return interval
+                 desc = "Larger study area, enclosing the simulation study area. Used to derive vegetation model parameters that require
+                 a larger dataset. Defaults to a square polygon in Southwestern Alberta, Canada",
+                 sourceURL = NA), 
     expectsInput("speciesLayers", "RasterStack",
                  desc = "biomass percentage raster layers by species in Canada species map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
@@ -90,7 +91,9 @@ defineModule(sim, list(
                   desc = "a table that has species traits such as longevity..."),
     createsOutput("speciesEcoregion", "data.table",
                   desc = "define the maxANPP, maxB and SEP change with both ecoregion and simulation time"),
-    createsOutput("studyArea", "", desc = ""),
+    createsOutput("studyArea", "SpatialPolygonsDataFrame",
+                  desc = "Study area used for the simulation, including deriving vegetation model parameters",
+                  sourceURL = NA),
     createsOutput("speciesEstablishmentProbMap", "RasterBrick", "Species establishment probability as a map"),
     createsOutput("useCache", "logic",
                   desc = "define which the caching for spinup simulation should be used, default is TRUE")
