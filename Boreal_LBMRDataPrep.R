@@ -365,6 +365,17 @@ Save <- function(sim) {
     sim$studyAreaLarge <- SpaDES.tools::randomPolygon(x = polyCenter, hectares = 10000)
     .GlobalEnv$.Random.seed <- seedToKeep
   }
+  
+  if (!is(sim$studyAreaLarge, "SpatialPolygonsDataFrame")) {
+    dfData <- if (is.null(rownames(sim$studyAreaLarge))) {
+      polyID <- sapply(slot(sim$studyAreaLarge, "polygons"), function(x) slot(x, "ID"))
+      data.frame("field" = as.character(seq_along(length(sim$studyAreaLarge))), row.names = polyID)
+    } else {
+      polyID <- sapply(slot(sim$studyAreaLarge, "polygons"), function(x) slot(x, "ID"))
+      data.frame("field" = rownames(sim$studyAreaLarge), row.names = polyID)
+    }
+    sim$studyAreaLarge <- SpatialPolygonsDataFrame(sim$studyAreaLarge, data = dfData)
+  }
 
   if (!suppliedElsewhere("studyArea", sim)) {
     message("'studyArea' was not provided by user. Using the same as 'studyAreaLarge'")
@@ -406,17 +417,7 @@ Save <- function(sim) {
     # if we need rasterToMatch, that means a) we don't have it, but b) we will have biomassMap
     sim$rasterToMatch <- sim$biomassMap
     message("  Rasterizing the studyAreaLarge polygon map")
-    if (!is(sim$studyAreaLarge, "SpatialPolygonsDataFrame")) {
-      dfData <- if (is.null(rownames(sim$studyAreaLarge))) {
-        polyID <- sapply(slot(sim$studyAreaLarge, "polygons"), function(x) slot(x, "ID"))
-        data.frame("field" = as.character(seq_along(length(sim$studyAreaLarge))), row.names = polyID)
-      } else {
-        polyID <- sapply(slot(sim$studyAreaLarge, "polygons"), function(x) slot(x, "ID"))
-        data.frame("field" = rownames(sim$studyAreaLarge), row.names = polyID)
-      }
-      sim$studyAreaLarge <- SpatialPolygonsDataFrame(sim$studyAreaLarge, data = dfData)
-    }
-
+  
     # layers provided by David Andison sometimes have LTHRC, sometimes LTHFC ... chose whichever
     LTHxC <- grep("(LTH.+C)",names(sim$studyAreaLarge), value = TRUE)
     fieldName <- if (length(LTHxC)) {
