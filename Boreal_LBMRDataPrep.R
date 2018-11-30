@@ -404,45 +404,61 @@ Save <- function(sim) {
   }
   
   if (!suppliedElsewhere("biomassMap", sim) || needRTM) {
-    sim$biomassMap <- Cache(prepInputs,
-                            targetFile = asPath(basename(biomassMapFilename)),
-                            archive = asPath(c("kNN-StructureBiomass.tar",
-                                               "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
-                            url = extractURL("biomassMap"),
-                            destinationPath = dPath,
-                            studyArea = sim$studyArea,
-                            rasterToMatch = sim$rasterToMatch,
-                            useSAcrs = TRUE,
-                            method = "bilinear",
-                            datatype = "INT2U",
-                            filename2 = TRUE, overwrite = TRUE,
-                            userTags = c(cacheTags, "stable"))
+    if(!needRTM) {
+      sim$biomassMap <- Cache(prepInputs,
+                              targetFile = asPath(basename(biomassMapFilename)),
+                              archive = asPath(c("kNN-StructureBiomass.tar",
+                                                 "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
+                              url = extractURL("biomassMap"),
+                              destinationPath = dPath,
+                              studyArea = sim$studyArea,
+                              rasterToMatch = sim$rasterToMatch,
+                              useSAcrs = TRUE,
+                              method = "bilinear",
+                              datatype = "INT2U",
+                              filename2 = TRUE, overwrite = TRUE,
+                              userTags = cacheTags)
+    } else {
+      sim$biomassMap <- Cache(prepInputs,
+                              targetFile = asPath(basename(biomassMapFilename)),
+                              archive = asPath(c("kNN-StructureBiomass.tar",
+                                                 "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
+                              url = extractURL("biomassMap"),
+                              destinationPath = dPath,
+                              studyArea = sim$studyArea,   ## TODO: should this be studyAreaLarge? in RTM below it is...
+                              useSAcrs = TRUE,
+                              method = "bilinear",
+                              datatype = "INT2U",
+                              filename2 = TRUE, overwrite = TRUE,
+                              userTags = cacheTags)
+    }
+    
   }
   
   if (needRTM) {
     # if we need rasterToMatch, that means a) we don't have it, but b) we will have biomassMap
     sim$rasterToMatch <- sim$biomassMap
     message("  Rasterizing the studyAreaLarge polygon map")
-  
-    # layers provided by David Andison sometimes have LTHRC, sometimes LTHFC ... chose whichever
+   
+    # Layers provided by David Andison sometimes have LTHRC, sometimes LTHFC ... chose whichever
     LTHxC <- grep("(LTH.+C)",names(sim$studyAreaLarge), value = TRUE)
     fieldName <- if (length(LTHxC)) {
       LTHxC
     } else {
-      if (length(names(sim$studyAreaLarge)) > 1) {
-        ## study region may be a simple polygon
+      if (length(names(sim$studyAreaLarge)) > 1) {   ## study region may be a simple polygon
         names(sim$studyAreaLarge)[1]
       } else NULL
     }
-
+    
     sim$rasterToMatch <- crop(fasterizeFromSp(sim$studyAreaLarge, sim$rasterToMatch, fieldName),
                               sim$studyAreaLarge)
     sim$rasterToMatch <- Cache(writeRaster, sim$rasterToMatch,
                                filename = file.path(dataPath(sim), "rasterToMatch.tif"),
                                datatype = "INT2U", overwrite = TRUE)
   }
+  
 
-  # LCC2005
+  ## 3. Get LCC2005, ecodistrict/region/zone
   if (!suppliedElsewhere("LCC2005", sim)) {
     sim$LCC2005 <- Cache(prepInputs,
                          targetFile = lcc2005Filename,
