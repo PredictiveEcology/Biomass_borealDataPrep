@@ -19,6 +19,7 @@ defineModule(sim, list(
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
   reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos"),
   parameters = rbind(
+    defineParameter("speciesPresence", "numeric", 50, NA, NA, "minimum percent cover required to classify a species as present"),
     defineParameter(".crsUsed", "CRS", raster::crs(
       paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
             "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
@@ -45,17 +46,12 @@ defineModule(sim, list(
                  desc = "2005 land classification map in study area, default is Canada national land classification in 2005",
                  sourceURL = "ftp://ftp.ccrs.nrcan.gc.ca/ad/NLCCLandCover/LandcoverCanada2005_250m/LandCoverOfCanada2005_V1_4.zip"),
     expectsInput("rasterToMatch", "RasterLayer",
-                 desc = "this raster contains two pieces of informaton: Full study area with fire return interval attribute",
+                 #desc = "this raster contains two pieces of information: Full study area with fire return interval attribute",
+                 desc = "DESCRIPTION NEEDED", # TODO: is this correct?
                  sourceURL = NA), # i guess this is study area and fire return interval
     expectsInput("seedingAlgorithm", "character",
                  desc = "choose which seeding algorithm will be used among noDispersal, universalDispersal,
                  and wardDispersal, default is wardDispersal"),
-    expectsInput("studyArea", "SpatialPolygonsDataFrame",
-                 desc = "this shape file contains two informaton: Sub study area with fire return interval attribute",
-                 sourceURL = NA), # i guess this is study area and fire return interval
-    expectsInput("studyAreaLarge", "SpatialPolygonsDataFrame",
-                 desc = "this shape file contains two informaton: Full study area with fire return interval attribute",
-                 sourceURL = NA), # i guess this is study area and fire return interval
     expectsInput("speciesLayers", "RasterStack",
                  desc = "biomass percentage raster layers by species in Canada species map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
@@ -66,12 +62,22 @@ defineModule(sim, list(
     expectsInput("speciesTable", "data.table",
                  desc = "species attributes table, default is from Dominic and Yan's project",
                  sourceURL = "https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv"),
+    expectsInput("studyArea", "SpatialPolygonsDataFrame",
+                 desc = paste("multipolygon to use as the study area,",
+                              "with attribute LTHFC describing the fire return interval.",
+                              "Defaults to a square shapefile in Southwestern Alberta, Canada."),
+                 sourceURL = ""),
+    expectsInput("studyAreaLarge", "SpatialPolygonsDataFrame",
+                 desc = paste("multipolygon (larger area than studyArea) to use for parameter estimation,",
+                              "with attribute LTHFC describing the fire return interval.",
+                              "Defaults to a square shapefile in Southwestern Alberta, Canada."),
+                 sourceURL = ""),
     expectsInput("standAgeMap", "RasterLayer",
                  desc = "stand age map in study area, default is Canada national stand age map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
     expectsInput("sufficientLight", "data.frame",
                  desc = "define how the species with different shade tolerance respond to stand shadeness")
-    ),
+  ),
   outputObjects = bind_rows(
     createsOutput("ecoDistrict", "", desc = ""),
     createsOutput("ecoRegion", "", desc = ""),
@@ -122,15 +128,14 @@ doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE
 #   - `modulenameInit()` function is required for initiliazation;
 #   - keep event functions short and clean, modularize by calling subroutines from section below.
 
-### template initialization
-
 estimateParameters <- function(sim) {
   # # ! ----- EDIT BELOW ----- ! #
   cPath <- cachePath(sim)
-  sim$studyArea <- spTransform(sim$studyArea, crs(sim$speciesLayers))
   sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$speciesLayers))
   sim$ecoRegion <- spTransform(sim$ecoRegion, crs(sim$speciesLayers))
   sim$ecoZone <- spTransform(sim$ecoZone, crs(sim$speciesLayers))
+
+  sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
 
   message("1: ", Sys.time())
   rstStudyRegionBinary <- raster(sim$rasterToMatch)
@@ -140,9 +145,9 @@ estimateParameters <- function(sim) {
   message("2: ", Sys.time())
   initialCommFiles <- Cache(initialCommunityProducer,
                             speciesLayers = sim$speciesLayers,
-                            speciesPresence = 50,
-                            studyArea = sim$studyArea,
+                            speciesPresence = P(sim)$speciesPresence,
                             rstStudyArea = rstStudyRegionBinary,
+                            standAgeMap = sim$standAgeMap,
                             userTags = "stable")
   ecoregionstatus <- data.table(active = "yes",
                                 ecoregion = 1:1031)
@@ -181,8 +186,8 @@ estimateParameters <- function(sim) {
                           initialCommunityMap = initialCommFiles$initialCommunityMap,
                           initialCommunity = initialCommFiles$initialCommunity,
                           userTags = "stable")
-  if (ncell(sim$rasterToMatch) > 3e6)  .gc()
-  
+  if (ncell(sim$rasterToMatch) > 3e6) .gc()
+
   message("4: ", Sys.time())
   speciesEcoregionTable <- Cache(obtainMaxBandANPP, speciesLayers = sim$speciesLayers,
                                  biomassLayer = sim$biomassMap,
@@ -190,21 +195,23 @@ estimateParameters <- function(sim) {
                                  ecoregionMap = simulationMaps$ecoregionMap,
                                  pctCoverMinThresh = 50,
                                  userTags = "stable")
-  if (ncell(sim$rasterToMatch) > 3e6)  .gc()
+  if (ncell(sim$rasterToMatch) > 3e6) .gc()
 
   message("5: Derive Species Establishment Probability (SEP) from sim$speciesLayers: ", Sys.time())
-  septable <- Cache(obtainSEP, ecoregionMap = simulationMaps$ecoregionMap,
+  sepTable <- Cache(obtainSEP, ecoregionMap = simulationMaps$ecoregionMap,
                     speciesLayers = sim$speciesLayers,
                     SEPMinThresh = 10,
                     userTags = "stable")
-  septable[, SEP := round(SEP, 4)]
-  if (ncell(sim$rasterToMatch) > 3e6)  .gc()
-  
+  sepTable[, SEP := round(SEP, 4)]
+  if (ncell(sim$rasterToMatch) > 3e6) .gc()
+
+  sim$speciesEstablishmentProbMap <- sim$speciesLayers / 100
+
   message("6: ", Sys.time())
   speciesEcoregionTable[, species := as.character(species)]
-  septable[, species := as.character(species)]
-  speciesEcoregionTable <- septable[speciesEcoregionTable, on = c("ecoregion", "species")]
-  # speciesEcoregionTable <- left_join(speciesEcoregionTable, septable, by = c("ecoregion", "species")) %>%
+  sepTable[, species := as.character(species)]
+  speciesEcoregionTable <- sepTable[speciesEcoregionTable, on = c("ecoregion", "species")]
+  # speciesEcoregionTable <- left_join(speciesEcoregionTable, sepTable, by = c("ecoregion", "species")) %>%
   #   data.table()
   
   # Fill in 0 for maxBiomass and maxANPP when SEP was estimated to be 0
@@ -213,9 +220,6 @@ estimateParameters <- function(sim) {
   NAdata <- speciesEcoregionTable[is.na(maxBiomass),]
   
   if (nrow(NAdata) > 1) {
-    # # replace NA values with ecoregion  value
-    #biomassFrombiggerMap <- sim$obtainMaxBandANPPFromBiggerEcoArea(speciesLayers = sim$speciesLayers,
-
     message("  6a obtainMaxBandANPPFromBiggerEcoArea: ", Sys.time())
     biomassFrombiggerMap <- Cache(obtainMaxBandANPPFromBiggerEcoArea,
                                   speciesLayers = sim$speciesLayers,
@@ -229,15 +233,16 @@ estimateParameters <- function(sim) {
                                   pctCoverMinThresh = 50,
                                   userTags = "stable")
     message("  6b obtainMaxBandANPPFromBiggerEcoArea: ", Sys.time())
-    NON_NAdata <- rbind(NON_NAdata,
-                        biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)])
+    NON_NAdata <- rbind(
+      NON_NAdata,
+      biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)]
+    )
     NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)]
   }
   if (ncell(sim$rasterToMatch) > 3e6)  .gc()
   
   message("7: ", Sys.time())
   if (nrow(NAdata) > 1) {
-    #biomassFrombiggerMap <- sim$obtainMaxBandANPPFromBiggerEcoArea(speciesLayers = sim$speciesLayers,
     message("  7a obtainMaxBandANPPFromBiggerEcoArea if NAdata exist: ", Sys.time())
     biomassFrombiggerMap <- Cache(obtainMaxBandANPPFromBiggerEcoArea,
                                   speciesLayers = sim$speciesLayers,
@@ -277,40 +282,21 @@ estimateParameters <- function(sim) {
   if (ncell(sim$rasterToMatch) > 3e6)  .gc()
   
   message("9: ", Sys.time())
-  
-  # species traits inputs
+  ## species traits inputs
   sim$species <- prepSpeciesTable(sim$speciesTable, speciesList = sim$speciesList,
                                   speciesLayers = sim$speciesLayers)
   message("10: ", Sys.time())
+  initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species, age1)]
 
-  initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species)]
-  set(initialCommunities, NULL, paste("age", 1:15, sep = ""), NA)
-  initialCommunities <- data.frame(initialCommunities)
   message("11: ", Sys.time())
-  
   ## filter communities to species that have traits
-  initialCommunities <- initialCommunities[initialCommunities$species %in% sim$species$species,]
-  
-  initialCommunitiesFn <- function(initialCommunities, speciesTable) {
-    for (i in 1:nrow(initialCommunities)) {
-      agelength <- sample(1:15, 1)
-      ages <- sort(sample(1:speciesTable[species == initialCommunities$species[i], longevity],
-                          agelength))
-      initialCommunities[i, 4:(agelength + 3)] <- ages
-    }
-    data.table::data.table(initialCommunities)
-  }
+  sim$initialCommunities <- initialCommunities[initialCommunities$species %in% sim$species$species,]
+
   message("12: ", Sys.time())
-  
-  sim$initialCommunities <- Cache(initialCommunitiesFn, initialCommunities, sim$species,
-                                  userTags = "stable")
-  
   sim$minRelativeB <- data.frame(ecoregion = sim$ecoregion[active == "yes",]$ecoregion,
                                  X1 = 0.2, X2 = 0.4, X3 = 0.5,
                                  X4 = 0.7, X5 = 0.9)
 
-  sim$speciesEstablishmentProbMap <- sim$speciesLayers / 100
-  sim$speciesLayers <- NULL
   message("Done Boreal_LBMRDataPrep: ", Sys.time())
   
   # ! ----- STOP EDITING ----- ! #
@@ -342,7 +328,6 @@ Save <- function(sim) {
   # }
   # ! ----- EDIT BELOW ----- ! #
   cacheTags <- c(currentModule(sim), "function:.inputObjects", "function:spades")
-  cPath <- cachePath(sim)
   dPath <- asPath(dataPath(sim), 1)
   
   cacheTags = c(currentModule(sim), "function:.inputObjects", "function:spades")
@@ -369,10 +354,10 @@ Save <- function(sim) {
   ecoregionAE <- basename(paste0(tools::file_path_sans_ext(ecoregionFilename), ".", fexts))
   ecodistrictAE <- basename(paste0(tools::file_path_sans_ext(ecodistrictFilename), ".", fexts))
   ecozoneAE <- basename(paste0(tools::file_path_sans_ext(ecozoneFilename), ".", fexts))
-  
+
   if (!suppliedElsewhere("studyAreaLarge", sim)) {
     message("'studyAreaLarge' was not provided by user. Using a polygon in southwestern Alberta, Canada,")
-    
+
     polyCenter <- SpatialPoints(coords = data.frame(x = c(-1349980), y = c(6986895)),
                                 proj4string = crsUsed)
     
@@ -381,7 +366,7 @@ Save <- function(sim) {
     sim$studyAreaLarge <- SpaDES.tools::randomPolygon(x = polyCenter, hectares = 10000)
     .GlobalEnv$.Random.seed <- seedToKeep
   }
-  
+
   if (!suppliedElsewhere("studyArea", sim)) {
     message("'studyArea' was not provided by user. Using the same as 'studyAreaLarge'")
     sim$studyArea <- sim$studyAreaLarge
@@ -409,44 +394,25 @@ Save <- function(sim) {
   }
   
   if (!suppliedElsewhere("biomassMap", sim) || needRTM) {
-    if(!needRTM) {
-      sim$biomassMap <- Cache(prepInputs,
-                              targetFile = asPath(basename(biomassMapFilename)),
-                              archive = asPath(c("kNN-StructureBiomass.tar",
-                                                 "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
-                              url = extractURL("biomassMap"),
-                              destinationPath = dPath,
-                              studyArea = sim$studyArea,
-                              rasterToMatch = sim$rasterToMatch,
-                              useSAcrs = TRUE,
-                              method = "bilinear",
-                              datatype = "INT2U",
-                              filename2 = TRUE, overwrite = TRUE,
-                              userTags = cacheTags)
-    } else {
-      sim$biomassMap <- Cache(prepInputs,
-                              targetFile = asPath(basename(biomassMapFilename)),
-                              archive = asPath(c("kNN-StructureBiomass.tar",
-                                                 "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
-                              url = extractURL("biomassMap"),
-                              destinationPath = dPath,
-                              studyArea = sim$studyArea,
-                              useSAcrs = TRUE,
-                              method = "bilinear",
-                              datatype = "INT2U",
-                              filename2 = TRUE, overwrite = TRUE,
-                              userTags = cacheTags)
-    }
-    
+    sim$biomassMap <- Cache(prepInputs,
+                            targetFile = asPath(basename(biomassMapFilename)),
+                            archive = asPath(c("kNN-StructureBiomass.tar",
+                                               "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
+                            url = extractURL("biomassMap"),
+                            destinationPath = dPath,
+                            studyArea = sim$studyArea,
+                            rasterToMatch = sim$rasterToMatch,
+                            useSAcrs = TRUE,
+                            method = "bilinear",
+                            datatype = "INT2U",
+                            filename2 = TRUE, overwrite = TRUE,
+                            userTags = c(cacheTags, "stable"))
   }
   
   if (needRTM) {
     # if we need rasterToMatch, that means a) we don't have it, but b) we will have biomassMap
     sim$rasterToMatch <- sim$biomassMap
     message("  Rasterizing the studyAreaLarge polygon map")
-    
-    ## TODO: the following code shouldn't be here... a check for studyAreaLarge exists above
-    ## so checks for class should also be above?
     if (!is(sim$studyAreaLarge, "SpatialPolygonsDataFrame")) {
       dfData <- if (is.null(rownames(sim$studyAreaLarge))) {
         polyID <- sapply(slot(sim$studyAreaLarge, "polygons"), function(x) slot(x, "ID"))
@@ -457,24 +423,33 @@ Save <- function(sim) {
       }
       sim$studyAreaLarge <- SpatialPolygonsDataFrame(sim$studyAreaLarge, data = dfData)
     }
-    
-    # Layers provided by David Andison sometimes have LTHRC, sometimes LTHFC ... chose whichever
+
+    # layers provided by David Andison sometimes have LTHRC, sometimes LTHFC ... chose whichever
     LTHxC <- grep("(LTH.+C)",names(sim$studyAreaLarge), value = TRUE)
     fieldName <- if (length(LTHxC)) {
       LTHxC
     } else {
-      if (length(names(sim$studyAreaLarge)) > 1) {   ## study region may be a simple polygon
+      if (length(names(sim$studyAreaLarge)) > 1) {
+        ## study region may be a simple polygon
         names(sim$studyAreaLarge)[1]
       } else NULL
     }
-    
+
     sim$rasterToMatch <- crop(fasterizeFromSp(sim$studyAreaLarge, sim$rasterToMatch, fieldName),
                               sim$studyAreaLarge)
     sim$rasterToMatch <- Cache(writeRaster, sim$rasterToMatch,
                                filename = file.path(dataPath(sim), "rasterToMatch.tif"),
                                datatype = "INT2U", overwrite = TRUE)
   }
-  
+
+  if (!identical(crsUsed, crs(sim$studyAreaLarge))) {
+    sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crsUsed) #faster without Cache
+  }
+
+  if (!identical(crsUsed, crs(sim$studyArea))) {
+    sim$studyArea <- spTransform(sim$studyArea, crsUsed) #faster without Cache
+  }
+
   # LCC2005
   if (!suppliedElsewhere("LCC2005", sim)) {
     sim$LCC2005 <- Cache(prepInputs,
@@ -561,10 +536,11 @@ Save <- function(sim) {
     ))
   }
 
-  if (!suppliedElsewhere("speciesLayers", sim)) {
+  if (!suppliedElsewhere("speciesLayers", sim) |
+      !suppliedElsewhere("speciesList", sim)) {
     #opts <- options(reproducible.useCache = "overwrite")
     speciesLayersList <- Cache(loadkNNSpeciesLayers,
-                               dPath = asPath(dPath),
+                               dPath = dPath,
                                rasterToMatch = sim$rasterToMatch,
                                studyArea = sim$studyAreaLarge,
                                speciesList = sim$speciesList,
@@ -574,7 +550,6 @@ Save <- function(sim) {
                                userTags = c(cacheTags, "specieslayers"))
     
                                userTags = c(cacheTags, "speciesLayers"))
-
     #options(opts)
     writeRaster(speciesLayersList$speciesLayers,
                 file.path(outputPath(sim), "speciesLayers.grd"),
@@ -593,17 +568,17 @@ Save <- function(sim) {
                                     X1 = c(0.5, rep(1, 4)),
                                     X2 = c(0, 0.5, rep(1, 3)),
                                     X3 = c(rep(0, 2), 0.5, rep(1, 2)),
-                                    X4 = c(rep(0, 3), 0.5, 1), X5 = c(rep(0, 4), 1))
-  
+                                    X4 = c(rep(0, 3), 0.5, 1),
+                                    X5 = c(rep(0, 4), 1))
+
   if (!suppliedElsewhere("seedingAlgorithm", sim))
     sim$seedingAlgorithm <- "wardDispersal"
   
   if (!suppliedElsewhere("successionTimestep", sim))
     sim$successionTimestep <- 10
-  
-  if (!suppliedElsewhere("speciesThreshold", sim = sim)) {
+
+  if (!suppliedElsewhere("speciesThreshold", sim = sim))
     sim$speciesThreshold <- 50
-  }
 
   return(invisible(sim))
 }
