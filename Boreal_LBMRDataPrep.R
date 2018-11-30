@@ -52,12 +52,6 @@ defineModule(sim, list(
     expectsInput("seedingAlgorithm", "character",
                  desc = "choose which seeding algorithm will be used among noDispersal, universalDispersal,
                  and wardDispersal, default is wardDispersal"),
-    expectsInput("shpStudyArea", "SpatialPolygonsDataFrame",
-                 desc = "this shape file contains two pieces of information: Sub study area with fire return interval attribute",
-                 sourceURL = NA), # i guess this is study area and fire return interval
-    expectsInput("shpStudyAreaLarge", "SpatialPolygonsDataFrame",
-                 desc = "this shapefile contains two pieces information: Full study area with fire return interval attribute",
-                 sourceURL = NA), # i guess this is study area and fire return interval
     expectsInput("speciesLayers", "RasterStack",
                  desc = "biomass percentage raster layers by species in Canada species map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
@@ -68,6 +62,16 @@ defineModule(sim, list(
     expectsInput("speciesTable", "data.table",
                  desc = "species attributes table, default is from Dominic and Yan's project",
                  sourceURL = "https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv"),
+    expectsInput("studyArea", "SpatialPolygonsDataFrame",
+                 desc = paste("multipolygon to use as the study area,",
+                              "with attribute LTHFC describing the fire return interval.",
+                              "Defaults to a square shapefile in Southwestern Alberta, Canada."),
+                 sourceURL = ""),
+    expectsInput("studyAreaLarge", "SpatialPolygonsDataFrame",
+                 desc = paste("multipolygon (larger area than studyArea) to use for parameter estimation,",
+                              "with attribute LTHFC describing the fire return interval.",
+                              "Defaults to a square shapefile in Southwestern Alberta, Canada."),
+                 sourceURL = ""),
     expectsInput("standAgeMap", "RasterLayer",
                  desc = "stand age map in study area, default is Canada national stand age map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
@@ -150,7 +154,7 @@ estimateParameters <- function(sim) {
 
   message("ecoregionProducer: ", Sys.time())
   # Note: this ecoregionMap is NOT the Canadian EcoRegion -- it is for LBMR, which uses "ecoregion"
-  ecoregionMap <- Cache(postProcess, sim$ecoDistrict, studyArea = sim$shpStudyArea, filename2 = NULL)
+  ecoregionMap <- Cache(postProcess, sim$ecoDistrict, studyArea = sim$studyArea, filename2 = NULL)
   ecoregionFiles <- Cache(ecoregionProducer,
                           ecoregionMap = ecoregionMap,
                           ecoregionName = "ECODISTRIC",
@@ -324,7 +328,6 @@ Save <- function(sim) {
   # }
   # ! ----- EDIT BELOW ----- ! #
   cacheTags <- c(currentModule(sim), "function:.inputObjects", "function:spades")
-  cPath <- cachePath(sim)
   dPath <- asPath(dataPath(sim), 1)
 
   # 1. test if all input objects are already present (e.g., from inputs, objects or another module)
@@ -350,21 +353,21 @@ Save <- function(sim) {
   ecodistrictAE <- basename(paste0(tools::file_path_sans_ext(ecodistrictFilename), ".", fexts))
   ecozoneAE <- basename(paste0(tools::file_path_sans_ext(ecozoneFilename), ".", fexts))
 
-  if (!suppliedElsewhere("shpStudyAreaLarge", sim)) {
-    message("'shpStudyAreaLarge' was not provided by user. Using a polygon in southwestern Alberta, Canada,")
+  if (!suppliedElsewhere("studyAreaLarge", sim)) {
+    message("'studyAreaLarge' was not provided by user. Using a polygon in southwestern Alberta, Canada,")
 
     polyCenter <- SpatialPoints(coords = data.frame(x = c(-1349980), y = c(6986895)),
                                 proj4string = crsUsed)
 
     seedToKeep <- .GlobalEnv$.Random.seed
     set.seed(1234)
-    sim$shpStudyAreaLarge <- SpaDES.tools::randomPolygon(x = polyCenter, hectares = 10000)
+    sim$studyAreaLarge <- SpaDES.tools::randomPolygon(x = polyCenter, hectares = 10000)
     .GlobalEnv$.Random.seed <- seedToKeep
   }
 
-  if (!suppliedElsewhere("shpStudyArea", sim)) {
-    message("'shpStudyArea' was not provided by user. Using the same as 'shpStudyAreaLarge'")
-    sim$shpStudyArea <- sim$shpStudyAreaLarge
+  if (!suppliedElsewhere("studyArea", sim)) {
+    message("'studyArea' was not provided by user. Using the same as 'studyAreaLarge'")
+    sim$studyArea <- sim$studyAreaLarge
   }
 
   needRTM <- FALSE
@@ -387,7 +390,7 @@ Save <- function(sim) {
                                                "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
                             url = extractURL("biomassMap"),
                             destinationPath = dPath,
-                            studyArea = sim$shpStudyArea,
+                            studyArea = sim$studyArea,
                             rasterToMatch = sim$rasterToMatch,
                             useSAcrs = TRUE,
                             method = "bilinear",
@@ -399,42 +402,42 @@ Save <- function(sim) {
   if (needRTM) {
     # if we need rasterToMatch, that means a) we don't have it, but b) we will have biomassMap
     sim$rasterToMatch <- sim$biomassMap
-    message("  Rasterizing the shpStudyAreaLarge polygon map")
-    if (!is(sim$shpStudyAreaLarge, "SpatialPolygonsDataFrame")) {
-      dfData <- if (is.null(rownames(sim$shpStudyAreaLarge))) {
-        polyID <- sapply(slot(sim$shpStudyAreaLarge, "polygons"), function(x) slot(x, "ID"))
-        data.frame("field" = as.character(seq_along(length(sim$shpStudyAreaLarge))), row.names = polyID)
+    message("  Rasterizing the studyAreaLarge polygon map")
+    if (!is(sim$studyAreaLarge, "SpatialPolygonsDataFrame")) {
+      dfData <- if (is.null(rownames(sim$studyAreaLarge))) {
+        polyID <- sapply(slot(sim$studyAreaLarge, "polygons"), function(x) slot(x, "ID"))
+        data.frame("field" = as.character(seq_along(length(sim$studyAreaLarge))), row.names = polyID)
       } else {
-        polyID <- sapply(slot(sim$shpStudyAreaLarge, "polygons"), function(x) slot(x, "ID"))
-        data.frame("field" = rownames(sim$shpStudyAreaLarge), row.names = polyID)
+        polyID <- sapply(slot(sim$studyAreaLarge, "polygons"), function(x) slot(x, "ID"))
+        data.frame("field" = rownames(sim$studyAreaLarge), row.names = polyID)
       }
-      sim$shpStudyAreaLarge <- SpatialPolygonsDataFrame(sim$shpStudyAreaLarge, data = dfData)
+      sim$studyAreaLarge <- SpatialPolygonsDataFrame(sim$studyAreaLarge, data = dfData)
     }
 
     # layers provided by David Andison sometimes have LTHRC, sometimes LTHFC ... chose whichever
-    LTHxC <- grep("(LTH.+C)",names(sim$shpStudyAreaLarge), value = TRUE)
+    LTHxC <- grep("(LTH.+C)",names(sim$studyAreaLarge), value = TRUE)
     fieldName <- if (length(LTHxC)) {
       LTHxC
     } else {
-      if (length(names(sim$shpStudyAreaLarge)) > 1) {
+      if (length(names(sim$studyAreaLarge)) > 1) {
         ## study region may be a simple polygon
-        names(sim$shpStudyAreaLarge)[1]
+        names(sim$studyAreaLarge)[1]
       } else NULL
     }
 
-    sim$rasterToMatch <- crop(fasterizeFromSp(sim$shpStudyAreaLarge, sim$rasterToMatch, fieldName),
-                              sim$shpStudyAreaLarge)
+    sim$rasterToMatch <- crop(fasterizeFromSp(sim$studyAreaLarge, sim$rasterToMatch, fieldName),
+                              sim$studyAreaLarge)
     sim$rasterToMatch <- Cache(writeRaster, sim$rasterToMatch,
                                filename = file.path(dataPath(sim), "rasterToMatch.tif"),
                                datatype = "INT2U", overwrite = TRUE)
   }
 
-  if (!identical(crsUsed, crs(sim$shpStudyAreaLarge))) {
-    sim$shpStudyAreaLarge <- spTransform(sim$shpStudyAreaLarge, crsUsed) #faster without Cache
+  if (!identical(crsUsed, crs(sim$studyAreaLarge))) {
+    sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crsUsed) #faster without Cache
   }
 
-  if (!identical(crsUsed, crs(sim$shpStudyArea))) {
-    sim$shpStudyArea <- spTransform(sim$shpStudyArea, crsUsed) #faster without Cache
+  if (!identical(crsUsed, crs(sim$studyArea))) {
+    sim$studyArea <- spTransform(sim$studyArea, crsUsed) #faster without Cache
   }
 
   # LCC2005
@@ -444,7 +447,7 @@ Save <- function(sim) {
                          archive = asPath("LandCoverOfCanada2005_V1_4.zip"),
                          url = extractURL("LCC2005"),
                          destinationPath = dPath,
-                         studyArea = sim$shpStudyArea,
+                         studyArea = sim$studyArea,
                          rasterToMatch = sim$rasterToMatch,
                          method = "bilinear",
                          datatype = "INT2U",
@@ -460,7 +463,7 @@ Save <- function(sim) {
                              url = extractURL("ecoDistrict"),
                              alsoExtract = ecodistrictAE,
                              destinationPath = dPath,
-                             studyArea = sim$shpStudyAreaLarge,
+                             studyArea = sim$studyAreaLarge,
                              overwrite = TRUE,
                              useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
                              fun = "raster::shapefile",
@@ -475,7 +478,7 @@ Save <- function(sim) {
                            alsoExtract = ecoregionAE,
                            url = extractURL("ecoRegion"),
                            destinationPath = dPath,
-                           studyArea = sim$shpStudyAreaLarge,
+                           studyArea = sim$studyAreaLarge,
                            overwrite = TRUE,
                            useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
                            fun = "raster::shapefile",
@@ -490,7 +493,7 @@ Save <- function(sim) {
                          url = extractURL("ecoZone"),
                          alsoExtract = ecozoneAE,
                          destinationPath = dPath,
-                         studyArea = sim$shpStudyAreaLarge,
+                         studyArea = sim$studyAreaLarge,
                          overwrite = TRUE,
                          useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
                          fun = "raster::shapefile",
@@ -507,7 +510,7 @@ Save <- function(sim) {
                              destinationPath = dPath,
                              url = extractURL("standAgeMap"),
                              fun = "raster::raster",
-                             studyArea = sim$shpStudyAreaLarge,
+                             studyArea = sim$studyAreaLarge,
                              rasterToMatch = sim$rasterToMatch,
                              method = "bilinear",
                              datatype = "INT2U",
@@ -529,7 +532,7 @@ Save <- function(sim) {
     speciesLayersList <- Cache(loadkNNSpeciesLayers,
                                dPath = dPath,
                                rasterToMatch = sim$rasterToMatch,
-                               studyArea = sim$shpStudyAreaLarge,
+                               studyArea = sim$studyAreaLarge,
                                speciesList = sim$speciesList,
                                # thresh = 10,
                                url = extractURL("speciesLayers"),
