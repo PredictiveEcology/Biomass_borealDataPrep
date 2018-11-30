@@ -81,8 +81,6 @@ defineModule(sim, list(
   outputObjects = bind_rows(
     createsOutput("ecoDistrict", "", desc = ""),
     createsOutput("ecoRegion", "", desc = ""),
-    createsOutput("ecoregion", "data.table",
-                  desc = "ecoregion look up table"),
     createsOutput("ecoregionMap", "RasterLayer",
                   desc = "ecoregion map that has mapcodes match ecoregion table and speciesEcoregion table"),
     createsOutput("ecoZone", "", desc = ""),
