@@ -41,13 +41,15 @@ defineModule(sim, list(
                  desc = "2005 land classification map in study area, default is Canada national land classification in 2005",
                  sourceURL = "ftp://ftp.ccrs.nrcan.gc.ca/ad/NLCCLandCover/LandcoverCanada2005_250m/LandCoverOfCanada2005_V1_4.zip"),
     expectsInput("rasterToMatch", "RasterLayer",
-                 desc = "this raster contains two pieces of informaton: Full study area with fire return interval attribute",
+                 desc = "Raster layer of study area used for cropping, masking and projecting. 
+                 Defaults to the Knn biomass map masked with `studyArea`",
                  sourceURL = NA), 
     expectsInput("seedingAlgorithm", "character",
                  desc = "choose which seeding algorithm will be used among noDispersal, universalDispersal,
                  and wardDispersal, default is wardDispersal"),
     expectsInput("studyArea", "SpatialPolygonsDataFrame",
-                 desc = "Study area used for the simulation, including deriving vegetation model parameters. Defaults to `studyAreaLarge`",
+                 desc = "Study area used for the simulation, including deriving vegetation model parameters and the CRS used throughout.
+                 Defaults to `studyAreaLarge`. Note that CRS has to be in meters",
                  sourceURL = NA), 
     expectsInput("studyAreaLarge", "SpatialPolygonsDataFrame",
                  desc = "Larger study area, enclosing the simulation study area. Used to derive vegetation model parameters that require
@@ -373,6 +375,7 @@ Save <- function(sim) {
   ecodistrictAE <- basename(paste0(tools::file_path_sans_ext(ecodistrictFilename), ".", fexts))
   ecozoneAE <- basename(paste0(tools::file_path_sans_ext(ecozoneFilename), ".", fexts))
   
+  ## 2. get study areas and rasterToMatch
   if (!suppliedElsewhere("studyAreaLarge", sim)) {
     message("'studyAreaLarge' was not provided by user. Using a polygon in southwestern Alberta, Canada,")
     
@@ -432,7 +435,7 @@ Save <- function(sim) {
                                                  "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
                               url = extractURL("biomassMap"),
                               destinationPath = dPath,
-                              studyArea = sim$studyArea,
+                              studyArea = sim$studyArea,   ## TODO: should this be studyAreaLarge? in RTM below it is...
                               useSAcrs = TRUE,
                               method = "bilinear",
                               datatype = "INT2U",
@@ -477,7 +480,7 @@ Save <- function(sim) {
                                datatype = "INT2U", overwrite = TRUE)
   }
   
-  # LCC2005
+  ## 3. Get LCC2005, ecodistrict/region/zone
   if (!suppliedElsewhere("LCC2005", sim)) {
     sim$LCC2005 <- Cache(prepInputs,
                          targetFile = lcc2005Filename,
@@ -539,7 +542,7 @@ Save <- function(sim) {
                          userTags = cacheTags)
   }
   
-  # stand age map
+  ## 4. get stand age map
   if (!suppliedElsewhere("standAgeMap", sim)) {
     sim$standAgeMap <- Cache(prepInputs, #notOlderThan = Sys.time(),
                              targetFile = basename(standAgeMapFilename),
@@ -596,11 +599,12 @@ Save <- function(sim) {
     sim$sppNameVector <- speciesLayersList$sppNameVector
   }
   
-  # 3. species maps
+  ## 6. species maps
   if (!suppliedElsewhere("speciesTable", sim)) {
     sim$speciesTable <- getSpeciesTable(dPath, cacheTags)
   }
 
+  ## 7. species traits and simulation paramters
   sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
                                     X0 = 1,
                                     X1 = c(0.5, rep(1, 4)),
