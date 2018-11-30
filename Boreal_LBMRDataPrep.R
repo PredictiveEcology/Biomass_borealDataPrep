@@ -396,6 +396,11 @@ Save <- function(sim) {
   
   if (!is(sim$studyAreaLarge, "SpatialPolygonsDataFrame")) {
     dfData <- if (is.null(rownames(sim$studyAreaLarge))) {
+      polyID <- sapply(slot(sim$studyAreaLarge, "polygons"), function(x) slot(x, "ID"))
+      data.frame("field" = as.character(seq_along(length(sim$studyAreaLarge))), row.names = polyID)
+    } else {
+      polyID <- sapply(slot(sim$studyAreaLarge, "polygons"), function(x) slot(x, "ID"))
+      data.frame("field" = rownames(sim$studyAreaLarge), row.names = polyID)
     }
     sim$studyAreaLarge <- SpatialPolygonsDataFrame(sim$studyAreaLarge, data = dfData)
   }
@@ -449,20 +454,7 @@ Save <- function(sim) {
     # if we need rasterToMatch, that means a) we don't have it, but b) we will have biomassMap
     sim$rasterToMatch <- sim$biomassMap
     message("  Rasterizing the studyAreaLarge polygon map")
-    
-    ## TODO: the following code shouldn't be here... a check for studyAreaLarge exists above
-    ## so checks for class should also be above?
-    if (!is(sim$studyAreaLarge, "SpatialPolygonsDataFrame")) {
-      dfData <- if (is.null(rownames(sim$studyAreaLarge))) {
-        polyID <- sapply(slot(sim$studyAreaLarge, "polygons"), function(x) slot(x, "ID"))
-        data.frame("field" = as.character(seq_along(length(sim$studyAreaLarge))), row.names = polyID)
-      } else {
-        polyID <- sapply(slot(sim$studyAreaLarge, "polygons"), function(x) slot(x, "ID"))
-        data.frame("field" = rownames(sim$studyAreaLarge), row.names = polyID)
-      }
-      sim$studyAreaLarge <- SpatialPolygonsDataFrame(sim$studyAreaLarge, data = dfData)
-    }
-    
+  
     # Layers provided by David Andison sometimes have LTHRC, sometimes LTHFC ... chose whichever
     LTHxC <- grep("(LTH.+C)",names(sim$studyAreaLarge), value = TRUE)
     fieldName <- if (length(LTHxC)) {
