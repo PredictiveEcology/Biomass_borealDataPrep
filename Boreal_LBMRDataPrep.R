@@ -42,9 +42,9 @@ defineModule(sim, list(
                  desc = "2005 land classification map in study area, default is Canada national land classification in 2005",
                  sourceURL = "ftp://ftp.ccrs.nrcan.gc.ca/ad/NLCCLandCover/LandcoverCanada2005_250m/LandCoverOfCanada2005_V1_4.zip"),
     expectsInput("rasterToMatch", "RasterLayer",
-                 #desc = "this raster contains two pieces of information: Full study area with fire return interval attribute",
-                 desc = "DESCRIPTION NEEDED", # TODO: is this correct?
-                 sourceURL = NA), # i guess this is study area and fire return interval
+                 desc = paste("Raster layer of study area used for cropping, masking and projecting.", 
+                              "Defaults to the Knn biomass map masked with `studyArea`"),
+                 sourceURL = NA), 
     expectsInput("seedingAlgorithm", "character",
                  desc = "choose which seeding algorithm will be used among noDispersal, universalDispersal,
                  and wardDispersal, default is wardDispersal"),
@@ -67,7 +67,8 @@ defineModule(sim, list(
     expectsInput("studyArea", "SpatialPolygonsDataFrame",
                  desc = paste("multipolygon to use as the study area,",
                               "with attribute LTHFC describing the fire return interval.",
-                              "Defaults to a square shapefile in Southwestern Alberta, Canada."),
+                              "Defaults to a square shapefile in Southwestern Alberta, Canada.", 
+                              "Note that CRS has to be in meters"),
                  sourceURL = ""),
     expectsInput("studyAreaLarge", "SpatialPolygonsDataFrame",
                  desc = paste("multipolygon (larger area than studyArea) to use for parameter estimation,",
@@ -338,14 +339,14 @@ Save <- function(sim) {
   
   cacheTags = c(currentModule(sim), "function:.inputObjects", "function:spades")
   
-  # 1. test if all input objects are already present (e.g., from inputs, objects or another module)
+  ## 1. test if all input objects are already present (e.g., from inputs, objects or another module)
   a <- depends(sim)
   whThisMod <- which(unlist(lapply(a@dependencies, function(x) x@name)) == "Boreal_LBMRDataPrep")
   objNames <- a@dependencies[[whThisMod]]@inputObjects$objectName
   objExists <- !unlist(lapply(objNames, function(x) is.null(sim[[x]])))
   names(objExists) <- objNames
 
-  # Filenames
+  ## Filenames
   ecoregionFilename <-   file.path(dPath, "ecoregions.shp")
   ecodistrictFilename <- file.path(dPath, "ecodistricts.shp")
   ecozoneFilename <-   file.path(dPath, "ecozones.shp")
@@ -353,12 +354,13 @@ Save <- function(sim) {
   lcc2005Filename <- file.path(dPath, "LCC2005_V1_4a.tif")
   standAgeMapFilename <- file.path(dPath, "NFI_MODIS250m_kNN_Structure_Stand_Age_v0.tif")
   
-  # Also extract
+  ## Also extract
   fexts <- c("dbf", "prj", "sbn", "sbx", "shx")
   ecoregionAE <- basename(paste0(tools::file_path_sans_ext(ecoregionFilename), ".", fexts))
   ecodistrictAE <- basename(paste0(tools::file_path_sans_ext(ecodistrictFilename), ".", fexts))
   ecozoneAE <- basename(paste0(tools::file_path_sans_ext(ecozoneFilename), ".", fexts))
 
+  ## 2. get study areas and rasterToMatch
   if (!suppliedElsewhere("studyAreaLarge", sim)) {
     message("'studyAreaLarge' was not provided by user. Using a polygon in southwestern Alberta, Canada,")
 
@@ -519,7 +521,7 @@ Save <- function(sim) {
                          userTags = cacheTags)
   }
   
-  # stand age map
+  ## 4. get stand age map
   if (!suppliedElsewhere("standAgeMap", sim)) {
     sim$standAgeMap <- Cache(prepInputs, #notOlderThan = Sys.time(),
                              targetFile = basename(standAgeMapFilename),
@@ -536,6 +538,7 @@ Save <- function(sim) {
                              userTags = c("stable", currentModule(sim)))
   }
   
+  ## 5. get species  layers  
   if (!suppliedElsewhere("sppNameVector", sim)) {
     ## default to 6 species (see below)
     sim$sppNameVector <- c("Abie_sp", "Pice_gla", "Pice_mar", "Pinu_ban", "Pinu_con", "Popu_tre")
@@ -575,11 +578,12 @@ Save <- function(sim) {
     sim$sppNameVector <- speciesLayersList$sppNameVector
   }
   
-  # 3. species maps
+  ## 6. species maps
   if (!suppliedElsewhere("speciesTable", sim)) {
     sim$speciesTable <- getSpeciesTable(dPath, cacheTags)
   }
-
+  
+  ## 7. species traits and simulation paramters
   sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
                                     X0 = 1,
                                     X1 = c(0.5, rep(1, 4)),
