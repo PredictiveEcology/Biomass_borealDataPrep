@@ -547,8 +547,6 @@ Save <- function(sim) {
                                # thresh = 10,
                                url = extractURL("speciesLayers"),
                                cachePath = cachePath(sim),
-                               userTags = c(cacheTags, "specieslayers"))
-    
                                userTags = c(cacheTags, "speciesLayers"))
     #options(opts)
     writeRaster(speciesLayersList$speciesLayers,
