@@ -20,10 +20,6 @@ defineModule(sim, list(
   reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos"),
   parameters = rbind(
     defineParameter("speciesPresence", "numeric", 50, NA, NA, "minimum percent cover required to classify a species as present"),
-    defineParameter(".crsUsed", "CRS", raster::crs(
-      paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
-            "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
-    ), NA, NA, "CRS to be used. Defaults to the biomassMap projection"),
     defineParameter(".plotInitialTime", "numeric", NA, NA, NA, "This describes the simulation time at which the first plot event should occur"),
     defineParameter(".plotInterval", "numeric", NA, NA, NA, "This describes the simulation time interval between plot events"),
     defineParameter(".saveInitialTime", "numeric", NA, NA, NA, "This describes the simulation time at which the first save event should occur"),
@@ -343,8 +339,6 @@ Save <- function(sim) {
   objExists <- !unlist(lapply(objNames, function(x) is.null(sim[[x]])))
   names(objExists) <- objNames
 
-  crsUsed <- P(sim)[[".crsUsed"]]
-  
   # Filenames
   ecoregionFilename <-   file.path(dPath, "ecoregions.shp")
   ecodistrictFilename <- file.path(dPath, "ecodistricts.shp")
@@ -377,13 +371,7 @@ Save <- function(sim) {
     sim$studyArea <- sim$studyAreaLarge
   }
   
-  if (!identical(crsUsed, crs(sim$studyAreaLarge))) {
-    sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crsUsed) #faster without Cache
-  }
-  
-  if (!identical(crsUsed, crs(sim$studyArea))) {
-    sim$studyArea <- spTransform(sim$studyArea, crsUsed) #faster without Cache
-  }
+  ## TODO: add check that ensures studyArea and studyAreaLarge CRS match
   
   needRTM <- FALSE
   if (is.null(sim$rasterToMatch)) {
@@ -445,14 +433,6 @@ Save <- function(sim) {
     sim$rasterToMatch <- Cache(writeRaster, sim$rasterToMatch,
                                filename = file.path(dataPath(sim), "rasterToMatch.tif"),
                                datatype = "INT2U", overwrite = TRUE)
-  }
-
-  if (!identical(crsUsed, crs(sim$studyAreaLarge))) {
-    sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crsUsed) #faster without Cache
-  }
-
-  if (!identical(crsUsed, crs(sim$studyArea))) {
-    sim$studyArea <- spTransform(sim$studyArea, crsUsed) #faster without Cache
   }
 
   # LCC2005
