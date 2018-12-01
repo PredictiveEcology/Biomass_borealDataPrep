@@ -152,7 +152,7 @@ estimateParameters <- function(sim) {
   message("2: ", Sys.time())
   initialCommFiles <- Cache(initialCommunityProducer,
                             speciesLayers = sim$speciesLayers,
-                            speciesPresence = P(sim)$speciesPresence,
+                            speciesPresence = P(sim)$speciesPresence,  ## TODO: please check with previous versions if this was 50
                             rstStudyArea = rstStudyRegionBinary,
                             standAgeMap = sim$standAgeMap,
                             userTags = "stable")
@@ -259,7 +259,7 @@ estimateParameters <- function(sim) {
                                   biggerEcoArea = sim$ecoZone,
                                   biggerEcoAreaSource = "ecoZone",
                                   NAData = NAdata, maskFn = fastMask,
-                                  pctCoverMinThresh = 50, ## TODO: pass as parameter (with #10)
+                                  pctCoverMinThresh = 50, 
                                   userTags = "stable")
     message("  7b obtainMaxBandANPPFromBiggerEcoArea if NAdata exist: ", Sys.time())
     NON_NAdata <- rbind(NON_NAdata, biomassFrombiggerMap$addData[!is.na(maxBiomass),
