@@ -1,5 +1,3 @@
-# Everything in this file gets sourced during simInit, and all functions and objects
-# are put into the simList. To use objects and functions, use sim$xxx.
 defineModule(sim, list(
   name = "Boreal_LBMRDataPrep",
   description = "A data preparation module for parameterizing LBMR from open data sources, within the Boreal forest of Canada",
@@ -19,15 +17,20 @@ defineModule(sim, list(
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
   reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos"),
   parameters = rbind(
-    defineParameter("speciesPresence", "numeric", 50, NA, NA, "minimum percent cover required to classify a species as present"),
+    defineParameter("speciesPresence", "numeric", 50, NA, NA,
+                    "minimum percent cover required to classify a species as present"),
     defineParameter(".crsUsed", "CRS", raster::crs(
       paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
             "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
     ), NA, NA, "CRS to be used. Defaults to the biomassMap projection"),
-    defineParameter(".plotInitialTime", "numeric", NA, NA, NA, "This describes the simulation time at which the first plot event should occur"),
-    defineParameter(".plotInterval", "numeric", NA, NA, NA, "This describes the simulation time interval between plot events"),
-    defineParameter(".saveInitialTime", "numeric", NA, NA, NA, "This describes the simulation time at which the first save event should occur"),
-    defineParameter(".saveInterval", "numeric", NA, NA, NA, "This describes the simulation time interval between save events")
+    defineParameter(".plotInitialTime", "numeric", NA, NA, NA,
+                    "This describes the simulation time at which the first plot event should occur"),
+    defineParameter(".plotInterval", "numeric", NA, NA, NA,
+                    "This describes the simulation time interval between plot events"),
+    defineParameter(".saveInitialTime", "numeric", NA, NA, NA,
+                    "This describes the simulation time at which the first save event should occur"),
+    defineParameter(".saveInterval", "numeric", NA, NA, NA,
+                    "This describes the simulation time interval between save events")
   ),
   inputObjects = bind_rows(
     expectsInput("biomassMap", "RasterLayer",
