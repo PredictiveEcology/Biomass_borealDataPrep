@@ -141,15 +141,15 @@ estimateParameters <- function(sim) {
   sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
 
   message("1: ", Sys.time())
-  rstStudyRegionBinary <- raster(sim$rasterToMatch)
-  rstStudyRegionBinary[] <- NA
-  rstStudyRegionBinary[!is.na(sim$rasterToMatch[])] <- 1
+  rasterToMatchBinary <- raster(sim$rasterToMatch)
+  rasterToMatchBinary[] <- NA
+  rasterToMatchBinary[!is.na(sim$rasterToMatch[])] <- 1
 
   message("2: ", Sys.time())
   initialCommFiles <- Cache(initialCommunityProducer,
                             speciesLayers = sim$speciesLayers,
                             speciesPresence = P(sim)$speciesPresence,
-                            rstStudyArea = rstStudyRegionBinary,
+                            rstStudyArea = rasterToMatchBinary,
                             standAgeMap = sim$standAgeMap,
                             userTags = "stable")
   ecoregionstatus <- data.table(active = "yes",
