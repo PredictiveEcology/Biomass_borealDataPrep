@@ -25,12 +25,12 @@ initialCommunityProducer <- function(speciesLayers, speciesPresence, rstStudyAre
   ageMap <- standAgeMap[]
   ageMap[which(is.na(ageMap))] <- 0L
   ageCodes <- paddedFloatToChar(round(ageMap, -1) / 10, padL = digits, padR = 0)
+  ids <- which(strtoi(mapCodes, base = 10) == 0)
   mapCodes <- paste0(mapCodes, ageCodes)
   rm(ageCodes)
 
   ## convert mapCodes for use with data.table and as integer raster
   mapCodesInt <- strtoi(mapCodes, base = 10) ## much faster than as.integer
-  ids <- which(mapCodesInt == 0L)
   mapCodesInt[ids] <- NA_integer_
   mapCodes[ids] <- NA_character_
   speciesComMap <- speciesLayers[[1]]
