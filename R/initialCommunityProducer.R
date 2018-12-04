@@ -25,19 +25,19 @@ initialCommunityProducer <- function(speciesLayers, speciesPresence, rstStudyAre
   ageMap <- standAgeMap[]
   ageMap[which(is.na(ageMap))] <- 0L
   ageCodes <- paddedFloatToChar(round(ageMap, -1) / 10, padL = digits, padR = 0)
-  ids <- which(strtoi(mapCodes, base = 10) == 0)
+  ids <- which(as.numeric(mapCodes) == 0)
   mapCodes <- paste0(mapCodes, ageCodes)
   rm(ageCodes)
 
   ## convert mapCodes for use with data.table and as integer raster
-  mapCodesInt <- strtoi(mapCodes, base = 10) ## much faster than as.integer
+  mapCodesInt <- as.numeric(mapCodes)
   mapCodesInt[ids] <- NA_integer_
   mapCodes[ids] <- NA_character_
   speciesComMap <- speciesLayers[[1]]
   speciesComMap[] <- mapCodesInt
 
-  initialCommunities <- data.table(mapcode = sort(unique(mapCodesInt)))
-  initialCommunities[, mapCodeStr := sort(unique(mapCodes))]
+  initialCommunities <- data.table(mapcode = sort(unique(na.omit(mapCodesInt))))
+  initialCommunities[, mapCodeStr := sort(unique(na.omit(mapCodes)))]
   output <- data.table(mapcode = numeric(), speciesPresence = character(),
                        species = character(), age1 = numeric())
   for (i in 1:nrow(initialCommunities)) {
@@ -46,10 +46,9 @@ initialCommunityProducer <- function(speciesLayers, speciesPresence, rstStudyAre
                                                         seq(1, digits * n, 2),
                                                         seq(2, digits * n, 2)),
                             species = speciesNames[1:length(speciesNames)],
-                            age1 = strtoi(rep(substring(initialCommunities$mapCodeStr[i],
-                                                        2 + digits * n - 1,
-                                                        2 + digits * n), 3),
-                                          base = 10) * 10)
+                            age1 = as.numeric(rep(substring(initialCommunities$mapCodeStr[i],
+                                                            2 + digits * n - 1,
+                                                            2 + digits * n), n)) * 10)
 
     output <- rbind(output, outputAdd)
   }
