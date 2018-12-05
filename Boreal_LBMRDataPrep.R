@@ -15,7 +15,7 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
-  reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos", "pemisc"),
+  reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos", "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("speciesPresence", "numeric", 50, NA, NA,
                     "minimum percent cover required to classify a species as present"),
