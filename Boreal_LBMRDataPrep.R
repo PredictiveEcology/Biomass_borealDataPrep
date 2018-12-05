@@ -547,7 +547,7 @@ Save <- function(sim) {
     
     ## By default, Abies_las is renamed to Abies_sp
     sim$speciesEquivalency[KNN == "Abie_Las", LandR := "Abie_sp"]
-    
+  }   
   # 3. species maps
   if (!suppliedElsewhere("speciesTable", sim)) {
     sim$speciesTable <- getSpeciesTable(dPath, cacheTags)
