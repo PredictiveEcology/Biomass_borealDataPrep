@@ -54,6 +54,9 @@ defineModule(sim, list(
     expectsInput("speciesLayers", "RasterStack",
                  desc = "biomass percentage raster layers by species in Canada species map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
+    expectsInput("speciesEquivalency", c("data.table"),
+                 desc = "table of species equivalencies. See pemisc::sppEquivalencies_CA for further information",
+                 sourceURL = ""),
     expectsInput("speciesList", c("character", "matrix"),
                  desc = "vector or matrix of species to select, provided by the user or BiomassSpeciesData.
                  If a matrix, should have two columns of raw and 'end' species names. Note that 'sp' is used instead of 'spp'",
@@ -537,7 +540,14 @@ Save <- function(sim) {
     sim$speciesLayers <- speciesLayersList$speciesLayers
     sim$speciesList <- speciesLayersList$speciesList
   }
-
+  
+  if (!suppliedElsewhere("speciesEquivalency", sim)) {
+    data("sppEquivalencies_CA", package = "pemisc")
+    sim$speciesEquivalency <- as.data.table(sppEquivalencies_CA)
+    
+    ## By default, Abies_las is renamed to Abies_sp
+    sim$speciesEquivalency[KNN == "Abie_Las", LandR := "Abie_sp"]
+    
   # 3. species maps
   if (!suppliedElsewhere("speciesTable", sim)) {
     sim$speciesTable <- getSpeciesTable(dPath, cacheTags)
