@@ -19,10 +19,6 @@ defineModule(sim, list(
   parameters = rbind(
     defineParameter("speciesPresence", "numeric", 50, NA, NA,
                     "minimum percent cover required to classify a species as present"),
-    defineParameter(".crsUsed", "CRS", raster::crs(
-      paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
-            "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
-    ), NA, NA, "CRS to be used. Defaults to the biomassMap projection"),
     defineParameter(".plotInitialTime", "numeric", NA, NA, NA,
                     "This describes the simulation time at which the first plot event should occur"),
     defineParameter(".plotInterval", "numeric", NA, NA, NA,
@@ -340,8 +336,7 @@ Save <- function(sim) {
   objExists <- !unlist(lapply(objNames, function(x) is.null(sim[[x]])))
   names(objExists) <- objNames
 
-  crsUsed <- P(sim)[[".crsUsed"]]
-
+  
   # Filenames
   ecoregionFilename <-   file.path(dPath, "ecoregions.shp")
   ecodistrictFilename <- file.path(dPath, "ecodistricts.shp")
@@ -356,21 +351,22 @@ Save <- function(sim) {
   ecodistrictAE <- basename(paste0(tools::file_path_sans_ext(ecodistrictFilename), ".", fexts))
   ecozoneAE <- basename(paste0(tools::file_path_sans_ext(ecozoneFilename), ".", fexts))
 
-  if (!suppliedElsewhere("studyAreaLarge", sim)) {
-    message("'studyAreaLarge' was not provided by user. Using a polygon in southwestern Alberta, Canada,")
+  if (!suppliedElsewhere("studyArea", sim)) {
+    message("'studyArea' was not provided by user. Using a polygon in southwestern Alberta, Canada,")
 
     polyCenter <- SpatialPoints(coords = data.frame(x = c(-1349980), y = c(6986895)),
-                                proj4string = crsUsed)
+                                proj4string = raster::crs(paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
+            "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")))
 
     seedToKeep <- .GlobalEnv$.Random.seed
     set.seed(1234)
-    sim$studyAreaLarge <- SpaDES.tools::randomPolygon(x = polyCenter, hectares = 10000)
+    sim$studyArea <- SpaDES.tools::randomPolygon(x = polyCenter, hectares = 10000)
     .GlobalEnv$.Random.seed <- seedToKeep
   }
 
-  if (!suppliedElsewhere("studyArea", sim)) {
-    message("'studyArea' was not provided by user. Using the same as 'studyAreaLarge'")
-    sim$studyArea <- sim$studyAreaLarge
+  if (!suppliedElsewhere("studyAreaLarge", sim)) {
+    message("'studyAreaLarge' was not provided by user. Using the same as 'studyAreaLarge'")
+    sim$studyAreaLarge <- sim$studyArea
   }
 
   needRTM <- FALSE
@@ -405,43 +401,36 @@ Save <- function(sim) {
   if (needRTM) {
     # if we need rasterToMatch, that means a) we don't have it, but b) we will have biomassMap
     sim$rasterToMatch <- sim$biomassMap
-    message("  Rasterizing the studyAreaLarge polygon map")
-    if (!is(sim$studyAreaLarge, "SpatialPolygonsDataFrame")) {
-      dfData <- if (is.null(rownames(sim$studyAreaLarge))) {
-        polyID <- sapply(slot(sim$studyAreaLarge, "polygons"), function(x) slot(x, "ID"))
-        data.frame("field" = as.character(seq_along(length(sim$studyAreaLarge))), row.names = polyID)
+    message("  Rasterizing the studyArea polygon map")
+    if (!is(sim$studyArea, "SpatialPolygonsDataFrame")) {
+      dfData <- if (is.null(rownames(sim$studyArea))) {
+        polyID <- sapply(slot(sim$studyArea, "polygons"), function(x) slot(x, "ID"))
+        data.frame("field" = as.character(seq_along(length(sim$studyArea))), row.names = polyID)
       } else {
-        polyID <- sapply(slot(sim$studyAreaLarge, "polygons"), function(x) slot(x, "ID"))
-        data.frame("field" = rownames(sim$studyAreaLarge), row.names = polyID)
+        polyID <- sapply(slot(sim$studyArea, "polygons"), function(x) slot(x, "ID"))
+        data.frame("field" = rownames(sim$studyArea), row.names = polyID)
       }
-      sim$studyAreaLarge <- SpatialPolygonsDataFrame(sim$studyAreaLarge, data = dfData)
+      sim$studyArea <- SpatialPolygonsDataFrame(sim$studyArea, data = dfData)
     }
 
     # layers provided by David Andison sometimes have LTHRC, sometimes LTHFC ... chose whichever
-    LTHxC <- grep("(LTH.+C)",names(sim$studyAreaLarge), value = TRUE)
+    LTHxC <- grep("(LTH.+C)",names(sim$studyArea), value = TRUE)
     fieldName <- if (length(LTHxC)) {
       LTHxC
     } else {
-      if (length(names(sim$studyAreaLarge)) > 1) {
+      if (length(names(sim$studyArea)) > 1) {
         ## study region may be a simple polygon
-        names(sim$studyAreaLarge)[1]
+        names(sim$studyArea)[1]
       } else NULL
     }
 
-    sim$rasterToMatch <- crop(fasterizeFromSp(sim$studyAreaLarge, sim$rasterToMatch, fieldName),
-                              sim$studyAreaLarge)
+    sim$rasterToMatch <- crop(fasterizeFromSp(sim$studyArea, sim$rasterToMatch, fieldName),
+                              sim$studyArea)
     sim$rasterToMatch <- Cache(writeRaster, sim$rasterToMatch,
                                filename = file.path(dataPath(sim), "rasterToMatch.tif"),
                                datatype = "INT2U", overwrite = TRUE)
   }
 
-  if (!identical(crsUsed, crs(sim$studyAreaLarge))) {
-    sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crsUsed) #faster without Cache
-  }
-
-  if (!identical(crsUsed, crs(sim$studyArea))) {
-    sim$studyArea <- spTransform(sim$studyArea, crsUsed) #faster without Cache
-  }
 
   # LCC2005
   if (!suppliedElsewhere("LCC2005", sim)) {
