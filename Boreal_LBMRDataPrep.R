@@ -15,7 +15,7 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
-  reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos"),
+  reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos", "pemisc"),
   parameters = rbind(
     defineParameter("speciesPresence", "numeric", 50, NA, NA,
                     "minimum percent cover required to classify a species as present"),
@@ -365,7 +365,7 @@ Save <- function(sim) {
   }
 
   if (!suppliedElsewhere("studyAreaLarge", sim)) {
-    message("'studyAreaLarge' was not provided by user. Using the same as 'studyAreaLarge'")
+    message("'studyAreaLarge' was not provided by user. Using the same as 'studyArea'")
     sim$studyAreaLarge <- sim$studyArea
   }
 
