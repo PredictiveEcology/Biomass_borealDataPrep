@@ -54,8 +54,8 @@ defineModule(sim, list(
     expectsInput("speciesLayers", "RasterStack",
                  desc = "biomass percentage raster layers by species in Canada species map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
-    expectsInput("speciesEquivalency", c("data.table"),
-                 desc = "table of species equivalencies. See pemisc::sppEquivalencies_CA for further information",
+    expectsInput("speciesEquivalency", "data.table",
+                 desc = "table of species equivalencies. See pemisc::sppEquivalencies_CA.",
                  sourceURL = ""),
     # expectsInput("speciesList", c("character", "matrix"),
     #              desc = "vector or matrix of species to select, provided by the user or BiomassSpeciesData.
@@ -117,7 +117,7 @@ defineModule(sim, list(
 
 doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE) {
   if (eventType == "init") {
-    names(sim$speciesLayers) <- equivalentName(names(sim$speciesLayers), sim$speciesEquivalency, "latinNames")
+    names(sim$speciesLayers) <- equivalentName(names(sim$speciesLayers), sim$speciesEquivalency, "Latin_full")
     sim <- estimateParameters(sim)
 
     # schedule future event(s)
@@ -571,6 +571,21 @@ Save <- function(sim) {
     
   }
   
+
+  if (!suppliedElsewhere("speciesEquivalency", sim)) {
+    data("sppEquivalencies_CA", package = "pemisc")
+    sim$speciesEquivalency <- as.data.table(sppEquivalencies_CA)
+
+    ## By default, Abies_las is renamed to Abies_sp
+    sim$speciesEquivalency[KNN == "Abie_Las", LandR := "Abie_sp"]
+
+    ## add default colors for species used in model
+    defaultCols <- RColorBrewer::brewer.pal(6, "Accent")
+    LandRNames <- c("Pice_mar", "Pice_gla", "Popu_tre", "Pinu_sp", "Abie_sp")
+    sim$speciesEquivalency[LandR == LandRNames, cols := defaultCols[-4]]
+    sim$speciesEquivalency[EN_generic_full == "Mixed", cols := defaultCols[4]]
+  }
+
   # 3. species maps
   if (!suppliedElsewhere("speciesTable", sim)) {
     sim$speciesTable <- getSpeciesTable(dPath, cacheTags)
@@ -592,11 +607,6 @@ Save <- function(sim) {
   
   if (!suppliedElsewhere("successionTimestep", sim)) {
     sim$successionTimestep <- 10
-  }
-  
-  if (!suppliedElsewhere("speciesThreshold", sim = sim)) {
-    sim$speciesThreshold <- 50
-  }
-  
+
   return(invisible(sim))
 }
