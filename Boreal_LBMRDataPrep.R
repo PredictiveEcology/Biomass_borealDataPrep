@@ -15,7 +15,8 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
-  reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos", "PredictiveEcology/pemisc@development"),
+  reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos", "sp",
+                  "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("speciesPresence", "numeric", 50, NA, NA,
                     "minimum percent cover required to classify a species as present"),
@@ -419,7 +420,7 @@ Save <- function(sim) {
     }
 
     # layers provided by David Andison sometimes have LTHRC, sometimes LTHFC ... chose whichever
-    LTHxC <- grep("(LTH.+C)",names(sim$studyArea), value = TRUE)
+    LTHxC <- grep("(LTH.+C)", names(sim$studyArea), value = TRUE)
     fieldName <- if (length(LTHxC)) {
       LTHxC
     } else {
