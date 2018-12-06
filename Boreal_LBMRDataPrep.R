@@ -57,13 +57,20 @@ defineModule(sim, list(
     expectsInput("speciesEquivalency", c("data.table"),
                  desc = "table of species equivalencies. See pemisc::sppEquivalencies_CA for further information",
                  sourceURL = ""),
-    expectsInput("speciesList", c("character", "matrix"),
-                 desc = "vector or matrix of species to select, provided by the user or BiomassSpeciesData.
-                 If a matrix, should have two columns of raw and 'end' species names. Note that 'sp' is used instead of 'spp'",
-                 sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
+    # expectsInput("speciesList", c("character", "matrix"),
+    #              desc = "vector or matrix of species to select, provided by the user or BiomassSpeciesData.
+    #              If a matrix, should have two columns of raw and 'end' species names. Note that 'sp' is used instead of 'spp'",
+    #              sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
     expectsInput("speciesTable", "data.table",
                  desc = "species attributes table, default is from Dominic and Yan's project",
                  sourceURL = "https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv"),
+    expectsInput("sppMerge", c("list"),
+                 desc = paste("list of kNN species layers that should be merged.",
+                              "If none, create an empty list. Defaults to merging",
+                              "of Pinus contorta and P. banksiana into Pinus sp."),
+                 sourceURL = ""),
+    expectsInput("sppNameVector", "character",
+                 desc = "vector of species to select", sourceURL = ""),
     expectsInput("studyArea", "SpatialPolygonsDataFrame",
                  desc = paste("multipolygon to use as the study area,",
                               "with attribute LTHFC describing the fire return interval.",
@@ -176,12 +183,13 @@ estimateParameters <- function(sim) {
          "This may be due to an incorrect recovery of the LCC2005 from a module. ",
          "Find which module created the LCC2005 that should be used here, ",
          "and clear the event or module cache that created it. ",
-         "If the LCC2005 was made in the init event of LandWeb_dataPrep module, ",
+         "If the LCC2005 was made in the init event of another module, ",
          "then try something like:\n",
-         "reproducible::clearCache(userTags = c('LandWeb_dataPrep', 'init'), x = 'cache/SMALL_All')")
+         "reproducible::clearCache(userTags = c('Boreal_LBMRDataPrep', 'init'), x = 'cache/to/path')")
   }
 
-  simulationMaps <- Cache(nonActiveEcoregionProducer, nonactiveRaster = sim$LCC2005,
+  simulationMaps <- Cache(nonActiveEcoregionProducer, 
+                          nonactiveRaster = sim$LCC2005,
                           activeStatus = activeStatusTable,
                           ecoregionMap = ecoregionFiles$ecoregionMap,
                           ecoregion = ecoregionFiles$ecoregion,
@@ -191,7 +199,8 @@ estimateParameters <- function(sim) {
   if (ncell(sim$rasterToMatch) > 3e6) .gc()
 
   message("4: ", Sys.time())
-  speciesEcoregionTable <- Cache(obtainMaxBandANPP, speciesLayers = sim$speciesLayers,
+  speciesEcoregionTable <- Cache(obtainMaxBandANPP, 
+                                 speciesLayers = sim$speciesLayers,
                                  biomassLayer = sim$biomassMap,
                                  SALayer = sim$standAgeMap,
                                  ecoregionMap = simulationMaps$ecoregionMap,
@@ -513,14 +522,32 @@ Save <- function(sim) {
                              userTags = c("stable", currentModule(sim)))
   }
 
-  if (!suppliedElsewhere("speciesList", sim)) {
-    ## default to 6 species, one changing name, and two merged into one
-    sim$speciesList <- as.matrix(data.frame(
-      speciesNamesRaw = c("Abie_Las", "Pice_Gla", "Pice_Mar", "Pinu_Ban", "Pinu_Con", "Popu_Tre"),
-      speciesNamesEnd =  c("Abie_sp", "Pice_gla", "Pice_mar", "Pinu_sp", "Pinu_sp", "Popu_tre")
-    ))
+  # if (!suppliedElsewhere("speciesList", sim)) {
+  #   ## default to 6 species, one changing name, and two merged into one
+  #   sim$speciesList <- as.matrix(data.frame(
+  #     speciesNamesRaw = c("Abie_Las", "Pice_Gla", "Pice_Mar", "Pinu_Ban", "Pinu_Con", "Popu_Tre"),
+  #     speciesNamesEnd =  c("Abie_sp", "Pice_gla", "Pice_mar", "Pinu_sp", "Pinu_sp", "Popu_tre")
+  #   ))
+  # }
+  
+  if (!suppliedElsewhere("sppNameVector", sim)) {
+    ## default to 6 species (see below)
+    sim$sppNameVector <- c("Abie_sp", "Pice_gla", "Pice_mar", "Pinu_ban", "Pinu_con", "Popu_tre")
   }
-
+  
+  if (!suppliedElsewhere("sppMerge", sim)) {
+    ## two merged into one (Pinu_ban, Pinu_con to Pinu_sp)
+    sim$sppMerge <- list(Pinu_sp = c("Pinu_Ban", "Pinu_Con"))
+  }
+  
+  if (!suppliedElsewhere("speciesEquivalency", sim)) {
+    data("sppEquivalencies_CA", package = "pemisc")
+    sim$speciesEquivalency <- as.data.table(sppEquivalencies_CA)
+    
+    ## By default, Abies_las is renamed to Abies_sp
+    sim$speciesEquivalency[KNN == "Abie_Las", LandR := "Abie_sp"]
+  }
+  
   if (!suppliedElsewhere("speciesLayers", sim) |
       !suppliedElsewhere("speciesList", sim)) {
     #opts <- options(reproducible.useCache = "overwrite")
@@ -528,7 +555,9 @@ Save <- function(sim) {
                                dPath = dPath,
                                rasterToMatch = sim$rasterToMatch,
                                studyArea = sim$studyAreaLarge,
-                               speciesList = sim$speciesList,
+                               speciesEquivalency = sim$speciesEquivalency,  
+                               sppNameVector = sim$sppNameVector,
+                               sppMerge = sim$sppMerge,
                                # thresh = 10,
                                url = extractURL("speciesLayers"),
                                cachePath = cachePath(sim),
@@ -539,15 +568,14 @@ Save <- function(sim) {
                 overwrite = TRUE)
     sim$speciesLayers <- speciesLayersList$speciesLayers
     sim$speciesList <- speciesLayersList$speciesList
+    
+    #TODO: Verify whether the line below is necessary (copied from BiomassSpeciesData) see Git issue xxx
+    ## update the list of original species to use;
+    ## as kNN is the lowest resolution, if species weren't found they will be excluded
+    # sim$sppNameVector <- speciesLayersList$sppNameVector
+    
   }
   
-  if (!suppliedElsewhere("speciesEquivalency", sim)) {
-    data("sppEquivalencies_CA", package = "pemisc")
-    sim$speciesEquivalency <- as.data.table(sppEquivalencies_CA)
-    
-    ## By default, Abies_las is renamed to Abies_sp
-    sim$speciesEquivalency[KNN == "Abie_Las", LandR := "Abie_sp"]
-  }   
   # 3. species maps
   if (!suppliedElsewhere("speciesTable", sim)) {
     sim$speciesTable <- getSpeciesTable(dPath, cacheTags)
