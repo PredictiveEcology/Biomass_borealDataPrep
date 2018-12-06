@@ -555,13 +555,15 @@ Save <- function(sim) {
                                dPath = dPath,
                                rasterToMatch = sim$rasterToMatch,
                                studyArea = sim$studyAreaLarge,
-                               speciesEquivalency = sim$speciesEquivalency,  
                                sppNameVector = sim$sppNameVector,
+                               speciesEquivalency = sim$speciesEquivalency,  
                                sppMerge = sim$sppMerge,
-                               # thresh = 10,
+                               knnNamesCol = "KNN",
+                               sppEndNamesCol = "LandR",
+                               thresh = 10,
                                url = extractURL("speciesLayers"),
-                               cachePath = cachePath(sim),
                                userTags = c(cacheTags, "speciesLayers"))
+    
     #options(opts)
     writeRaster(speciesLayersList$speciesLayers,
                 file.path(outputPath(sim), "speciesLayers.grd"),
@@ -581,6 +583,7 @@ Save <- function(sim) {
     sim$speciesTable <- getSpeciesTable(dPath, cacheTags)
   }
 
+  if (!suppliedElsewhere("sufficientLight", sim)) {
   sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
                                     X0 = 1,
                                     X1 = c(0.5, rep(1, 4)),
@@ -588,15 +591,19 @@ Save <- function(sim) {
                                     X3 = c(rep(0, 2), 0.5, rep(1, 2)),
                                     X4 = c(rep(0, 3), 0.5, 1),
                                     X5 = c(rep(0, 4), 1))
+  }
 
-  if (!suppliedElsewhere("seedingAlgorithm", sim))
+  if (!suppliedElsewhere("seedingAlgorithm", sim)) {
     sim$seedingAlgorithm <- "wardDispersal"
-
-  if (!suppliedElsewhere("successionTimestep", sim))
+  }
+  
+  if (!suppliedElsewhere("successionTimestep", sim)) {
     sim$successionTimestep <- 10
-
-  if (!suppliedElsewhere("speciesThreshold", sim = sim))
+  }
+  
+  if (!suppliedElsewhere("speciesThreshold", sim = sim)) {
     sim$speciesThreshold <- 50
-
+  }
+  
   return(invisible(sim))
 }
