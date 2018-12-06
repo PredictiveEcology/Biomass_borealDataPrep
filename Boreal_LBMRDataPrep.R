@@ -567,8 +567,5 @@ Save <- function(sim) {
   if (!suppliedElsewhere("successionTimestep", sim))
     sim$successionTimestep <- 10
 
-  if (!suppliedElsewhere("speciesThreshold", sim = sim))
-    sim$speciesThreshold <- 50
-
   return(invisible(sim))
 }
