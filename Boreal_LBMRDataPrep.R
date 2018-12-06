@@ -49,9 +49,6 @@ defineModule(sim, list(
                  #desc = "this raster contains two pieces of information: Full study area with fire return interval attribute",
                  desc = "DESCRIPTION NEEDED", # TODO: is this correct?
                  sourceURL = NA), # i guess this is study area and fire return interval
-    expectsInput("seedingAlgorithm", "character",
-                 desc = "choose which seeding algorithm will be used among noDispersal, universalDispersal,
-                 and wardDispersal, default is wardDispersal"),
     expectsInput("speciesLayers", "RasterStack",
                  desc = "biomass percentage raster layers by species in Canada species map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
@@ -295,7 +292,8 @@ estimateParameters <- function(sim) {
 
   message("9: ", Sys.time())
   ## species traits inputs
-  sim$species <- prepSpeciesTable(sim$speciesTable, speciesList = sim$speciesList,
+  #TODO: this function will not work until it accepts sppNameVector, speciesMerge, speciesEquivalency
+  sim$species <- prepSpeciesTable(sim$speciesTable, speciesList = sim$sppNameVector,
                                   speciesLayers = sim$speciesLayers)
   message("10: ", Sys.time())
   initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species, age1)]
@@ -418,7 +416,7 @@ Save <- function(sim) {
       }
       sim$studyArea <- SpatialPolygonsDataFrame(sim$studyArea, data = dfData)
     }
-
+    #TODO: review whether this is necessary (or will break LandWeb if removed)
     # layers provided by David Andison sometimes have LTHRC, sometimes LTHFC ... chose whichever
     LTHxC <- grep("(LTH.+C)", names(sim$studyArea), value = TRUE)
     fieldName <- if (length(LTHxC)) {
@@ -516,14 +514,6 @@ Save <- function(sim) {
                              userTags = c("stable", currentModule(sim)))
   }
 
-  # if (!suppliedElsewhere("speciesList", sim)) {
-  #   ## default to 6 species, one changing name, and two merged into one
-  #   sim$speciesList <- as.matrix(data.frame(
-  #     speciesNamesRaw = c("Abie_Las", "Pice_Gla", "Pice_Mar", "Pinu_Ban", "Pinu_Con", "Popu_Tre"),
-  #     speciesNamesEnd =  c("Abie_sp", "Pice_gla", "Pice_mar", "Pinu_sp", "Pinu_sp", "Popu_tre")
-  #   ))
-  # }
-  
   if (!suppliedElsewhere("sppNameVector", sim)) {
     ## default to 6 species (see below)
     sim$sppNameVector <- c("Abie_sp", "Pice_gla", "Pice_mar", "Pinu_ban", "Pinu_con", "Popu_tre")
@@ -540,10 +530,16 @@ Save <- function(sim) {
     
     ## By default, Abies_las is renamed to Abies_sp
     sim$speciesEquivalency[KNN == "Abie_Las", LandR := "Abie_sp"]
+    
+    ## add default colors for species used in model
+    defaultCols <- RColorBrewer::brewer.pal(6, "Accent")
+    LandRNames <- c("Pice_mar", "Pice_gla", "Popu_tre", "Pinu_sp", "Abie_sp")
+    sim$speciesEquivalency[LandR == LandRNames, cols := defaultCols[-4]]
+    sim$speciesEquivalency[EN_generic_full == "Mixed", cols := defaultCols[4]]
   }
   
   if (!suppliedElsewhere("speciesLayers", sim) |
-      !suppliedElsewhere("speciesList", sim)) {
+      !suppliedElsewhere("sppNameVector", sim)) {
     #opts <- options(reproducible.useCache = "overwrite")
     speciesLayersList <- Cache(loadkNNSpeciesLayers,
                                dPath = dPath,
@@ -551,10 +547,10 @@ Save <- function(sim) {
                                studyArea = sim$studyAreaLarge,
                                sppNameVector = sim$sppNameVector,
                                speciesEquivalency = sim$speciesEquivalency,  
-                               sppMerge = sim$sppMerge,
                                knnNamesCol = "KNN",
                                sppEndNamesCol = "LandR",
-                               thresh = 10,
+                               sppMerge = sim$sppMerge,
+                               # thresh = 10,
                                url = extractURL("speciesLayers"),
                                userTags = c(cacheTags, "speciesLayers"))
     
@@ -563,28 +559,7 @@ Save <- function(sim) {
                 file.path(outputPath(sim), "speciesLayers.grd"),
                 overwrite = TRUE)
     sim$speciesLayers <- speciesLayersList$speciesLayers
-    sim$speciesList <- speciesLayersList$speciesList
-    
-    #TODO: Verify whether the line below is necessary (copied from BiomassSpeciesData) see Git issue xxx
-    ## update the list of original species to use;
-    ## as kNN is the lowest resolution, if species weren't found they will be excluded
-    # sim$sppNameVector <- speciesLayersList$sppNameVector
-    
-  }
-  
-
-  if (!suppliedElsewhere("speciesEquivalency", sim)) {
-    data("sppEquivalencies_CA", package = "pemisc")
-    sim$speciesEquivalency <- as.data.table(sppEquivalencies_CA)
-
-    ## By default, Abies_las is renamed to Abies_sp
-    sim$speciesEquivalency[KNN == "Abie_Las", LandR := "Abie_sp"]
-
-    ## add default colors for species used in model
-    defaultCols <- RColorBrewer::brewer.pal(6, "Accent")
-    LandRNames <- c("Pice_mar", "Pice_gla", "Popu_tre", "Pinu_sp", "Abie_sp")
-    sim$speciesEquivalency[LandR == LandRNames, cols := defaultCols[-4]]
-    sim$speciesEquivalency[EN_generic_full == "Mixed", cols := defaultCols[4]]
+    sim$sppNameVector <- speciesLayersList$sppNameVector
   }
 
   # 3. species maps
@@ -602,12 +577,7 @@ Save <- function(sim) {
                                     X5 = c(rep(0, 4), 1))
   }
 
-  if (!suppliedElsewhere("seedingAlgorithm", sim)) {
-    sim$seedingAlgorithm <- "wardDispersal"
-  }
-  
-  if (!suppliedElsewhere("successionTimestep", sim)) {
-    sim$successionTimestep <- 10
+
 
   return(invisible(sim))
 }
