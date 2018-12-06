@@ -339,7 +339,7 @@ Save <- function(sim) {
   objExists <- !unlist(lapply(objNames, function(x) is.null(sim[[x]])))
   names(objExists) <- objNames
 
-  
+
   # Filenames
   ecoregionFilename <-   file.path(dPath, "ecoregions.shp")
   ecodistrictFilename <- file.path(dPath, "ecodistricts.shp")
@@ -357,9 +357,10 @@ Save <- function(sim) {
   if (!suppliedElsewhere("studyArea", sim)) {
     message("'studyArea' was not provided by user. Using a polygon in southwestern Alberta, Canada,")
 
-    polyCenter <- SpatialPoints(coords = data.frame(x = c(-1349980), y = c(6986895)),
-                                proj4string = raster::crs(paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
-            "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")))
+    polyCenter <- SpatialPoints(
+      coords = data.frame(x = c(-1349980), y = c(6986895)),
+      proj4string = raster::crs(paste("+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0",
+                                      "+datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")))
 
     seedToKeep <- .GlobalEnv$.Random.seed
     set.seed(1234)
@@ -540,14 +541,14 @@ Save <- function(sim) {
     sim$speciesLayers <- speciesLayersList$speciesLayers
     sim$speciesList <- speciesLayersList$speciesList
   }
-  
+
   if (!suppliedElsewhere("speciesEquivalency", sim)) {
     data("sppEquivalencies_CA", package = "pemisc")
     sim$speciesEquivalency <- as.data.table(sppEquivalencies_CA)
-    
+
     ## By default, Abies_las is renamed to Abies_sp
     sim$speciesEquivalency[KNN == "Abie_Las", LandR := "Abie_sp"]
-  }   
+  }
   # 3. species maps
   if (!suppliedElsewhere("speciesTable", sim)) {
     sim$speciesTable <- getSpeciesTable(dPath, cacheTags)
