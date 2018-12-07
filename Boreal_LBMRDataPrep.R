@@ -288,7 +288,7 @@ estimateParameters <- function(sim) {
 
   message("9: ", Sys.time())
   ## species traits inputs
-  #TODO: this function will not work until it accepts sppNameVector, speciesMerge, speciesEquivalency
+  #TODO: this function will not work until it accepts sppNameVector, speciesMerge, speciesEquivalency. See Git issue 23
   sim$species <- prepSpeciesTable(sim$speciesTable, speciesList = sim$sppNameVector,
                                   speciesLayers = sim$speciesLayers)
   message("10: ", Sys.time())
