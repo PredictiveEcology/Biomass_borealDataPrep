@@ -47,7 +47,7 @@ defineModule(sim, list(
                  sourceURL = "ftp://ftp.ccrs.nrcan.gc.ca/ad/NLCCLandCover/LandcoverCanada2005_250m/LandCoverOfCanada2005_V1_4.zip"),
     expectsInput("rasterToMatch", "RasterLayer",
                  #desc = "this raster contains two pieces of information: Full study area with fire return interval attribute",
-                 desc = "DESCRIPTION NEEDED", # TODO: is this correct?
+                 desc = "DESCRIPTION NEEDED",
                  sourceURL = NA), # i guess this is study area and fire return interval
     expectsInput("speciesLayers", "RasterStack",
                  desc = "biomass percentage raster layers by species in Canada species map",
@@ -55,10 +55,6 @@ defineModule(sim, list(
     expectsInput("speciesEquivalency", "data.table",
                  desc = "table of species equivalencies. See pemisc::sppEquivalencies_CA.",
                  sourceURL = ""),
-    # expectsInput("speciesList", c("character", "matrix"),
-    #              desc = "vector or matrix of species to select, provided by the user or BiomassSpeciesData.
-    #              If a matrix, should have two columns of raw and 'end' species names. Note that 'sp' is used instead of 'spp'",
-    #              sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
     expectsInput("speciesTable", "data.table",
                  desc = "species attributes table, default is from Dominic and Yan's project",
                  sourceURL = "https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv"),
@@ -416,7 +412,7 @@ Save <- function(sim) {
       }
       sim$studyArea <- SpatialPolygonsDataFrame(sim$studyArea, data = dfData)
     }
-    #TODO: review whether this is necessary (or will break LandWeb if removed)
+    #TODO: review whether this is necessary (or will break LandWeb if removed) see Git Issue #22
     # layers provided by David Andison sometimes have LTHRC, sometimes LTHFC ... chose whichever
     LTHxC <- grep("(LTH.+C)", names(sim$studyArea), value = TRUE)
     fieldName <- if (length(LTHxC)) {
