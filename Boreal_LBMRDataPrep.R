@@ -182,7 +182,7 @@ estimateParameters <- function(sim) {
          "reproducible::clearCache(userTags = c('Boreal_LBMRDataPrep', 'init'), x = 'cache/to/path')")
   }
 
-  simulationMaps <- Cache(nonActiveEcoregionProducer, 
+  simulationMaps <- Cache(nonActiveEcoregionProducer,
                           nonactiveRaster = sim$LCC2005,
                           activeStatus = activeStatusTable,
                           ecoregionMap = ecoregionFiles$ecoregionMap,
@@ -193,7 +193,7 @@ estimateParameters <- function(sim) {
   if (ncell(sim$rasterToMatch) > 3e6) .gc()
 
   message("4: ", Sys.time())
-  speciesEcoregionTable <- Cache(obtainMaxBandANPP, 
+  speciesEcoregionTable <- Cache(obtainMaxBandANPP,
                                  speciesLayers = sim$speciesLayers,
                                  biomassLayer = sim$biomassMap,
                                  SALayer = sim$standAgeMap,
@@ -514,26 +514,26 @@ Save <- function(sim) {
     ## default to 6 species (see below)
     sim$sppNameVector <- c("Abie_sp", "Pice_gla", "Pice_mar", "Pinu_ban", "Pinu_con", "Popu_tre")
   }
-  
+
   if (!suppliedElsewhere("sppMerge", sim)) {
     ## two merged into one (Pinu_ban, Pinu_con to Pinu_sp)
     sim$sppMerge <- list(Pinu_sp = c("Pinu_Ban", "Pinu_Con"))
   }
-  
+
   if (!suppliedElsewhere("speciesEquivalency", sim)) {
     data("sppEquivalencies_CA", package = "pemisc")
     sim$speciesEquivalency <- as.data.table(sppEquivalencies_CA)
-    
+
     ## By default, Abies_las is renamed to Abies_sp
     sim$speciesEquivalency[KNN == "Abie_Las", LandR := "Abie_sp"]
-    
+
     ## add default colors for species used in model
     defaultCols <- RColorBrewer::brewer.pal(6, "Accent")
     LandRNames <- c("Pice_mar", "Pice_gla", "Popu_tre", "Pinu_sp", "Abie_sp")
     sim$speciesEquivalency[LandR == LandRNames, cols := defaultCols[-4]]
     sim$speciesEquivalency[EN_generic_full == "Mixed", cols := defaultCols[4]]
   }
-  
+
   if (!suppliedElsewhere("speciesLayers", sim) |
       !suppliedElsewhere("sppNameVector", sim)) {
     #opts <- options(reproducible.useCache = "overwrite")
@@ -542,14 +542,14 @@ Save <- function(sim) {
                                rasterToMatch = sim$rasterToMatch,
                                studyArea = sim$studyAreaLarge,
                                sppNameVector = sim$sppNameVector,
-                               speciesEquivalency = sim$speciesEquivalency,  
+                               speciesEquivalency = sim$speciesEquivalency,
                                knnNamesCol = "KNN",
                                sppEndNamesCol = "LandR",
                                sppMerge = sim$sppMerge,
                                # thresh = 10,
                                url = extractURL("speciesLayers"),
                                userTags = c(cacheTags, "speciesLayers"))
-    
+
     #options(opts)
     writeRaster(speciesLayersList$speciesLayers,
                 file.path(outputPath(sim), "speciesLayers.grd"),
