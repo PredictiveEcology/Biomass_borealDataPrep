@@ -113,7 +113,7 @@ defineModule(sim, list(
 
 doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE) {
   if (eventType == "init") {
-    names(sim$speciesLayers) <- equivalentName(names(sim$speciesLayers), sim$speciesEquivalency, "Latin_full")
+    # names(sim$speciesLayers) <- equivalentName(names(sim$speciesLayers), sim$speciesEquivalency, "Latin_full")
     sim <- estimateParameters(sim)
 
     # schedule future event(s)
@@ -290,13 +290,12 @@ estimateParameters <- function(sim) {
 
   message("9: ", Sys.time())
   ## species traits inputs
-  #TODO: this function will not work until it accepts sppNameVector, speciesMerge, speciesEquivalency. See Git issue 23
   sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
                                   speciesLayers = sim$speciesLayers,
                                   sppNameVector = sim$sppNameVector,
                                   speciesEquivalency = sim$speciesEquivalency,
-                                  sppMerge = sim$sppMerge,
-                                  namesCol = P(sims)$speciesEquivalencyColumn)
+                                  sppMerge = sim$sppMerge, # TODO this is not used
+                                  namesCol = P(sim)$speciesEquivalencyColumn)
   message("10: ", Sys.time())
   initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species, age1)]
 
@@ -311,7 +310,6 @@ estimateParameters <- function(sim) {
 
   message("Done Boreal_LBMRDataPrep: ", Sys.time())
 
-  # ! ----- STOP EDITING ----- ! #
   return(invisible(sim))
 }
 
