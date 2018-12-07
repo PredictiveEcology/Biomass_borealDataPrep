@@ -18,6 +18,8 @@ defineModule(sim, list(
   reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos", "sp",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
+    defineParameter("speciesEquivalencyColumn", "character", "LandR", NA, NA,
+                    "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter("speciesPresence", "numeric", 50, NA, NA,
                     "minimum percent cover required to classify a species as present"),
     defineParameter(".plotInitialTime", "numeric", NA, NA, NA,
@@ -289,8 +291,12 @@ estimateParameters <- function(sim) {
   message("9: ", Sys.time())
   ## species traits inputs
   #TODO: this function will not work until it accepts sppNameVector, speciesMerge, speciesEquivalency. See Git issue 23
-  sim$species <- prepSpeciesTable(sim$speciesTable, speciesList = sim$sppNameVector,
-                                  speciesLayers = sim$speciesLayers)
+  sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
+                                  speciesLayers = sim$speciesLayers,
+                                  sppNameVector = sim$sppNameVector,
+                                  speciesEquivalency = sim$speciesEquivalency,
+                                  sppMerge = sim$sppMerge,
+                                  namesCol = P(sims)$speciesEquivalencyColumn)
   message("10: ", Sys.time())
   initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species, age1)]
 
