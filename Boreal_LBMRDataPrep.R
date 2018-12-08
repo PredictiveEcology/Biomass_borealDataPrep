@@ -18,7 +18,7 @@ defineModule(sim, list(
   reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos", "sp",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
-    defineParameter("speciesEquivalencyColumn", "character", "LandR", NA, NA,
+    defineParameter("sppEquivCol", "character", "LandR", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter("speciesPresence", "numeric", 50, NA, NA,
                     "minimum percent cover required to classify a species as present"),
@@ -54,7 +54,7 @@ defineModule(sim, list(
     expectsInput("speciesLayers", "RasterStack",
                  desc = "biomass percentage raster layers by species in Canada species map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
-    expectsInput("speciesEquivalency", "data.table",
+    expectsInput("sppEquiv", "data.table",
                  desc = "table of species equivalencies. See pemisc::sppEquivalencies_CA.",
                  sourceURL = ""),
     expectsInput("speciesTable", "data.table",
@@ -113,7 +113,7 @@ defineModule(sim, list(
 
 doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE) {
   if (eventType == "init") {
-    # names(sim$speciesLayers) <- equivalentName(names(sim$speciesLayers), sim$speciesEquivalency, "Latin_full")
+    # names(sim$speciesLayers) <- equivalentName(names(sim$speciesLayers), sim$sppEquiv, "Latin_full")
     sim <- estimateParameters(sim)
 
     # schedule future event(s)
@@ -293,9 +293,9 @@ estimateParameters <- function(sim) {
   sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
                                   speciesLayers = sim$speciesLayers,
                                   sppNameVector = sim$sppNameVector,
-                                  speciesEquivalency = sim$speciesEquivalency,
+                                  sppEquiv = sim$sppEquiv,
                                   sppMerge = sim$sppMerge, # TODO this is not used
-                                  namesCol = P(sim)$speciesEquivalencyColumn)
+                                  namesCol = P(sim)$sppEquivCol)
   message("10: ", Sys.time())
   initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species, age1)]
 
@@ -524,18 +524,18 @@ Save <- function(sim) {
     sim$sppMerge <- list(Pinu_sp = c("Pinu_Ban", "Pinu_Con"))
   }
 
-  if (!suppliedElsewhere("speciesEquivalency", sim)) {
+  if (!suppliedElsewhere("sppEquiv", sim)) {
     data("sppEquivalencies_CA", package = "pemisc", envir = environment())
-    sim$speciesEquivalency <- as.data.table(sppEquivalencies_CA)
+    sim$sppEquiv <- as.data.table(sppEquivalencies_CA)
 
     ## By default, Abies_las is renamed to Abies_sp
-    sim$speciesEquivalency[KNN == "Abie_Las", LandR := "Abie_sp"]
+    sim$sppEquiv[KNN == "Abie_Las", LandR := "Abie_sp"]
 
     ## add default colors for species used in model
     defaultCols <- RColorBrewer::brewer.pal(6, "Accent")
     LandRNames <- c("Pice_mar", "Pice_gla", "Popu_tre", "Pinu_sp", "Abie_sp")
-    sim$speciesEquivalency[LandR %in% LandRNames, cols := defaultCols[-4]]
-    sim$speciesEquivalency[EN_generic_full == "Mixed", cols := defaultCols[4]]
+    sim$sppEquiv[LandR %in% LandRNames, cols := defaultCols[-4]]
+    sim$sppEquiv[EN_generic_full == "Mixed", cols := defaultCols[4]]
   }
 
   if (!suppliedElsewhere("speciesLayers", sim) |
@@ -546,7 +546,7 @@ Save <- function(sim) {
                                rasterToMatch = sim$rasterToMatch,
                                studyArea = sim$studyAreaLarge,
                                sppNameVector = sim$sppNameVector,
-                               speciesEquivalency = sim$speciesEquivalency,
+                               sppEquiv = sim$sppEquiv,
                                knnNamesCol = "KNN",
                                sppEndNamesCol = "LandR",
                                sppMerge = sim$sppMerge,
