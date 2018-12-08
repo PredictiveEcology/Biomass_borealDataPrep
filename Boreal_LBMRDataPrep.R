@@ -548,7 +548,7 @@ Save <- function(sim) {
                                sppNameVector = sim$sppNameVector,
                                sppEquiv = sim$sppEquiv,
                                knnNamesCol = "KNN",
-                               sppEndNamesCol = "LandR",
+                               sppEquivCol = "LandR",
                                sppMerge = sim$sppMerge,
                                # thresh = 10,
                                url = extractURL("speciesLayers"),
