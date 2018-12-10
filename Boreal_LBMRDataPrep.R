@@ -18,10 +18,10 @@ defineModule(sim, list(
   reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos", "sp",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
-    defineParameter("sppEquivCol", "character", "LandR", NA, NA,
-                    "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter("speciesPresence", "numeric", 50, NA, NA,
                     "minimum percent cover required to classify a species as present"),
+    defineParameter("sppEquivCol", "character", "LandR", NA, NA,
+                    "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter(".plotInitialTime", "numeric", NA, NA, NA,
                     "This describes the simulation time at which the first plot event should occur"),
     defineParameter(".plotInterval", "numeric", NA, NA, NA,
@@ -60,13 +60,6 @@ defineModule(sim, list(
     expectsInput("speciesTable", "data.table",
                  desc = "species attributes table, default is from Dominic and Yan's project",
                  sourceURL = "https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv"),
-    expectsInput("sppMerge", c("list"),
-                 desc = paste("list of kNN species layers that should be merged.",
-                              "If none, create an empty list. Defaults to merging",
-                              "of Pinus contorta and P. banksiana into Pinus sp."),
-                 sourceURL = ""),
-    expectsInput("sppNameVector", "character",
-                 desc = "vector of species to select", sourceURL = ""),
     expectsInput("studyArea", "SpatialPolygonsDataFrame",
                  desc = paste("multipolygon to use as the study area,",
                               "with attribute LTHFC describing the fire return interval.",
@@ -292,10 +285,8 @@ estimateParameters <- function(sim) {
   ## species traits inputs
   sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
                                   speciesLayers = sim$speciesLayers,
-                                  sppNameVector = sim$sppNameVector,
                                   sppEquiv = sim$sppEquiv,
-                                  sppMerge = sim$sppMerge, # TODO this is not used
-                                  namesCol = P(sim)$sppEquivCol)
+                                  sppEquivCol = P(sim)$sppEquivCol)
   message("10: ", Sys.time())
   initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species, age1)]
 
@@ -514,16 +505,6 @@ Save <- function(sim) {
                              userTags = c("stable", currentModule(sim)))
   }
 
-  if (!suppliedElsewhere("sppNameVector", sim)) {
-    ## default to 6 species (see below)
-    sim$sppNameVector <- c("Abie_sp", "Pice_gla", "Pice_mar", "Pinu_ban", "Pinu_con", "Popu_tre")
-  }
-
-  if (!suppliedElsewhere("sppMerge", sim)) {
-    ## two merged into one (Pinu_ban, Pinu_con to Pinu_sp)
-    sim$sppMerge <- list(Pinu_sp = c("Pinu_Ban", "Pinu_Con"))
-  }
-
   if (!suppliedElsewhere("sppEquiv", sim)) {
     data("sppEquivalencies_CA", package = "pemisc", envir = environment())
     sim$sppEquiv <- as.data.table(sppEquivalencies_CA)
@@ -538,18 +519,15 @@ Save <- function(sim) {
     sim$sppEquiv[EN_generic_full == "Mixed", cols := defaultCols[4]]
   }
 
-  if (!suppliedElsewhere("speciesLayers", sim) |
-      !suppliedElsewhere("sppNameVector", sim)) {
+  if (!suppliedElsewhere("speciesLayers", sim)) {
     #opts <- options(reproducible.useCache = "overwrite")
     speciesLayersList <- Cache(loadkNNSpeciesLayers,
                                dPath = dPath,
                                rasterToMatch = sim$rasterToMatch,
                                studyArea = sim$studyAreaLarge,
-                               sppNameVector = sim$sppNameVector,
                                sppEquiv = sim$sppEquiv,
                                knnNamesCol = "KNN",
                                sppEquivCol = "LandR",
-                               sppMerge = sim$sppMerge,
                                # thresh = 10,
                                url = extractURL("speciesLayers"),
                                userTags = c(cacheTags, "speciesLayers"))
@@ -559,7 +537,6 @@ Save <- function(sim) {
                 file.path(outputPath(sim), "speciesLayers.grd"),
                 overwrite = TRUE)
     sim$speciesLayers <- speciesLayersList$speciesLayers
-    sim$sppNameVector <- speciesLayersList$sppNameVector
   }
 
   # 3. species maps
