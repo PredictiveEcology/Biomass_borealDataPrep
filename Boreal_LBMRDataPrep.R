@@ -54,12 +54,12 @@ defineModule(sim, list(
     expectsInput("speciesLayers", "RasterStack",
                  desc = "biomass percentage raster layers by species in Canada species map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
-    expectsInput("sppEquiv", "data.table",
-                 desc = "table of species equivalencies. See pemisc::sppEquivalencies_CA.",
-                 sourceURL = ""),
     expectsInput("speciesTable", "data.table",
                  desc = "species attributes table, default is from Dominic and Yan's project",
                  sourceURL = "https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv"),
+    expectsInput("sppEquiv", "data.table",
+                 desc = "table of species equivalencies. See pemisc::sppEquivalencies_CA.",
+                 sourceURL = ""),
     expectsInput("studyArea", "SpatialPolygonsDataFrame",
                  desc = paste("multipolygon to use as the study area,",
                               "with attribute LTHFC describing the fire return interval.",
@@ -513,10 +513,10 @@ Save <- function(sim) {
     sim$sppEquiv[KNN == "Abie_Las", LandR := "Abie_sp"]
 
     ## add default colors for species used in model
-    defaultCols <- RColorBrewer::brewer.pal(6, "Accent")
-    LandRNames <- c("Pice_mar", "Pice_gla", "Popu_tre", "Pinu_sp", "Abie_sp")
-    sim$sppEquiv[LandR %in% LandRNames, cols := defaultCols[-4]]
-    sim$sppEquiv[EN_generic_full == "Mixed", cols := defaultCols[4]]
+    if (!is.null(sim$sppColors))
+      stop("If you provide sppColors, you MUST also provide sppEquiv")
+    sim$sppColors <- pemisc::sppColors(sim$sppEquiv, P(sim)$sppEquivCol,
+                                       newVals = "Mixed", palette = "Accent")
   }
 
   if (!suppliedElsewhere("speciesLayers", sim)) {
