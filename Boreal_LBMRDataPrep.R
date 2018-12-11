@@ -283,7 +283,6 @@ estimateParameters <- function(sim) {
 
   message("9: ", Sys.time())
   ## species traits inputs
-  browser()
   sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
                                   speciesLayers = sim$speciesLayers,
                                   sppEquiv = sim$sppEquiv,
