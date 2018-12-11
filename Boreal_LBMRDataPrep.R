@@ -283,6 +283,7 @@ estimateParameters <- function(sim) {
 
   message("9: ", Sys.time())
   ## species traits inputs
+  browser()
   sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
                                   speciesLayers = sim$speciesLayers,
                                   sppEquiv = sim$sppEquiv,
@@ -511,12 +512,6 @@ Save <- function(sim) {
 
     ## By default, Abies_las is renamed to Abies_sp
     sim$sppEquiv[KNN == "Abie_Las", LandR := "Abie_sp"]
-
-    ## add default colors for species used in model
-    if (!is.null(sim$sppColors))
-      stop("If you provide sppColors, you MUST also provide sppEquiv")
-    sim$sppColors <- pemisc::sppColors(sim$sppEquiv, P(sim)$sppEquivCol,
-                                       newVals = "Mixed", palette = "Accent")
   }
 
   if (!suppliedElsewhere("speciesLayers", sim)) {
