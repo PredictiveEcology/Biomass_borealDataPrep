@@ -1,7 +1,7 @@
 initialCommunityProducer <- function(speciesLayers, speciesPresence, rstStudyArea, standAgeMap) {
   sppNames <- names(speciesLayers)
-  speciesLayers <- speciesLayers * rstStudyArea  ## TODO: Ceres: this is probably no longer necessary
-  names(speciesLayers) <- sppNames
+  # speciesLayers <- speciesLayers * rstStudyArea  ## Eliot rm'd this. Don't want NAs here. prev comment: Ceres: this is probably no longer necessary
+  # names(speciesLayers) <- sppNames
 
   speciesNames <- names(speciesLayers)[which(maxValue(speciesLayers) >= speciesPresence)]
 
