@@ -163,7 +163,6 @@ estimateParameters <- function(sim) {
   message("3: ", Sys.time())
   # LCC05 -- land covers 1 to 15 are forested with tree dominated... 34 and 35 are recent burns
   # this is based on description in LCC05
-  browser() # THIS IS WHERE I STOPPED (ELIOT) THIS IS DUPLICATED NOW
   activeStatusTable <- data.table(active = c(rep("yes", 15), rep("no", 25)),
                                   mapcode = 1:40)[mapcode %in% c(20, 32, 34, 35),
                                                   active := "yes"]
@@ -178,15 +177,23 @@ estimateParameters <- function(sim) {
          "reproducible::clearCache(userTags = c('Boreal_LBMRDataPrep', 'init'), x = 'cache/to/path')")
   }
 
-  simulationMaps <- Cache(nonActiveEcoregionProducer,
-                          nonactiveRaster = sim$LCC2005,
-                          activeStatus = activeStatusTable,
-                          ecoregionMap = ecoregionFiles$ecoregionMap,
-                          ecoregion = ecoregionFiles$ecoregion,
-                          initialCommunityMap = initialCommFiles$initialCommunityMap,
-                          initialCommunity = initialCommFiles$initialCommunity,
-                          userTags = "stable")
+  # THis next nonActiveEcoregionProducer is a different way of setting some values to NA
+  #   This is now assumed to be done already in the rasterToMatch
+  # simulationMaps <- Cache(nonActiveEcoregionProducer,
+  #                         nonactiveRaster = sim$LCC2005,
+  #                         activeStatus = activeStatusTable,
+  #                         ecoregionMap = ecoregionFiles$ecoregionMap,
+  #                         ecoregion = ecoregionFiles$ecoregion,
+  #                         initialCommunityMap = initialCommFiles$initialCommunityMap,
+  #                         initialCommunity = initialCommFiles$initialCommunity,
+  #                         userTags = "stable")
+  simulationMaps <- list("ecoregionMap" = ecoregionFiles$ecoregionMap,
+                         "ecoregion" = ecoregionFiles$ecoregion,
+                         "initialCommunityMap" = initialCommFiles$initialCommunityMap,
+                         "initialCommunity" = initialCommFiles$initialCommunity)
   if (ncell(sim$rasterToMatch) > 3e6) .gc()
+
+  browser() # THIS IS WHERE I STOPPED (ELIOT) THIS IS DUPLICATED NOW
 
   message("4: ", Sys.time())
   speciesEcoregionTable <- Cache(obtainMaxBandANPP,
