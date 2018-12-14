@@ -57,11 +57,12 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
 
   ## convert mapCodes for use with data.table and as integer raster
   mapCodesFac <- factor(mapCodeGrps)
+  mapCodesInt <- as.integer(mapCodesFac)
   allPixels <- rep(NA, ncell(speciesLayers))
   allPixels[-mapCodesNAs] <- TRUE
   speciesComMap <- raster(speciesLayers[[1]])
   #speciesComMap[] <- NA
-  speciesComMap[allPixels] <- as.integer(mapCodesFac) # integer is OK now that it is factor
+  speciesComMap[allPixels] <- mapCodesInt # integer is OK now that it is factor
 
   message("There are ", NROW(unique(mapCodesFac)), " initial, unique communities, \n  based on ",
           "species abundance (rounded to ", pctRound, "-percentile groups -- i.e., ",
@@ -70,7 +71,7 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
 
 
   initialCommunities <- data.table(mapcode = mapCodesSpp,
-                                   mapCodeFac = mapCodesFac,
+                                   mapCodeFac = mapCodesInt,
                                    speciesPresence = as.vector(t(xtileAbundNum)) * percentileGrps,
                                    species = as.vector(t(sppMatrix)),
                                    age1 = roundedAge * percentileGrps,
