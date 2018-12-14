@@ -18,8 +18,8 @@ defineModule(sim, list(
   reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos", "sp",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
-    defineParameter("speciesPresence", "numeric", 50, NA, NA,
-                    "minimum percent cover required to classify a species as present"),
+    #defineParameter("speciesPresence", "numeric", 50, NA, NA,
+    #                "minimum percent cover required to classify a species as present"),
     defineParameter("sppEquivCol", "character", "LandR", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter(".plotInitialTime", "numeric", NA, NA, NA,
@@ -140,15 +140,16 @@ estimateParameters <- function(sim) {
   rasterToMatchBinary[] <- NA
   rasterToMatchBinary[!is.na(sim$rasterToMatch[])] <- 1
 
-  message("2: ", Sys.time())
+  message("2: Create initial communities map and data.table ", Sys.time())
   initialCommFiles <- Cache(initialCommunityProducer,
                             speciesLayers = sim$speciesLayers,
-                            speciesPresence = P(sim)$speciesPresence,
-                            rstStudyArea = rasterToMatchBinary,
+                            # This cuts up species pct into x-percentile groups, and age into x-year groups
+                            percentileGrps = 10,
                             standAgeMap = sim$standAgeMap,
                             userTags = "stable")
   ecoregionstatus <- data.table(active = "yes",
                                 ecoregion = 1:1031)
+  browser()
 
   message("ecoregionProducer: ", Sys.time())
   # Note: this ecoregionMap is NOT the Canadian EcoRegion -- it is for LBMR, which uses "ecoregion"
@@ -157,12 +158,13 @@ estimateParameters <- function(sim) {
                           ecoregionMap = ecoregionMap,
                           ecoregionName = "ECODISTRIC",
                           ecoregionActiveStatus = ecoregionstatus,
-                          rasterToMatch = initialCommFiles$initialCommunityMap, #sim$rasterToMatch,
+                          rasterToMatch = sim$rasterToMatch,
                           userTags = "stable")
 
   message("3: ", Sys.time())
   # LCC05 -- land covers 1 to 15 are forested with tree dominated... 34 and 35 are recent burns
   # this is based on description in LCC05
+  browser() # THIS IS WHERE I STOPPED (ELIOT) THIS IS DUPLICATED NOW
   activeStatusTable <- data.table(active = c(rep("yes", 15), rep("no", 25)),
                                   mapcode = 1:40)[mapcode %in% c(20, 32, 34, 35),
                                                   active := "yes"]
