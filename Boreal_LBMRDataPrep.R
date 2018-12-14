@@ -143,13 +143,12 @@ estimateParameters <- function(sim) {
   message("2: Create initial communities map and data.table ", Sys.time())
   initialCommFiles <- Cache(initialCommunityProducer,
                             speciesLayers = sim$speciesLayers,
-                            # This cuts up species pct into x-percentile groups, and age into x-year groups
+                            # This cuts up species pct into x groups, and age into x-year groups
                             percentileGrps = 10,
                             standAgeMap = sim$standAgeMap,
                             userTags = "stable")
   ecoregionstatus <- data.table(active = "yes",
                                 ecoregion = 1:1031)
-  browser()
 
   message("ecoregionProducer: ", Sys.time())
   # Note: this ecoregionMap is NOT the Canadian EcoRegion -- it is for LBMR, which uses "ecoregion"
