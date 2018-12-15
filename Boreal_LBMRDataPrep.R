@@ -458,6 +458,7 @@ Save <- function(sim) {
                             destinationPath = dPath,
                             studyArea = sim$studyArea,
                             rasterToMatch = sim$rasterToMatch,
+                              maskWithRTM = TRUE,
                             useSAcrs = TRUE,
                             method = "bilinear",
                             datatype = "INT2U",
