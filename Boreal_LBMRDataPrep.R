@@ -20,6 +20,10 @@ defineModule(sim, list(
   parameters = rbind(
     #defineParameter("speciesPresence", "numeric", 50, NA, NA,
     #                "minimum percent cover required to classify a species as present"),
+    defineParameter("minNumPixelsToEstMaxBiomass", "integer", 100, NA, NA,
+                    "When estimating maximum biomass by species and ecoregion, this number indicates the minimum number of pixels with data required before a maximum is estimated."),
+    defineParameter("quantileForMaxBiomass", "numeric", 0.99, NA, NA,
+                    "When estimating maximum biomass by species and ecoregion, rather than take the absolute max(biomass), the quantile is taken. This gives the capacity to remove outliers."),
     defineParameter("sppEquivCol", "character", "LandR", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter(".plotInitialTime", "numeric", NA, NA, NA,
@@ -202,6 +206,8 @@ estimateParameters <- function(sim) {
                                  SALayer = sim$standAgeMap,
                                  ecoregionMap = simulationMaps$ecoregionMap,
                                  pctCoverMinThresh = 50,
+                                   minNumPixelsToEstMaxBiomass = P(sim)$minNumPixelsToEstMaxBiomass,
+                                   quantileForMaxBiomass = P(sim)$quantileForMaxBiomass,
                                  userTags = "stable")
   if (ncell(sim$rasterToMatch) > 3e6) .gc()
 
