@@ -199,15 +199,64 @@ estimateParameters <- function(sim) {
 
 
   message("4: ", Sys.time())
-  speciesEcoregionTable <- Cache(obtainMaxBandANPP,
-                                 speciesLayers = sim$speciesLayers,
-                                 biomassLayer = sim$biomassMap,
-                                 SALayer = sim$standAgeMap,
-                                 ecoregionMap = simulationMaps$ecoregionMap,
-                                 pctCoverMinThresh = 50,
+
+  stillHaveNAsForMaxBiomass <- TRUE
+  attempt <- 0
+  possibleEcoregionSrcs <- list(ecoDistrict = simulationMaps$ecoregionMap,
+                                ecoRegion = sim$ecoRegion)
+  speciesEcoregionTable <- data.table()
+  while (stillHaveNAsForMaxBiomass) {
+    attempt <- attempt + 1
+    if (!is(possibleEcoregionSrcs[[attempt]], "Raster")) {
+      if (is(possibleEcoregionSrcs[[attempt]], "Spatial")) {
+        possibleEcoregionSrcs[[attempt]] <- fasterizeFromSp(possibleEcoregionSrcs[[attempt]], sim$rasterToMatch,
+                        grep("ECO", names(possibleEcoregionSrcs[[attempt]]), value = TRUE)[1])
+        setColors(possibleEcoregionSrcs[[attempt]]) <- "Blues"
+        possibleEcoregionSrcs[[attempt]] <- postProcess(possibleEcoregionSrcs[[attempt]],
+                                                        rasterToMatch = sim$speciesLayers[[1]],
+                    maskWithRTM = TRUE, filename2 = NULL)
+        #fasterize::fasterize(possibleEcoregionSrcs[[attempt]],
+        #                     raster = sim$rasterToMatch)
+      } else {
+        stop("All sim$ecoRegion, sim$ecoDistrict, sim$ecoZone maps must be SpatialPolygonsDataFrame objects")
+      }
+    }
+
+    speciesEcoregionTableNew <- Cache(obtainMaxBandANPP,
+                                   speciesLayers = sim$speciesLayers,
+                                   biomassLayer = sim$biomassMap,
+                                   #SALayer = sim$standAgeMap,
+                                   #ecoregionMap = simulationMaps$ecoregionMap,
+                                   ecoregionMap = possibleEcoregionSrcs[[attempt]],
                                    minNumPixelsToEstMaxBiomass = P(sim)$minNumPixelsToEstMaxBiomass,
                                    quantileForMaxBiomass = P(sim)$quantileForMaxBiomass,
-                                 userTags = "stable")
+                                   #pctCoverMinThresh = 50,
+                                   userTags = "stable")
+    speciesEcoregionTableNewNAs <- speciesEcoregionTableNew[is.na(maxBiomass),]
+    stillHaveNAsForMaxBiomass <- NROW(speciesEcoregionTableNewNAs) > 0
+    speciesEcoregionTable <- if (NROW(speciesEcoregionTable) > 0) { # already exists
+      a <- data.table(first = possibleEcoregionSrcs[[1]][],
+                      new = possibleEcoregionSrcs[[attempt]][])
+      a <- unique(a)[!is.na(first)]
+
+      speciesEcoregionTableMerge <- speciesEcoregionTable[is.na(maxBiomass)][a, on = "ecoregion==first", nomatch = 0]
+      speciesEcoregionTableMerge[, `:=`(maxBiomass=NULL, maxANPP=NULL)]
+      speciesEcoregionTableMerge <- speciesEcoregionTableMerge[speciesEcoregionTableNew, on = c("new==ecoregion", "species"),
+                                 nomatch = 0]
+      speciesEcoregionTable <- rbindlist(list(speciesEcoregionTable[!is.na(maxBiomass)],
+                                         speciesEcoregionTableMerge), fill = TRUE)
+      speciesEcoregionTable[, new := NULL]
+      message("MaxBiomass and MaxANPP were estimated coarsely for ", nrow(speciesEcoregionTableMerge), " ecoregion-species combinations")
+      if (isTRUE(stillHaveNAsForMaxBiomass)) {
+        message("There are still some species-ecoregion combinations not estimable:")
+        print(speciesEcoregionTableNewNAs)
+      }
+      stillHaveNAsForMaxBiomass <- FALSE
+      speciesEcoregionTable
+    } else {
+      speciesEcoregionTableNew
+    }
+  }
   if (ncell(sim$rasterToMatch) > 3e6) .gc()
 
   message("5: Derive Species Establishment Probability (SEP) from sim$speciesLayers: ", Sys.time())
