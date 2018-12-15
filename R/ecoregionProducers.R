@@ -6,17 +6,17 @@ ecoregionProducer <- function(ecoregionMap, ecoregionName,
 
   # Alternative
   message("ecoregionProducer fastRasterize: ", Sys.time())
-  ecoregionMap <- fasterize::fasterize(sf::st_as_sf(ecoregionMap), raster(rasterToMatch), field = "ECODISTRIC")
-  ecoregionMap[is.na(rasterToMatch[])] <- NA
+  rstEcoregion <- fasterize::fasterize(sf::st_as_sf(ecoregionMap), raster(rasterToMatch), field = "ECODISTRIC")
+  rstEcoregion[is.na(rasterToMatch[])] <- NA
 
-  ecoregionFactorValues <- na.omit(unique(ecoregionMap[]))
+  ecoregionFactorValues <- na.omit(unique(rstEcoregion[]))
 
   ecoregionTable <- data.table(
     mapcode = seq_along(ecoregionFactorValues[!is.na(ecoregionFactorValues)]),
     ecoregion = as.numeric(ecoregionFactorValues[!is.na(ecoregionFactorValues)])
   )
   message("ecoregionProducer mapvalues: ", Sys.time())
-  ecoregionMap[] <- plyr::mapvalues(ecoregionMap[], from = ecoregionTable$ecoregion, to = ecoregionTable$mapcode)
+  # rstEcoregion[] <- plyr::mapvalues(rstEcoregion[], from = ecoregionTable$ecoregion, to = ecoregionTable$mapcode)
   ecoregionActiveStatus[, ecoregion := as.character(ecoregion)]
   ecoregionTable <- ecoregionTable[!is.na(mapcode),][, ecoregion := as.character(ecoregion)]
   message("ecoregionProducer dplyr_leftjoin: ", Sys.time())
@@ -26,7 +26,7 @@ ecoregionProducer <- function(ecoregionMap, ecoregionName,
     data.table()
   ecoregionTable[is.na(active), active := "no"]
   ecoregionTable <- ecoregionTable[,.(active, mapcode, ecoregion)]
-  return(list(ecoregionMap = ecoregionMap,
+  return(list(ecoregionMap = rstEcoregion,
               ecoregion = ecoregionTable))
 }
 
