@@ -3,8 +3,8 @@ defineModule(sim, list(
   description = "A data preparation module for parameterizing LBMR from open data sources, within the Boreal forest of Canada",
   keywords = c("LandWeb", "LBMR"),
   authors = c(
-    person("Yong", "Luo", email = "yong.luo@canada.ca", role = c("aut", "cre")),
-    person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@canada.ca", role = c("aut")),
+    person("Yong", "Luo", email = "yong.luo@canada.ca", role = c("aut")),
+    person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@canada.ca", role = c("aut", "cre")),
     person(c("Ceres"), "Barros", email = "cbarros@mail.ubc.ca", role = c("ctb")),
     person(c("Alex", "M"), "Chubaty", email = "alex.chubaty@gmail.com", role = c("ctb"))
   ),
