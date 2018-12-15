@@ -1,8 +1,3 @@
-createInitCommMap <- function(initCommMap, values, filename) {
-  map <- raster::setValues(initCommMap, values = values)
-  raster::writeRaster(map, overwrite = TRUE, filename = filename, datatype = "INT2U")
-}
-
 ## ------------------------------------------------------------------------
 ## FASTERIZE POLYGONS USING FASTERIZE
 
