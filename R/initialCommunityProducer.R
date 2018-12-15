@@ -71,47 +71,48 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
 
 
   initialCommunities <- data.table(mapcode = mapCodesSpp,
-                                   mapCodeFac = mapCodesInt,
+                                   mapCodeInt = mapCodesInt,
+                                   mapCodeFac = mapCodesFac,
                                    speciesPresence = as.vector(t(xtileAbundNum)) * percentileGrps,
                                    species = as.vector(t(sppMatrix)),
                                    age1 = roundedAge * percentileGrps,
                                    pixelIndex = which(allPixels))
   initialCommunities <- initialCommunities[speciesPresence > 0]
   # LIKELY DELETE BELOW THIS
-  if (FALSE) {
-    mapCodesInt <- as.numeric(mapCodeGrps)
-    #mapCodesInt[ids] <- NA_integer_
-    #mapCodes[ids] <- NA_character_
-    #speciesComMap <- speciesLayers[[1]]
-    #speciesComMap[] <- mapCodesInt
-
-    initialCommunities <- data.table(mapcode = sort(unique(na.omit(mapCodesInt))))
-    initialCommunities[, mapCodeStr := sort(unique(na.omit(mapCodesSpp)))]
-    output <- data.table(mapcode = numeric(), speciesPresence = character(),
-                         species = character(), age1 = numeric())
-    for (i in 1:nrow(initialCommunities)) {
-      outputAdd <- data.table(mapcode = initialCommunities$mapcode[i],
-                              speciesPresence = substring(initialCommunities$mapCodeStr[i],
-                                                          seq(1, digits * n, 2),
-                                                          seq(2, digits * n, 2)),
-                              species = speciesNames[1:length(speciesNames)],
-                              age1 = as.numeric(rep(substring(initialCommunities$mapCodeStr[i],
-                                                              2 + digits * n - 1,
-                                                              2 + digits * n), n)) * 10)
-
-      output <- rbind(output, outputAdd)
-    }
-
-    initialCommunities <- output[speciesPresence != "00",]
-    initialCommunities[, newMapCode := as.numeric(as.factor(mapcode))]
-    mapcodeconnection <- unique(initialCommunities[, .(mapcode, newMapCode)], by = "mapcode")
-    indexTable <- data.table(pixelIndex = 1:ncell(speciesComMap),
-                             mapcode = getValues(speciesComMap))
-    indexTable <- indexTable[!is.na(mapcode), ]
-    indexTable <- setkey(indexTable, mapcode)[setkey(mapcodeconnection, mapcode), nomatch = 0]
-    speciesComMap[indexTable$pixelIndex] <- indexTable$newMapCode
-    initialCommunities[, ':='(mapcode = newMapCode, newMapCode = NULL, speciesPresence = NULL)]
-  }
+  # if (FALSE) {
+  #   mapCodesInt <- as.numeric(mapCodeGrps)
+  #   #mapCodesInt[ids] <- NA_integer_
+  #   #mapCodes[ids] <- NA_character_
+  #   #speciesComMap <- speciesLayers[[1]]
+  #   #speciesComMap[] <- mapCodesInt
+  #
+  #   initialCommunities <- data.table(mapcode = sort(unique(na.omit(mapCodesInt))))
+  #   initialCommunities[, mapCodeStr := sort(unique(na.omit(mapCodesSpp)))]
+  #   output <- data.table(mapcode = numeric(), speciesPresence = character(),
+  #                        species = character(), age1 = numeric())
+  #   for (i in 1:nrow(initialCommunities)) {
+  #     outputAdd <- data.table(mapcode = initialCommunities$mapcode[i],
+  #                             speciesPresence = substring(initialCommunities$mapCodeStr[i],
+  #                                                         seq(1, digits * n, 2),
+  #                                                         seq(2, digits * n, 2)),
+  #                             species = speciesNames[1:length(speciesNames)],
+  #                             age1 = as.numeric(rep(substring(initialCommunities$mapCodeStr[i],
+  #                                                             2 + digits * n - 1,
+  #                                                             2 + digits * n), n)) * 10)
+  #
+  #     output <- rbind(output, outputAdd)
+  #   }
+  #
+  #   initialCommunities <- output[speciesPresence != "00",]
+  #   initialCommunities[, newMapCode := as.numeric(as.factor(mapcode))]
+  #   mapcodeconnection <- unique(initialCommunities[, .(mapcode, newMapCode)], by = "mapcode")
+  #   indexTable <- data.table(pixelIndex = 1:ncell(speciesComMap),
+  #                            mapcode = getValues(speciesComMap))
+  #   indexTable <- indexTable[!is.na(mapcode), ]
+  #   indexTable <- setkey(indexTable, mapcode)[setkey(mapcodeconnection, mapcode), nomatch = 0]
+  #   speciesComMap[indexTable$pixelIndex] <- indexTable$newMapCode
+  #   initialCommunities[, ':='(mapcode = newMapCode, newMapCode = NULL, speciesPresence = NULL)]
+  # }
   return(list(initialCommunityMap = speciesComMap,
               initialCommunity = initialCommunities))
 }
