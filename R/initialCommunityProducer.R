@@ -70,9 +70,9 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
           "  Modify percentileGrps to change the number of initial communties")
 
 
-  initialCommunities <- data.table(mapcode = mapCodesSpp,
+  initialCommunities <- data.table(mapcode = mapCodesFac, #mapCodesSpp,
                                    mapCodeInt = mapCodesInt,
-                                   mapCodeFac = mapCodesFac,
+                                   #mapCodeFac = mapCodesFac,
                                    speciesPresence = as.vector(t(xtileAbundNum)) * percentileGrps,
                                    species = as.vector(t(sppMatrix)),
                                    age1 = roundedAge * percentileGrps,
