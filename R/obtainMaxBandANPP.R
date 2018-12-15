@@ -1,6 +1,9 @@
-obtainMaxBandANPP <- function(speciesLayers, biomassLayer, SALayer, ecoregionMap,
-                              pctCoverMinThresh = 0) {
-  # These commented lines are superceded by prepInputs
+obtainMaxBandANPP <- function(speciesLayers, biomassLayer, #SALayer,
+                              ecoregionMap,
+                              minNumPixelsToEstMaxBiomass = 100,
+                              quantileForMaxBiomass = 0.99) {
+                              #pctCoverMinThresh = 0) {
+    # These commented lines are superceded by prepInputs
   # speciesinstudyarea <- crop(speciesLayers, ecoregionMap) # slowest
   # speciesinstudyarea <- suppressWarnings(mask(speciesinstudyarea, ecoregionMap))
   # biomassinstudyarea <- crop(biomassLayer, ecoregionMap)
@@ -8,34 +11,71 @@ obtainMaxBandANPP <- function(speciesLayers, biomassLayer, SALayer, ecoregionMap
   # SAinstudyarea <- crop(SALayer, ecoregionMap)
   # SAinstudyarea <- suppressWarnings(mask(SAinstudyarea, ecoregionMap))
 
-  speciesTable <- data.table(biomass = getValues(biomassLayer))
+  speciesTable <- data.table(biomass = getValues(biomassLayer),
+                             #SA = getValues(SALayer),
+                             ecoregion = getValues(ecoregionMap))
+  speciesTableWPct <- data.table(speciesTable,
+                                 percentage = speciesLayers[],
+                                 totalpct = apply(speciesLayers[], 1, sum)) # they don't all add up to 100%, so standardize
+  #speciesTableWPct[totalpct == 0, totalpct]
+  speciesTableWPct <- speciesTableWPct[!is.na(totalpct) & totalpct != 0]
 
-  speciesTable[, ':='(SA = getValues(SALayer), ecoregion = getValues(ecoregionMap))]
-  outputPartial <- data.table(ecoregion = numeric(), species = character(),
-                              maxBiomass = numeric(), maxANPP = numeric())
   speciess <- names(speciesLayers)
 
   for (species in speciess) {
-    indispeciesraster <- raster::subset(speciesLayers, species)
-    speciesTable[, percentage := getValues(indispeciesraster)]
-    speciesTable_narmed <- speciesTable[!is.na(ecoregion), ]
-    speciesTable_narmed[, speciesBiomass := biomass*percentage*0.01] ## TODO: see #9
-    speciesTable_narmed <- speciesTable_narmed[percentage > pctCoverMinThresh, ] ## TODO: see #10
-    speciesTable_narmed[,species := species]
+    pctSp <- paste0("percentage.", species)
+    biomassSp <- paste0("biomass", species)
 
-    ## TODO -- why 100* and why 0.8 ... Ceres and Eliot think that we should use max(speciesBiomass),
-    ## as long as there are enough, or perhaps sort(max(speciesBiomass))[50] or something.
-    ## quantiles are VERY sensitive to the sample size when distribution is highly skewed, so probably a bad idea.
-    speciesTable_narmed <- speciesTable_narmed[, .(maxBiomass = 100 * quantile(speciesBiomass, 0.8, na.rm = TRUE)),
-                                               by = c("ecoregion", "species")]
-    speciesTable_narmed[, maxANPP := maxBiomass / 30]
-    outputPartial <- rbind(outputPartial, speciesTable_narmed)
+    # rescaling pct cover so all sum to 100
+    set(speciesTableWPct, NULL, pctSp, as.integer(100 * speciesTableWPct[[pctSp]]/speciesTableWPct$totalpct)) # integer precision is enough
+
+    # assigne species-specific biomass, based on biomass * pctCover
+    set(speciesTableWPct, NULL, biomassSp, speciesTableWPct$biomass * speciesTableWPct[[pctSp]] / 100)
+    #set(speciesTableWPct, NULL, pctSp, NULL) # get rid of pct column
   }
-  output <- data.table(expand.grid(ecoregion = as.numeric(unique(getValues(ecoregionMap))),
-                                   species = speciess))[!is.na(ecoregion),][,species := as.character(species)]
-  output <- outputPartial[output, on = c("ecoregion", "species"), nomatch = NA]
-  #output <- dplyr::left_join(output, outputPartial, by = c("ecoregion", "species")) %>%
-  #  data.table()
+
+  # Calculate max Biomass
+  biomassSpp <- paste0("biomass", speciess)
+  outputPartial <- speciesTableWPct[, lapply(.SD, function(b) {
+    #100 * quantile(b, 0.8, na.rm = TRUE)
+    logBgtZero <- log(b[b > 0])
+    100 * exp(quantile(logBgtZero, quantileForMaxBiomass)) # take log to change from a skewed distribution
+    }),
+    by = c("ecoregion"), .SDcols = biomassSpp]
+
+  # This calculates sample sizes by species-ecoregion
+  NbyEcoregionSpecies <- speciesTableWPct[, lapply(.SD, function(b) {
+    N <- sum(b > 0)
+    if (N > minNumPixelsToEstMaxBiomass)
+      return(N)
+    else
+      return (NA_integer_)
+    }),
+    by = c("ecoregion"), .SDcols = biomassSpp]
+
+  # Remove biomass entries that have NA in the sample size matrix -- i.e., fewer than minNumPixelsToEstMaxBiomass
+  biomassWithEnoughN <- as.matrix(outputPartial) * as.matrix(NbyEcoregionSpecies > 0)
+  outputPartial <- as.data.table(biomassWithEnoughN)
+
+  # convert biomass to integer as more precision is unnecessary
+  outputPartial <- outputPartial[, append(list(ecoregion = ecoregion),
+                                          lapply(.SD, function(col) as.integer(round(col)))),
+                                 .SDcols = biomassSpp]
+
+  setnames(outputPartial, old = biomassSpp, new = gsub("biomass", "", biomassSpp))
+
+  # Convert to long format
+  output <- data.table::melt(outputPartial,
+                   value.name = "maxBiomass",
+                   measure.vars = names(outputPartial)[-1],
+                   variable.name = "species")
+
+  # Convert cases where maxBiomass is 0 to NA
+  output <- output[maxBiomass == 0, maxBiomass := NA]
+
+  # Create maxANPP as maxBiomass / 30
+  set(output, NULL, "maxANPP", round(output$maxBiomass / 30, 0))
+
   return(speciesBiomass = output)
 }
 
