@@ -165,11 +165,13 @@ estimateParameters <- function(sim) {
                           userTags = "stable")
 
   message("3: ", Sys.time())
+  # THis next nonActiveEcoregionProducer is a different way of setting some values to NA
+  #   This is now assumed to be done already in the rasterToMatch
   # LCC05 -- land covers 1 to 15 are forested with tree dominated... 34 and 35 are recent burns
   # this is based on description in LCC05
-  activeStatusTable <- data.table(active = c(rep("yes", 15), rep("no", 25)),
-                                  mapcode = 1:40)[mapcode %in% c(20, 32, 34, 35),
-                                                  active := "yes"]
+  #activeStatusTable <- data.table(active = c(rep("yes", 15), rep("no", 25)),
+  #                                mapcode = 1:40)[mapcode %in% c(20, 32, 34, 35),
+  #                                                active := "yes"]
   #simulationMaps <- sim$nonActiveEcoregionProducerCached(nonactiveRaster = sim$LCC2005,
   if (is.null(sim$LCC2005)) {
     stop("Sometimes LCC2005 is not correctly in the sim. ",
@@ -181,8 +183,6 @@ estimateParameters <- function(sim) {
          "reproducible::clearCache(userTags = c('Boreal_LBMRDataPrep', 'init'), x = 'cache/to/path')")
   }
 
-  # THis next nonActiveEcoregionProducer is a different way of setting some values to NA
-  #   This is now assumed to be done already in the rasterToMatch
   # simulationMaps <- Cache(nonActiveEcoregionProducer,
   #                         nonactiveRaster = sim$LCC2005,
   #                         activeStatus = activeStatusTable,
@@ -197,7 +197,6 @@ estimateParameters <- function(sim) {
                          "initialCommunity" = initialCommFiles$initialCommunity)
   if (ncell(sim$rasterToMatch) > 3e6) .gc()
 
-  browser() # THIS IS WHERE I STOPPED (ELIOT) THIS IS DUPLICATED NOW
 
   message("4: ", Sys.time())
   speciesEcoregionTable <- Cache(obtainMaxBandANPP,
@@ -230,85 +229,95 @@ estimateParameters <- function(sim) {
 
   # Fill in 0 for maxBiomass and maxANPP when SEP was estimated to be 0
   speciesEcoregionTable[SEP == 0, ':='(maxBiomass = 0, maxANPP = 0)]
-  NON_NAdata <- speciesEcoregionTable[!is.na(maxBiomass),]
-  NAdata <- speciesEcoregionTable[is.na(maxBiomass),]
 
-  if (nrow(NAdata) > 1) {
-    message("  6a obtainMaxBandANPPFromBiggerEcoArea: ", Sys.time())
-    biomassFrombiggerMap <- Cache(obtainMaxBandANPPFromBiggerEcoArea,
-                                  speciesLayers = sim$speciesLayers,
-                                  biomassLayer = sim$biomassMap,
-                                  SALayer = sim$standAgeMap,
-                                  ecoregionMap = simulationMaps$ecoregionMap,
-                                  biggerEcoArea = sim$ecoRegion,
-                                  biggerEcoAreaSource = "ecoRegion",
-                                  NAData = NAdata,
-                                  maskFn = fastMask,
-                                  pctCoverMinThresh = 50,
-                                  userTags = "stable")
-    message("  6b obtainMaxBandANPPFromBiggerEcoArea: ", Sys.time())
-    NON_NAdata <- rbind(
-      NON_NAdata,
-      biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)]
-    )
-    NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)]
-  }
-  if (ncell(sim$rasterToMatch) > 3e6)  .gc()
 
-  message("7: ", Sys.time())
-  if (nrow(NAdata) > 1) {
-    message("  7a obtainMaxBandANPPFromBiggerEcoArea if NAdata exist: ", Sys.time())
-    biomassFrombiggerMap <- Cache(obtainMaxBandANPPFromBiggerEcoArea,
-                                  speciesLayers = sim$speciesLayers,
-                                  biomassLayer = sim$biomassMap,
-                                  SALayer = sim$standAgeMap,
-                                  ecoregionMap = simulationMaps$ecoregionMap,
-                                  biggerEcoArea = sim$ecoZone,
-                                  biggerEcoAreaSource = "ecoZone",
-                                  NAData = NAdata, maskFn = fastMask,
-                                  pctCoverMinThresh = 50, ## TODO: pass as parameter (with #10)
-                                  userTags = "stable")
-    message("  7b obtainMaxBandANPPFromBiggerEcoArea if NAdata exist: ", Sys.time())
-    NON_NAdata <- rbind(NON_NAdata, biomassFrombiggerMap$addData[!is.na(maxBiomass),
-                                                                 .(ecoregion, species, maxBiomass, maxANPP, SEP)])
-    NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass),
-                                           .(ecoregion, species, maxBiomass, maxANPP, SEP)]
-  }
-  if (ncell(sim$rasterToMatch) > 3e6)  .gc()
+  # NON_NAdata <- speciesEcoregionTable[!is.na(maxBiomass),]
+  # NAdata <- speciesEcoregionTable[is.na(maxBiomass),]
 
-  message("8: ", Sys.time())
-  NAdata[, ':='(maxBiomass = 0, maxANPP = 0, SEP = 0)]
-  speciesEcoregion <- rbind(NON_NAdata, NAdata)
-  setnames(speciesEcoregion, "ecoregion", "mapcode")
-  speciesEcoregion <- setkey(speciesEcoregion,
-                             mapcode)[setkey(simulationMaps$ecoregion, mapcode),
-                                      nomatch = 0][, .(year = 0, ecoregion, species,
-                                                       maxB = maxBiomass,
-                                                       maxANPP, establishprob = SEP)]
+  # if (nrow(NAdata) > 1) {
+  #   message("  6a obtainMaxBandANPPFromBiggerEcoArea: ", Sys.time())
+  #   biomassFrombiggerMap <- Cache(obtainMaxBandANPPFromBiggerEcoArea,
+  #                                 speciesLayers = sim$speciesLayers,
+  #                                 biomassLayer = sim$biomassMap,
+  #                                 SALayer = sim$standAgeMap,
+  #                                 ecoregionMap = simulationMaps$ecoregionMap,
+  #                                 biggerEcoArea = sim$ecoRegion,
+  #                                 biggerEcoAreaSource = "ecoRegion",
+  #                                 NAData = NAdata,
+  #                                 maskFn = fastMask,
+  #                                 pctCoverMinThresh = 50,
+  #                                 userTags = "stable")
+  #   message("  6b obtainMaxBandANPPFromBiggerEcoArea: ", Sys.time())
+  #   NON_NAdata <- rbind(
+  #     NON_NAdata,
+  #     biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)]
+  #   )
+  #   NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)]
+  # }
+  # if (ncell(sim$rasterToMatch) > 3e6)  .gc()
+
+  # message("7: ", Sys.time())
+  # if (nrow(NAdata) > 1) {
+  #   message("  7a obtainMaxBandANPPFromBiggerEcoArea if NAdata exist: ", Sys.time())
+  #   biomassFrombiggerMap <- Cache(obtainMaxBandANPPFromBiggerEcoArea,
+  #                                 speciesLayers = sim$speciesLayers,
+  #                                 biomassLayer = sim$biomassMap,
+  #                                 SALayer = sim$standAgeMap,
+  #                                 ecoregionMap = simulationMaps$ecoregionMap,
+  #                                 biggerEcoArea = sim$ecoZone,
+  #                                 biggerEcoAreaSource = "ecoZone",
+  #                                 NAData = NAdata, maskFn = fastMask,
+  #                                 pctCoverMinThresh = 50, ## TODO: pass as parameter (with #10)
+  #                                 userTags = "stable")
+  #   message("  7b obtainMaxBandANPPFromBiggerEcoArea if NAdata exist: ", Sys.time())
+  #   NON_NAdata <- rbind(NON_NAdata, biomassFrombiggerMap$addData[!is.na(maxBiomass),
+  #                                                                .(ecoregion, species, maxBiomass, maxANPP, SEP)])
+  #   NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass),
+  #                                          .(ecoregion, species, maxBiomass, maxANPP, SEP)]
+  # }
+  # if (ncell(sim$rasterToMatch) > 3e6)  .gc()
+
+  # message("8: ", Sys.time())
+  # NAdata[, ':='(maxBiomass = 0, maxANPP = 0, SEP = 0)]
+  # speciesEcoregion <- rbind(NON_NAdata, NAdata)
+  speciesEcoregion <- speciesEcoregionTable
+  speciesEcoregionTable[, ecoregion := as.character(ecoregion)]
+  speciesEcoregion <- speciesEcoregionTable[simulationMaps$ecoregion, on = "ecoregion"]
+  set(speciesEcoregion, NULL, "year", 0)
+  setnames(speciesEcoregion, c("maxBiomass", "SEP"), c("maxB", "establishprob"))
+  speciesEcoregion <- speciesEcoregion[, .(year, ecoregion, species, maxB, maxANPP, establishprob)]
+
+  # speciesEcoregion <- setkey(speciesEcoregion,
+  #                            mapcode)[setkey(simulationMaps$ecoregion, mapcode),
+  #                                     nomatch = 0][, .(year = 0, ecoregion, species,
+  #                                                      maxB = maxBiomass,
+  #                                                      maxANPP, establishprob = SEP)]
   sim$speciesEcoregion <- speciesEcoregion
   sim$ecoregion <- simulationMaps$ecoregion
   sim$ecoregionMap <- simulationMaps$ecoregionMap
 
-  sim$initialCommunitiesMap <- Cache(createInitCommMap, simulationMaps$initialCommunityMap,
-                                     as.integer(simulationMaps$initialCommunityMap[]),
-                                     file.path(outputPath(sim), "initialCommunitiesMap.tif"),
-                                     userTags = "stable")
+  datatype <- if (length(levels(simulationMaps$initialCommunity$mapCodeFac)) > 64e3)
+    "INT4U" else "INT2U"
+  sim$initialCommunitiesMap <- Cache(raster::writeRaster,
+                                     simulationMaps$initialCommunityMap,
+                                     filename = file.path(outputPath(sim), "initialCommunitiesMap.tif"),
+                                     overwrite = TRUE,
+                                     datatype = datatype)
+
   if (ncell(sim$rasterToMatch) > 3e6)  .gc()
 
   message("9: ", Sys.time())
+
   ## species traits inputs
   sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
                                   speciesLayers = sim$speciesLayers,
                                   sppEquiv = sim$sppEquiv,
                                   sppEquivCol = P(sim)$sppEquivCol)
-  message("10: ", Sys.time())
   initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species, age1)]
 
-  message("11: ", Sys.time())
   ## filter communities to species that have traits
   sim$initialCommunities <- initialCommunities[initialCommunities$species %in% sim$species$species,]
 
-  message("12: ", Sys.time())
   sim$minRelativeB <- data.frame(ecoregion = sim$ecoregion[active == "yes",]$ecoregion,
                                  X1 = 0.2, X2 = 0.4, X3 = 0.5,
                                  X4 = 0.7, X5 = 0.9)
