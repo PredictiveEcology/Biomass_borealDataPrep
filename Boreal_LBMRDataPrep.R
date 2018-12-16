@@ -132,6 +132,7 @@ doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE
 
 estimateParameters <- function(sim) {
   # # ! ----- EDIT BELOW ----- ! #
+  message("1: Starting to estimate parameters in Boreal_LBMRDataPrep: ", Sys.time())
   cPath <- cachePath(sim)
   sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$speciesLayers))
   sim$ecoRegion <- spTransform(sim$ecoRegion, crs(sim$speciesLayers))
@@ -139,24 +140,15 @@ estimateParameters <- function(sim) {
 
   sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
 
-  message("1: ", Sys.time())
   rasterToMatchBinary <- raster(sim$rasterToMatch)
   rasterToMatchBinary[] <- NA
   rasterToMatchBinary[!is.na(sim$rasterToMatch[])] <- 1
 
-  message("2: Create initial communities map and data.table ", Sys.time())
-  initialCommFiles <- Cache(initialCommunityProducer,
-                            speciesLayers = sim$speciesLayers,
-                            # This cuts up species pct into x groups, and age into x-year groups
-                            percentileGrps = 10,
-                            standAgeMap = sim$standAgeMap,
-                            userTags = "stable")
-  ecoregionstatus <- data.table(active = "yes",
-                                ecoregion = 1:1031)
-
-  message("ecoregionProducer: ", Sys.time())
+  message("2: ecoregionProducer: ", Sys.time())
   # Note: this ecoregionMap is NOT the Canadian EcoRegion -- it is for LBMR, which uses "ecoregion"
   ecoregionMap <- Cache(postProcess, sim$ecoDistrict, studyArea = sim$studyArea, filename2 = NULL)
+  ecoregionstatus <- data.table(active = "yes",
+                                ecoregion = 1:1031)
   ecoregionFiles <- Cache(ecoregionProducer,
                           ecoregionMap = ecoregionMap,
                           ecoregionName = "ECODISTRIC",
@@ -164,7 +156,17 @@ estimateParameters <- function(sim) {
                           rasterToMatch = sim$rasterToMatch,
                           userTags = "stable")
 
-  message("3: ", Sys.time())
+
+
+  message("3: Create initial communities map and data.table ", Sys.time())
+  initialCommFiles <- Cache(initialCommunityProducer,
+                            speciesLayers = sim$speciesLayers,
+                            # This cuts up species pct into x groups, and age into x-year groups
+                            percentileGrps = 10,
+                            ecoregionMap = ecoregionFiles$ecoregionMap,
+                            standAgeMap = sim$standAgeMap,
+                            userTags = "stable")
+
   # THis next nonActiveEcoregionProducer is a different way of setting some values to NA
   #   This is now assumed to be done already in the rasterToMatch
   # LCC05 -- land covers 1 to 15 are forested with tree dominated... 34 and 35 are recent burns
@@ -198,7 +200,7 @@ estimateParameters <- function(sim) {
   if (ncell(sim$rasterToMatch) > 3e6) .gc()
 
 
-  message("4: ", Sys.time())
+  message("4: Running obtainMaxBandANPP", Sys.time())
 
   stillHaveNAsForMaxBiomass <- TRUE
   attempt <- 0
@@ -269,7 +271,6 @@ estimateParameters <- function(sim) {
 
   sim$speciesEstablishmentProbMap <- sim$speciesLayers / 100
 
-  message("6: ", Sys.time())
   speciesEcoregionTable[, species := as.character(species)]
   sepTable[, species := as.character(species)]
   speciesEcoregionTable <- sepTable[speciesEcoregionTable, on = c("ecoregion", "species")]
@@ -355,14 +356,19 @@ estimateParameters <- function(sim) {
 
   if (ncell(sim$rasterToMatch) > 3e6)  .gc()
 
-  message("9: ", Sys.time())
+  message("6: Prepare 'species' table, i.e., species level traits", Sys.time())
 
   ## species traits inputs
   sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
                                   speciesLayers = sim$speciesLayers,
                                   sppEquiv = sim$sppEquiv,
                                   sppEquivCol = P(sim)$sppEquivCol)
-  initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species, age1)]
+  # remove unneeded columns
+  initialCommunities <-
+    simulationMaps$initialCommunity[, .(mapcode, description = NA, species,
+                                        speciesPresence = as.integer(speciesPresence),
+                                        age = as.integer(age1),
+                                        pixelIndex = as.integer(pixelIndex))]
 
   ## filter communities to species that have traits
   sim$initialCommunities <- initialCommunities[initialCommunities$species %in% sim$species$species,]
