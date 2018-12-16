@@ -1,4 +1,5 @@
 initialCommunityProducer <- function(speciesLayers, #speciesPresence,
+                                     ecoregionMap,
                                      #rstStudyArea,
                                      standAgeMap,
                                      percentileGrps = 10) {
@@ -53,6 +54,25 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
                                 padL = digits, padR = 0)
   #ids <- which(as.numeric(mapCodes) == 0)
   mapCodeGrps <- paste0(mapCodesSpp, xTileAge)
+  ############################################################
+  ## ecoregion
+  ############################################################
+  ecoregion <- ecoregionMap[]
+  ecoregionOnlyNAs <- which(is.na(ecoregion[-mapCodesNAs]) & mapCodesZeros)
+  if (length(ecoregionOnlyNAs) > 0)
+    message("##############################\n",
+            "There are ", length(ecoregionOnlyNAs), " pixels on the ecoregionMap ",
+            "that are NA, yet have non-zero percent cover ",
+            "on the speciesLayers stack. Proceeding anyway.")
+
+  uniqueEcoregionCodes <- unique(ecoregion[][-mapCodesNAs], na.rm = TRUE)
+
+  xTileEcoregion <- paddedFloatToChar(ecoregion[][-mapCodesNAs],
+                                padL = digits, padR = 0)
+  xTileEcoregion[ecoregionOnlyNAs] <- "NA"
+
+  ############################################################
+  ############################################################
   rm(xTileAge)
 
   ## convert mapCodes for use with data.table and as integer raster
