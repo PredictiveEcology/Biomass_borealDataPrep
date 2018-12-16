@@ -1,12 +1,10 @@
 initialCommunityProducer <- function(speciesLayers, #speciesPresence,
+                                     ecoregionMap,
                                      #rstStudyArea,
                                      standAgeMap,
                                      percentileGrps = 10) {
-  sppNames <- names(speciesLayers)
-  # speciesLayers <- speciesLayers * rstStudyArea  ## Eliot rm'd this. Don't want NAs here. prev comment: Ceres: this is probably no longer necessary
-  # names(speciesLayers) <- sppNames
 
-  speciesNames <- names(speciesLayers)#[which(maxValue(speciesLayers) >= speciesPresence)]
+  speciesNames <- names(speciesLayers)
 
   n <- length(speciesNames)
   pctRound <- 100 / percentileGrps
@@ -15,33 +13,44 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
   mapCodesNAs <- which(is.na(speciesLayers[[1]][]))
   mapCodes <- mapCodes[-mapCodesNAs]
 
-  # matrix of all pct covers
+  ############################################################
+  # Get a full length logical vector of the non-NA cells
+  ############################################################
+  allPixels <- rep(NA, ncell(speciesLayers))
+  allPixels[-mapCodesNAs] <- TRUE
+
+  ############################################################
+  # matrix of all pct covers, collapse into single string
+  ############################################################
   xtileAbundNum <- round(round(speciesLayers[][-mapCodesNAs,], -1) / pctRound, 0) # use
-  sppMatrix <- matrix(rep(speciesNames, each = NROW(xtileAbundNum)), ncol = ncol(xtileAbundNum))
-  sppMatrix[xtileAbundNum==0] <- ""
   xtileAbund <- if (digits > 1)
     matrix(paddedFloatToChar(xtileAbundNum, digits, 0), ncol = ncol(xtileAbundNum))
   else
     xtileAbundNum
   mapCodesSpp <- apply(xtileAbund, 1, paste, collapse = "")
-  sppVector <- apply(sppMatrix, 1, paste, collapse = ".")
-  sppVector2 <- gsub(pattern = "\\.{2,}", replacement = "\\.", sppVector)
-  sppVector2 <- gsub(pattern = "^\\.", replacement = "", sppVector2)
-  sppVector2 <- gsub(pattern = "\\.$", replacement = "", sppVector2)
-  #b <- apply(xtileAbund, 1, function(x) paddedFloatToChar(paste(x, collapse = ""), padL = digits, padR = 0))
 
-  # for (species in speciesNames[1:n]) { ## TODO: use raster::calc or similar
-  #   specieslayerBySpecies <- speciesLayers[[species]]
-  #   #specieslayerBySpecies[#which(is.na(specieslayerBySpecies[]) |
-  #   #                             specieslayerBySpecies[] <= 5)] <- 0L ## why 5% cover?
-  #   speciesCodes <- paddedFloatToChar(round(round(specieslayerBySpecies[][-mapCodesNAs], -1) / pctRound, 0), padL = digits, padR = 0)
-  #
-  #   mapCodes <- paste0(mapCodes, speciesCodes)
-  #   rm(speciesCodes)
-  # }
-  ## append stand ages
+  # Note that a dataset may have a pixel with zero cover, but
+  #   also have ages that are non-zero. This is likely
+  #   a bug in the data. Check here and provide message
+  mapCodesZeros <- mapCodesSpp == "0000000000"
+  pixelsWithZeroCover <- which(allPixels)[mapCodesZeros]
+
+  ###################
+  # Species matrix, simply names. This is used later
+  ##########
+  sppMatrix <- matrix(rep(speciesNames, each = NROW(xtileAbundNum)), ncol = ncol(xtileAbundNum))
+  sppMatrix[xtileAbundNum==0] <- ""
+
+  ############################################################
+  ## stand age
+  ############################################################
   ageMap <- standAgeMap[]
-  #ageMapNAs <- which(is.na(ageMap))
+  ageMapOnlyNAs <- which(is.na(ageMap[-mapCodesNAs]) & mapCodesZeros)
+  if (length(ageMapOnlyNAs) > 0)
+    message("##############################\n",
+            "There are ", length(ageMapOnlyNAs), " pixels on the standAgeMap ",
+            "that are NA, yet have non-zero percent cover ",
+            "on the speciesLayers stack. Proceeding anyway.")
 
   maxAgeOnMap <- max(ageMap[-mapCodesNAs], na.rm = TRUE)
   # ageMap[which(is.na(ageMap))] <- 0L
@@ -49,70 +58,84 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
     stop("This module currently assumes that the maximum age is 999. It is not. Please adjust ages or this module")
   digits <- nchar(ceiling(maxAgeOnMap / pctRound))
   roundedAge <- round(round(ageMap[-mapCodesNAs], -1) / pctRound, 0)
+
+  pixelsWithNonZeroAge <- which(allPixels)[roundedAge > 0]
+  pixelsWithZeroCoverAndAgeGT0 <- pixelsWithNonZeroAge[pixelsWithNonZeroAge %in% pixelsWithZeroCover]
+
+  if (length(pixelsWithZeroCoverAndAgeGT0) > 0) {
+    message("There are ", length(pixelsWithZeroCoverAndAgeGT0),
+            " pixels with zero tree cover, but non-zero age. This is ",
+            "possibly a bug in the speciesLayers raster stack. ",
+            "Proceeding anyway, assuming these pixels have no trees")
+    # set ages to 0 for these pixels
+    whNonZeroAgeShortVec <- which(allPixels) %in% pixelsWithZeroCoverAndAgeGT0
+    roundedAge[whNonZeroAgeShortVec] <- 0
+  }
+
   xTileAge <- paddedFloatToChar(roundedAge,
                                 padL = digits, padR = 0)
-  #ids <- which(as.numeric(mapCodes) == 0)
-  mapCodeGrps <- paste0(mapCodesSpp, xTileAge)
+  xTileAge[ageMapOnlyNAs] <- "NA"
+
+  ############################################################
+  ## ecoregion
+  ############################################################
+  ecoregion <- ecoregionMap[]
+  ecoregionOnlyNAs <- which(is.na(ecoregion[-mapCodesNAs]) & mapCodesZeros)
+  if (length(ecoregionOnlyNAs) > 0)
+    message("##############################\n",
+            "There are ", length(ecoregionOnlyNAs), " pixels on the ecoregionMap ",
+            "that are NA, yet have non-zero percent cover ",
+            "on the speciesLayers stack. Proceeding anyway.")
+
+  uniqueEcoregionCodes <- unique(ecoregion[][-mapCodesNAs], na.rm = TRUE)
+
+  xTileEcoregion <- paddedFloatToChar(ecoregion[][-mapCodesNAs],
+                                padL = digits, padR = 0)
+  xTileEcoregion[ecoregionOnlyNAs] <- "NA"
+
+  ############################################################
+  ##### Make unique map code
+  ############################################################
+  mapCodeGrps <- paste0(mapCodesSpp, "_", xTileAge, "_", xTileEcoregion)
   rm(xTileAge)
 
   ## convert mapCodes for use with data.table and as integer raster
   mapCodesFac <- factor(mapCodeGrps)
   mapCodesInt <- as.integer(mapCodesFac)
-  allPixels <- rep(NA, ncell(speciesLayers))
-  allPixels[-mapCodesNAs] <- TRUE
-  speciesComMap <- raster(speciesLayers[[1]])
-  #speciesComMap[] <- NA
-  speciesComMap[allPixels] <- mapCodesInt # integer is OK now that it is factor
 
   message("There are ", NROW(unique(mapCodesFac)), " initial, unique communities, \n  based on ",
           "species abundance (rounded to ", pctRound, "-percentile groups -- i.e., ",
-          percentileGrps, " groups) ", " and \n  initial stand age (rounded to ", pctRound, "-year groups)\n",
+          percentileGrps, " groups) ", "\n  initial stand age (rounded to ", pctRound, "-year groups),\n",
+          "  and ecoregionMap.",
           "  Modify percentileGrps to change the number of initial communties")
 
+  ############################################################
+  # Create speciesComMap
+  ############################################################
+  speciesComMap <- raster(speciesLayers[[1]])
+  speciesComMap[allPixels] <- mapCodesInt # integer is OK now that it is factor
 
-  initialCommunities <- data.table(mapcode = mapCodesFac, #mapCodesSpp,
+
+  ############################################################
+  # Create initialCommunities object
+  ############################################################
+  initialCommunitiesWide <- data.table(mapcode = mapCodesFac, #mapCodesSpp,
                                    mapCodeInt = mapCodesInt,
-                                   #mapCodeFac = mapCodesFac,
-                                   speciesPresence = as.vector(t(xtileAbundNum)) * percentileGrps,
-                                   species = as.vector(t(sppMatrix)),
+                                   speciesPresence = xtileAbundNum * percentileGrps,
+                                   species = sppMatrix,
                                    age1 = roundedAge * percentileGrps,
                                    pixelIndex = which(allPixels))
+
+  speciesNames1 <- grep("species\\.", colnames(initialCommunitiesWide), value = TRUE)
+  speciesPresence1 <- grep("speciesPresence", colnames(initialCommunitiesWide), value = TRUE)
+  initialCommunities <- data.table::melt(
+    initialCommunitiesWide,
+    measure.vars = list("species" = speciesNames1,
+                        "speciesPresence" = speciesPresence1))
+
+  # Remove any lines where there is no cover
   initialCommunities <- initialCommunities[speciesPresence > 0]
-  # LIKELY DELETE BELOW THIS
-  # if (FALSE) {
-  #   mapCodesInt <- as.numeric(mapCodeGrps)
-  #   #mapCodesInt[ids] <- NA_integer_
-  #   #mapCodes[ids] <- NA_character_
-  #   #speciesComMap <- speciesLayers[[1]]
-  #   #speciesComMap[] <- mapCodesInt
-  #
-  #   initialCommunities <- data.table(mapcode = sort(unique(na.omit(mapCodesInt))))
-  #   initialCommunities[, mapCodeStr := sort(unique(na.omit(mapCodesSpp)))]
-  #   output <- data.table(mapcode = numeric(), speciesPresence = character(),
-  #                        species = character(), age1 = numeric())
-  #   for (i in 1:nrow(initialCommunities)) {
-  #     outputAdd <- data.table(mapcode = initialCommunities$mapcode[i],
-  #                             speciesPresence = substring(initialCommunities$mapCodeStr[i],
-  #                                                         seq(1, digits * n, 2),
-  #                                                         seq(2, digits * n, 2)),
-  #                             species = speciesNames[1:length(speciesNames)],
-  #                             age1 = as.numeric(rep(substring(initialCommunities$mapCodeStr[i],
-  #                                                             2 + digits * n - 1,
-  #                                                             2 + digits * n), n)) * 10)
-  #
-  #     output <- rbind(output, outputAdd)
-  #   }
-  #
-  #   initialCommunities <- output[speciesPresence != "00",]
-  #   initialCommunities[, newMapCode := as.numeric(as.factor(mapcode))]
-  #   mapcodeconnection <- unique(initialCommunities[, .(mapcode, newMapCode)], by = "mapcode")
-  #   indexTable <- data.table(pixelIndex = 1:ncell(speciesComMap),
-  #                            mapcode = getValues(speciesComMap))
-  #   indexTable <- indexTable[!is.na(mapcode), ]
-  #   indexTable <- setkey(indexTable, mapcode)[setkey(mapcodeconnection, mapcode), nomatch = 0]
-  #   speciesComMap[indexTable$pixelIndex] <- indexTable$newMapCode
-  #   initialCommunities[, ':='(mapcode = newMapCode, newMapCode = NULL, speciesPresence = NULL)]
-  # }
+
   return(list(initialCommunityMap = speciesComMap,
               initialCommunity = initialCommunities))
 }
