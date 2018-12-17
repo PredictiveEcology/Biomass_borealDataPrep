@@ -24,6 +24,8 @@ defineModule(sim, list(
                     "When estimating maximum biomass by species and ecoregion, this number indicates the minimum number of pixels with data required before a maximum is estimated."),
     defineParameter("quantileForMaxBiomass", "numeric", 0.99, NA, NA,
                     "When estimating maximum biomass by species and ecoregion, rather than take the absolute max(biomass), the quantile is taken. This gives the capacity to remove outliers."),
+    defineParameter("SEPMinThresh", "numeric", 10, NA, NA,
+                    "The threshold of percent cover, by species, that would allow a species to be considered 'able to regenerate' in a pixel"),
     defineParameter("sppEquivCol", "character", "LandR", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter(".plotInitialTime", "numeric", NA, NA, NA,
@@ -94,6 +96,9 @@ defineModule(sim, list(
                   desc = "initial community map that has mapcodes match initial community table"),
     createsOutput("minRelativeB", "data.frame",
                   desc = "define the cut points to classify stand shadeness"),
+    createsOutput("SEPStack", "data.frame",
+                  paste("This is a stack of the species establishment probabilities. This is not used in LBMR;",
+                  "it is only here for visualizing")),
     createsOutput("species", "data.table",
                   desc = "a table that has species traits such as longevity..."),
     createsOutput("speciesEcoregion", "data.table",
@@ -262,10 +267,12 @@ estimateParameters <- function(sim) {
   if (ncell(sim$rasterToMatch) > 3e6) .gc()
 
   message("5: Derive Species Establishment Probability (SEP) from sim$speciesLayers: ", Sys.time())
-  sepTable <- Cache(obtainSEP, ecoregionMap = simulationMaps$ecoregionMap,
+  SEP <- Cache(obtainSEP, ecoregionMap = simulationMaps$ecoregionMap,
                     speciesLayers = sim$speciesLayers,
-                    SEPMinThresh = 10,
+                    SEPMinThresh = P(sim)$SEPMinThresh, destinationPath = Paths$inputPath,
                     userTags = "stable")
+  sepTable <- SEP$speciesAbundanceTable
+  sim$SEPStack <- SEP$SEPMap
   sepTable[, SEP := round(SEP, 4)]
   if (ncell(sim$rasterToMatch) > 3e6) .gc()
 

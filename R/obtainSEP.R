@@ -1,4 +1,4 @@
-obtainSEP <- function(speciesLayers, ecoregionMap, SEPMinThresh = 0) {
+obtainSEP <- function(speciesLayers, ecoregionMap, SEPMinThresh = 0, destinationPath) {
   #speciesLayerEcoregion <- crop(speciesLayers, ecoregionMap)
   #speciesLayerEcoregion <- suppressWarnings(mask(speciesLayerEcoregion, ecoregionMap))
   speciesTableEcoregion <- cbind(data.table(ecoregion = getValues(ecoregionMap)),
@@ -11,9 +11,9 @@ obtainSEP <- function(speciesLayers, ecoregionMap, SEPMinThresh = 0) {
   speciesTableEcoregion[value > SEPMinThresh, presence := 1]
   speciesTableEcoregion <- speciesTableEcoregion[,.(SEP = sum(presence)/length(value)),
                                                  by = c("ecoregion", "species")]
-  
-  # This next section is just for visualizing
-  if (FALSE) {
+
+  # This next section creates the stack
+  if (TRUE) {
     speciesLevels <- unique(speciesTableEcoregion$species)
     abundanceMapStack <- stack()
     names(ecoregionMap) <- "ecoregion"
@@ -22,8 +22,12 @@ obtainSEP <- function(speciesLayers, ecoregionMap, SEPMinThresh = 0) {
         , species := NULL]
       abundanceMap <- rasterizeReduced(speciesTableEcoregionBySpecies, ecoregionMap, "SEP")
       names(abundanceMap) <- as.character(speciesLevels[i])
+      abundanceMap <- writeRaster(abundanceMap, filename = file.path(destinationPath,
+                                                                     paste0("SpeciesEstabProb_", speciesLevels[i], ".tif")),
+                                  overwrite = TRUE)
       abundanceMapStack <- stack(abundanceMapStack, abundanceMap)
     }
   }
-  return(speciesAbundanceTable = speciesTableEcoregion)
+  return(list(speciesAbundanceTable = speciesTableEcoregion,
+         SEPMap = abundanceMapStack))
 }
