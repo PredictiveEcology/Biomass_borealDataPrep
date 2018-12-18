@@ -399,22 +399,9 @@ Save <- function(sim) {
 ## see other helper functions in R/ subdirectory
 
 .inputObjects <- function(sim) {
-  # Any code written here will be run during the simInit for the purpose of creating
-  # any objects required by this module and identified in the inputObjects element of defineModule.
-  # This is useful if there is something required before simulation to produce the module
-  # object dependencies, including such things as downloading default datasets, e.g.,
-  # downloadData("LCC2005", modulePath(sim)).
-  # Nothing should be created here that does not create an named object in inputObjects.
-  # Any other initiation procedures should be put in "init" eventType of the doEvent function.
-  # Note: the module developer can use 'sim$.userSuppliedObjNames' in their function below to
-  # selectively skip unnecessary steps because the user has provided those inputObjects in the
-  # simInit call. e.g.,
-  # if (!('defaultColor' %in% sim$userSuppliedObjNames)) {
-  #  defaultColor <- 'red'
-  # }
-  # ! ----- EDIT BELOW ----- ! #
-  cacheTags <- c(currentModule(sim), "function:.inputObjects", "function:spades")
-  dPath <- asPath(dataPath(sim), 1)
+  cacheTags <- c(currentModule(sim), "function:.inputObjects")
+  dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
+  message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
   # 1. test if all input objects are already present (e.g., from inputs, objects or another module)
   a <- depends(sim)
@@ -422,7 +409,6 @@ Save <- function(sim) {
   objNames <- a@dependencies[[whThisMod]]@inputObjects$objectName
   objExists <- !unlist(lapply(objNames, function(x) is.null(sim[[x]])))
   names(objExists) <- objNames
-
 
   # Filenames
   ecoregionFilename <-   file.path(dPath, "ecoregions.shp")
