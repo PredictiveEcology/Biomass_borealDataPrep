@@ -83,8 +83,8 @@ defineModule(sim, list(
                  desc = "define how the species with different shade tolerance respond to stand shadeness")
   ),
   outputObjects = bind_rows(
-    createsOutput("ecoDistrict", "", desc = ""),
-    createsOutput("ecoRegion", "", desc = ""),
+    createsOutput("ecoDistrict", "", desc = ""), ## TODO: description and type needed
+    createsOutput("ecoRegion", "", desc = ""),   ## TODO:description and type needed
     createsOutput("ecoregion", "data.table",
                   desc = "ecoregion look up table"),
     createsOutput("ecoregionMap", "RasterLayer",
