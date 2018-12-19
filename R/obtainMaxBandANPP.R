@@ -72,9 +72,10 @@ obtainMaxBandANPP <- function(speciesLayers, biomassLayer, #SALayer,
 
   # Convert cases where maxBiomass is 0 to NA
   output <- output[maxBiomass == 0, maxBiomass := NA]
+  output[, ecoregionCode := factorValues2(ecoregionMap, output$ecoregion, att = "ecoregion" )]
 
   # Create maxANPP as maxBiomass / 30
-  set(output, NULL, "maxANPP", round(output$maxBiomass / 30, 0))
+  set(output, NULL, "maxANPP", as.integer(round(output$maxBiomass / 30, 0)))
 
   return(speciesBiomass = output)
 }

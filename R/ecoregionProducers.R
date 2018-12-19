@@ -1,31 +1,74 @@
-ecoregionProducer <- function(ecoregionMap, ecoregionName,
+ecoregionProducer <- function(ecoregionMaps, ecoregionName,
                               ecoregionActiveStatus, rasterToMatch) {
   # change the coordinate reference for all spatialpolygons
   message("ecoregionProducer 1: ", Sys.time())
   #ecoregionMapInStudy <- raster::intersect(ecoregionMapFull, fixErrors(aggregate(studyArea)))
 
   # Alternative
-  message("ecoregionProducer fastRasterize: ", Sys.time())
-  rstEcoregion <- fasterize::fasterize(sf::st_as_sf(ecoregionMap), raster(rasterToMatch), field = "ECODISTRIC")
-  rstEcoregion[is.na(rasterToMatch[])] <- NA
+  rstEcoregion <- list()
+  rtmNAs <- is.na(rasterToMatch[])
+  for (erm in seq(ecoregionMaps)) {
+    if (!is(ecoregionMaps[[erm]], "Raster")) {
+      message("ecoregionProducer fastRasterize: ", Sys.time())
+      rstEcoregion[[erm]] <- fasterize::fasterize(sf::st_as_sf(ecoregionMaps[[erm]]), raster(rasterToMatch),
+                                                  field = ecoregionName)
+    } else {
+      rstEcoregion[[erm]] <- ecoregionMaps[[erm]]
+    }
+    rstEcoregion[[erm]][rtmNAs] <- NA
+  }
 
-  ecoregionFactorValues <- na.omit(unique(rstEcoregion[]))
+  a <- lapply(rstEcoregion, function(x) getValues(x)[!rtmNAs] )
+  b <- as.data.table(a)
+  b[, (names(b)) := lapply(.SD, function(x) paddedFloatToChar(x, max(nchar(x))))]
+  b <- as.matrix(b) # so apply will work
 
-  ecoregionTable <- data.table(
-    mapcode = seq_along(ecoregionFactorValues[!is.na(ecoregionFactorValues)]),
-    ecoregion = as.numeric(ecoregionFactorValues[!is.na(ecoregionFactorValues)])
-  )
+  rstEcoregion <- raster(rstEcoregion[[1]])
+  ecoregionValues <- as.factor(apply(b, 1, paste, collapse = "_"))
+  ecoregionFactorLevels <- levels(ecoregionValues)
+
+  rstEcoregion[!rtmNAs] <- as.integer(ecoregionValues)
+  levels(rstEcoregion) <- data.frame(ID = seq(ecoregionFactorLevels),
+                                     mapcode = seq(ecoregionFactorLevels),
+                                     ecoRegion = gsub("_.*", "", ecoregionFactorLevels),
+                                     landCover = gsub(".*_", "", ecoregionFactorLevels),
+                                     ecoregion = ecoregionFactorLevels)
+  #ecoregionFactorValues <- na.omit(unique(rstEcoregion[]))
+
+  ecoregionTable <- raster::levels(rstEcoregion)[[1]]
+
+  if (FALSE) {
+    data.table(
+      mapcode = seq_along(ecoregionFactorLevels[!is.na(ecoregionFactorLevels)]),
+      ecoregion = ecoregionFactorLevels[!is.na(ecoregionFactorLevels)]
+    )
+    message("ecoregionProducer mapvalues: ", Sys.time())
+    # rstEcoregion[] <- plyr::mapvalues(rstEcoregion[], from = ecoregionTable$ecoregion, to = ecoregionTable$mapcode)
+    ecoregionActiveStatus[, ecoregion := as.factor(ecoregion)]
+    ecoregionTable <- ecoregionTable[!is.na(mapcode),][, ecoregion := as.character(ecoregion)]
+    message("ecoregionProducer dplyr_leftjoin: ", Sys.time())
+    ecoregionTable <- dplyr::left_join(ecoregionTable,
+                                       ecoregionActiveStatus,
+                                       by = "ecoregion") %>%
+      data.table()
+    ecoregionTable[is.na(active), active := "no"]
+
+    ecoregionTable <- ecoregionTable[,.(active, mapcode, ecoregion)]
+  }
+
+  ecoregionTable <- as.data.table(raster::levels(rstEcoregion)[[1]])
   message("ecoregionProducer mapvalues: ", Sys.time())
   # rstEcoregion[] <- plyr::mapvalues(rstEcoregion[], from = ecoregionTable$ecoregion, to = ecoregionTable$mapcode)
-  ecoregionActiveStatus[, ecoregion := as.character(ecoregion)]
-  ecoregionTable <- ecoregionTable[!is.na(mapcode),][, ecoregion := as.character(ecoregion)]
-  message("ecoregionProducer dplyr_leftjoin: ", Sys.time())
-  ecoregionTable <- dplyr::left_join(ecoregionTable,
-                                     ecoregionActiveStatus,
-                                     by = "ecoregion") %>%
-    data.table()
-  ecoregionTable[is.na(active), active := "no"]
-  ecoregionTable <- ecoregionTable[,.(active, mapcode, ecoregion)]
+  # ecoregionActiveStatus[, ecoregion := as.factor(ecoregion)]
+  # ecoregionTable <- ecoregionTable[!is.na(mapcode),][, ecoregion := as.character(ecoregion)]
+  # message("ecoregionProducer dplyr_leftjoin: ", Sys.time())
+  # ecoregionTable <- dplyr::left_join(ecoregionTable,
+  #                                    ecoregionActiveStatus,
+  #                                    by = "ecoregion") %>%
+  #   data.table()
+  # ecoregionTable[is.na(active), active := "no"]
+  ecoregionTable <- ecoregionTable[,.(active = "yes", mapcode, ecoregion)]
+
   return(list(ecoregionMap = rstEcoregion,
               ecoregion = ecoregionTable))
 }

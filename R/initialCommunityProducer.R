@@ -87,10 +87,19 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
             "that are NA, yet have non-zero percent cover ",
             "on the speciesLayers stack. Proceeding anyway.")
 
-  uniqueEcoregionCodes <- unique(ecoregion[][-mapCodesNAs], na.rm = TRUE)
 
-  xTileEcoregion <- paddedFloatToChar(ecoregion[][-mapCodesNAs],
-                                padL = digits, padR = 0)
+  if (raster::is.factor(ecoregionMap)) {
+    ecoregionValues <- factorValues2(ecoregionMap, ecoregionMap[][-mapCodesNAs], att = "ecoregion")
+    uniqueEcoregionCodes <- unique(ecoregion, na.rm = TRUE)
+    ecoregionValuesChar <- as.character(ecoregionValues)
+    xTileEcoregion <- ecoregionValuesChar
+  } else {
+    ecoregionValues <- ecoregion[][-mapCodesNAs]
+    digits <- max(nchar(ecoregionValues))
+    xTileEcoregion <- paddedFloatToChar(ecoregionValues, padL = digits, padR = 0)
+    uniqueEcoregionCodes <- unique(ecoregionValues, na.rm = TRUE)
+  }
+
   xTileEcoregion[ecoregionOnlyNAs] <- "NA"
 
   ############################################################
