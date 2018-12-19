@@ -110,26 +110,11 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
 
   ## convert mapCodes for use with data.table and as integer raster
   mapCodesFac <- factor(mapCodeGrps)
-  mapCodesInt <- as.integer(mapCodesFac)
-
-  message("There are ", NROW(unique(mapCodesFac)), " initial, unique communities, \n  based on ",
-          "species abundance (rounded to ", pctRound, "-percentile groups -- i.e., ",
-          percentileGrps, " groups) ", "\n  initial stand age (rounded to ", pctRound, "-year groups),\n",
-          "  and ecoregionMap.",
-          "  Modify percentileGrps to change the number of initial communties")
-
-  ############################################################
-  # Create speciesComMap
-  ############################################################
-  speciesComMap <- raster(speciesLayers[[1]])
-  speciesComMap[allPixels] <- mapCodesInt # integer is OK now that it is factor
-
 
   ############################################################
   # Create initialCommunities object
   ############################################################
   initialCommunitiesWide <- data.table(mapcode = mapCodesFac, #mapCodesSpp,
-                                   mapCodeInt = mapCodesInt,
                                    speciesPresence = xtileAbundNum * percentileGrps,
                                    species = sppMatrix,
                                    age1 = roundedAge * percentileGrps,
@@ -145,6 +130,17 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
   # Remove any lines where there is no cover
   initialCommunities <- initialCommunities[speciesPresence > 0]
 
-  return(list(initialCommunityMap = speciesComMap,
-              initialCommunity = initialCommunities))
+  # refactor them
+  initialCommunities[, mapcode := factor(mapcode)]
+
+  message("There are ", NROW(unique(initialCommunities$mapcode)), " initial, unique communities, \n  based on ",
+          "species abundance (rounded to ", pctRound, "-percentile groups -- i.e., ",
+          percentileGrps, " groups) ", "\n  initial stand age (rounded to ", pctRound, "-year groups),\n",
+          "  and ecoregionMap.",
+          "  Modify percentileGrps to change the number of initial communties")
+
+
+  return(#list(#initialCommunityMap = speciesComMap,
+              #initialCommunity =
+                initialCommunities)
 }

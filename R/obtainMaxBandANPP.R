@@ -13,7 +13,7 @@ obtainMaxBandANPP <- function(speciesLayers, biomassLayer, #SALayer,
 
   speciesTable <- data.table(biomass = getValues(biomassLayer),
                              #SA = getValues(SALayer),
-                             ecoregion = getValues(ecoregionMap))
+                             ecoregionCode = factorValues2(ecoregionMap, getValues(ecoregionMap), att = 5))
   speciesTableWPct <- data.table(speciesTable,
                                  percentage = speciesLayers[],
                                  totalpct = apply(speciesLayers[], 1, sum)) # they don't all add up to 100%, so standardize
@@ -41,7 +41,7 @@ obtainMaxBandANPP <- function(speciesLayers, biomassLayer, #SALayer,
     logBgtZero <- log(b[b > 0])
     100 * exp(quantile(logBgtZero, quantileForMaxBiomass)) # take log to change from a skewed distribution
     }),
-    by = c("ecoregion"), .SDcols = biomassSpp]
+    by = c("ecoregionCode"), .SDcols = biomassSpp]
 
   # This calculates sample sizes by species-ecoregion
   NbyEcoregionSpecies <- speciesTableWPct[, lapply(.SD, function(b) {
@@ -51,16 +51,15 @@ obtainMaxBandANPP <- function(speciesLayers, biomassLayer, #SALayer,
     else
       return (NA_integer_)
     }),
-    by = c("ecoregion"), .SDcols = biomassSpp]
+    by = c("ecoregionCode"), .SDcols = biomassSpp]
 
   # Remove biomass entries that have NA in the sample size matrix -- i.e., fewer than minNumPixelsToEstMaxBiomass
-  biomassWithEnoughN <- as.matrix(outputPartial) * as.matrix(NbyEcoregionSpecies > 0)
-  outputPartial <- as.data.table(biomassWithEnoughN)
+  biomassWithEnoughN <- matrix(nrow = nrow(outputPartial), ncol = ncol(outputPartial)-1)
+  biomassWithEnoughN <- as.matrix(outputPartial[,-1]) * as.matrix(NbyEcoregionSpecies[,-1] > 0)
+  outputPartial <- data.table(ecoregionCode = outputPartial$ecoregionCode, as.data.table(biomassWithEnoughN))
 
   # convert biomass to integer as more precision is unnecessary
-  outputPartial <- outputPartial[, append(list(ecoregion = ecoregion),
-                                          lapply(.SD, function(col) as.integer(round(col)))),
-                                 .SDcols = biomassSpp]
+  outputPartial[, (biomassSpp) := lapply(.SD, function(col) as.integer(round(col))), .SDcols = biomassSpp]
 
   setnames(outputPartial, old = biomassSpp, new = gsub("biomass", "", biomassSpp))
 
@@ -72,11 +71,10 @@ obtainMaxBandANPP <- function(speciesLayers, biomassLayer, #SALayer,
 
   # Convert cases where maxBiomass is 0 to NA
   output <- output[maxBiomass == 0, maxBiomass := NA]
-  output[, ecoregionCode := factorValues2(ecoregionMap, output$ecoregion, att = "ecoregion" )]
 
   # Create maxANPP as maxBiomass / 30
   set(output, NULL, "maxANPP", as.integer(round(output$maxBiomass / 30, 0)))
 
-  return(speciesBiomass = output)
+  return(output)
 }
 
