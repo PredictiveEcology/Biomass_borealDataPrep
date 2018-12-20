@@ -1,10 +1,20 @@
+#' Obtain species establishment probabilities
+#'
+#' Initiates a \code{data.table} with all values.
+#'
+#' @param speciesLayers TODO: description needed
+#' @param possibleEcoregionSrcs TODO: description needed
+#' @param speciesEcoregionTable TODO: description needed
+#'
+#' @return TODO: description needed
+#'
+#' @export
+#' @importFrom data.table data.table melt.data.table rbindlist
+#' @importFrom pemisc factorValues2
+#' @importFrom raster getValues levels
+#' @importFrom stats complete.cases
 obtainSEP <- function(speciesLayers, possibleEcoregionSrcs, speciesEcoregionTable) {
-
-  ##################################################################
-  # Initiate a data.table with all values
-  ##################################################################
   attempt <- 0
-
   stillHave0sForSEP <- TRUE
   ind <- 0
   while (stillHave0sForSEP) {
@@ -25,13 +35,14 @@ obtainSEP <- function(speciesLayers, possibleEcoregionSrcs, speciesEcoregionTabl
                                             variable.name = "species")
     speciesEcoregionTemp[SEP == 0, presence := 0]
     speciesEcoregionTemp[SEP > 0, presence := 1]
-    speciesEcoregionTemp <- speciesEcoregionTemp[,.(SEP = sum(presence)/length(SEP),
-                                                    ecoregionInt = unique(ecoregionInt)),
+    speciesEcoregionTemp <- speciesEcoregionTemp[, .(SEP = sum(presence) / length(SEP),
+                                                     ecoregionInt = unique(ecoregionInt)),
                                                  by = c("ecoregionCode", "species")]
 
     # remove the cases where all species in a ecoregion are zero
-    speciesEcoregionTemp <- speciesEcoregionTemp[, list(species, SEP, ecoregionInt, hasAllZero = all(SEP == 0)),
-                                                 by = "ecoregionCode"]
+    speciesEcoregionTemp <- speciesEcoregionTemp[
+      , list(species, SEP, ecoregionInt, hasAllZero = all(SEP == 0)),
+      by = "ecoregionCode"]
     speciesEcoregionTemp <- speciesEcoregionTemp[hasAllZero == FALSE]
     speciesEcoregionTemp[, hasAllZero := NULL]
     speciesEcoregionTemp[, SEP := round(SEP, 4)]
@@ -47,10 +58,13 @@ obtainSEP <- function(speciesLayers, possibleEcoregionSrcs, speciesEcoregionTabl
     } else {
       stillHave0sForSEP <- !isTRUE(ind == length(possibleEcoregionSrcs))
       noSEP <- speciesEcoregionTable[!speciesEcoregionNoZeros, on = c("ecoregionCode", "species")]
-      newSEP <- noSEP[speciesEcoregionTemp, on = c(paste0(ecoregionName, "==ecoregionCode"), "species"), nomatch = 0]
-      speciesEcoregionTemp <- rbindlist(list(speciesEcoregionNoZeros, newSEP[, names(speciesEcoregionNoZeros), with = FALSE]))
+      newSEP <- noSEP[speciesEcoregionTemp,
+                      on = c(paste0(ecoregionName, "==ecoregionCode"), "species"),
+                      nomatch = 0]
+      speciesEcoregionTemp <- rbindlist(list(speciesEcoregionNoZeros,
+                                             newSEP[, names(speciesEcoregionNoZeros),
+                                                    with = FALSE]))
     }
-
   }
   # Fill in 0 for maxBiomass and maxANPP when SEP was estimated to be 0
   #speciesEcoregionTemp[SEP == 0, ':='(maxBiomass = 0, maxANPP = 0)]
@@ -58,20 +72,27 @@ obtainSEP <- function(speciesLayers, possibleEcoregionSrcs, speciesEcoregionTabl
   return(speciesEcoregionTemp)
 }
 
-
+#' Create a \code{RasterStack} of SEP layers
+#'
+#' Creates a \code{RasterStack} of species establishment probablitiy (SEP) layers
+#'
+#' @param speciesEcoregionTable TODO: description needed
+#' @param ecoregionMap TODO: description needed
+#' @param destinationPath TODO: description needed
+#'
+#' @return \code{RasterStack}
+#'
+#' @export
+#' @importFrom raster stack writeRaster
+#' @importFrom SpaDES.tools rasterizeReduced
 createSEPStack <- function(speciesEcoregionTable, ecoregionMap, destinationPath) {
-  ##################################################################
-  # This next section creates the stack
-  ##################################################################
   speciesLevels <- unique(speciesEcoregionTable$species)
-  speciesEcoregionTable[, ecoregionInt := as.integer(ecoregionCode)]
+  speciesEcoregionTable[, ecoregionInt := as.integer(ecoregionCode)] ## WARNING!
   abundanceMapStack <- stack()
   names(ecoregionMap) <- "ecoregion"
   names(speciesLevels) <- as.character(speciesLevels)
   abundanceList <- lapply(speciesLevels, function(sp) {
-  #for (i in seq(speciesLevels)) {
-    speciesEcoregionBySpecies <- speciesEcoregionTable[species == sp, ][
-      , species := NULL]
+    speciesEcoregionBySpecies <- speciesEcoregionTable[species == sp, ][, species := NULL]
     abundanceMap <- rasterizeReduced(speciesEcoregionBySpecies, ecoregionMap, "SEP",
                                      mapcode = "ecoregionInt")
     names(abundanceMap) <- as.character(sp)
@@ -84,5 +105,4 @@ createSEPStack <- function(speciesEcoregionTable, ecoregionMap, destinationPath)
   })
 
   return(stack(abundanceList))
-
 }

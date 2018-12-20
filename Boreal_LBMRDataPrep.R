@@ -237,9 +237,8 @@ estimateParameters <- function(sim) {
   ################################################################
   message("5: Derive Species Establishment Probability (SEP) from sim$speciesLayers: ", Sys.time())
   sepTable <- Cache(obtainSEP, possibleEcoregionSrcs = possibleEcoregionSrcs,
-               #ecoregionMap = ecoregionFiles$ecoregionMap,
-               speciesEcoregionTable = speciesEcoregionTable,
-               speciesLayers = sim$speciesLayers)
+                    speciesEcoregionTable = speciesEcoregionTable,
+                    speciesLayers = sim$speciesLayers)
 
   sim$speciesEstablishmentProbMap <- createSEPStack(speciesEcoregionTable = sepTable,
                                                     ecoregionMap = ecoregionFiles$ecoregionMap,
@@ -419,7 +418,6 @@ Save <- function(sim) {
                                filename = file.path(dataPath(sim), "rasterToMatch.tif"),
                                datatype = "INT2U", overwrite = TRUE)
   }
-
 
   # LCC2005
   if (!suppliedElsewhere("LCC2005", sim)) {
