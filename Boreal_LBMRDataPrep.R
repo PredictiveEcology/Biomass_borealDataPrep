@@ -16,6 +16,7 @@ defineModule(sim, list(
   citation = list("citation.bib"),
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
   reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos", "sp",
+                  #"PredictiveEcology/LandR@development",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     #defineParameter("speciesPresence", "numeric", 50, NA, NA,
@@ -63,7 +64,7 @@ defineModule(sim, list(
                  desc = "species attributes table, default is from Dominic and Yan's project",
                  sourceURL = "https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv"),
     expectsInput("sppEquiv", "data.table",
-                 desc = "table of species equivalencies. See pemisc::sppEquivalencies_CA.",
+                 desc = "table of species equivalencies. See pemisc::sppEquivalencies_CA.", ## TODO: use LandR
                  sourceURL = ""),
     expectsInput("studyArea", "SpatialPolygonsDataFrame",
                  desc = paste("multipolygon to use as the study area,",
@@ -497,7 +498,7 @@ Save <- function(sim) {
   }
 
   if (!suppliedElsewhere("sppEquiv", sim)) {
-    data("sppEquivalencies_CA", package = "pemisc", envir = environment())
+    data("sppEquivalencies_CA", package = "pemisc", envir = environment()) ## TODO: use LandR
     sim$sppEquiv <- as.data.table(sppEquivalencies_CA)
 
     ## By default, Abies_las is renamed to Abies_sp
