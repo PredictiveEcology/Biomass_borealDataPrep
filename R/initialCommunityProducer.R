@@ -1,3 +1,19 @@
+#' Produce initial communities
+#'
+#' TODO: description needed
+#'
+#' @param speciesLayers TODO: description needed
+#' @param ecoregionMap  TODO: description needed
+#' @param standAgeMap  TODO: description needed
+#' @param percentileGrps  TODO: description needed
+#'
+#' @return TODO: description needed
+#'
+#' @export
+#' @importFrom data.table melt set
+#' @importFrom pemisc factorValues2
+#' @importFrom raster is.factor
+#' @importFrom SpaDES.core paddedFloatToChar
 initialCommunityProducer <- function(speciesLayers, #speciesPresence,
                                      ecoregionMap,
                                      #rstStudyArea,
@@ -32,14 +48,14 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
   # Note that a dataset may have a pixel with zero cover, but
   #   also have ages that are non-zero. This is likely
   #   a bug in the data. Check here and provide message
-  mapCodesZeros <- mapCodesSpp == "0000000000"
+  mapCodesZeros <- mapCodesSpp == "0000000000" ## TODO: don't hardcode this
   pixelsWithZeroCover <- which(allPixels)[mapCodesZeros]
 
   ###################
   # Species matrix, simply names. This is used later
   ##########
   sppMatrix <- matrix(rep(speciesNames, each = NROW(xtileAbundNum)), ncol = ncol(xtileAbundNum))
-  sppMatrix[xtileAbundNum==0] <- ""
+  sppMatrix[xtileAbundNum == 0] <- ""
 
   ############################################################
   ## stand age
@@ -55,7 +71,8 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
   maxAgeOnMap <- max(ageMap[-mapCodesNAs], na.rm = TRUE)
   # ageMap[which(is.na(ageMap))] <- 0L
   if (maxAgeOnMap > 1e3)
-    stop("This module currently assumes that the maximum age is 999. It is not. Please adjust ages or this module")
+    stop("This module currently assumes that the maximum age is 999.",
+         " It is not. Please adjust ages or this module.")
   digits <- nchar(ceiling(maxAgeOnMap / pctRound))
   roundedAge <- round(round(ageMap[-mapCodesNAs], -1) / pctRound, 0)
 
@@ -64,9 +81,9 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
 
   if (length(pixelsWithZeroCoverAndAgeGT0) > 0) {
     message("There are ", length(pixelsWithZeroCoverAndAgeGT0),
-            " pixels with zero tree cover, but non-zero age. This is ",
-            "possibly a bug in the speciesLayers raster stack. ",
-            "Proceeding anyway, assuming these pixels have no trees")
+            " pixels with zero tree cover, but non-zero age.",
+            " This is possibly a bug in the speciesLayers raster stack.",
+            " Proceeding anyway, assuming these pixels have no trees.")
     # set ages to 0 for these pixels
     whNonZeroAgeShortVec <- which(allPixels) %in% pixelsWithZeroCoverAndAgeGT0
     roundedAge[whNonZeroAgeShortVec] <- 0
@@ -86,7 +103,6 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
             "There are ", length(ecoregionOnlyNAs), " pixels on the ecoregionMap ",
             "that are NA, yet have non-zero percent cover ",
             "on the speciesLayers stack. Proceeding anyway.")
-
 
   if (raster::is.factor(ecoregionMap)) {
     ecoregionValues <- factorValues2(ecoregionMap, ecoregionMap[][-mapCodesNAs], att = "ecoregion")
@@ -115,10 +131,10 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
   # Create initialCommunities object
   ############################################################
   initialCommunitiesWide <- data.table(mapcode = mapCodesFac, #mapCodesSpp,
-                                   speciesPresence = xtileAbundNum * percentileGrps,
-                                   species = sppMatrix,
-                                   age1 = roundedAge * percentileGrps,
-                                   pixelIndex = which(allPixels))
+                                       speciesPresence = xtileAbundNum * percentileGrps,
+                                       species = sppMatrix,
+                                       age1 = roundedAge * percentileGrps,
+                                       pixelIndex = which(allPixels))
 
   speciesNames1 <- grep("species\\.", colnames(initialCommunitiesWide), value = TRUE)
   speciesPresence1 <- grep("speciesPresence", colnames(initialCommunitiesWide), value = TRUE)

@@ -1,3 +1,20 @@
+#' ecoregionProducer
+#'
+#'  TODO: description and title needed
+#'
+#' @param ecoregionMaps TODO: description needed
+#' @param ecoregionName TODO: description needed
+#' @param ecoregionActiveStatus TODO: description needed
+#' @param rasterToMatch TODO: description needed
+#'
+#' @return
+#'
+#' @export
+#' @importFrom data.table as.data.table data.table
+#' @importFrom fasterize fasterize
+#' @importFrom raster getValues levels raster
+#' @importFrom sf st_as_sf
+#' @importFrom SpaDES.core paddedFloatToChar
 ecoregionProducer <- function(ecoregionMaps, ecoregionName,
                               ecoregionActiveStatus, rasterToMatch) {
   # change the coordinate reference for all spatialpolygons

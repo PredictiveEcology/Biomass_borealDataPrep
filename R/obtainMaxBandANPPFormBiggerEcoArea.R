@@ -1,3 +1,19 @@
+#' Obtain maximum biomass and ANPP from bigger ecological area
+#'
+#' @param speciesLayers TODO: description needed
+#' @param biomassLayer TODO: description needed
+#' @param SALayer TODO: description needed
+#' @param ecoregionMap TODO: description needed
+#' @param biggerEcoArea TODO: description needed
+#' @param biggerEcoAreaSource TODO: description needed
+#' @param NAData TODO: description needed
+#' @param maskFn TODO: description needed
+#' @param pctCoverMinThresh TODO: description needed
+#'
+#' @return TODO: description needed
+#'
+#' @export
+#' @importFrom raster getValues
 obtainMaxBandANPPFromBiggerEcoArea <- function(speciesLayers,
                                                biomassLayer,
                                                SALayer,
@@ -7,7 +23,7 @@ obtainMaxBandANPPFromBiggerEcoArea <- function(speciesLayers,
                                                NAData,
                                                maskFn,
                                                pctCoverMinThresh = 0) {
-  
+
   subEcoregion <- ecoregionMap
   subEcoregion[!(getValues(subEcoregion) %in% unique(NAData$ecoregion))] <- NA
   # biggerEcoArea <- raster::crop(biggerEcoArea, subEcoregion)
@@ -31,7 +47,7 @@ obtainMaxBandANPPFromBiggerEcoArea <- function(speciesLayers,
 
   ecodistrictEcoregionTable <- data.table(ecoregion = getValues(subEcoregion),
                                           biggerEcoregion = getValues(biggerEcoMapRaster_ST))[!is.na(ecoregion),]
-  
+
   # check whether one district has more than one ecoregion, which is not correct
   ecodistrictEcoregionTable[,totLength := length(biggerEcoregion), by = ecoregion]
   ecodistrictEcoregionTable[,ecoLength := length(totLength), by = c("biggerEcoregion", "ecoregion")]

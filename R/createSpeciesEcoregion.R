@@ -1,3 +1,20 @@
+#' createSpeciesEcoregion
+#'
+#' TODO: description and title needed
+#'
+#' @param possibleEcoregionSrcs TODO: description needed
+#' @param rasterToMatch TODO: description needed
+#' @param speciesLayers TODO: description needed
+#' @param biomassMap TODO: description needed
+#' @param minNumPixelsToEstMaxBiomass TODO: description needed
+#' @param quantileForMaxBiomass TODO: description needed
+#'
+#' @return  TODO: description needed
+#'
+#' @export
+#' @importFrom data.table data.table setnames
+#' @importFrom pemisc factorValues2
+#' @importFrom reproducible Cache
 createSpeciesEcoregion <- function(possibleEcoregionSrcs, rasterToMatch, speciesLayers, biomassMap,
                                    minNumPixelsToEstMaxBiomass, quantileForMaxBiomass) {
 

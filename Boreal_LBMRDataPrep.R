@@ -315,8 +315,6 @@ Save <- function(sim) {
   return(invisible(sim))
 }
 
-.gc <- function() for (i in 1:10) gc() ## free memory if possible
-
 ## see other helper functions in R/ subdirectory
 
 .inputObjects <- function(sim) {
