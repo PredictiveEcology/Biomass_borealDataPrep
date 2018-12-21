@@ -513,7 +513,7 @@ Save <- function(sim) {
                                studyArea = sim$studyAreaLarge,
                                sppEquiv = sim$sppEquiv,
                                knnNamesCol = "KNN",
-                               sppEquivCol = "LandR",
+                               sppEquivCol = P(sim)$sppEquivCol,
                                # thresh = 10,
                                url = extractURL("speciesLayers"),
                                userTags = c(cacheTags, "speciesLayers"))
