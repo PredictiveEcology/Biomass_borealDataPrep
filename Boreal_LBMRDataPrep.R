@@ -377,8 +377,8 @@ Save <- function(sim) {
                             url = extractURL("biomassMap"),
                             destinationPath = dPath,
                             studyArea = sim$studyArea,
-                            rasterToMatch = sim$rasterToMatch,
-                              maskWithRTM = TRUE,
+                            rasterToMatch = sim$rasterToMatch, ## TODO: biomass map needs rasterToMatch but it _is_ the rasterToMatch!!
+                            maskWithRTM = TRUE,
                             useSAcrs = TRUE,
                             method = "bilinear",
                             datatype = "INT2U",
@@ -482,8 +482,8 @@ Save <- function(sim) {
 
   # stand age map
   if (!suppliedElsewhere("standAgeMap", sim)) {
-    sim$standAgeMap <- Cache(prepInputs, #notOlderThan = Sys.time(),
-                             targetFile = basename(standAgeMapFilename),
+    sim$standAgeMap <- Cache(prepInputs,
+                             targetFile = basename(standAgeMapFilename), ## TODO: undefined filename
                              archive = asPath(c("kNN-StructureStandVolume.tar",
                                                 "NFI_MODIS250m_kNN_Structure_Stand_Age_v0.zip")),
                              destinationPath = dPath,
@@ -539,8 +539,6 @@ Save <- function(sim) {
                                     X4 = c(rep(0, 3), 0.5, 1),
                                     X5 = c(rep(0, 4), 1))
   }
-
-
 
   return(invisible(sim))
 }
