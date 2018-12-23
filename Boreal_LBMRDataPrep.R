@@ -264,6 +264,7 @@ estimateParameters <- function(sim) {
   if (!is.na(P(sim)$.plotInitialTime)) {
     uniqueSpeciesNames <- as.character(unique(speciesEcoregion$species))
     names(uniqueSpeciesNames) <- uniqueSpeciesNames
+    sim$notEnoughDataMaxBiomass[, ecoregionInt := as.integer(ecoregionCode)] # need for plotting
 
     noMaxBiomass <- stack(lapply(uniqueSpeciesNames, function(sp) {
       r <- rasterizeReduced(sim$notEnoughDataMaxBiomass[species == sp], ecoregionFiles$ecoregionMap,
