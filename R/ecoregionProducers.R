@@ -38,10 +38,11 @@ ecoregionProducer <- function(ecoregionMaps, ecoregionName,
   a <- lapply(rstEcoregion, function(x) getValues(x)[!rtmNAs] )
   b <- as.data.table(a)
   b[, (names(b)) := lapply(.SD, function(x) paddedFloatToChar(x, max(nchar(x))))]
-  b <- as.matrix(b) # so apply will work
+
+  # Take the first 2 columns, whatever their names, in case they are given something
+  ecoregionValues <- factor(paste(b[[1]], b[[2]], sep = "_"))
 
   rstEcoregion <- raster(rstEcoregion[[1]])
-  ecoregionValues <- as.factor(apply(b, 1, paste, collapse = "_"))
   ecoregionFactorLevels <- levels(ecoregionValues)
 
   rstEcoregion[!rtmNAs] <- as.integer(ecoregionValues)
