@@ -310,6 +310,11 @@ estimateParameters <- function(sim) {
 
   message("Done Boreal_LBMRDataPrep: ", Sys.time())
 
+  sim$speciesLayers <- writeRaster(sim$speciesLayers,
+                                   file.path(outputPath(sim), "speciesLayers.grd"),
+                                   overwrite = TRUE)
+
+
   return(invisible(sim))
 }
 
@@ -520,7 +525,7 @@ Save <- function(sim) {
                                userTags = c(cacheTags, "speciesLayers"))
 
     #options(opts)
-    writeRaster(speciesLayersList$speciesLayers,
+    speciesLayersList$speciesLayers <- writeRaster(speciesLayersList$speciesLayers,
                 file.path(outputPath(sim), "speciesLayers.grd"),
                 overwrite = TRUE)
     sim$speciesLayers <- speciesLayersList$speciesLayers
