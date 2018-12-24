@@ -76,6 +76,28 @@ createSpeciesEcoregion <- function(possibleEcoregionSrcs, rasterToMatch, species
       # speciesEcoregionTable <- rbindlist(list(speciesEcoregionTable[!is.na(maxBiomass)],
       #                                         speciesEcoregionTableMerge), fill = TRUE)
       setnames(speciesEcoregionTable, "new", "ecoRegion")
+
+      # Can have duplicates if the finer resolution is not perfectly aligned with coarser one
+      # speciesEcoregionTable <- copy(sET);
+      dups <- duplicated(speciesEcoregionTable, by = c("ecoregionCode", "species"))
+      if (any(dups)) {
+        message(crayon::magenta("It appears that the coarser resolution source for ecoregion",
+                                " information has polygons that straddle the finer resolution.",
+                                " This means that there are duplicate values for maxBiomass and",
+                                " maxANPP for some fine resolution ecoregions. Taking the mean,",
+                                " estimate for each of those. If this is OK, leave it. If not,",
+                                " please make the coarser resolution ecoRegion not straddle finer",
+                                " resolution ecoDistrict."))
+        dupERC <- speciesEcoregionTable$ecoregionCode[dups]
+        b <- speciesEcoregionTable[ecoregionCode %in% dupERC,
+                                   append(lapply(.SD, function(x) mean(x, na.rm = TRUE)),
+                                          list(ecoRegion = ecoRegion[1])),
+                                   by = c("ecoregionCode", "species"), .SDcols = c("maxBiomass", "maxANPP")]
+        # rm duplicated combos -- will add the "mean"ed version back
+        speciesEcoregionTable <- speciesEcoregionTable[!ecoregionCode %in% dupERC]
+        speciesEcoregionTable <- rbindlist(list(speciesEcoregionTable, b))
+      }
+
       if (isTRUE(stillHaveNAsForMaxBiomass)) {
         message("--------------------------------")
         message("Out of ", length(levels(speciesEcoregionTable$ecoregionCode)), " possible combinations per species, ",
