@@ -120,7 +120,6 @@ doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE
     sim <- estimateParameters(sim)
 
     # schedule future event(s)
-    sim <- scheduleEvent(sim, P(sim)$.plotInitialTime, "Boreal_LBMRDataPrep", "plot")
     sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Boreal_LBMRDataPrep", "save")
   } else if (eventType == "save") {
     sim <- Save(sim)
@@ -192,7 +191,7 @@ estimateParameters <- function(sim) {
   ############################################################
   # Create initialCommunitiesMap
   ############################################################
-  initialCommunitiesMap <- raster(speciesLayers[[1]])
+  initialCommunitiesMap <- raster(sim$speciesLayers[[1]])
   initialCommunitiesMap[initialCommunities$pixelIndex] <- as.integer(initialCommunities$mapcode) # integer is OK now that it is factor
   datatype <- if (length(levels(initialCommunities$mapCodeFac)) > 64e3)
     "INT4U" else "INT2U"
