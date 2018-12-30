@@ -34,8 +34,8 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
   })
   initialCommunities <- rbindlist(initialCommunities)
   initialCommunities[, `:=`(age = asInteger(round(standAgeMap[][pixelIndex] / pctRound, 0) * pctRound),
-                            ecoregionGroup = as.integer(factorValues2(ecoregionMap,
-                                                           ecoregionMap[][pixelIndex], att = 5)))]
+                            ecoregionGroup = factorValues2(ecoregionMap,
+                                                           ecoregionMap[][pixelIndex], att = 5))]
 
   # Case of pixels with species cover, but they NA for age
   ageMapOnlyNAs <- initialCommunities[is.na(age), unique(pixelIndex)]
