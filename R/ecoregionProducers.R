@@ -23,7 +23,7 @@ ecoregionProducer <- function(ecoregionMaps, ecoregionName,
 
   # Alternative
   rstEcoregion <- list()
-  rtmNAs <- is.na(rasterToMatch[])
+  rtmNAs <- is.na(rasterToMatch[]) | rasterToMatch[] == 0
   for (erm in seq(ecoregionMaps)) {
     if (!is(ecoregionMaps[[erm]], "Raster")) {
       message("ecoregionProducer fastRasterize: ", Sys.time())
@@ -53,7 +53,7 @@ ecoregionProducer <- function(ecoregionMaps, ecoregionName,
                                      ecoregion = ecoregionFactorLevels)
   #ecoregionFactorValues <- na.omit(unique(rstEcoregion[]))
 
-  ecoregionTable <- raster::levels(rstEcoregion)[[1]]
+  #ecoregionTable <- raster::levels(rstEcoregion)[[1]]
 
   if (FALSE) {
     data.table(
