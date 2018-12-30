@@ -309,10 +309,11 @@ estimateParameters <- function(sim) {
 
   message("Done Boreal_LBMRDataPrep: ", Sys.time())
 
-  sim$speciesLayers <- writeRaster(sim$speciesLayers,
-                                   file.path(outputPath(sim), "speciesLayers.grd"),
-                                   overwrite = TRUE)
-
+  sim$speciesLayers <- lapply(seq(numLayers(sim$speciesLayers)), function(x) {
+    writeRaster(sim$speciesLayers[[x]],
+                file.path(outputPath(sim), paste0(names(sim$speciesLayers)[x], ".tif")),
+                datatype = "INT2U", overwrite = TRUE)
+  }) %>% raster::stack()
 
   return(invisible(sim))
 }
