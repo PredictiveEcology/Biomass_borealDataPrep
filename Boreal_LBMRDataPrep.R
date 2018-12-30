@@ -182,19 +182,21 @@ estimateParameters <- function(sim) {
                             standAgeMap = sim$standAgeMap,
                             userTags = "stable")
   # remove unneeded columns of initialCommunities based on sim$species
-  initialCommunities <- initialCommunities[, .(mapcode,
-                                               description = NA,
-                                               species,
-                                               speciesPresence = as.integer(speciesPresence),
-                                               age = as.integer(age1),
-                                               pixelIndex = as.integer(pixelIndex))]
+  # initialCommunities1 <- initialCommunities[, .(mapcode,
+  #                                              description = NA,
+  #                                              species,
+  #                                              speciesPresence = as.integer(speciesPresence),
+  #                                              age = as.integer(age1),
+  #                                              pixelIndex = as.integer(pixelIndex))]
 
   ############################################################
   # Create initialCommunitiesMap
   ############################################################
   initialCommunitiesMap <- raster(sim$speciesLayers[[1]])
-  initialCommunitiesMap[initialCommunities$pixelIndex] <- as.integer(initialCommunities$mapcode) # integer is OK now that it is factor
-  datatype <- if (length(levels(initialCommunities$mapCodeFac)) > 64e3)
+  initialCommunitiesMap[] <- NA_integer_
+  initialCommunitiesByPixel <- unique(initialCommunities, by = c("mapcode", "pixelIndex"))
+  initialCommunitiesMap[initialCommunitiesByPixel$pixelIndex] <- as.integer(initialCommunitiesByPixel$mapcode)
+  datatype <- if (max(initialCommunities$mapcode) > 64e3)
     "INT4U" else "INT2U"
   sim$initialCommunitiesMap <- Cache(raster::writeRaster,
                                      initialCommunitiesMap,

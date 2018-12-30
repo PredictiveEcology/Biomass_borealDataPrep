@@ -48,7 +48,7 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
             "on the speciesLayers stack. Setting their age to the mean of their 8 neighbours")
     b <- adj(standAgeMap, cells = ageMapOnlyNAs, pairs = TRUE, include = FALSE, returnDT = TRUE)
     setnames(b, old = "from", new = "pixelIndex")
-    dd <- b[, list(newage = round(mean(standAgeMap[][to], na.rm = TRUE) / pctRound, 0) * pctRound),
+    dd <- b[, list(newage = asInteger(round(mean(standAgeMap[][to], na.rm = TRUE) / pctRound, 0) * pctRound)),
             by = "pixelIndex"]
     initialCommunities <- dd[initialCommunities, on = "pixelIndex"]
     initialCommunities[is.na(age), age := newage]
