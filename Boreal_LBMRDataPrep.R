@@ -156,7 +156,7 @@ estimateParameters <- function(sim) {
   ecoregionstatus <- data.table(active = "yes",
                                 ecoregion = 1:1031)
   ecoregionFiles <- Cache(ecoregionProducer,
-                          ecoregionMaps = list(ecoregionMap, sim$rasterToMatch),
+                          ecoregionMaps = list(ecoregionMap, sim$LCC2005),
                           ecoregionName = "ECODISTRIC",
                           ecoregionActiveStatus = ecoregionstatus,
                           rasterToMatch = sim$rasterToMatch,
@@ -164,7 +164,7 @@ estimateParameters <- function(sim) {
 
   ecoRegionMap <- Cache(postProcess, sim$ecoRegion, studyArea = sim$studyArea, filename2 = NULL)
   ecoRegionFiles <- Cache(ecoregionProducer,
-                          ecoregionMaps = list(ecoRegionMap, sim$rasterToMatch),
+                          ecoregionMaps = list(ecoRegionMap, sim$LCC2005),
                           ecoregionName = "ECOREGION",
                           ecoregionActiveStatus = ecoregionstatus,
                           rasterToMatch = sim$rasterToMatch,
