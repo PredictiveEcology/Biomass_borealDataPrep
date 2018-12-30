@@ -144,6 +144,7 @@ estimateParameters <- function(sim) {
   sim$ecoZone <- spTransform(sim$ecoZone, crs(sim$speciesLayers))
 
   sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
+  sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
 
   rasterToMatchBinary <- raster(sim$rasterToMatch)
   rasterToMatchBinary[] <- NA
@@ -501,6 +502,7 @@ Save <- function(sim) {
                              datatype = "INT2U",
                              filename2 = TRUE, overwrite = TRUE,
                              userTags = c("stable", currentModule(sim)))
+    sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
   }
 
   if (!suppliedElsewhere("sppEquiv", sim)) {
