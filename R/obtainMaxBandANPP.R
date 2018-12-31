@@ -22,11 +22,14 @@ obtainMaxBandANPP <- function(speciesLayers, biomassLayer, #SALayer,
                              #SA = getValues(SALayer),
                              ecoregionCode = factorValues2(ecoregionMap,
                                                            getValues(ecoregionMap), att = 5))
+  browser()
   speciesTableWPct <- data.table(speciesTable,
                                  percentage = speciesLayers[],
                                  totalpct = apply(speciesLayers[], 1, sum)) # they don't all add up to 100%, so standardize
   #speciesTableWPct[totalpct == 0, totalpct]
+  # remove all species that have cover = 0
   speciesTableWPct <- speciesTableWPct[!is.na(totalpct) & totalpct != 0]
+  #speciesTableWPct <- speciesTableWPct[!is.na(totalpct) & totalpct != 0]
 
   speciess <- names(speciesLayers)
 
