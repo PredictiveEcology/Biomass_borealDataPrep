@@ -289,7 +289,7 @@ estimateParameters <- function(sim) {
   columnsForPG <- c("ecoregionCode", "speciesCode", "age", "biomass")
   cd <- cohortData[,c("pixelIndex", columnsForPG), with = FALSE]
   cohortData[, pixelGroup :=
-               Cache(addPixelGroup, cd, maxPixelGroup = 0,
+               Cache(generatePixelGroups, cd, maxPixelGroup = 0,
                      columns = columnsForPG)]
   message(crayon::blue("Step 11: Create pixelGroups based on: ", paste(columnsForPG, collapse = ", "),
                        " Resulted in", length(unique(cohortData$pixelGroup)), "uniqe pixelGroup values"))
