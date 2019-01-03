@@ -26,11 +26,11 @@ defineModule(sim, list(
     # defineParameter("quantileForMaxBiomass", "numeric", 0.99, NA, NA,
     #                 "When estimating maximum biomass by species and ecoregion, rather than take the absolute max(biomass), the quantile is taken. This gives the capacity to remove outliers."),
     defineParameter("biomassQuotedFormula", "name",
-                    quote(biomass ~ logAge * speciesCode + (speciesCode | ecoregionCode : lcc) + cover),
+                    quote(biomass ~ logAge * speciesCode + (speciesCode | ecoregionCode) + cover),
                     NA, NA,
                     "This formula is for estimating biomass from landcover, ecoregionCode, speciesCode, age, and cover"),
     defineParameter("coverQuotedFormula", "name",
-                    quote(cbind(coverPres, coverNum) ~ speciesCode + (1 | ecoregionCode : lcc)),
+                    quote(cbind(coverPres, coverNum) ~ speciesCode + (1 | ecoregionCode)),
                     NA, NA,
                     "This formula is for estimating biomass from landcover, ecoregion, and speciesCode"),
     defineParameter("pixelGroupAgeClass", "numeric", P(sim)$successionTimestep, NA, NA,
@@ -203,12 +203,12 @@ estimateParameters <- function(sim) {
                    lcc = factor(sim$LCC2005[])
   )
 
-  message(crayon::blue("This is the summary of the input data for age, ecoregionCode, biomass, speciesLayers"))
+  message(crayon::blue("This is the summary of the input data for age, ecoregionCode, biomass, speciesLayers:"))
   print(summary(dt))
-  message(crayon::blue("Step 2: rm NAs, i.e., no input data in some pixels, including outside studyArea"))
-  dt <- na.omit(dt)
-  dt <- dt[age > 0]
-  message(crayon::blue("Step 3: rm age == 0, leaving", NROW(dt), "pixels with data"))
+  dt <- dt[!is.na(lcc)]
+  message(crayon::blue("Step 2: rm NAs, leaving", crayon::magenta(NROW(dt)), "pixels with data"))
+  #dt <- dt[age > 0]
+  #message(crayon::blue("Step 3: rm age == 0, leaving", crayon::magenta(NROW(dt)), "pixels with data"))
 
   ### Create groupings
   coverColNames <- grep(colnames(dt), pattern = "cover", value = TRUE)
@@ -221,10 +221,76 @@ estimateParameters <- function(sim) {
                                  measure.vars = newCoverColNames,
                                  variable.name = "speciesCode")
   cohortData[, coverOrig := cover]
+  describeCohortData(cohortData)
 
+  message(blue("Step 3a: assign biomass = 0 and age = 0 for pixels where cover = 0, ",
+               "\n  because cover is most reliable dataset"))
+  cohortData[cover == 0, `:=`(age = 0L, biomass = 0L)]
+  message(blue("Step 3b: assign totalBiomass = 0 sum(cover) = 0 in a pixel, ",
+               "\n  because cover is most reliable dataset"))
+  cohortData <- cohortData[, sum(cover)==0, by = "pixelIndex"][V1 == TRUE][cohortData, on = "pixelIndex"][V1 == TRUE, totalBiomass := 0L]
+  cohortData[, V1 := NULL]
+
+  #####################
+  ######### CHANGE 34 and 35 values -- these are burns
+  burnedLCC <- raster(sim$LCC2005);
+  burnedLCC[] <- NA;
+  burnedLCC[sim$LCC2005[] %in% 34:35] <- 1
+  theBurnedCells <- which(burnedLCC[] == 1)
+  iterations <- 1
+  try(rm(list = "out3"), silent = TRUE)
+  while (length(theBurnedCells) > 0) {
+    iterations <- iterations + 1
+    print(iterations)
+    out <- spread2(sim$LCC2005, start = theBurnedCells, asRaster = FALSE,
+                   iterations = iterations, allowOverlap = TRUE, spreadProb = 1)
+    out[, lcc := sim$LCC2005[][pixels]]
+    out[lcc %in% c(34:35, 37:39), lcc:=NA]
+    out <- na.omit(out)
+    out2 <- out[, list(newPossLCC = sample(lcc, 1)), by = "initialPixels"]
+    if (!exists("out3")) {
+      out3 <- out2
+    } else {
+      out3 <- rbindlist(list(out2, out3))
+    }
+    theBurnedCells <- theBurnedCells[!theBurnedCells %in% out2$initialPixels]
+  }
+  setnames(out3, "initialPixels", "pixelIndex")
+  cohortData <- out3[cohortData, on = "pixelIndex"]
+  cohortData[, lcc2 := as.integer(as.character(lcc))]
+  cohortData[lcc2 %in% 34:35, lcc := newPossLCC]
+  cohortData[, lcc := NULL]
+
+  cohortData[, lcc3 := factor(lcc2)]
+  if (getOption("LandR.assertions")) {
+    assert1 <- all(as.integer(as.character(cohortData$lcc3)) == cohortData$lcc)
+    if (!assert1)
+      stop("lcc classes were mismanaged; contact developers")
+  }
+
+  cohortData[, lcc := lcc3]
+  cohortData[, `:=`(lcc3 = NULL, lcc2 = NULL, newPossLCC = NULL)]
+
+  ######################
   message(crayon::blue("Step 5: POSSIBLE ALERT -- assume deciduous cover is 1/2 the conversion to biomass as conifer"))
   cohortData[speciesCode == "Popu_sp", cover := asInteger(cover / 2)] # CRAZY TODO -- DIVIDE THE COVER BY 2 for DECIDUOUS -- will only affect mixed stands
-  cohortData[ , cover := asInteger(cover/(sum(cover) + 0.0001) * 100L), by = "pixelIndex"]
+  cohortData[ , cover := {
+    sumCover <- sum(cover)
+    if (sumCover > 100) {
+      cover <- asInteger(cover/(sumCover + 0.0001) * 100L)
+    }
+    cover
+  }, by = "pixelIndex"]
+
+
+  statsModel <- function(form, .specialData, ...) {
+    ba4 <- lmer(
+      formula = eval(form),
+      data = .specialData,
+      ...)
+    list(mod = ba4, pred = fitted(ba4),
+         rsq = MuMIn::r.squaredGLMM(ba4))
+  }
 
   # Biomass -- by cohort
   message(crayon::blue("Step 6: Divide total biomass of each pixel by the relative cover of the cohorts"))
@@ -233,9 +299,35 @@ estimateParameters <- function(sim) {
   cohortData[ , biomass := asInteger(ceiling(biomass / P(sim)$pixelGroupBiomassClass) *
                                        P(sim)$pixelGroupBiomassClass)] # /100 because cover is percent
 
+  describeCohortData(cohortData)
+  # Impute missing age
+  cohortDataMissingAge <- cohortData[, hasBadAge := all(age == 0 & cover > 0) | any(is.na(age)), by = "pixelIndex"][
+    hasBadAge == TRUE]
+  cohortDataMissingAgeUnique <- unique(cohortDataMissingAge,
+                                       by = c("ecoregionCode", "speciesCode"))[
+                                         , .(ecoregionCode, speciesCode)]
+  #unique(cohortData[, all(age == 0) | any(is.na(age)), by = "pixelIndex"][V1 == TRUE])
+  cohortDataMissingAgeUnique <- cohortDataMissingAgeUnique[cohortData, on = c("ecoregionCode", "speciesCode"), nomatch = 0]
+  ageQuotedFormula <- quote(age ~ biomass * speciesCode + (1 | ecoregionCode) + cover)
+  cohortDataMissingAgeUnique <- cohortDataMissingAgeUnique[, .(biomass, age, speciesCode, ecoregionCode, cover)]
+  system.time(outAge <- Cache(statsModel, form = ageQuotedFormula, .specialData = cohortDataMissingAgeUnique,
+                              showSimilar = TRUE))
+
+  cohortDataMissingAge[, imputedAge := pmax(0L, asInteger(predict(outAge$mod, newdata = cohortDataMissingAge)))]
+  cohortData <- cohortDataMissingAge[, .(pixelIndex, imputedAge, speciesCode)][cohortData, on = c("pixelIndex", "speciesCode")]
+  cohortData[!is.na(imputedAge), `:=`(age = imputedAge, logAge = log(imputedAge))]
+  cohortData[, `:=`(imputedAge = NULL, hasBadAge = NULL)]
+
+  message(blue("Step 13 - Set biomass to 0 where cover > 0 and age = 0, because biomass is least quality dataset"))
+  cohortData[ , totalBiomass := asInteger(totalBiomass)]
+  cohortData[cover > 0 & age == 0, biomass := 0L]
+  message(blue("Step 13 - Set recalculate totalBiomass as sum(biomass); many biomasses will have been set to 0 in previous steps"))
+  cohortData[, totalBiomass := sum(biomass), by = "pixelIndex"]
+
+  describeCohortData(cohortData)
+
   # https://stats.stackexchange.com/questions/31300/dealing-with-0-1-values-in-a-beta-regression
   # cohortData[ , coverProp := (cover/100 * (NROW(cohortData) - 1) + 0.5) / NROW(cohortData)]
-
 
   dtShort <- cohortData[, list(coverNum = .N,
                                coverPres = sum(cover > 0)),
@@ -243,44 +335,30 @@ estimateParameters <- function(sim) {
 
   message(crayon::blue("Step 8: Estimaing Species Establishment Probability using P(sim)$coverQuotedFormula, which is\n",
                        format(P(sim)$coverQuotedFormula)))
-  coverModel <- function(form, .specialData) {
-
-    coverMod1 <- lme4::glmer(eval(form),
-                             data = .specialData,
-                             family = binomial)
-    # MuMIn package MUST have the object, by name, in the global environment
-    assign(".specialData", .specialData, envir = .GlobalEnv)
-    on.exit(rm(list = ".specialData", envir = .GlobalEnv))
-    return(list(mod = coverMod1, pred = fitted(coverMod1),
-                rsq = MuMIn::r.squaredGLMM(coverMod1)))
-  }
-  #coverQuotedFormula <- quote(cbind(coverPres, coverNum) ~ speciesCode + (1 | ecoregionCode : lcc))
-  outCover <- Cache(coverModel, form = P(sim)$coverQuotedFormula, .specialData = dtShort)
+  # coverQuotedFormula <- quote(cbind(coverPres, coverNum) ~ speciesCode + (speciesCode | ecoregionCode))
+  browser()
+  outCover <- Cache(statsModel, form = P(sim)$coverQuotedFormula, .specialData = dtShort,
+                    family = binomial)
   message(crayon::blue("  The rsquared is: "))
   print(outCover$rsq)
 
 
   # For biomass
-  cohortData <- cohortData[biomass > 0]
-  message(crayon::blue("Step 9: rm pixels with no biomass, leaving", length(unique(cohortData$pixelIndex)), "pixels"))
+  # cohortDataWithZeroBiomass <- cohortData[cover == 0]
+  # cohortData <- cohortData[biomass > 0]
+
+  #message(crayon::blue("Step 9: rm pixels with no biomass, leaving",
+  #                     crayon::magenta(length(unique(cohortData$pixelIndex))), "pixels with data"))
 
   # For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
-  dtLongForLMER <- cohortData[, .(biomass, logAge, speciesCode, ecoregionCode, lcc, cover)]
+  dtLongForLMER <- cohortData[biomass > 0, .(biomass, logAge, speciesCode, ecoregionCode, lcc, cover)]
 
-  # biomassQuotedFormula <- quote(biomass ~ logAge * speciesCode + (speciesCode | ecoregionCode : lcc) + cover)
-  message("Step 10: Estimaing maxBiomass with P(sim)$biomassQuotedFormula, which is:",
-          paste0(format(P(sim)$biomassQuotedFormula, appendLF = FALSE), collapse = ""))
-  biomassModel <- function(form, .specialData) {
-    ba4 <- lmer(
-      formula = form,
-      data = .specialData)
-    assign(".specialData", .specialData, envir = .GlobalEnv)
-    on.exit(rm(list = ".specialData", envir = .GlobalEnv))
-    # MuMIn package MUST have the object, by name, in the global environment
-    list(mod = ba4, pred = fitted(ba4),
-         rsq = MuMIn::r.squaredGLMM(ba4))
-  }
-  system.time(outBiomass <- Cache(biomassModel, form = P(sim)$biomassQuotedFormula, .specialData = dtLongForLMER, showSimilar = TRUE))
+  # params(sim)[[currentModule(sim)]]$biomassQuotedFormula <- quote(biomass ~ logAge * speciesCode + (speciesCode | ecoregionCode) + cover) # AIC = 7456440
+  # params(sim)[[currentModule(sim)]]$biomassQuotedFormula <- quote(biomass ~ cover + (logAge * speciesCode | ecoregionCode) ) # AIC = 7456440
+  message(crayon::blue("Step 10: Estimaing maxBiomass with P(sim)$biomassQuotedFormula, which is:\n",
+          magenta(paste0(format(P(sim)$biomassQuotedFormula, appendLF = FALSE), collapse = ""))))
+  system.time(outBiomass <- Cache(statsModel, form = P(sim)$biomassQuotedFormula,
+                                  .specialData = dtLongForLMER, showSimilar = TRUE))
 
   # Add SEP to dtShort
   dtShort[, SEP := outCover$pred]
@@ -297,7 +375,7 @@ estimateParameters <- function(sim) {
   if (FALSE) {
 
     library(glmmTMB)
-    a <- glmmTMB::glmmTMB(coverProp ~ logAge * speciesCode + (1 | ecoregionCode) + (1 | lcc),
+    a <- glmmTMB::glmmTMB(coverProp ~ logAge * speciesCode + (1 | ecoregionCode) ,
                           data = cohortData,
                           family=beta_family,
                           verbose = TRUE)
@@ -323,15 +401,15 @@ estimateParameters <- function(sim) {
     #>   * upload-into-me-article-demo
     files <- map(local_files, drive_upload, path = folder, verbose = FALSE)
 
-    #b <- lme4::lmer(biomass ~ logAge + (1 | ecoregionCode) + (1 | lcc) + speciesCode + cover, data = cohortData)
-    b <- lme4::lmer(biomass ~ logAge + (1 | ecoregionCode) + (1 | lcc) + speciesCode + cover, data = cohortData)
-    b3 <- lme4::lmer(biomass ~ 0 + logAge + (1 | ecoregionCode) + (1 | lcc) + speciesCode + cover, data = cohortData)
-    ba <- lme4::lmer(biomass ~ logAge + (1 | ecoregionCode : lcc) + speciesCode + cover, data = cohortData)
-    ba2 <- lme4::lmer(biomass ~ logAge * speciesCode + (1 | ecoregionCode : lcc) + cover, data = cohortData)
-    ba3 <- lme4::lmer(biomass ~ logAge * speciesCode + (logAge | ecoregionCode : lcc) + cover, data = cohortData, verbose = 100)
-    ba5 <- lme4::lmer(biomass ~ (logAge * speciesCode | ecoregionCode : lcc) + cover, data = cohortData,
+    #b <- lme4::lmer(biomass ~ logAge + (1 | ecoregionCode)  + speciesCode + cover, data = cohortData)
+    b <- lme4::lmer(biomass ~ logAge + (1 | ecoregionCode) + speciesCode + cover, data = cohortData)
+    b3 <- lme4::lmer(biomass ~ 0 + logAge + (1 | ecoregionCode)  + speciesCode + cover, data = cohortData)
+    ba <- lme4::lmer(biomass ~ logAge + (1 | ecoregionCode) + speciesCode + cover, data = cohortData)
+    ba2 <- lme4::lmer(biomass ~ logAge * speciesCode + (1 | ecoregionCode ) + cover, data = cohortData)
+    ba3 <- lme4::lmer(biomass ~ logAge * speciesCode + (logAge | ecoregionCode ) + cover, data = cohortData, verbose = 100)
+    ba5 <- lme4::lmer(biomass ~ (logAge * speciesCode | ecoregionCode ) + cover, data = cohortData,
                       verbose = 100)
-    ba6 <- lme4::lmer(biomass ~ logAge * speciesCode + cover + (logAge * speciesCode | ecoregionCode : lcc),
+    ba6 <- lme4::lmer(biomass ~ logAge * speciesCode + cover + (logAge * speciesCode | ecoregionCode ),
                       data = cohortData,
                       verbose = 100)
 
@@ -375,15 +453,15 @@ estimateParameters <- function(sim) {
                           start = c(fixef(baseModel)[1], 0, fixef(baseModel)[2], fixef(baseModel)[3]))
 
 
-    ba1 <- lme4::glmer(biomass ~ logAge + (1 | ecoregionCode : lcc) + speciesCode + cover, data = cohortData,
+    ba1 <- lme4::glmer(biomass ~ logAge + (1 | ecoregionCode) + speciesCode + cover, data = cohortData,
                        family = gaussian("log"))
-    b1 <- lme4::glmer(biomass ~ logAge + (1 | ecoregionCode) + (1 | lcc) + speciesCode + cover, data = cohortData,
+    b1 <- lme4::glmer(biomass ~ logAge + (1 | ecoregionCode)  + speciesCode + cover, data = cohortData,
                       family = gaussian(link = "log"))
-    b1b <- lme4::glmer(biomass ~ logAge + (1 | ecoregionCode + lcc) + speciesCode + cover, data = cohortData,
+    b1b <- lme4::glmer(biomass ~ logAge + (1 | ecoregionCode ) + speciesCode + cover, data = cohortData,
                        family = gaussian(link = "log"))
     #b1 <- lme4::lmer(biomass ~ logAge + (speciesCode | ecoregionCode) + (speciesCode | lcc) + speciesCode + cover, data = cohortData)
-    b2 <- lme4::lmer(biomass ~ logAge * speciesCode + (speciesCode | ecoregionCode) + (speciesCode | lcc) + cover, data = cohortData)
-    b1a <- lme4::glmer(biomass ~ logAge * speciesCode + (speciesCode | ecoregionCode : lcc)  + cover, data = cohortData,
+    b2 <- lme4::lmer(biomass ~ logAge * speciesCode + (speciesCode | ecoregionCode) + cover, data = cohortData)
+    b1a <- lme4::glmer(biomass ~ logAge * speciesCode + (speciesCode | ecoregionCode)  + cover, data = cohortData,
                        family = gaussian(link = "log"))
 
     MuMIn::r.squaredGLMM(b)
@@ -394,48 +472,6 @@ estimateParameters <- function(sim) {
     #piecewiseSEM::rsquared(b1)
   }
 
-
-  ######### CHANGE 34 and 35 values -- these are burns
-  burnedLCC <- raster(sim$LCC2005);
-  burnedLCC[] <- NA;
-  burnedLCC[sim$LCC2005[] %in% 34:35] <- 1
-  theBurnedCells <- which(burnedLCC[] == 1)
-  iterations <- 1
-  try(rm(list = "out3"), silent = TRUE)
-  while (length(theBurnedCells) > 0) {
-    iterations <- iterations + 1
-    print(iterations)
-    out <- spread2(sim$LCC2005, start = theBurnedCells, asRaster = FALSE,
-                   iterations = iterations, allowOverlap = TRUE, spreadProb = 1)
-    out[, lcc := sim$LCC2005[][pixels]]
-    out[lcc %in% c(34:35, 37:39), lcc:=NA]
-    out <- na.omit(out)
-    out2 <- out[, list(newPossLCC = sample(lcc, 1)), by = "initialPixels"]
-    if (!exists("out3")) {
-      out3 <- out2
-    } else {
-      out3 <- rbindlist(list(out2, out3))
-    }
-    theBurnedCells <- theBurnedCells[!theBurnedCells %in% out2$initialPixels]
-  }
-  setnames(out3, "initialPixels", "pixelIndex")
-  cohortData <- out3[cohortData, on = "pixelIndex"]
-  cohortData[, lcc2 := as.integer(as.character(lcc))]
-  cohortData[lcc2 %in% 34:35, lcc := newPossLCC]
-  cohortData[, lcc := NULL]
-
-  cohortData[, lcc3 := factor(lcc2)]
-  if (getOption("LandR.assertions")) {
-    assert1 <- all(as.integer(as.character(cohortData$lcc3)) == cohortData$lcc)
-    if (!assert1)
-      stop("lcc classes were mismanaged; contact developers")
-  }
-
-  cohortData[, lcc := lcc3]
-  cohortData[, `:=`(lcc3 = NULL, lcc2 = NULL, newPossLCC = NULL,
-                    logAge = NULL, cover = NULL, coverOrig = NULL,
-                    #coverProp = NULL,
-                    totalBiomass = NULL)]
 
 
 
@@ -455,6 +491,8 @@ estimateParameters <- function(sim) {
                                                            newdata = speciesEcoregionTable,
                                                            type = "response"))]
   speciesEcoregionTable[maxBiomass < 0, maxBiomass := 0]
+
+  message(crayon::blue("Step 12: Add maxANPP to speciesEcoregionTable -- currently --> maxBiomass/30"))
   speciesEcoregionTable[ , maxANPP := maxBiomass / 30]
 
   # Get SEP
@@ -462,6 +500,10 @@ estimateParameters <- function(sim) {
 
   speciesEcoregionTable[ , `:=`(logAge = NULL, cover = NULL, longevity = NULL, #pixelIndex = NULL,
                                 lcc = NULL)]
+
+  vals <- factorValues2(ecoregionFiles$ecoregionMap, ecoregionFiles$ecoregionMap[], att = 5)
+
+  cohortData$pixelIndex
   # speciesEcoregionTable[, lccChar := as.character(lcc)]
   # speciesEcoregionTable[, lccCode := paddedFloatToChar(as.integer(lcc),
   #                                                      padL = max(nchar(lccChar)),
