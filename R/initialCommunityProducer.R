@@ -82,8 +82,8 @@ initialCommunityProducer <- function(speciesLayers, #speciesPresence,
     stop("This module currently assumes that the maximum age is 999.",
          " It is not. Please adjust ages or this module.")
 
-  message("running landR::addPixelGroup to create initial communities")
-  initialCommunities <- addPixelGroup(initialCommunities, 0,
+  message("running landR::generatePixelGroups to create initial communities")
+  initialCommunities <- generatePixelGroups(initialCommunities, 0,
                                       columns = c("ecoregionGroup", "speciesCode", "age", "cover"),
                                       successionTimestep = 10)
 
