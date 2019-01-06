@@ -34,10 +34,9 @@ ecoregionProducer <- function(ecoregionMaps, ecoregionName,
     }
     rstEcoregion[[erm]][rtmNAs] <- NA
   }
-
   a <- lapply(rstEcoregion, function(x) getValues(x)[!rtmNAs] )
   b <- as.data.table(a)
-  b[, (names(b)) := lapply(.SD, function(x) paddedFloatToChar(x, max(nchar(x))))]
+  b[, (names(b)) := lapply(.SD, function(x) paddedFloatToChar(x, max(nchar(x), na.rm = TRUE)))]
 
   # Take the first 2 columns, whatever their names, in case they are given something
   ecoregionValues <- factor(paste(b[[1]], b[[2]], sep = "_"))
