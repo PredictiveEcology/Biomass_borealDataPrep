@@ -275,8 +275,7 @@ estimateParameters <- function(sim) {
   cohortDataMissingAgeUnique <- cohortDataMissingAgeUnique[cohortData, on = c("initialEcoregionCode", "speciesCode"), nomatch = 0]
   ageQuotedFormula <- quote(age ~ biomass * speciesCode + (1 | initialEcoregionCode) + cover)
   cohortDataMissingAgeUnique <- cohortDataMissingAgeUnique[, .(biomass, age, speciesCode, initialEcoregionCode, cover)]
-  system.time(outAge <- Cache(statsModel, form = ageQuotedFormula, .specialData = cohortDataMissingAgeUnique,
-                              showSimilar = TRUE))
+  system.time(outAge <- Cache(statsModel, form = ageQuotedFormula, .specialData = cohortDataMissingAgeUnique))
 
   print(outAge$rsq)
 
@@ -324,34 +323,31 @@ estimateParameters <- function(sim) {
   ##############################################################
   # Statistical estimation of SEP, maxBiomass and maxANPP
   ##############################################################
-  dtShort <- cohortDataNo34to36[, list(coverNum = .N,
+  cohortDataShort <- cohortDataNo34to36[, list(coverNum = .N,
                                coverPres = sum(cover > 0)),
                         by = c("ecoregionGroup", "speciesCode", "lcc")]
 
   message(crayon::blue("Step 9: Estimaing Species Establishment Probability using P(sim)$coverQuotedFormula, which is\n",
                        format(P(sim)$coverQuotedFormula)))
 
-  outCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula, dtShort, family = binomial,
+  modelCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula, cohortDataShort, family = binomial,
                          # checksumsFileID = "1XznvuxsRixGxhYCicMr5mdoZlyYECY8C",
                          useCloud = P(sim)$useCloudCacheForStats,
                          cloudFolderID = "/folders/1wJXDyp5_XL2RubViWGAeTNDqGElfgkL8")
-
   message(crayon::blue("  The rsquared is: "))
-  print(outCover$rsq)
+  print(modelCover$rsq)
+
 
   # For biomass
   # For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
   cohortDataNo34to36NoBiomass <- cohortDataNo34to36[biomass > 0, .(biomass, logAge, speciesCode, ecoregionGroup, lcc, cover)]
-
   message(crayon::blue("Step 10: Estimaing maxBiomass with P(sim)$biomassQuotedFormula, which is:\n",
           magenta(paste0(format(P(sim)$biomassQuotedFormula, appendLF = FALSE), collapse = ""))))
-
-  outBiomass <- cloudCache(statsModel, form = P(sim)$biomassQuotedFormula, .specialData = cohortDataNo34to36NoBiomass,
+  modelBiomass <- cloudCache(statsModel, form = P(sim)$biomassQuotedFormula, .specialData = cohortDataNo34to36NoBiomass,
                          useCloud = P(sim)$useCloudCacheForStats,
                          cloudFolderID = "/folders/1wJXDyp5_XL2RubViWGAeTNDqGElfgkL8")
-
   message(crayon::blue("  The rsquared is: "))
-  print(outBiomass$rsq)
+  print(modelBiomass$rsq)
 
   # Create initial communities, i.e., pixelGroups
   # Rejoin back the pixels that were 34 and 35
@@ -468,12 +464,9 @@ estimateParameters <- function(sim) {
     #piecewiseSEM::rsquared(b1)
   }
 
-
-
-
   ########################################################################
-  # Make predictions from statistical models for
-  # maxBiomass, maxANPP, and SEP
+  # create speciesEcoregionTable -- a single line for each combination of ecoregionGroup & speciesCode
+  #   doesn't include combinations with biomass = 0 because those places can't have the species/ecoregion combo
   ########################################################################
   joinOn <- c("ecoregionGroup", "speciesCode")
   speciesEcoregionTable <- unique(cohortDataNo34to36NoBiomass, by = joinOn)
@@ -482,41 +475,40 @@ estimateParameters <- function(sim) {
   sim$species[, speciesCode := as.factor(species)]
   speciesEcoregionTable <- sim$species[, .(speciesCode, longevity)][speciesEcoregionTable, on = "speciesCode"]
 
+
+  ########################################################################
+  # Make predictions from statistical models for
+  ########################################################################
+  # SEP -- already is on the short dataset
+  ########################################################################
+  cohortDataShort[, SEP := modelCover$pred]
+
+  ########################################################################
+  # maxBiomass
+  ########################################################################
   # Set age to the age of longevity and cover to 100%
   speciesEcoregionTable[, `:=`(logAge = log(longevity), cover = 100)]
-
-  # maxBiomass
-  speciesEcoregionTable[ , maxBiomass := asInteger(predict(outBiomass$mod,
+  speciesEcoregionTable[ , maxBiomass := asInteger(predict(modelBiomass$mod,
                                                            newdata = speciesEcoregionTable,
                                                            type = "response"))]
-  speciesEcoregionTable[maxBiomass < 0, maxBiomass := 0]
-
+  speciesEcoregionTable[maxBiomass < 0, maxBiomass := 0] # fix negative predictions
   message(crayon::blue("Step 12: Add maxANPP to speciesEcoregionTable -- currently --> maxBiomass/30"))
 
+  ########################################################################
   # maxANPP
+  ########################################################################
   speciesEcoregionTable[ , maxANPP := maxBiomass / 30]
 
-  # SEP -- already is on the short dataset
-  dtShort[, SEP := outCover$pred]
-  speciesEcoregionTable <- dtShort[, .(ecoregionGroup, speciesCode, SEP)][speciesEcoregionTable, on = joinOn]
+  # Join cohortDataShort with SEP predictions to speciesEcoregionTable
+  speciesEcoregionTable <- cohortDataShort[, .(ecoregionGroup, speciesCode, SEP)][speciesEcoregionTable, on = joinOn]
 
+  ########################################################################
+  # Clean up unneeded columns
+  ########################################################################
   speciesEcoregionTable[ , `:=`(logAge = NULL, cover = NULL, longevity = NULL, #pixelIndex = NULL,
                                 lcc = NULL)]
 
   #######################################
-  vals <- factorValues2(ecoregionFiles$ecoregionMap, ecoregionFiles$ecoregionMap[], att = 5)
-  r <- raster(ecoregionFiles$ecoregionMap)
-  r[] <- NA
-  r[cohortData$pixelIndex] <- as.integer(cohortData$ecoregionGroup)
-
-  cohortData$pixelIndex
-  # speciesEcoregionTable[, lccChar := as.character(lcc)]
-  # speciesEcoregionTable[, lccCode := paddedFloatToChar(as.integer(lcc),
-  #                                                      padL = max(nchar(lccChar)),
-  #                                                      padR = 0)]
-  # speciesEcoregionTable[ , ecoregionGroup := factor(paste(ecoregionGroup, lccCode, sep = "_"))]#,
-  #by = seq(1:NROW(speciesEcoregionTable))]
-
   if (!is.na(P(sim)$.plotInitialTime)) {
     uniqueSpeciesNames <- as.character(unique(speciesEcoregionTable$speciesCode))
     names(uniqueSpeciesNames) <- uniqueSpeciesNames
@@ -961,10 +953,16 @@ Save <- function(sim) {
 
 
 statsModel <- function(form, .specialData, ...) {
-  mod <- lmer(
+  if ("family" %in% names(list(...))) {
+    modelFn <- glmer
+  } else {
+    modelFn <- lmer
+  }
+  mod <- modelFn(
     formula = eval(form),
     data = .specialData,
     ...)
+
   list(mod = mod, pred = fitted(mod),
        rsq = MuMIn::r.squaredGLMM(mod))
 }
