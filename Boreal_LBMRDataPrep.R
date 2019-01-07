@@ -248,7 +248,8 @@ createLBMRInputs <- function(sim) {
   modelCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula, cohortDataShort, family = binomial,
                            #checksumsFileID = "1XznvuxsRixGxhYCicMr5mdoZlyYECY8C",
                            useCloud = P(sim)$useCloudCacheForStats,
-                           cloudFolderID = "/folders/1wJXDyp5_XL2RubViWGAeTNDqGElfgkL8")
+                           cloudFolderID = "/folders/1wJXDyp5_XL2RubViWGAeTNDqGElfgkL8",
+                           showSimilar = TRUE, omitArgs = "showSimilar")
   message(blue("  The rsquared is: "))
   print(modelCover$rsq)
 
@@ -259,7 +260,8 @@ createLBMRInputs <- function(sim) {
   modelBiomass <- cloudCache(statsModel, form = P(sim)$biomassQuotedFormula,
                              .specialData = cohortDataNo34to36NoBiomass,
                              useCloud = P(sim)$useCloudCacheForStats,
-                             cloudFolderID = "/folders/1wJXDyp5_XL2RubViWGAeTNDqGElfgkL8")
+                             cloudFolderID = "/folders/1wJXDyp5_XL2RubViWGAeTNDqGElfgkL8",
+                             showSimilar = TRUE, omitArgs = "showSimilar")
   message(blue("  The rsquared is: "))
   print(modelBiomass$rsq)
 
