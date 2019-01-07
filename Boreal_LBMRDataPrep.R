@@ -390,7 +390,9 @@ createLBMRInputs <- function(sim) {
   message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", "),
                "\n  Resulted in", magenta(length(unique(sim$cohortData$pixelGroup))),
                "unique pixelGroup values"))
-  sim$initialCommunities <-  cohortData
+  LandR::assertERGs(sim$ecoregionMap, cohortData = sim$cohortData,
+                    speciesEcoregion = speciesEcoregion,
+                    minRelativeB = sim$minRelativeB)
 
 
   message("Done Boreal_LBMRDataPrep: ", Sys.time())
