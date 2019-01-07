@@ -218,9 +218,11 @@ createLBMRInputs <- function(sim) {
   # replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*
   #######################################################
   message("Replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*")
+  rmZeroBiomassQuote <- quote(B > 0)
   newLCCClasses <- convertUnwantedLCC(pixelClassesToReplace = 34:36,
                                       rstLCC = LCC2005Adj,
-                                      pixelCohortData = pixelCohortData)
+                                      pixelCohortData = pixelCohortData,
+                                      rowsInPCDToKeep = rmZeroBiomassQuote)
 
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
@@ -228,6 +230,8 @@ createLBMRInputs <- function(sim) {
   cohortData34to36 <- newLCCClasses[cohortData34to36, on = "pixelIndex"]
   cohortDataNo34to36 <- pixelCohortData[!pixelIndex %in% newLCCClasses$pixelIndex]
   cohortDataNo34to36[, ecoregionGroup := initialEcoregionCode]
+  cohortDataNo34to36NoBiomass <- cohortDataNo34to36[eval(rmZeroBiomassQuote),
+                                                    .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
 
   assert1(cohortData34to36, pixelCohortData)
 
@@ -250,7 +254,6 @@ createLBMRInputs <- function(sim) {
 
   # For biomass
   # For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
-  cohortDataNo34to36NoBiomass <- cohortDataNo34to36[B > 0, .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
   message(blue("Estimating maxB with P(sim)$biomassQuotedFormula, which is:\n",
           magenta(paste0(format(P(sim)$biomassQuotedFormula, appendLF = FALSE), collapse = ""))))
   modelBiomass <- cloudCache(statsModel, form = P(sim)$biomassQuotedFormula,
