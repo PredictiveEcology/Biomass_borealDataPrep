@@ -219,8 +219,8 @@ createLBMRInputs <- function(sim) {
   #######################################################
   message("Replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*")
   newLCCClasses <- convertUnwantedLCC(pixelClassesToReplace = 34:36,
-                             rstLCC = LCC2005Adj,
-                             pixelCohortData = pixelCohortData)
+                                      rstLCC = LCC2005Adj,
+                                      pixelCohortData = pixelCohortData)
 
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
@@ -239,12 +239,12 @@ createLBMRInputs <- function(sim) {
                         by = c("ecoregionGroup", "speciesCode", "lcc")]
 
   message(blue("Estimating Species Establishment Probability using P(sim)$coverQuotedFormula, which is\n",
-                       format(P(sim)$coverQuotedFormula)))
+               format(P(sim)$coverQuotedFormula)))
 
   modelCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula, cohortDataShort, family = binomial,
-                         # checksumsFileID = "1XznvuxsRixGxhYCicMr5mdoZlyYECY8C",
-                         useCloud = P(sim)$useCloudCacheForStats,
-                         cloudFolderID = "/folders/1wJXDyp5_XL2RubViWGAeTNDqGElfgkL8")
+                           #checksumsFileID = "1XznvuxsRixGxhYCicMr5mdoZlyYECY8C",
+                           useCloud = P(sim)$useCloudCacheForStats,
+                           cloudFolderID = "/folders/1wJXDyp5_XL2RubViWGAeTNDqGElfgkL8")
   message(blue("  The rsquared is: "))
   print(modelCover$rsq)
 
@@ -253,9 +253,10 @@ createLBMRInputs <- function(sim) {
   cohortDataNo34to36NoBiomass <- cohortDataNo34to36[B > 0, .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
   message(blue("Estimating maxB with P(sim)$biomassQuotedFormula, which is:\n",
           magenta(paste0(format(P(sim)$biomassQuotedFormula, appendLF = FALSE), collapse = ""))))
-  modelBiomass <- cloudCache(statsModel, form = P(sim)$biomassQuotedFormula, .specialData = cohortDataNo34to36NoBiomass,
-                         useCloud = P(sim)$useCloudCacheForStats,
-                         cloudFolderID = "/folders/1wJXDyp5_XL2RubViWGAeTNDqGElfgkL8")
+  modelBiomass <- cloudCache(statsModel, form = P(sim)$biomassQuotedFormula,
+                             .specialData = cohortDataNo34to36NoBiomass,
+                             useCloud = P(sim)$useCloudCacheForStats,
+                             cloudFolderID = "/folders/1wJXDyp5_XL2RubViWGAeTNDqGElfgkL8")
   message(blue("  The rsquared is: "))
   print(modelBiomass$rsq)
 
@@ -278,15 +279,16 @@ createLBMRInputs <- function(sim) {
   # establishprob -- already is on the short dataset
   cohortDataShort[, establishprob := modelCover$pred]
   # Join cohortDataShort with establishprob predictions to speciesEcoregion
-  speciesEcoregion <- cohortDataShort[, .(ecoregionGroup, speciesCode, establishprob)][speciesEcoregion, on = joinOn]
+  speciesEcoregion <- cohortDataShort[, .(ecoregionGroup, speciesCode, establishprob)][
+    speciesEcoregion, on = joinOn]
 
   ########################################################################
   # maxB
   # Set age to the age of longevity and cover to 100%
   speciesEcoregion[, `:=`(logAge = log(longevity), cover = 100)]
   speciesEcoregion[ , maxB := asInteger(predict(modelBiomass$mod,
-                                                           newdata = speciesEcoregion,
-                                                           type = "response"))]
+                                                newdata = speciesEcoregion,
+                                                type = "response"))]
   speciesEcoregion[maxB < 0, maxB := 0] # fix negative predictions
 
   ########################################################################
@@ -298,7 +300,7 @@ createLBMRInputs <- function(sim) {
   # Clean up unneeded columns
   ########################################################################
   speciesEcoregion[ , `:=`(logAge = NULL, cover = NULL, longevity = NULL, #pixelIndex = NULL,
-                                lcc = NULL)]
+                           lcc = NULL)]
 
   speciesEcoregion[ , year := time(sim)]
 
