@@ -111,7 +111,7 @@ defineModule(sim, list(
     createsOutput("species", "data.table",
                   desc = "a table that has species traits such as longevity..."),
     createsOutput("speciesEcoregion", "data.table",
-                  desc = "define the maxANPP, maxB and SEP change with both ecoregion and simulation time"),
+                  desc = "define the maxANPP, maxB and establishprob change with both ecoregion and simulation time"),
     createsOutput("studyArea", "", desc = ""),
     createsOutput("speciesEstablishmentProbMap", "RasterStack",
                   paste("Species establishment probability as a map, ",
@@ -232,7 +232,7 @@ createLBMRInputs <- function(sim) {
   assert1(cohortData34to36, pixelCohortData)
 
   ##############################################################
-  # Statistical estimation of SEP, maxB and maxANPP
+  # Statistical estimation of establishprob, maxB and maxANPP
   ##############################################################
   cohortDataShort <- cohortDataNo34to36[, list(coverNum = .N,
                                coverPres = sum(cover > 0)),
@@ -275,10 +275,10 @@ createLBMRInputs <- function(sim) {
   ########################################################################
   # Make predictions from statistical models for
   ########################################################################
-  # SEP -- already is on the short dataset
-  cohortDataShort[, SEP := modelCover$pred]
-  # Join cohortDataShort with SEP predictions to speciesEcoregion
-  speciesEcoregion <- cohortDataShort[, .(ecoregionGroup, speciesCode, SEP)][speciesEcoregion, on = joinOn]
+  # establishprob -- already is on the short dataset
+  cohortDataShort[, establishprob := modelCover$pred]
+  # Join cohortDataShort with establishprob predictions to speciesEcoregion
+  speciesEcoregion <- cohortDataShort[, .(ecoregionGroup, speciesCode, establishprob)][speciesEcoregion, on = joinOn]
 
   ########################################################################
   # maxB

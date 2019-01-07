@@ -75,15 +75,6 @@ ecoregionProducer <- function(ecoregionMaps, ecoregionName,
 
   ecoregionTable <- as.data.table(raster::levels(rstEcoregion)[[1]])
   message("ecoregionProducer mapvalues: ", Sys.time())
-  # rstEcoregion[] <- plyr::mapvalues(rstEcoregion[], from = ecoregionTable$ecoregion, to = ecoregionTable$mapcode)
-  # ecoregionActiveStatus[, ecoregion := as.factor(ecoregion)]
-  # ecoregionTable <- ecoregionTable[!is.na(mapcode),][, ecoregion := as.character(ecoregion)]
-  # message("ecoregionProducer dplyr_leftjoin: ", Sys.time())
-  # ecoregionTable <- dplyr::left_join(ecoregionTable,
-  #                                    ecoregionActiveStatus,
-  #                                    by = "ecoregion") %>%
-  #   data.table()
-  # ecoregionTable[is.na(active), active := "no"]
   ecoregionTable <- ecoregionTable[,.(active = "yes", mapcode, ecoregion)]
 
   return(list(ecoregionMap = rstEcoregion,
