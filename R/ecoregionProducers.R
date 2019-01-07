@@ -89,19 +89,3 @@ ecoregionProducer <- function(ecoregionMaps, ecoregionName,
   return(list(ecoregionMap = rstEcoregion,
               ecoregion = ecoregionTable))
 }
-
-# nonActiveEcoregionProducer <- function(nonactiveRaster, activeStatus, ecoregionMap,
-#                                        ecoregion, initialCommunityMap, initialCommunity) {
-#   nonactiveRasterSmall <- crop(nonactiveRaster, ecoregionMap)
-#   nonecomapcode <- activeStatus[active == "no", ]$mapcode
-#   whNANonActiveRasterSmall <- which(nonactiveRaster[] %in% nonecomapcode)
-#   initialCommunityMap[whNANonActiveRasterSmall] <- NA
-#   ecoregionMap[whNANonActiveRasterSmall] <- NA
-#
-#   initialCommunity <- initialCommunity[mapCodeFac %in% sort(unique(getValues(initialCommunityMap))), ]
-#   ecoregion <- ecoregion[mapcode %in% sort(unique(getValues(ecoregionMap))), ]
-#   return(list(ecoregionMap = ecoregionMap,
-#               ecoregion = ecoregion,
-#               initialCommunityMap = initialCommunityMap,
-#               initialCommunity = initialCommunity))
-# }
