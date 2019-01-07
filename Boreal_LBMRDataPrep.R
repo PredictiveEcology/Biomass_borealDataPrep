@@ -100,9 +100,9 @@ defineModule(sim, list(
                   desc = "ecoregion look up table"),
     createsOutput("ecoregionMap", "RasterLayer",
                   desc = "ecoregion map that has mapcodes match ecoregion table and speciesEcoregion table"),
-    createsOutput("initialCommunities", "data.table",
+    createsOutput("cohortData", "data.table",
                   desc = "initial community table"),
-    createsOutput("initialCommunitiesMap", "RasterLayer",
+    createsOutput("pixelGroupMap", "RasterLayer",
                   desc = "initial community map that has mapcodes match initial community table"),
     createsOutput("minRelativeB", "data.frame",
                   desc = "define the cut points to classify stand shadeness"),
@@ -376,12 +376,13 @@ createLBMRInputs <- function(sim) {
   ###########################
   #  Collapse pixelCohortData to its cohortData : need pixelGroupMap
   ################################
-  sim$initialCommunitiesMap <- raster(sim$rasterToMatch)
-  sim$initialCommunitiesMap[pixelData$pixelIndex] <- as.integer(pixelData$pixelGroup)
+  sim$pixelGroupMap <- raster(sim$rasterToMatch)
+  sim$pixelGroupMap[pixelData$pixelIndex] <- as.integer(pixelData$pixelGroup)
 
   sim$cohortData <- unique(pixelCohortData,
                        by = c("pixelGroup", columnsForPixelGroups))
   sim$cohortData[ , `:=`(pixelIndex = NULL)]
+
   message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", "),
                "\n  Resulted in", magenta(length(unique(sim$cohortData$pixelGroup))),
                "unique pixelGroup values"))
