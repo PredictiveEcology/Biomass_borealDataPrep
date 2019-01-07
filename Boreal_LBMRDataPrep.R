@@ -349,6 +349,10 @@ createLBMRInputs <- function(sim) {
 
   pixelData <- unique(pixelCohortData, by = "pixelIndex")
   pixelData[, ecoregionGroup := factor(as.character(ecoregionGroup))] # resorts them in order
+
+  sim$biomassMap <- raster(sim$rasterToMatch)
+  sim$biomassMap[pixelData$pixelIndex] <- pixelData$totalBiomass
+
   sim$ecoregionMap <- raster(ecoregionFiles$ecoregionMap)
   sim$ecoregionMap[pixelData$pixelIndex] <- as.integer(pixelData$ecoregionGroup)
   levels(sim$ecoregionMap) <- data.frame(ID = seq(levels(pixelData$ecoregionGroup)),
