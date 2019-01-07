@@ -270,6 +270,7 @@ createLBMRInputs <- function(sim) {
   speciesEcoregion[lcc %in% unique(cohortDataNo34to36NoBiomass$lcc)] # shouldn't do anything because already correct
   sim$species[, speciesCode := as.factor(species)]
   speciesEcoregion <- sim$species[, .(speciesCode, longevity)][speciesEcoregion, on = "speciesCode"]
+  speciesEcoregion[ , ecoregionGroup := factor(as.character(ecoregionGroup))]
 
   ########################################################################
   # Make predictions from statistical models for
@@ -357,12 +358,15 @@ createLBMRInputs <- function(sim) {
   sim$ecoregionMap <- raster(ecoregionFiles$ecoregionMap)
   sim$ecoregionMap[pixelData$pixelIndex] <- as.integer(pixelData$ecoregionGroup)
   levels(sim$ecoregionMap) <- data.frame(ID = seq(levels(pixelData$ecoregionGroup)),
+                                         ecoregion = gsub("_.*", "", levels(pixelData$ecoregionGroup)),
                                          ecoregionGroup = levels(pixelData$ecoregionGroup),
                                          stringsAsFactors = TRUE)
 
-  sim$minRelativeB <- data.frame(ecoregionGroup = unique(cohortData$ecoregionGroup),
+  sim$minRelativeB <- data.frame(ecoregionGroup = levels(pixelData$ecoregionGroup),
                                  X1 = 0.2, X2 = 0.4, X3 = 0.5,
                                  X4 = 0.7, X5 = 0.9)
+
+  speciesEcoregion[, ecoregionGroup := factor(as.character(ecoregionGroup))]
 
 
   sim$speciesEcoregion <- speciesEcoregion
