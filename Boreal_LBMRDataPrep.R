@@ -170,7 +170,10 @@ createLBMRInputs <- function(sim) {
   LCC2005Adj <- sim$LCC2005
 
   # Rm rock and ice pixels
-  pixelsToRm <- sim$LCC2005[] %in% 37:39 # these are lakes, rock and ice
+  lcc37_39 <- sim$LCC2005[] %in% c(0, 37:39) # these are lakes, rock and ice
+  coverNA <- is.na(sim$speciesLayers[[1]][])
+  pixelsToRm <- lcc37_39 | coverNA
+
   sim$rasterToMatch[pixelsToRm] <- NA
   LCC2005Adj[pixelsToRm] <- NA
   rstEcoregionMap[pixelsToRm] <- NA
@@ -189,6 +192,9 @@ createLBMRInputs <- function(sim) {
   #  Round age to pixelGroupAgeClass
   message(blue("Round age to nearest P(sim)$pixelGroupAgeClass, which is",
                P(sim)$pixelGroupAgeClass))
+  coverMatrix <- matrix(asInteger(sim$speciesLayers[]),
+         ncol = length(names(sim$speciesLayers)))
+  colnames(coverMatrix) <- names(sim$speciesLayers)
   pixelTable <- data.table(age = asInteger(ceiling(asInteger(sim$standAgeMap[]) /
                                                      P(sim)$pixelGroupAgeClass) *
                                      P(sim)$pixelGroupAgeClass),
@@ -197,12 +203,21 @@ createLBMRInputs <- function(sim) {
                                                         ecoregionFiles$ecoregionMap[],
                                                         att = 5)),
                    totalBiomass = asInteger(sim$biomassMap[]) * 100, # change units
-                   cover = sim$speciesLayers[],
+                   cover = coverMatrix,
                    pixelIndex = seq(ncell(sim$standAgeMap)),
-                   lcc = factor(LCC2005Adj[])
+                   lcc = LCC2005Adj[],
+                   rasterToMatch = sim$rasterToMatch[]
   )
 
-  pixelTable <- pixelTable[!is.na(lcc)]
+  coverColNames <- paste0("cover.", sim$species$species)
+  pixelTable1 <- na.omit(pixelTable, cols = c("rasterToMatch"))
+  pixelTable <- na.omit(pixelTable1, cols = c(coverColNames))
+  if (NROW(pixelTable1) != NROW(pixelTable))
+    warning("Setting pixels to NA where there is NA in sim$speciesLayers. If this is correct,",
+            "\n  please modify 'sim$rasterToMatch' (which has values in pixels where there is",
+            "\n  no data for species cover.",
+            "\n  sim$rasterToMatch is expected to only have data where there is cover data. ")
+
   message(blue("rm NAs, leaving", magenta(NROW(pixelTable)), "pixels with data"))
   message(blue("This is the summary of the input data for age, ecoregionGroup, biomass, speciesLayers:"))
   print(summary(pixelTable))
@@ -211,9 +226,10 @@ createLBMRInputs <- function(sim) {
   # Make the initial pixelCohortData table
   #######################################################
   pixelCohortData <- makeAndCleanInitialCohortData(pixelTable,
-                                              sppColumns = paste0("cover.", sim$species$species),
+                                              sppColumns = coverColNames,
                                               pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass)
 
+  pixelCohortData[pixelIndex > 1407800 & pixelIndex < 1407900]
   #######################################################
   # replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*
   #######################################################
@@ -239,8 +255,8 @@ createLBMRInputs <- function(sim) {
   # Statistical estimation of establishprob, maxB and maxANPP
   ##############################################################
   cohortDataShort <- cohortDataNo34to36[, list(coverNum = .N,
-                               coverPres = sum(cover > 0)),
-                        by = c("ecoregionGroup", "speciesCode", "lcc")]
+                                               coverPres = sum(cover > 0)),
+                                        by = c("ecoregionGroup", "speciesCode")]
 
   message(blue("Estimating Species Establishment Probability using P(sim)$coverQuotedFormula, which is\n",
                format(P(sim)$coverQuotedFormula)))
@@ -392,7 +408,7 @@ createLBMRInputs <- function(sim) {
 
   sim$cohortData <- unique(pixelCohortData,
                        by = c("pixelGroup", columnsForPixelGroups))
-  sim$cohortData[ , `:=`(pixelIndex = NULL)]
+  sim$cohortData[ , `:=`(pixelIndex = NULL, i.speciesCode = NULL, i.rasterToMatch = NULL)]
 
   message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", "),
                "\n  Resulted in", magenta(length(unique(sim$cohortData$pixelGroup))),
@@ -402,6 +418,7 @@ createLBMRInputs <- function(sim) {
                     minRelativeB = sim$minRelativeB)
 
 
+  browser()
   message("Done Boreal_LBMRDataPrep: ", Sys.time())
   return(invisible(sim))
 }
