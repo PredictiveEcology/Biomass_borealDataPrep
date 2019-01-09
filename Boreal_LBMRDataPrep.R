@@ -26,7 +26,7 @@ defineModule(sim, list(
     # defineParameter("quantileForMaxBiomass", "numeric", 0.99, NA, NA,
     #                 "When estimating maximum biomass by species and ecoregion, rather than take the absolute max(biomass), the quantile is taken. This gives the capacity to remove outliers."),
     defineParameter("biomassQuotedFormula", "name",
-                    quote(B ~ logAge * speciesCode + (speciesCode | ecoregionGroup) + cover),
+                    quote(B ~ logAge * speciesCode + (speciesCode | ecoregionGroup) + cover * speciesCode),
                     NA, NA,
                     paste0("This formula is for estimating biomass (B) from ecoregionGroup (currently ecoDistrict * LandCoverClass), ",
                     "speciesCode, logAge (gives a downward curving relationship), and cover")),
