@@ -408,7 +408,7 @@ createLBMRInputs <- function(sim) {
 
   sim$cohortData <- unique(pixelCohortData,
                        by = c("pixelGroup", columnsForPixelGroups))
-  sim$cohortData[ , `:=`(pixelIndex = NULL, i.speciesCode = NULL, i.rasterToMatch = NULL)]
+  sim$cohortData[ , `:=`(pixelIndex = NULL)]
 
   message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", "),
                "\n  Resulted in", magenta(length(unique(sim$cohortData$pixelGroup))),
