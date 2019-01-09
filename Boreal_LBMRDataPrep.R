@@ -418,7 +418,6 @@ createLBMRInputs <- function(sim) {
                     minRelativeB = sim$minRelativeB)
 
 
-  browser()
   message("Done Boreal_LBMRDataPrep: ", Sys.time())
   return(invisible(sim))
 }
