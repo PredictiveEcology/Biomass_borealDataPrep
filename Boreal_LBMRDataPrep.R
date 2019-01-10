@@ -365,12 +365,11 @@ createLBMRInputs <- function(sim) {
   # sim$columnsForPixelGroups <- c("ecoregionGroup", "speciesCode", "age", "B")
 
   pixelCohortData[ , `:=`(logAge = NULL, coverOrig = NULL, totalBiomass = NULL, #pixelIndex = NULL,
-                           initialEcoregionCode = NULL, cover = NULL, lcc = NULL)]
+                          initialEcoregionCode = NULL, cover = NULL, lcc = NULL)]
   pixelCohortData <- pixelCohortData[B > 0]
   cd <- pixelCohortData[,c("pixelIndex", columnsForPixelGroups), with = FALSE]
-  pixelCohortData[, pixelGroup :=
-               Cache(generatePixelGroups, cd, maxPixelGroup = 0,
-                     columns = columnsForPixelGroups)]
+  pixelCohortData[, pixelGroup := Cache(generatePixelGroups, cd, maxPixelGroup = 0,
+                                        columns = columnsForPixelGroups)]
 
   ########################################################################
   ########################################################################
@@ -405,7 +404,6 @@ createLBMRInputs <- function(sim) {
                                  X4 = 0.7, X5 = 0.9)
 
   speciesEcoregion[, ecoregionGroup := factor(as.character(ecoregionGroup))]
-
 
   sim$speciesEcoregion <- speciesEcoregion
 
@@ -563,6 +561,7 @@ Save <- function(sim) {
 
     projection(sim$LCC2005) <- projection(sim$rasterToMatch)
   }
+
   if (!suppliedElsewhere("ecoDistrict", sim)) {
     sim$ecoDistrict <- Cache(prepInputs,
                              targetFile = asPath(ecodistrictFilename),
@@ -577,7 +576,6 @@ Save <- function(sim) {
                              filename2 = TRUE,
                              userTags = cacheTags)
   }
-
 
   # stand age map
   if (!suppliedElsewhere("standAgeMap", sim)) {
@@ -646,4 +644,3 @@ Save <- function(sim) {
 
   return(invisible(sim))
 }
-
