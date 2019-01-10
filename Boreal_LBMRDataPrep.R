@@ -225,7 +225,7 @@ createLBMRInputs <- function(sim) {
   #######################################################
   # Make the initial pixelCohortData table
   #######################################################
-  pixelCohortData <- makeAndCleanInitialCohortData(pixelTable,
+  pixelCohortData <- Cache(makeAndCleanInitialCohortData, pixelTable,
                                               sppColumns = coverColNames,
                                               pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass)
 
@@ -235,17 +235,25 @@ createLBMRInputs <- function(sim) {
   #######################################################
   message("Replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*")
   rmZeroBiomassQuote <- quote(B > 0)
+  availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
+                                                  .(speciesCode, initialEcoregionCode, pixelIndex)])
+  pseudoSpeciesEcoregion <- unique(availableCombinations[,
+                                                  .(speciesCode, initialEcoregionCode)])
   newLCCClasses <- convertUnwantedLCC(pixelClassesToReplace = 34:36,
                                       rstLCC = LCC2005Adj,
-                                      pixelCohortData = pixelCohortData,
-                                      rowsInPCDToKeep = rmZeroBiomassQuote)
+                                      ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
+                                                                        ecoregionFiles$ecoregionMap[],
+                                                                        att = "ecoregion"),
+                                      speciesEcoregion = pseudoSpeciesEcoregion,
+                                      availableERC_by_Sp = availableCombinations)
 
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
   cohortData34to36 <- pixelCohortData[pixelIndex %in% newLCCClasses$pixelIndex]
   cohortData34to36 <- newLCCClasses[cohortData34to36, on = "pixelIndex"]
   cohortDataNo34to36 <- pixelCohortData[!pixelIndex %in% newLCCClasses$pixelIndex]
-  cohortDataNo34to36[, ecoregionGroup := initialEcoregionCode]
+  setnames(cohortDataNo34to36, "initialEcoregionCode", "ecoregionGroup")
+  #cohortDataNo34to36[, ecoregionGroup := initialEcoregionCode]
   cohortDataNo34to36NoBiomass <- cohortDataNo34to36[eval(rmZeroBiomassQuote),
                                                     .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
 
@@ -257,11 +265,14 @@ createLBMRInputs <- function(sim) {
   cohortDataShort <- cohortDataNo34to36[, list(coverNum = .N,
                                                coverPres = sum(cover > 0)),
                                         by = c("ecoregionGroup", "speciesCode")]
-
+  cohortDataShortNoCover <- cohortDataShort[coverPres == 0] #
+  cohortDataShort <- cohortDataShort[coverPres > 0] # remove places where there is 0 cover
+                                                    # will be added back as establishprob = 0
   message(blue("Estimating Species Establishment Probability using P(sim)$coverQuotedFormula, which is\n",
                format(P(sim)$coverQuotedFormula)))
 
-  modelCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula, cohortDataShort, family = binomial,
+  modelCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula,
+                           cohortDataShort, family = binomial,
                            #checksumsFileID = "1XznvuxsRixGxhYCicMr5mdoZlyYECY8C",
                            useCloud = P(sim)$useCloudCacheForStats,
                            cloudFolderID = "/folders/1wJXDyp5_XL2RubViWGAeTNDqGElfgkL8",
@@ -297,8 +308,12 @@ createLBMRInputs <- function(sim) {
   ########################################################################
   # Make predictions from statistical models for
   ########################################################################
-  # establishprob -- already is on the short dataset
+  # establishprob -- already is on the short dataset -- need to add back the zeros too
   cohortDataShort[, establishprob := modelCover$pred]
+  cohortDataShort <- rbindlist(list(cohortDataShort, cohortDataShortNoCover),
+                               use.names = TRUE, fill = TRUE)
+  cohortDataShort[is.na(establishprob), establishprob := 0]
+
   # Join cohortDataShort with establishprob predictions to speciesEcoregion
   speciesEcoregion <- cohortDataShort[, .(ecoregionGroup, speciesCode, establishprob)][
     speciesEcoregion, on = joinOn]
@@ -417,6 +432,9 @@ createLBMRInputs <- function(sim) {
                     speciesEcoregion = speciesEcoregion,
                     minRelativeB = sim$minRelativeB)
 
+  testCohortData(sim$cohortData, sim$pixelGroupMap)
+
+  LandR::assertUniqueCohortData(sim$cohortData, c("pixelGroup", "ecoregionGroup", "speciesCode"))
 
   message("Done Boreal_LBMRDataPrep: ", Sys.time())
   return(invisible(sim))
