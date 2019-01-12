@@ -309,7 +309,8 @@ createLBMRInputs <- function(sim) {
   # Make predictions from statistical models for
   ########################################################################
   # establishprob -- already is on the short dataset -- need to add back the zeros too
-  cohortDataShort[, establishprob := modelCover$pred]
+  establishprobBySuccessionTimestep <- 1 - (1 - modelCover$pred)^P(sim)$successionTimestep
+  cohortDataShort[, establishprob := establishprobBySuccessionTimestep]
   cohortDataShort <- rbindlist(list(cohortDataShort, cohortDataShortNoCover),
                                use.names = TRUE, fill = TRUE)
   cohortDataShort[is.na(establishprob), establishprob := 0]
