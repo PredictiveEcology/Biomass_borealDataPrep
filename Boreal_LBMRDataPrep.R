@@ -157,6 +157,10 @@ createLBMRInputs <- function(sim) {
                                   speciesLayers = sim$speciesLayers,
                                   sppEquiv = sim$sppEquiv,
                                   sppEquivCol = P(sim)$sppEquivCol)
+  if (getOption("LandR.verbose") > 0) {
+    message("Adjusting species-level traits, part 2, for LandWeb")
+  }
+  sim$species[species == "Popu_sp", `:=`(resproutprob = 0.2, resproutage_min = 25)] ## (see LandWeb#96)
 
   ################################################################
   ## initialEcoregionMap
