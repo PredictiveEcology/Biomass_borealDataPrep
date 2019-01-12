@@ -311,6 +311,17 @@ createLBMRInputs <- function(sim) {
   # establishprob -- already is on the short dataset -- need to add back the zeros too
   establishprobBySuccessionTimestep <- 1 - (1 - modelCover$pred)^P(sim)$successionTimestep
   cohortDataShort[, establishprob := establishprobBySuccessionTimestep]
+
+  ############################################
+  # Lower establishprob
+  ############################################
+
+  cohortDataShort <- sim$species[, .(postfireregen, speciesCode)][cohortDataShort, on = "speciesCode"]
+  establishProbDiv <- 2
+  cohortDataShort[postfireregen != "none", establishprob := establishprob / establishProbDiv]
+  if (getOption("LandR.verbose") > 0) {
+    message("Dividing the establishment probability of serotinous and resprouting species by", establishProbDiv)
+  }
   cohortDataShort <- rbindlist(list(cohortDataShort, cohortDataShortNoCover),
                                use.names = TRUE, fill = TRUE)
   cohortDataShort[is.na(establishprob), establishprob := 0]
