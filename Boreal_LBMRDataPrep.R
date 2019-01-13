@@ -322,9 +322,11 @@ createLBMRInputs <- function(sim) {
 
   cohortDataShort <- sim$species[, .(postfireregen, speciesCode)][cohortDataShort, on = "speciesCode"]
   establishProbAdjFac <- 2
-  cohortDataShort[postfireregen == "none", establishprob := pmin(1, establishprob * establishProbAdjFac)]
+  #browser()
+  #cohortDataShort[postfireregen == "none", establishprob := pmin(1, establishprob * establishProbAdjFac)]
+  cohortDataShort[postfireregen == "resprout", establishprob := pmin(1, establishprob / establishProbAdjFac)]
   if (getOption("LandR.verbose") > 0) {
-    message("Dividing the establishment probability of serotinous and resprouting species by", establishProbAdjFac)
+    message("Dividing the establishment probability of resprouting species by", establishProbAdjFac)
   }
   cohortDataShort <- rbindlist(list(cohortDataShort, cohortDataShortNoCover),
                                use.names = TRUE, fill = TRUE)
@@ -366,7 +368,10 @@ createLBMRInputs <- function(sim) {
       rasterizeReduced(speciesEcoregionTable2[speciesCode == sp], ecoregionFiles$ecoregionMap,
                        "maxB", "ecoregionInt")
     }))
+    curDev <- dev.cur()
+    quickPlot::dev(6, width = 18, height = 10)
     Plot(maxB, legendRange = c(0, max(maxValue(maxB))))
+    quickPlot::dev(curDev)
   }
 
   if (ncell(sim$rasterToMatch) > 3e6) .gc()
