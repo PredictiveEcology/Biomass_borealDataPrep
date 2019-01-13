@@ -38,6 +38,8 @@ defineModule(sim, list(
                     "When assigning pixelGroup membership, this defines the resolution of ages that will be considered 'the same pixelGroup', e.g., if it is 10, then 6 and 14 will be the same"),
     defineParameter("pixelGroupBiomassClass", "numeric", 100, NA, NA,
                     "When assigning pixelGroup membership, this defines the resolution of biomass that will be considered 'the same pixelGroup', e.g., if it is 100, then 5160 and 5240 will be the same"),
+    defineParameter("PopuEstablishProbAdjFac", "numeric", 4, NA, NA,
+                    "The establishprob of Popu_sp may be estimated too high. This number will be the demoninator for establishprob for Popu_sp"),
     defineParameter("sppEquivCol", "character", "LandR", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter("successionTimestep", "numeric", 10, NA, NA, "defines the simulation time step, default is 10 years"),
@@ -321,12 +323,11 @@ createLBMRInputs <- function(sim) {
   ############################################
 
   cohortDataShort <- sim$species[, .(postfireregen, speciesCode)][cohortDataShort, on = "speciesCode"]
-  establishProbAdjFac <- 2
   #browser()
-  #cohortDataShort[postfireregen == "none", establishprob := pmin(1, establishprob * establishProbAdjFac)]
-  cohortDataShort[postfireregen == "resprout", establishprob := pmin(1, establishprob / establishProbAdjFac)]
+  #cohortDataShort[postfireregen == "none", establishprob := pmin(1, establishprob * P(sim)$PopuEstablishProbAdjFac)]
+  cohortDataShort[postfireregen == "resprout", establishprob := pmin(1, establishprob / P(sim)$PopuEstablishProbAdjFac)]
   if (getOption("LandR.verbose") > 0) {
-    message("Dividing the establishment probability of resprouting species by", establishProbAdjFac)
+    message("Dividing the establishment probability of resprouting species by", P(sim)$PopuEstablishProbAdjFac)
   }
   cohortDataShort <- rbindlist(list(cohortDataShort, cohortDataShortNoCover),
                                use.names = TRUE, fill = TRUE)
