@@ -321,10 +321,10 @@ createLBMRInputs <- function(sim) {
   ############################################
 
   cohortDataShort <- sim$species[, .(postfireregen, speciesCode)][cohortDataShort, on = "speciesCode"]
-  establishProbDiv <- 2
-  cohortDataShort[postfireregen != "none", establishprob := establishprob / establishProbDiv]
+  establishProbAdjFac <- 2
+  cohortDataShort[postfireregen == "none", establishprob := pmin(1, establishprob * establishProbAdjFac)]
   if (getOption("LandR.verbose") > 0) {
-    message("Dividing the establishment probability of serotinous and resprouting species by", establishProbDiv)
+    message("Dividing the establishment probability of serotinous and resprouting species by", establishProbAdjFac)
   }
   cohortDataShort <- rbindlist(list(cohortDataShort, cohortDataShortNoCover),
                                use.names = TRUE, fill = TRUE)
