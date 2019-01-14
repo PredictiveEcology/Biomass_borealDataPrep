@@ -38,8 +38,10 @@ defineModule(sim, list(
                     "When assigning pixelGroup membership, this defines the resolution of ages that will be considered 'the same pixelGroup', e.g., if it is 10, then 6 and 14 will be the same"),
     defineParameter("pixelGroupBiomassClass", "numeric", 100, NA, NA,
                     "When assigning pixelGroup membership, this defines the resolution of biomass that will be considered 'the same pixelGroup', e.g., if it is 100, then 5160 and 5240 will be the same"),
-    defineParameter("PopuEstablishProbAdjFac", "numeric", 4, NA, NA,
-                    "The establishprob of Popu_sp may be estimated too high. This number will be the demoninator for establishprob for Popu_sp"),
+    defineParameter("establishProbAdjFacResprout", "numeric", 0.1, NA, NA,
+                    "The establishprob of resprouting spcies may be estimated too high. This number will be multiplied by establishprob for resprouting species, e.g., Populus tremuloides"),
+    defineParameter("establishProbAdjFacNonResprout", "numeric", 2, NA, NA,
+                    "The establishprob of non resprouting species may be estimated too high. This number will be the multiplied by establishprob for non resprouting species"),
     defineParameter("sppEquivCol", "character", "LandR", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter("successionTimestep", "numeric", 10, NA, NA, "defines the simulation time step, default is 10 years"),
@@ -159,10 +161,20 @@ createLBMRInputs <- function(sim) {
                                   speciesLayers = sim$speciesLayers,
                                   sppEquiv = sim$sppEquiv,
                                   sppEquivCol = P(sim)$sppEquivCol)
+
+  sim$species[species == "Pice_gla", `:=`(seeddistance_eff = 300, seeddistance_max = 1000)]
+  sim$species[species == "Pice_mar", `:=`(seeddistance_eff = 300, seeddistance_max = 1000)]
+  sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 100, seeddistance_max = 1000)]
+  sim$species[species == "Pinu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 1000)]
+  sim$species[species == "Popu_sp", `:=`(mortalityshape = 15, resproutprob = 0.1, resproutage_min = 25)] ## (see LandWeb#96)
+  sim$species[, `:=`(growthcurve = 0)] # pg 17 Landis User Guide Biomass Succession -
+                                       # 0 is faster growth, 1 was the previous assumption
+                                       # of all Landis-II Biomass Succession models
+
   if (getOption("LandR.verbose") > 0) {
     message("Adjusting species-level traits, part 2, for LandWeb")
+    print(sim$species)
   }
-  sim$species[species == "Popu_sp", `:=`(resproutprob = 0.2, resproutage_min = 25)] ## (see LandWeb#96)
 
   ################################################################
   ## initialEcoregionMap
@@ -324,10 +336,11 @@ createLBMRInputs <- function(sim) {
 
   cohortDataShort <- sim$species[, .(postfireregen, speciesCode)][cohortDataShort, on = "speciesCode"]
   #browser()
-  #cohortDataShort[postfireregen == "none", establishprob := pmin(1, establishprob * P(sim)$PopuEstablishProbAdjFac)]
-  cohortDataShort[postfireregen == "resprout", establishprob := pmin(1, establishprob / P(sim)$PopuEstablishProbAdjFac)]
+  #cohortDataShort[postfireregen == "none", establishprob := pmin(1, establishprob * P(sim)$establishProbAdjFacResprout)]
+  cohortDataShort[postfireregen == "resprout", establishprob := pmax(0, pmin(1, establishprob * P(sim)$establishProbAdjFacResprout))]
+  cohortDataShort[postfireregen != "resprout", establishprob := pmax(0, pmin(1, establishprob * P(sim)$establishProbAdjFacNonResprout))]
   if (getOption("LandR.verbose") > 0) {
-    message("Dividing the establishment probability of resprouting species by", P(sim)$PopuEstablishProbAdjFac)
+    message("Dividing the establishment probability of resprouting species by", P(sim)$establishProbAdjFacResprout)
   }
   cohortDataShort <- rbindlist(list(cohortDataShort, cohortDataShortNoCover),
                                use.names = TRUE, fill = TRUE)
