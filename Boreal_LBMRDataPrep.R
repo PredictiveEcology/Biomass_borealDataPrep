@@ -162,11 +162,13 @@ createLBMRInputs <- function(sim) {
                                   sppEquiv = sim$sppEquiv,
                                   sppEquivCol = P(sim)$sppEquivCol)
 
-  sim$species[species == "Pice_gla", `:=`(seeddistance_eff = 300, seeddistance_max = 1000)]
-  sim$species[species == "Pice_mar", `:=`(seeddistance_eff = 300, seeddistance_max = 1000)]
-  sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 100, seeddistance_max = 1000)]
-  sim$species[species == "Pinu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 1000)]
-  sim$species[species == "Popu_sp", `:=`(mortalityshape = 15, resproutprob = 0.1, resproutage_min = 25)] ## (see LandWeb#96)
+  sim$species[species == "Pice_gla", `:=`(seeddistance_eff = 300, seeddistance_max = 750)]
+  sim$species[species == "Pice_mar", `:=`(seeddistance_eff = 300, seeddistance_max = 750)]
+  sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 100, seeddistance_max = 750)]
+  sim$species[species == "Pinu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 750)]
+  sim$species[species == "Popu_sp", `:=`(mortalityshape = 15, resproutprob = 0.1,
+                                         seeddistance_max = 3000,
+                                         resproutage_min = 25)] ## (see LandWeb#96)
   sim$species[, `:=`(growthcurve = 0)] # pg 17 Landis User Guide Biomass Succession -
                                        # 0 is faster growth, 1 was the previous assumption
                                        # of all Landis-II Biomass Succession models
