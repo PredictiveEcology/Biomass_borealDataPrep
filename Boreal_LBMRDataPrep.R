@@ -34,13 +34,21 @@ defineModule(sim, list(
                     quote(cbind(coverPres, coverNum) ~ speciesCode + (1 | ecoregionGroup)),
                     NA, NA,
                     "This formula is for estimating cover from ecoregion and speciesCode and potentially others"),
+    defineParameter("growthCurveDecid", "numeric", 0, 0, 1,
+                    "growth curve shape for deciduous species (i.e., aspen). LANDIS-II uses 0 for aspen."),
+    defineParameter("growthCurveNonDecid", "numeric", 1, 0, 1,
+                    "growth curve shape for non-deciduous species. LANDIS-II uses 1 for spruce, 0 for other non deciduous."),
+    defineParameter("mortalityShapeDecid", "numeric", 25, 12, 27,
+                    "mortality curve shape for deciduous species (i.e., aspen). LANDIS-II uses 25 by default."),
+    defineParameter("mortalityShapeNonDecid", "numeric", 15, 12, 27,
+                    "mortality curve shape for non-deciduous species. LANDIS-II uses 15 by default."),
     defineParameter("pixelGroupAgeClass", "numeric", P(sim)$successionTimestep, NA, NA,
                     "When assigning pixelGroup membership, this defines the resolution of ages that will be considered 'the same pixelGroup', e.g., if it is 10, then 6 and 14 will be the same"),
     defineParameter("pixelGroupBiomassClass", "numeric", 100, NA, NA,
                     "When assigning pixelGroup membership, this defines the resolution of biomass that will be considered 'the same pixelGroup', e.g., if it is 100, then 5160 and 5240 will be the same"),
-    defineParameter("establishProbAdjFacResprout", "numeric", 0.1, NA, NA,
+    defineParameter("establishProbAdjFacResprout", "numeric", 0.1, 0, 1,
                     "The establishprob of resprouting spcies may be estimated too high. This number will be multiplied by establishprob for resprouting species, e.g., Populus tremuloides"),
-    defineParameter("establishProbAdjFacNonResprout", "numeric", 2, NA, NA,
+    defineParameter("establishProbAdjFacNonResprout", "numeric", 2, 1, 2,
                     "The establishprob of non resprouting species may be estimated too high. This number will be the multiplied by establishprob for non resprouting species"),
     defineParameter("sppEquivCol", "character", "LandR", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
@@ -162,20 +170,33 @@ createLBMRInputs <- function(sim) {
                                   sppEquiv = sim$sppEquiv,
                                   sppEquivCol = P(sim)$sppEquivCol)
 
-  sim$species[species == "Pice_gla",
-              `:=`(seeddistance_eff = 300, seeddistance_max = 750)]
-  sim$species[species == "Pice_mar",
-              `:=`(seeddistance_eff = 300, seeddistance_max = 750)]
-  sim$species[species == "Abie_sp",
-              `:=`(seeddistance_eff = 100, seeddistance_max = 750)]
-  sim$species[species == "Pinu_sp",
-              `:=`(seeddistance_eff = 300, seeddistance_max = 750)]
-  sim$species[species == "Popu_sp",
-              `:=`(mortalityshape = 15, resproutprob = 0.1,
-                   seeddistance_max = 3000, resproutage_min = 25)] ## (see LandWeb#96)
-  sim$species[, `:=`(growthcurve = 0)] # pg 17 Landis User Guide Biomass Succession -
-                                       # 0 is faster growth, 1 was the previous assumption
-                                       # of all Landis-II Biomass Succession models
+  ### override species table values ##############################
+
+  ## seed dispersal (see LandWeb#96, LandWeb#112)
+  sim$species[species == "Pice_gla", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 100, 303
+  sim$species[species == "Pice_mar", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 80, 200
+  sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 100, seeddistance_max = 750)] # defaults 25, 100
+  sim$species[species == "Pinu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 30, 100
+  #sim$species[species == "Popu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 3000) # defaults 200, 5000
+
+  ## resprouting (only aspen resprouts)
+  sim$species[species == "Popu_sp", resproutage_min := 25] # default 10
+  #sim$species[species == "Popu_sp", resproutprob := 0.1] # default 0.5
+
+  ## growth curves:
+  #   Biomass Succession User Guide p17, 0 is faster growth, 1 was the prev assumption
+  sim$species[species == "Pice_gla", growthcurve := P(sim)$growthCurveNonDecid] # original default 1
+  sim$species[species == "Pice_mar", growthcurve := P(sim)$growthCurveNonDecid] # original default 1
+  sim$species[species == "Abie_sp", growthcurve := P(sim)$growthCurveNonDecid] # original default 0
+  sim$species[species == "Pinu_sp", growthcurve := P(sim)$growthCurveNonDecid] # original default 0
+  sim$species[species == "Popu_sp", growthcurve := P(sim)$growthCurveDecid] # original default 0
+
+  ## mortality
+  sim$species[species == "Pice_gla", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
+  sim$species[species == "Pice_mar", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
+  sim$species[species == "Abie_sp", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
+  sim$species[species == "Pinu_sp", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
+  sim$species[species == "Popu_sp", mortalityshape := P(sim)$mortalityShapeDecid] # default 25
 
   if (getOption("LandR.verbose") > 0) {
     message("Adjusting species-level traits, part 2, for LandWeb")
