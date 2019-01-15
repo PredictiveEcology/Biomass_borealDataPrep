@@ -44,6 +44,9 @@ defineModule(sim, list(
                     "When assigning pixelGroup membership, this defines the resolution of ages that will be considered 'the same pixelGroup', e.g., if it is 10, then 6 and 14 will be the same"),
     defineParameter("pixelGroupBiomassClass", "numeric", 100, NA, NA,
                     "When assigning pixelGroup membership, this defines the resolution of biomass that will be considered 'the same pixelGroup', e.g., if it is 100, then 5160 and 5240 will be the same"),
+    defineParameter("runName", "character", "", NA, NA,
+                    paste("A description for run.",
+                          "This will form the basis of cache path and output path, and affect dispersal parameterization."),
     defineParameter("sppEquivCol", "character", "LandR", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter("successionTimestep", "numeric", 10, NA, NA, "defines the simulation time step, default is 10 years"),
@@ -166,16 +169,29 @@ createLBMRInputs <- function(sim) {
 
   ### override species table values ##############################
 
-  ## seed dispersal (see LandWeb#96, LandWeb#112)
-  sim$species[species == "Pice_gla", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 100, 303
-  sim$species[species == "Pice_mar", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 80, 200
-  sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 100, seeddistance_max = 750)] # defaults 25, 100
-  sim$species[species == "Pinu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 30, 100
-  #sim$species[species == "Popu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 3000) # defaults 200, 5000
+  if (grepl("aspenDispersal", P(sim)$runName)) {
+    ## seed dispersal (see LandWeb#96, LandWeb#112)
+    sim$species[species == "Pice_gla", `:=`(seeddistance_eff = 0, seeddistance_max = 0)] # defaults 100, 303
+    sim$species[species == "Pice_mar", `:=`(seeddistance_eff = 0, seeddistance_max = 0)] # defaults 80, 200
+    sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 0, seeddistance_max = 0)] # defaults 25, 160
+    sim$species[species == "Pinu_sp", `:=`(seeddistance_eff = 0, seeddistance_max = 0)] # defaults 30, 100
+    sim$species[species == "Popu_sp", `:=`(seeddistance_eff = 250, seeddistance_max = 500)] # defaults 200, 5000
+  } else {
+    ## seed dispersal (see LandWeb#96, LandWeb#112)
+    sim$species[species == "Pice_gla", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 100, 303
+    sim$species[species == "Pice_mar", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 80, 200
+    sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 100, seeddistance_max = 750)] # defaults 25, 160
+    sim$species[species == "Pinu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 30, 100
+    #sim$species[species == "Popu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 3000)] # defaults 200, 500
+  }
+
+  if (grepl("noDispersal", P(sim)$runName)) {
+    sim$species[, postfireregen := "none"]
+  }
 
   ## resprouting (only aspen resprouts)
   sim$species[species == "Popu_sp", resproutage_min := 25] # default 10
-  #sim$species[species == "Popu_sp", resproutprob := 0.1] # default 0.5
+  #speciesTable[species == "Popu_sp", resproutprob := 0.1] # default 0.5
 
   ## growth curves:
   #   Biomass Succession User Guide p17, 0 is faster growth, 1 was the prev assumption
@@ -191,6 +207,10 @@ createLBMRInputs <- function(sim) {
   sim$species[species == "Abie_sp", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
   sim$species[species == "Pinu_sp", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
   sim$species[species == "Popu_sp", mortalityshape := P(sim)$mortalityShapeDecid] # default 25
+
+  if (grepl("aspen80", P(sim)$runName)) {
+    sim$species[species == "Popu_sp", longevity := 80] # default 150
+  }
 
   if (getOption("LandR.verbose") > 0) {
     message("Adjusting species-level traits, part 2, for LandWeb")
