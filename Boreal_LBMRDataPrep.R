@@ -331,11 +331,12 @@ createLBMRInputs <- function(sim) {
                format(P(sim)$coverQuotedFormula)))
 
   modelCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula,
+                           uniqueEcoregionGroup = unique(cohortDataShort$ecoregionGroup),
                            cohortDataShort, family = binomial,
                            #checksumsFileID = "1XznvuxsRixGxhYCicMr5mdoZlyYECY8C",
                            useCloud = P(sim)$useCloudCacheForStats,
                            cloudFolderID = "/folders/1wJXDyp5_XL2RubViWGAeTNDqGElfgkL8",
-                           showSimilar = TRUE, omitArgs = "showSimilar")
+                           showSimilar = TRUE, omitArgs = c("showSimilar", ".specialData"))
   message(blue("  The rsquared is: "))
   print(modelCover$rsq)
 
@@ -344,10 +345,11 @@ createLBMRInputs <- function(sim) {
   message(blue("Estimating maxB with P(sim)$biomassQuotedFormula, which is:\n",
           magenta(paste0(format(P(sim)$biomassQuotedFormula, appendLF = FALSE), collapse = ""))))
   modelBiomass <- cloudCache(statsModel, form = P(sim)$biomassQuotedFormula,
+                             uniqueEcoregionGroup = unique(cohortDataNo34to36NoBiomass$ecoregionGroup),
                              .specialData = cohortDataNo34to36NoBiomass,
                              useCloud = P(sim)$useCloudCacheForStats,
                              cloudFolderID = "/folders/1wJXDyp5_XL2RubViWGAeTNDqGElfgkL8",
-                             showSimilar = TRUE, omitArgs = "showSimilar")
+                             showSimilar = TRUE, omitArgs = c("showSimilar", ".specialData"))
   message(blue("  The rsquared is: "))
   print(modelBiomass$rsq)
 
