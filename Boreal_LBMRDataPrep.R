@@ -46,7 +46,7 @@ defineModule(sim, list(
                     "When assigning pixelGroup membership, this defines the resolution of biomass that will be considered 'the same pixelGroup', e.g., if it is 100, then 5160 and 5240 will be the same"),
     defineParameter("runName", "character", "", NA, NA,
                     paste("A description for run.",
-                          "This will form the basis of cache path and output path, and affect dispersal parameterization."),
+                          "This will form the basis of cache path and output path, and affect dispersal parameterization.")),
     defineParameter("sppEquivCol", "character", "LandR", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter("successionTimestep", "numeric", 10, NA, NA, "defines the simulation time step, default is 10 years"),
