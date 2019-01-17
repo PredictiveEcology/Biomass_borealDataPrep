@@ -175,7 +175,7 @@ createLBMRInputs <- function(sim) {
     sim$species[species == "Pice_mar", `:=`(seeddistance_eff = 0, seeddistance_max = 0)] # defaults 80, 200
     sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 0, seeddistance_max = 0)] # defaults 25, 160
     sim$species[species == "Pinu_sp", `:=`(seeddistance_eff = 0, seeddistance_max = 0)] # defaults 30, 100
-    sim$species[species == "Popu_sp", `:=`(seeddistance_eff = 250, seeddistance_max = 500)] # defaults 200, 5000
+    sim$species[species == "Popu_sp", `:=`(seeddistance_eff = 125, seeddistance_max = 250)] # defaults 200, 5000
   } else {
     ## seed dispersal (see LandWeb#96, LandWeb#112)
     sim$species[species == "Pice_gla", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 100, 303
