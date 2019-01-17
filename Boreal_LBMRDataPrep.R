@@ -171,10 +171,10 @@ createLBMRInputs <- function(sim) {
 
   if (grepl("aspenDispersal", P(sim)$runName)) {
     ## seed dispersal (see LandWeb#96, LandWeb#112)
-    sim$species[species == "Pice_gla", `:=`(seeddistance_eff = 0, seeddistance_max = 0)] # defaults 100, 303
-    sim$species[species == "Pice_mar", `:=`(seeddistance_eff = 0, seeddistance_max = 0)] # defaults 80, 200
-    sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 0, seeddistance_max = 0)] # defaults 25, 160
-    sim$species[species == "Pinu_sp", `:=`(seeddistance_eff = 0, seeddistance_max = 0)] # defaults 30, 100
+    sim$species[species == "Pice_gla", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 100, 303
+    sim$species[species == "Pice_mar", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 80, 200
+    sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 25, 160
+    sim$species[species == "Pinu_sp", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 30, 100
     sim$species[species == "Popu_sp", `:=`(seeddistance_eff = 125, seeddistance_max = 250)] # defaults 200, 5000
   } else {
     ## seed dispersal (see LandWeb#96, LandWeb#112)
@@ -185,7 +185,7 @@ createLBMRInputs <- function(sim) {
     #sim$species[species == "Popu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 3000)] # defaults 200, 500
   }
 
-  if (grepl("noDispersal", P(sim)$runName)) {
+  if (grepl("noDispersal|aspenDispersal", P(sim)$runName)) {
     sim$species[, postfireregen := "none"]
   }
 
