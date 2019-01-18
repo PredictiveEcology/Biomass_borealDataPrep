@@ -300,7 +300,7 @@ createLBMRInputs <- function(sim) {
                                                   .(speciesCode, initialEcoregionCode, pixelIndex)])
   pseudoSpeciesEcoregion <- unique(availableCombinations[,
                                                   .(speciesCode, initialEcoregionCode)])
-  newLCCClasses <- convertUnwantedLCC(pixelClassesToReplace = 34:36,
+  newLCCClasses <- Cache(convertUnwantedLCC, pixelClassesToReplace = 34:36,
                                       rstLCC = LCC2005Adj,
                                       ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
                                                                         ecoregionFiles$ecoregionMap[],
