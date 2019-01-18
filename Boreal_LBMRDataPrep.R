@@ -28,6 +28,8 @@ defineModule(sim, list(
                     quote(cbind(coverPres, coverNum) ~ speciesCode + (1 | ecoregionGroup)),
                     NA, NA,
                     "This formula is for estimating cover from ecoregion and speciesCode and potentially others"),
+    defineParameter("cloudFolderID", "character", NA, NA, NA,
+                    "The google drive location where cloudCache will store large statistical objects"),
     defineParameter("establishProbAdjFacResprout", "numeric", 0.1, 0, 1,
                     "The establishprob of resprouting spcies may be estimated too high. This number will be multiplied by establishprob for resprouting species, e.g., Populus tremuloides"),
     defineParameter("establishProbAdjFacNonResprout", "numeric", 2, 1, 2,
@@ -330,13 +332,14 @@ createLBMRInputs <- function(sim) {
   message(blue("Estimating Species Establishment Probability using P(sim)$coverQuotedFormula, which is\n",
                format(P(sim)$coverQuotedFormula)))
 
+  useCloud <- if (!is.na(P(sim)$cloudFolderID)) P(sim)$useCloudCacheForStats else FALSE
   modelCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula,
                            uniqueEcoregionGroup = unique(cohortDataShort$ecoregionGroup),
                            cohortDataShort, family = binomial,
-                           #checksumsFileID = "1XznvuxsRixGxhYCicMr5mdoZlyYECY8C",
-                           useCloud = P(sim)$useCloudCacheForStats,
-                           cloudFolderID = "/folders/1wJXDyp5_XL2RubViWGAeTNDqGElfgkL8",
-                           showSimilar = TRUE, omitArgs = c("showSimilar", ".specialData"))
+                           useCloud = useCloud,
+                           cloudFolderID = P(sim)$cloudFolderID,
+                           showSimilar = TRUE, omitArgs = c("showSimilar", ".specialData",
+                                                            "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
   print(modelCover$rsq)
 
@@ -347,9 +350,10 @@ createLBMRInputs <- function(sim) {
   modelBiomass <- cloudCache(statsModel, form = P(sim)$biomassQuotedFormula,
                              uniqueEcoregionGroup = unique(cohortDataNo34to36NoBiomass$ecoregionGroup),
                              .specialData = cohortDataNo34to36NoBiomass,
-                             useCloud = P(sim)$useCloudCacheForStats,
-                             cloudFolderID = "/folders/1wJXDyp5_XL2RubViWGAeTNDqGElfgkL8",
-                             showSimilar = TRUE, omitArgs = c("showSimilar", ".specialData"))
+                             useCloud = useCloud,
+                             cloudFolderID = P(sim)$cloudFolderID,
+                             showSimilar = TRUE, omitArgs = c("showSimilar", ".specialData",
+                                                              "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
   print(modelBiomass$rsq)
 
