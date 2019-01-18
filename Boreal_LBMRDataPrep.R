@@ -378,7 +378,6 @@ createLBMRInputs <- function(sim) {
   ############################################
 
   cohortDataShort <- sim$species[, .(postfireregen, speciesCode)][cohortDataShort, on = "speciesCode"]
-  #browser()
   #cohortDataShort[postfireregen == "none", establishprob := pmin(1, establishprob * P(sim)$establishProbAdjFacResprout)]
   cohortDataShort[postfireregen == "resprout", establishprob := pmax(0, pmin(1, establishprob * P(sim)$establishProbAdjFacResprout))]
   cohortDataShort[postfireregen != "resprout", establishprob := pmax(0, pmin(1, establishprob * P(sim)$establishProbAdjFacNonResprout))]
