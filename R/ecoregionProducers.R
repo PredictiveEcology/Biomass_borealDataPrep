@@ -1,78 +1,82 @@
-ecoregionProducer <- function(studyAreaRaster, ecoregionMapFull, ecoregionName,
-                              ecoregionActiveStatus, studyArea, rstStudyArea, maskFn) {
+#' ecoregionProducer
+#'
+#'  TODO: description and title needed
+#'
+#' @param ecoregionMaps TODO: description needed
+#' @param ecoregionName TODO: description needed
+#' @param ecoregionActiveStatus TODO: description needed
+#' @param rasterToMatch TODO: description needed
+#'
+#' @return
+#'
+#' @export
+#' @importFrom data.table as.data.table data.table
+#' @importFrom fasterize fasterize
+#' @importFrom raster getValues levels raster
+#' @importFrom sf st_as_sf
+#' @importFrom SpaDES.core paddedFloatToChar
+ecoregionProducer <- function(ecoregionMaps, ecoregionName,
+                              ecoregionActiveStatus, rasterToMatch) {
   # change the coordinate reference for all spatialpolygons
   message("ecoregionProducer 1: ", Sys.time())
-  ecoregionMapInStudy <- raster::intersect(ecoregionMapFull, aggregate(studyArea))
-  # ecoregions <- ecoregionMapInStudy@data[,ecoregionName]
-  # ecoregionTable <- data.table(mapcode = numeric(),
-  #                              ecoregion = character())
-  # mapcode <- 1
-  # for(ecoregion in unique(ecoregions)){
-  # #  for(ecoregion in ecoregions){
-  #     singleecoMapPoly <- ecoregionMapInStudy[ecoregionMapInStudy@data[,ecoregionName]==ecoregion,]
-  #   studyAreaRaster <- setValues(studyAreaRaster, mapcode)
-  #   singleecoMapRaster <- crop(studyAreaRaster, singleecoMapPoly)
-  #   singleecoMapRaster <- suppressWarnings(maskFn(singleecoMapRaster, singleecoMapPoly))
-  #   if(length(unique(getValues(singleecoMapRaster)))==1){
-  #     if(is.na(unique(getValues(singleecoMapRaster)))){
-  #       ecoregionTable <- rbind(ecoregionTable,
-  #                               data.table(mapcode = NA,
-  #                                          ecoregion = ecoregion))
-  #     } else {
-  #       ecoregionTable <- rbind(ecoregionTable,
-  #                               data.table(mapcode = mapcode,
-  #                                          ecoregion = ecoregion))
-  #     }
-  #   } else {
-  #     ecoregionTable <- rbind(ecoregionTable,
-  #                             data.table(mapcode = mapcode,
-  #                                        ecoregion = ecoregion))
-  #   }
-  #
-  #   if(mapcode == 1){
-  #     ecoregionMap <- singleecoMapRaster
-  #   } else {
-  #     ecoregionMap <- merge(ecoregionMap, singleecoMapRaster)
-  #   }
-  #   mapcode <- mapcode + 1
-  # }
+  #ecoregionMapInStudy <- raster::intersect(ecoregionMapFull, fixErrors(aggregate(studyArea)))
 
   # Alternative
-  message("ecoregionProducer fastRasterize: ", Sys.time())
-  ecoregionMap <- fasterize::fasterize(sf::st_as_sf(ecoregionMapInStudy), studyAreaRaster, field = "ECODISTRIC")
+  rstEcoregion <- list()
+  rtmNAs <- is.na(rasterToMatch[]) | rasterToMatch[] == 0
+  for (erm in seq(ecoregionMaps)) {
+    if (!is(ecoregionMaps[[erm]], "Raster")) {
+      message("ecoregionProducer fastRasterize: ", Sys.time())
+      rstEcoregion[[erm]] <- fasterize::fasterize(sf::st_as_sf(ecoregionMaps[[erm]]), raster(rasterToMatch),
+                                                  field = ecoregionName)
+    } else {
+      rstEcoregion[[erm]] <- ecoregionMaps[[erm]]
+    }
+    rstEcoregion[[erm]][rtmNAs] <- NA
+  }
+  a <- lapply(rstEcoregion, function(x) getValues(x)[!rtmNAs] )
+  b <- as.data.table(a)
+  b[, (names(b)) := lapply(.SD, function(x) paddedFloatToChar(x, max(nchar(x), na.rm = TRUE)))]
 
-  #ecoregionMap1 <- rasterize(ecoregionMapInStudy, studyAreaRaster, field = "ECODISTRIC")
-  ecoregionFactorValues <- unique(ecoregionMap[])
+  # Take the first 2 columns, whatever their names, in case they are given something
+  ecoregionValues <- factor(paste(b[[1]], b[[2]], sep = "_"))
 
-  ecoregionTable <- data.table(mapcode = seq_along(ecoregionFactorValues[!is.na(ecoregionFactorValues)]),
-                               ecoregion = as.numeric(ecoregionFactorValues[!is.na(ecoregionFactorValues)]))
+  rstEcoregion <- raster(rstEcoregion[[1]])
+  ecoregionFactorLevels <- levels(ecoregionValues)
+
+  rstEcoregion[!rtmNAs] <- as.integer(ecoregionValues)
+  levels(rstEcoregion) <- data.frame(ID = seq(ecoregionFactorLevels),
+                                     mapcode = seq(ecoregionFactorLevels),
+                                     ecoRegion = gsub("_.*", "", ecoregionFactorLevels),
+                                     landCover = gsub(".*_", "", ecoregionFactorLevels),
+                                     ecoregion = ecoregionFactorLevels)
+  #ecoregionFactorValues <- na.omit(unique(rstEcoregion[]))
+
+  #ecoregionTable <- raster::levels(rstEcoregion)[[1]]
+
+  if (FALSE) {
+    data.table(
+      mapcode = seq_along(ecoregionFactorLevels[!is.na(ecoregionFactorLevels)]),
+      ecoregion = ecoregionFactorLevels[!is.na(ecoregionFactorLevels)]
+    )
+    message("ecoregionProducer mapvalues: ", Sys.time())
+    # rstEcoregion[] <- plyr::mapvalues(rstEcoregion[], from = ecoregionTable$ecoregion, to = ecoregionTable$mapcode)
+    ecoregionActiveStatus[, ecoregion := as.factor(ecoregion)]
+    ecoregionTable <- ecoregionTable[!is.na(mapcode),][, ecoregion := as.character(ecoregion)]
+    message("ecoregionProducer dplyr_leftjoin: ", Sys.time())
+    ecoregionTable <- dplyr::left_join(ecoregionTable,
+                                       ecoregionActiveStatus,
+                                       by = "ecoregion") %>%
+      data.table()
+    ecoregionTable[is.na(active), active := "no"]
+
+    ecoregionTable <- ecoregionTable[,.(active, mapcode, ecoregion)]
+  }
+
+  ecoregionTable <- as.data.table(raster::levels(rstEcoregion)[[1]])
   message("ecoregionProducer mapvalues: ", Sys.time())
-  ecoregionMap[] <- plyr::mapvalues(ecoregionMap[], from = ecoregionTable$ecoregion, to = ecoregionTable$mapcode)
-  ecoregionActiveStatus[, ecoregion := as.character(ecoregion)]
-  ecoregionTable <- ecoregionTable[!is.na(mapcode),][, ecoregion := as.character(ecoregion)]
-  message("ecoregionProducer dplyr_leftjoin: ", Sys.time())
-  ecoregionTable <- dplyr::left_join(ecoregionTable,
-                                     ecoregionActiveStatus,
-                                     by = "ecoregion") %>%
-    data.table
-  ecoregionTable[is.na(active), active := "no"]
-  ecoregionTable <- ecoregionTable[,.(active, mapcode, ecoregion)]
-  return(list(ecoregionMap = ecoregionMap,
+  ecoregionTable <- ecoregionTable[,.(active = "yes", mapcode, ecoregion)]
+
+  return(list(ecoregionMap = rstEcoregion,
               ecoregion = ecoregionTable))
-}
-
-nonActiveEcoregionProducer <- function(nonactiveRaster, activeStatus, ecoregionMap,
-                                       ecoregion, initialCommunityMap, initialCommunity) {
-  nonactiveRasterSmall <- crop(nonactiveRaster, ecoregionMap)
-  nonecomapcode <- activeStatus[active == "no", ]$mapcode
-  whNANonActiveRasterSmall <- which(nonactiveRasterSmall[] %in% nonecomapcode)
-  initialCommunityMap[whNANonActiveRasterSmall] <- NA
-  ecoregionMap[whNANonActiveRasterSmall] <- NA
-
-  initialCommunity <- initialCommunity[mapcode %in% sort(unique(getValues(initialCommunityMap))), ]
-  ecoregion <- ecoregion[mapcode %in% sort(unique(getValues(ecoregionMap))), ]
-  return(list(ecoregionMap = ecoregionMap,
-              ecoregion = ecoregion,
-              initialCommunityMap = initialCommunityMap,
-              initialCommunity = initialCommunity))
 }

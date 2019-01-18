@@ -1,92 +1,134 @@
-# Everything in this file gets sourced during simInit, and all functions and objects
-# are put into the simList. To use objects and functions, use sim$xxx.
 defineModule(sim, list(
   name = "Boreal_LBMRDataPrep",
   description = "A data preparation module for parameterizing LBMR from open data sources, within the Boreal forest of Canada",
   keywords = c("LandWeb", "LBMR"),
-  authors = c(person(c("Yong", "Luo"), email = "yong.luo@canada.ca", role = c("aut", "cre")),
-              person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@canada.ca", role = c("aut"))),
+  authors = c(
+    person("Yong", "Luo", email = "yong.luo@canada.ca", role = c("aut")),
+    person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@canada.ca", role = c("aut", "cre")),
+    person(c("Ceres"), "Barros", email = "cbarros@mail.ubc.ca", role = c("ctb")),
+    person(c("Alex", "M."), "Chubaty", email = "achubaty@friresearch.ca", role = c("ctb"))
+  ),
   childModules = character(0),
-  version = numeric_version("1.3.2"),
+  version = list(SpaDES.core = "0.2.3.9009", Boreal_LBMRDataPrep = numeric_version("1.3.3")),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
-  reqdPkgs = list("data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos"),
+  reqdPkgs = list("crayon", "data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos", "sp",
+                  "PredictiveEcology/LandR@development", "lme4",
+                  "PredictiveEcology/pemisc@development"),
   parameters = rbind(
-    #defineParameter("paramName", "paramClass", value, min, max, "parameter description")),
-    defineParameter(".plotInitialTime", "numeric", NA, NA, NA, "This describes the simulation time at which the first plot event should occur"),
-    defineParameter(".plotInterval", "numeric", NA, NA, NA, "This describes the simulation time interval between plot events"),
-    defineParameter(".saveInitialTime", "numeric", NA, NA, NA, "This describes the simulation time at which the first save event should occur"),
-    defineParameter(".saveInterval", "numeric", NA, NA, NA, "This describes the simulation time interval between save events")
+    defineParameter("biomassQuotedFormula", "name",
+                    quote(B ~ logAge * speciesCode + (speciesCode | ecoregionGroup) + cover * speciesCode),
+                    NA, NA,
+                    paste0("This formula is for estimating biomass (B) from ecoregionGroup (currently ecoDistrict * LandCoverClass), ",
+                    "speciesCode, logAge (gives a downward curving relationship), and cover")),
+    defineParameter("coverQuotedFormula", "name",
+                    quote(cbind(coverPres, coverNum) ~ speciesCode + (1 | ecoregionGroup)),
+                    NA, NA,
+                    "This formula is for estimating cover from ecoregion and speciesCode and potentially others"),
+    defineParameter("cloudFolderID", "character", NA, NA, NA,
+                    "The google drive location where cloudCache will store large statistical objects"),
+    defineParameter("establishProbAdjFacResprout", "numeric", 0.1, 0, 1,
+                    "The establishprob of resprouting spcies may be estimated too high. This number will be multiplied by establishprob for resprouting species, e.g., Populus tremuloides"),
+    defineParameter("establishProbAdjFacNonResprout", "numeric", 2, 1, 2,
+                    "The establishprob of non resprouting species may be estimated too high. This number will be the multiplied by establishprob for non resprouting species"),
+    defineParameter("growthCurveDecid", "numeric", 0, 0, 1,
+                    "growth curve shape for deciduous species (i.e., aspen). LANDIS-II uses 0 for aspen."),
+    defineParameter("growthCurveNonDecid", "numeric", 1, 0, 1,
+                    "growth curve shape for non-deciduous species. LANDIS-II uses 1 for spruce, 0 for other non deciduous."),
+    defineParameter("mortalityShapeDecid", "numeric", 25, 12, 27,
+                    "mortality curve shape for deciduous species (i.e., aspen). LANDIS-II uses 25 by default."),
+    defineParameter("mortalityShapeNonDecid", "numeric", 15, 12, 27,
+                    "mortality curve shape for non-deciduous species. LANDIS-II uses 15 by default."),
+    defineParameter("pixelGroupAgeClass", "numeric", P(sim)$successionTimestep, NA, NA,
+                    "When assigning pixelGroup membership, this defines the resolution of ages that will be considered 'the same pixelGroup', e.g., if it is 10, then 6 and 14 will be the same"),
+    defineParameter("pixelGroupBiomassClass", "numeric", 100, NA, NA,
+                    "When assigning pixelGroup membership, this defines the resolution of biomass that will be considered 'the same pixelGroup', e.g., if it is 100, then 5160 and 5240 will be the same"),
+    defineParameter("runName", "character", "", NA, NA,
+                    paste("A description for run.",
+                          "This will form the basis of cache path and output path, and affect dispersal parameterization.")),
+    defineParameter("sppEquivCol", "character", "LandR", NA, NA,
+                    "The column in sim$specieEquivalency data.table to use as a naming convention"),
+    defineParameter("successionTimestep", "numeric", 10, NA, NA, "defines the simulation time step, default is 10 years"),
+    defineParameter("useCloudCacheForStats", "logical", TRUE, NA, NA,
+                    "Some of the statistical models take long (at least 30 minutes, likely longer). If this is TRUE, then it will try to get previous cached runs from googledrive"),
+    defineParameter(".plotInitialTime", "numeric", NA, NA, NA,
+                    "This describes the simulation time at which the first plot event should occur"),
+    defineParameter(".plotInterval", "numeric", NA, NA, NA,
+                    "This describes the simulation time interval between plot events"),
+    defineParameter(".saveInitialTime", "numeric", NA, NA, NA,
+                    "This describes the simulation time at which the first save event should occur"),
+    defineParameter(".saveInterval", "numeric", NA, NA, NA,
+                    "This describes the simulation time interval between save events")
   ),
   inputObjects = bind_rows(
-    #expectsInput("objectName", "objectClass", "input object description", sourceURL, ...),
-    expectsInput(objectName = "ecoDistrict", objectClass = "SpatialPolygonsDataFrame",
-                 desc = "ecodistricts in study area, default is Canada national ecodistricts",
-                 sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip"),
-    expectsInput(objectName = "ecoRegion", objectClass = "SpatialPolygonsDataFrame",
-                 desc = "ecoregions in study area, default is Canada national ecoregions",
-                 sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/region/ecoregion_shp.zip"),
-    expectsInput(objectName = "ecoZone", objectClass = "SpatialPolygonsDataFrame",
-                 desc = "ecozones in study area, default is Canada national ecozones",
-                 sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/zone/ecozone_shp.zip"),
-    expectsInput(objectName = "biomassMap", objectClass = "RasterLayer",
+    expectsInput("biomassMap", "RasterLayer",
                  desc = "total biomass raster layer in study area, default is Canada national biomass map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureBiomass.tar"),
-    expectsInput(objectName = "standAgeMap", objectClass = "RasterLayer",
-                 desc = "stand age map in study area, default is Canada national stand age map",
-                 sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
-    expectsInput(objectName = "specieslayers", objectClass = "RasterStack",
-                 desc = "biomass percentage raster layers by species in Canada species map",
-                 sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
-    expectsInput(objectName = "LCC2005", objectClass = "RasterLayer",
+    expectsInput("columnsForPixelGroups", "character",
+                 "The names of the columns in cohortData that define unique pixelGroups. Default is c('ecoregionGroup', 'speciesCode', 'age', 'B') "),
+    expectsInput("ecoDistrict", "SpatialPolygonsDataFrame",
+                 desc = "ecodistricts in study area, default is Canada national ecodistricts",
+                 sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip"),
+    expectsInput("LCC2005", "RasterLayer",
                  desc = "2005 land classification map in study area, default is Canada national land classification in 2005",
-                 sourceURL = "ftp://ftp.ccrs.nrcan.gc.ca/ad/NLCCLandCover/LandcoverCanada2005_250m/LandCoverOfCanada2005_V1_4.zip"),
-    expectsInput(objectName = "speciesTable", objectClass = "data.table",
+                 #sourceURL = "ftp://ftp.ccrs.nrcan.gc.ca/ad/NLCCLandCover/LandcoverCanada2005_250m/LandCoverOfCanada2005_V1_4.zip"),
+                 sourceURL = "https://drive.google.com/file/d/1g9jr0VrQxqxGjZ4ckF6ZkSMP-zuYzHQC/view?usp=sharing"),
+    expectsInput("rasterToMatch", "RasterLayer",
+                 #desc = "this raster contains two pieces of information: Full study area with fire return interval attribute",
+                 desc = "DESCRIPTION NEEDED",
+                 sourceURL = NA),
+    expectsInput("speciesLayers", "RasterStack",
+                 desc = "cover percentage raster layers by species in Canada species map",
+                 sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
+    expectsInput("speciesTable", "data.table",
                  desc = "species attributes table, default is from Dominic and Yan's project",
                  sourceURL = "https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv"),
-    expectsInput(objectName = "shpStudyRegionFull", objectClass = "SpatialPolygonsDataFrame",
-                 desc = "this shape file contains two informaton: Full study area with fire return interval attribute",
-                 sourceURL = ""), # i guess this is study area and fire return interval
-    expectsInput(objectName = "shpStudySubRegion", objectClass = "SpatialPolygonsDataFrame",
-                 desc = "this shape file contains two informaton: Sub study area with fire return interval attribute",
-                 sourceURL = ""), # i guess this is study area and fire return interval
-    expectsInput(objectName = "rstStudyRegion", objectClass = "RasterLayer",
-                 desc = "this raster contains two pieces of informaton: Full study area with fire return interval attribute",
-                 sourceURL = ""), # i guess this is study area and fire return interval
+    expectsInput("sppEquiv", "data.table",
+                 desc = "table of species equivalencies. See LandR::sppEquivalencies_CA.",
+                 sourceURL = ""),
+    expectsInput("studyArea", "SpatialPolygonsDataFrame",
+                 desc = paste("multipolygon to use as the study area,",
+                              "with attribute LTHFC describing the fire return interval.",
+                              "Defaults to a square shapefile in Southwestern Alberta, Canada."),
+                 sourceURL = ""),
+    expectsInput("studyAreaLarge", "SpatialPolygonsDataFrame",
+                 desc = paste("multipolygon (larger area than studyArea) to use for parameter estimation,",
+                              "with attribute LTHFC describing the fire return interval.",
+                              "Defaults to a square shapefile in Southwestern Alberta, Canada."),
+                 sourceURL = ""),
+    expectsInput("standAgeMap", "RasterLayer",
+                 desc = "stand age map in study area, default is Canada national stand age map",
+                 sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
     expectsInput("sufficientLight", "data.frame",
-                 desc = "define how the species with different shade tolerance respond to stand shadeness"),
-    expectsInput("seedingAlgorithm", "character",
-                 desc = "choose which seeding algorithm will be used among noDispersal, universalDispersal,
-                 and wardDispersal, default is wardDispersal"),
-    expectsInput(objectName = "studyArea", objectClass = "SpatialPolygons",
-                 desc = "study area",
-                 sourceURL = NA)
-    ),
+                 desc = "define how the species with different shade tolerance respond to stand shadeness")
+  ),
   outputObjects = bind_rows(
-    #createsOutput("objectName", "objectClass", "output object description", ...),
-    createsOutput(objectName = "initialCommunities", objectClass = "data.table",
-                  desc = "initial community table"),
-    createsOutput(objectName = "species", objectClass = "data.table",
-                  desc = "a table that has species traits such as longevity..."),
-    createsOutput(objectName = "ecoregionMap", objectClass = "RasterLayer",
-                  desc = "ecoregion map that has mapcodes match ecoregion table and speciesEcoregion table"),
-    createsOutput(objectName = "initialCommunitiesMap", objectClass = "RasterLayer",
-                  desc = "initial community map that has mapcodes match initial community table"),
-    createsOutput(objectName = "ecoregion", objectClass = "data.table",
+    createsOutput("ecoDistrict", "", desc = ""), ## TODO: description and type needed
+    createsOutput("ecoregion", "data.table",
                   desc = "ecoregion look up table"),
-    createsOutput(objectName = "speciesEcoregion", objectClass = "data.table",
-                  desc = "define the maxANPP, maxB and SEP change with both ecoregion and simulation time"),
-    createsOutput(objectName = "minRelativeB", objectClass = "data.frame",
+    createsOutput("ecoregionMap", "RasterLayer",
+                  desc = "ecoregion map that has mapcodes match ecoregion table and speciesEcoregion table"),
+    createsOutput("cohortData", "data.table",
+                  desc = "initial community table"),
+    createsOutput("pixelGroupMap", "RasterLayer",
+                  desc = "initial community map that has mapcodes match initial community table"),
+    createsOutput("minRelativeB", "data.frame",
                   desc = "define the cut points to classify stand shadeness"),
-    createsOutput(objectName = "useCache", objectClass = "logic",
-                  desc = "define which the caching for spinup simulation should be used, default is TRUE"),
-    createsOutput("studyArea", "", ""),
-    createsOutput("ecoDistrict", "", ""),
-    createsOutput("ecoRegion", "", ""),
-    createsOutput("ecoZone", "", "")
+    createsOutput("notEnoughDataMaxBiomass", "data.table",
+                  desc = "The collection of ecoregion-species combinations that don't have values for maxB or maxANPP"),
+    createsOutput("species", "data.table",
+                  desc = "a table that has species traits such as longevity..."),
+    createsOutput("speciesEcoregion", "data.table",
+                  desc = "define the maxANPP, maxB and establishprob change with both ecoregion and simulation time"),
+    createsOutput("studyArea", "", desc = ""),
+    createsOutput("speciesEstablishmentProbMap", "RasterStack",
+                  paste("Species establishment probability as a map, ",
+                        "by species. This is written to disk to save RAM space")),
+    createsOutput("useCache", "logic",
+                  desc = "define which the caching for spinup simulation should be used, default is TRUE")
   )
 ))
 
@@ -95,10 +137,10 @@ defineModule(sim, list(
 
 doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE) {
   if (eventType == "init") {
-    sim <- estimateParameters(sim)
+    # names(sim$speciesLayers) <- equivalentName(names(sim$speciesLayers), sim$sppEquiv, "Latin_full")
+    sim <- createLBMRInputs(sim)
 
     # schedule future event(s)
-    sim <- scheduleEvent(sim, P(sim)$.plotInitialTime, "Boreal_LBMRDataPrep", "plot")
     sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Boreal_LBMRDataPrep", "save")
   } else if (eventType == "save") {
     sim <- Save(sim)
@@ -109,210 +151,371 @@ doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE
   return(invisible(sim))
 }
 
-## event functions
-#   - follow the naming convention `modulenameEventtype()`;
-#   - `modulenameInit()` function is required for initiliazation;
-#   - keep event functions short and clean, modularize by calling subroutines from section below.
-
-### template initialization
-estimateParameters <- function(sim) {
+createLBMRInputs <- function(sim) {
   # # ! ----- EDIT BELOW ----- ! #
-  cpath <- cachePath(sim)
-  sim$studyArea <- spTransform(sim$studyArea, crs(sim$specieslayers))
-  sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$specieslayers))
-  sim$ecoRegion <- spTransform(sim$ecoRegion, crs(sim$specieslayers))
-  sim$ecoZone <- spTransform(sim$ecoZone, crs(sim$specieslayers))
+  message(blue("Starting to createLBMRInputs in Boreal_LBMRDataPrep: ", Sys.time()))
+  cPath <- cachePath(sim)
+  sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$speciesLayers))
 
-  message("1: ", Sys.time())
-  rstStudyRegionBinary <- raster(sim$rstStudyRegion)
-  rstStudyRegionBinary[] <- NA
-  rstStudyRegionBinary[!is.na(sim$rstStudyRegion[])] <- 1
+  sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
+  sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
 
-  message("2: ", Sys.time())
-  initialCommFiles <- Cache(initialCommunityProducer,
-                            speciesLayers = sim$specieslayers,
-                            speciesPresence = 50,
-                            studyArea = sim$studyArea,
-                            rstStudyArea = rstStudyRegionBinary,
-                            userTags = "stable")
+  ################################################################
+  ## species traits inputs
+  ################################################################
+  message(blue("Prepare 'species' table, i.e., species level traits", Sys.time()))
+  sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
+                                  speciesLayers = sim$speciesLayers,
+                                  sppEquiv = sim$sppEquiv,
+                                  sppEquivCol = P(sim)$sppEquivCol)
+
+  ### override species table values ##############################
+
+  if (grepl("aspenDispersal", P(sim)$runName)) {
+    ## seed dispersal (see LandWeb#96, LandWeb#112)
+    sim$species[species == "Pice_gla", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 100, 303
+    sim$species[species == "Pice_mar", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 80, 200
+    sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 25, 160
+    sim$species[species == "Pinu_sp", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 30, 100
+    sim$species[species == "Popu_sp", `:=`(seeddistance_eff = 125, seeddistance_max = 250)] # defaults 200, 5000
+  } else {
+    ## seed dispersal (see LandWeb#96, LandWeb#112)
+    sim$species[species == "Pice_gla", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 100, 303
+    sim$species[species == "Pice_mar", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 80, 200
+    sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 100, seeddistance_max = 750)] # defaults 25, 160
+    sim$species[species == "Pinu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 30, 100
+    #sim$species[species == "Popu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 3000)] # defaults 200, 500
+  }
+
+  if (grepl("noDispersal|aspenDispersal", P(sim)$runName)) {
+    sim$species[, postfireregen := "none"]
+  }
+
+  ## resprouting (only aspen resprouts)
+  sim$species[species == "Popu_sp", resproutage_min := 25] # default 10
+  #speciesTable[species == "Popu_sp", resproutprob := 0.1] # default 0.5
+
+  ## growth curves:
+  #   Biomass Succession User Guide p17, 0 is faster growth, 1 was the prev assumption
+  sim$species[species == "Pice_gla", growthcurve := P(sim)$growthCurveNonDecid] # original default 1
+  sim$species[species == "Pice_mar", growthcurve := P(sim)$growthCurveNonDecid] # original default 1
+  sim$species[species == "Abie_sp", growthcurve := P(sim)$growthCurveNonDecid] # original default 0
+  sim$species[species == "Pinu_sp", growthcurve := P(sim)$growthCurveNonDecid] # original default 0
+  sim$species[species == "Popu_sp", growthcurve := P(sim)$growthCurveDecid] # original default 0
+
+  ## mortality
+  sim$species[species == "Pice_gla", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
+  sim$species[species == "Pice_mar", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
+  sim$species[species == "Abie_sp", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
+  sim$species[species == "Pinu_sp", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
+  sim$species[species == "Popu_sp", mortalityshape := P(sim)$mortalityShapeDecid] # default 25
+
+  if (grepl("aspen80", P(sim)$runName)) {
+    sim$species[species == "Popu_sp", longevity := 80] # default 150
+  }
+
+  if (getOption("LandR.verbose") > 0) {
+    message("Adjusting species-level traits, part 2, for LandWeb")
+    print(sim$species)
+  }
+
+  ################################################################
+  ## initialEcoregionMap
+  ################################################################
+  ecoregionMap <- Cache(postProcess, sim$ecoDistrict, studyArea = sim$studyArea, filename2 = NULL)
+  rstEcoregionMap <- fasterize::fasterize(sf::st_as_sf(ecoregionMap), raster = sim$rasterToMatch,
+                                          field = "ECODISTRIC")
   ecoregionstatus <- data.table(active = "yes",
                                 ecoregion = 1:1031)
+  #  also rm 37, 38, 39 --> make them NA
+  LCC2005Adj <- sim$LCC2005
 
-  message("ecoregionProducer: ", Sys.time())
+  # Rm rock and ice pixels
+  lcc37_39 <- sim$LCC2005[] %in% c(0, 37:39) # these are lakes, rock and ice
+  coverNA <- is.na(sim$speciesLayers[[1]][])
+  pixelsToRm <- lcc37_39 | coverNA
+
+  sim$rasterToMatch[pixelsToRm] <- NA
+  LCC2005Adj[pixelsToRm] <- NA
+  rstEcoregionMap[pixelsToRm] <- NA
+
+  message(blue("Make initial ecoregionGroups ", Sys.time()))
   ecoregionFiles <- Cache(ecoregionProducer,
-                          studyAreaRaster = initialCommFiles$initialCommunityMap,
-                          ecoregionMapFull = sim$ecoDistrict,
+                          ecoregionMaps = list(rstEcoregionMap, LCC2005Adj),
                           ecoregionName = "ECODISTRIC",
                           ecoregionActiveStatus = ecoregionstatus,
-                          studyArea = sim$studyArea,
-                          rstStudyArea = rstStudyRegionBinary,
-                          maskFn = fastMask,
+                          rasterToMatch = sim$rasterToMatch,
                           userTags = "stable")
 
-  message("3: ", Sys.time())
-  # LCC05 -- land covers 1 to 15 are forested with tree dominated... 34 and 35 are recent burns
-  # this is based on description in LCC05
-  activeStatusTable <- data.table(active = c(rep("yes", 15), rep("no", 25)),
-                                  mapcode = 1:40)[mapcode %in% c(34, 35), active := "yes"]
-  #simulationMaps <- sim$nonActiveEcoregionProducerCached(nonactiveRaster = sim$LCC2005,
-  if (!file.exists(filename(sim$LCC2005))) {
-    stop("Sometimes LCC2005 is not correctly in the sim. ",
-         "This may be due to an incorrect recovery of the LCC2005 from a module. ",
-         "Find which module created the LCC2005 that should be used here, ",
-         "and clear the event or module cache that created it. ",
-         "If the LCC2005 was made in the init event of LandWeb_dataPrep module, ",
-         "then try something like:\n",
-         "reproducible::clearCache(userTags = c('LandWeb_dataPrep', 'init'), x = 'cache/SMALL_All')")
+  ################################################################
+  ## put together pixelTable object
+  ################################################################
+  #  Round age to pixelGroupAgeClass
+  message(blue("Round age to nearest P(sim)$pixelGroupAgeClass, which is",
+               P(sim)$pixelGroupAgeClass))
+  coverMatrix <- matrix(asInteger(sim$speciesLayers[]),
+         ncol = length(names(sim$speciesLayers)))
+  colnames(coverMatrix) <- names(sim$speciesLayers)
+  pixelTable <- data.table(age = asInteger(ceiling(asInteger(sim$standAgeMap[]) /
+                                                     P(sim)$pixelGroupAgeClass) *
+                                     P(sim)$pixelGroupAgeClass),
+                   logAge = log(sim$standAgeMap[]),
+                   initialEcoregionCode = factor(factorValues2(ecoregionFiles$ecoregionMap,
+                                                        ecoregionFiles$ecoregionMap[],
+                                                        att = 5)),
+                   totalBiomass = asInteger(sim$biomassMap[]) * 100, # change units
+                   cover = coverMatrix,
+                   pixelIndex = seq(ncell(sim$standAgeMap)),
+                   lcc = LCC2005Adj[],
+                   rasterToMatch = sim$rasterToMatch[]
+  )
+
+  coverColNames <- paste0("cover.", sim$species$species)
+  pixelTable1 <- na.omit(pixelTable, cols = c("rasterToMatch"))
+  pixelTable <- na.omit(pixelTable1, cols = c(coverColNames))
+  if (NROW(pixelTable1) != NROW(pixelTable))
+    warning("Setting pixels to NA where there is NA in sim$speciesLayers. If this is correct,",
+            "\n  please modify 'sim$rasterToMatch' (which has values in pixels where there is",
+            "\n  no data for species cover.",
+            "\n  sim$rasterToMatch is expected to only have data where there is cover data. ")
+
+  message(blue("rm NAs, leaving", magenta(NROW(pixelTable)), "pixels with data"))
+  message(blue("This is the summary of the input data for age, ecoregionGroup, biomass, speciesLayers:"))
+  print(summary(pixelTable))
+
+  #######################################################
+  # Make the initial pixelCohortData table
+  #######################################################
+  pixelCohortData <- Cache(makeAndCleanInitialCohortData, pixelTable,
+                                              sppColumns = coverColNames,
+                                              pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass)
+
+  pixelCohortData[pixelIndex > 1407800 & pixelIndex < 1407900]
+  #######################################################
+  # replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*
+  #######################################################
+  message("Replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*")
+  rmZeroBiomassQuote <- quote(B > 0)
+  availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
+                                                  .(speciesCode, initialEcoregionCode, pixelIndex)])
+  pseudoSpeciesEcoregion <- unique(availableCombinations[,
+                                                  .(speciesCode, initialEcoregionCode)])
+  newLCCClasses <- Cache(convertUnwantedLCC, pixelClassesToReplace = 34:36,
+                                      rstLCC = LCC2005Adj,
+                                      ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
+                                                                        ecoregionFiles$ecoregionMap[],
+                                                                        att = "ecoregion"),
+                                      speciesEcoregion = pseudoSpeciesEcoregion,
+                                      availableERC_by_Sp = availableCombinations)
+
+  ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
+  #    The one without 34:36 can be used for statistical estimation, but not the one with
+  cohortData34to36 <- pixelCohortData[pixelIndex %in% newLCCClasses$pixelIndex]
+  cohortData34to36 <- newLCCClasses[cohortData34to36, on = "pixelIndex"]
+  cohortDataNo34to36 <- pixelCohortData[!pixelIndex %in% newLCCClasses$pixelIndex]
+  setnames(cohortDataNo34to36, "initialEcoregionCode", "ecoregionGroup")
+  #cohortDataNo34to36[, ecoregionGroup := initialEcoregionCode]
+  cohortDataNo34to36NoBiomass <- cohortDataNo34to36[eval(rmZeroBiomassQuote),
+                                                    .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
+
+  assert1(cohortData34to36, pixelCohortData[eval(rmZeroBiomassQuote)])
+
+  ##############################################################
+  # Statistical estimation of establishprob, maxB and maxANPP
+  ##############################################################
+  cohortDataShort <- cohortDataNo34to36[, list(coverNum = .N,
+                                               coverPres = sum(cover > 0)),
+                                        by = c("ecoregionGroup", "speciesCode")]
+  cohortDataShortNoCover <- cohortDataShort[coverPres == 0] #
+  cohortDataShort <- cohortDataShort[coverPres > 0] # remove places where there is 0 cover
+                                                    # will be added back as establishprob = 0
+  message(blue("Estimating Species Establishment Probability using P(sim)$coverQuotedFormula, which is\n",
+               format(P(sim)$coverQuotedFormula)))
+
+  useCloud <- if (!is.na(P(sim)$cloudFolderID)) P(sim)$useCloudCacheForStats else FALSE
+  modelCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula,
+                           uniqueEcoregionGroup = unique(cohortDataShort$ecoregionGroup),
+                           cohortDataShort, family = binomial,
+                           useCloud = useCloud,
+                           cloudFolderID = P(sim)$cloudFolderID,
+                           showSimilar = TRUE, omitArgs = c("showSimilar", ".specialData",
+                                                            "useCloud", "cloudFolderID"))
+  message(blue("  The rsquared is: "))
+  print(modelCover$rsq)
+
+  # For biomass
+  # For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
+  message(blue("Estimating maxB with P(sim)$biomassQuotedFormula, which is:\n",
+          magenta(paste0(format(P(sim)$biomassQuotedFormula, appendLF = FALSE), collapse = ""))))
+  modelBiomass <- cloudCache(statsModel, form = P(sim)$biomassQuotedFormula,
+                             uniqueEcoregionGroup = unique(cohortDataNo34to36NoBiomass$ecoregionGroup),
+                             .specialData = cohortDataNo34to36NoBiomass,
+                             useCloud = useCloud,
+                             cloudFolderID = P(sim)$cloudFolderID,
+                             showSimilar = TRUE, omitArgs = c("showSimilar", ".specialData",
+                                                              "useCloud", "cloudFolderID"))
+  message(blue("  The rsquared is: "))
+  print(modelBiomass$rsq)
+
+  ########################################################################
+  # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
+  #   doesn't include combinations with B = 0 because those places can't have the species/ecoregion combo
+  ########################################################################
+  message(blue("Create speciesEcoregion"))
+  joinOn <- c("ecoregionGroup", "speciesCode")
+  speciesEcoregion <- unique(cohortDataNo34to36NoBiomass, by = joinOn)
+  speciesEcoregion[, c("B", "logAge", "cover") := NULL]
+  speciesEcoregion[lcc %in% unique(cohortDataNo34to36NoBiomass$lcc)] # shouldn't do anything because already correct
+  sim$species[, speciesCode := as.factor(species)]
+  speciesEcoregion <- sim$species[, .(speciesCode, longevity)][speciesEcoregion, on = "speciesCode"]
+  speciesEcoregion[ , ecoregionGroup := factor(as.character(ecoregionGroup))]
+
+  ########################################################################
+  # Make predictions from statistical models for
+  ########################################################################
+  # establishprob -- already is on the short dataset -- need to add back the zeros too
+  establishprobBySuccessionTimestep <- 1 - (1 - modelCover$pred)^P(sim)$successionTimestep
+  cohortDataShort[, establishprob := establishprobBySuccessionTimestep]
+
+  ############################################
+  # Lower establishprob
+  ############################################
+
+  cohortDataShort <- sim$species[, .(postfireregen, speciesCode)][cohortDataShort, on = "speciesCode"]
+  #cohortDataShort[postfireregen == "none", establishprob := pmin(1, establishprob * P(sim)$establishProbAdjFacResprout)]
+  cohortDataShort[postfireregen == "resprout", establishprob := pmax(0, pmin(1, establishprob * P(sim)$establishProbAdjFacResprout))]
+  cohortDataShort[postfireregen != "resprout", establishprob := pmax(0, pmin(1, establishprob * P(sim)$establishProbAdjFacNonResprout))]
+  if (getOption("LandR.verbose") > 0) {
+    message("Dividing the establishment probability of resprouting species by", P(sim)$establishProbAdjFacResprout)
+  }
+  cohortDataShort <- rbindlist(list(cohortDataShort, cohortDataShortNoCover),
+                               use.names = TRUE, fill = TRUE)
+  cohortDataShort[is.na(establishprob), establishprob := 0]
+
+  # Join cohortDataShort with establishprob predictions to speciesEcoregion
+  speciesEcoregion <- cohortDataShort[, .(ecoregionGroup, speciesCode, establishprob)][
+    speciesEcoregion, on = joinOn]
+
+  ########################################################################
+  # maxB
+  # Set age to the age of longevity and cover to 100%
+  speciesEcoregion[, `:=`(logAge = log(longevity), cover = 100)]
+  speciesEcoregion[ , maxB := asInteger(predict(modelBiomass$mod,
+                                                newdata = speciesEcoregion,
+                                                type = "response"))]
+  speciesEcoregion[maxB < 0, maxB := 0] # fix negative predictions
+
+  ########################################################################
+  # maxANPP
+  message(blue("Add maxANPP to speciesEcoregion -- currently --> maxB/30"))
+  speciesEcoregion[ , maxANPP := asInteger(maxB / 30)]
+
+  ########################################################################
+  # Clean up unneeded columns
+  ########################################################################
+  speciesEcoregion[ , `:=`(logAge = NULL, cover = NULL, longevity = NULL, #pixelIndex = NULL,
+                           lcc = NULL)]
+
+  speciesEcoregion[ , year := time(sim)]
+
+  #######################################
+  if (!is.na(P(sim)$.plotInitialTime)) {
+    uniqueSpeciesNames <- as.character(unique(speciesEcoregion$speciesCode))
+    names(uniqueSpeciesNames) <- uniqueSpeciesNames
+    speciesEcoregionTable2 <- copy(speciesEcoregion)
+    speciesEcoregionTable2[, ecoregionInt := as.integer(ecoregionGroup)]
+    maxB <- stack(lapply(uniqueSpeciesNames, function(sp) {
+      rasterizeReduced(speciesEcoregionTable2[speciesCode == sp], ecoregionFiles$ecoregionMap,
+                       "maxB", "ecoregionInt")
+    }))
+    curDev <- dev.cur()
+    quickPlot::dev(6, width = 18, height = 10)
+    Plot(maxB, legendRange = c(0, max(maxValue(maxB))))
+    quickPlot::dev(curDev)
   }
 
-  simulationMaps <- Cache(nonActiveEcoregionProducer, nonactiveRaster = sim$LCC2005,
-                          activeStatus = activeStatusTable,
-                          ecoregionMap = ecoregionFiles$ecoregionMap,
-                          ecoregion = ecoregionFiles$ecoregion,
-                          initialCommunityMap = initialCommFiles$initialCommunityMap,
-                          initialCommunity = initialCommFiles$initialCommunity,
-                          userTags = "stable")
-  .gc()
+  if (ncell(sim$rasterToMatch) > 3e6) .gc()
 
-  message("4: ", Sys.time())
-  #speciesEcoregionTable <- sim$obtainMaxBandANPPCached(speciesLayers = sim$specieslayers,
-  speciesEcoregionTable <- Cache(obtainMaxBandANPP, speciesLayers = sim$specieslayers,
-                                 biomassLayer = sim$biomassMap,
-                                 SALayer = sim$standAgeMap,
-                                 ecoregionMap = simulationMaps$ecoregionMap,
-                                 userTags = "stable")
-  .gc()
+  ########################################################################
+  # Create initial communities, i.e., pixelGroups
+  ########################################################################
+  # Rejoin back the pixels that were 34 and 35
+  pixelCohortData <- rbindlist(list(cohortData34to36, cohortDataNo34to36),
+                               use.names = TRUE, fill = TRUE)
+  pixelCohortData[, ecoregionGroup := factor(as.character(ecoregionGroup))] # refactor because the "_34" and "_35" ones are still levels
+  # sim$columnsForPixelGroups <- c("ecoregionGroup", "speciesCode", "age", "B")
 
-  message("5: ", Sys.time())
-  #septable <- sim$obtainSEPCached(ecoregionMap = simulationMaps$ecoregionMap,
-  septable <- Cache(obtainSEP, ecoregionMap = simulationMaps$ecoregionMap,
-                    speciesLayers = sim$specieslayers,
-                    userTags = "stable")
-  names(septable) <- c("ecoregion", "species", "SEP")
-  septable[, SEP := round(SEP, 2)]
-  .gc()
+  pixelCohortData[ , `:=`(logAge = NULL, coverOrig = NULL, totalBiomass = NULL, #pixelIndex = NULL,
+                          initialEcoregionCode = NULL, cover = NULL, lcc = NULL)]
+  pixelCohortData <- pixelCohortData[B > 0]
+  cd <- pixelCohortData[,c("pixelIndex", columnsForPixelGroups), with = FALSE]
+  pixelCohortData[, pixelGroup := Cache(generatePixelGroups, cd, maxPixelGroup = 0,
+                                        columns = columnsForPixelGroups)]
 
-  message("6: ", Sys.time())
-  speciesEcoregionTable[, species := as.character(species)]
-  septable[, species := as.character(species)]
-  speciesEcoregionTable <- left_join(speciesEcoregionTable, septable, by = c("ecoregion", "species")) %>%
-    data.table()
-  speciesEcoregionTable[SEP == 0, ':='(maxBiomass = 0, maxANPP = 0)]
-  NON_NAdata <- speciesEcoregionTable[!is.na(maxBiomass),]
-  NAdata <- speciesEcoregionTable[is.na(maxBiomass),]
+  ########################################################################
+  ########################################################################
+  ## rebuild ecoregion, ecoregionMap objects -- some initial ecoregions disappeared (e.g., 34, 35, 36)
+  ## rebuild biomassMap object -- biomasses have been adjusted
+  ecoregionsWeHaveParametersFor <- levels(speciesEcoregion$ecoregionGroup)
 
-  if (nrow(NAdata) > 1) {
-    # # replace NA values with ecoregion  value
-    #biomassFrombiggerMap <- sim$obtainMaxBandANPPFormBiggerEcoAreaCached(speciesLayers = sim$specieslayers,
+  pixelCohortData <- pixelCohortData[ecoregionGroup %in% ecoregionsWeHaveParametersFor] # keep only ones we have params for
+  pixelCohortData[ , ecoregionGroup := factor(as.character(ecoregionGroup))]
+  pixelCohortData[, totalBiomass := sum(B), by = "pixelIndex"]
+  sim$ecoregion <- data.table(active = "yes",
+                              ecoregionGroup = factor(as.character(unique(pixelCohortData$ecoregionGroup))))
 
-    message("  6a obtainMaxBandANPPFormBiggerEcoArea: ", Sys.time())
-    biomassFrombiggerMap <- Cache(obtainMaxBandANPPFormBiggerEcoArea,
-                                  speciesLayers = sim$specieslayers,
-                                  biomassLayer = sim$biomassMap,
-                                  SALayer = sim$standAgeMap,
-                                  ecoregionMap = simulationMaps$ecoregionMap,
-                                  biggerEcoArea = sim$ecoRegion,
-                                  biggerEcoAreaSource = "ecoRegion",
-                                  NAData = NAdata,
-                                  maskFn = fastMask,
-                                  userTags = "stable")
-    message("  6b obtainMaxBandANPPFormBiggerEcoArea: ", Sys.time())
-    NON_NAdata <- rbind(NON_NAdata, biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)])
-    NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)]
-  }
-  .gc()
+  # Some ecoregions have NO BIOMASS -- so they are no active
+  sim$ecoregion[!ecoregionGroup %in% unique(speciesEcoregion$ecoregionGroup), active := "no"]
 
-  message("7: ", Sys.time())
-  if (nrow(NAdata) > 1) {
-    #biomassFrombiggerMap <- sim$obtainMaxBandANPPFormBiggerEcoAreaCached(speciesLayers = sim$specieslayers,
-    message("  7a obtainMaxBandANPPFormBiggerEcoArea if NAdata exist: ", Sys.time())
-    biomassFrombiggerMap <- Cache(obtainMaxBandANPPFormBiggerEcoArea,
-                                  speciesLayers = sim$specieslayers, biomassLayer = sim$biomassMap,
-                                  SALayer = sim$standAgeMap, ecoregionMap = simulationMaps$ecoregionMap,
-                                  biggerEcoArea = sim$ecoZone, biggerEcoAreaSource = "ecoZone",
-                                  NAData = NAdata, maskFn = fastMask,
-                                  userTags = "stable")
-    message("  7b obtainMaxBandANPPFormBiggerEcoArea if NAdata exist: ", Sys.time())
-    NON_NAdata <- rbind(NON_NAdata, biomassFrombiggerMap$addData[!is.na(maxBiomass), .(ecoregion, species, maxBiomass, maxANPP, SEP)])
-    NAdata <- biomassFrombiggerMap$addData[is.na(maxBiomass),.(ecoregion, species, maxBiomass, maxANPP, SEP)]
-  }
-  .gc()
+  pixelData <- unique(pixelCohortData, by = "pixelIndex")
+  pixelData[, ecoregionGroup := factor(as.character(ecoregionGroup))] # resorts them in order
 
-  message("8: ", Sys.time())
-  NAdata[, ':='(maxBiomass = 0, maxANPP = 0, SEP = 0)]
-  speciesEcoregion <- rbind(NON_NAdata, NAdata)
-  setnames(speciesEcoregion, "ecoregion", "mapcode")
-  speciesEcoregion <- setkey(speciesEcoregion,
-                             mapcode)[setkey(simulationMaps$ecoregion, mapcode),
-                                      nomatch = 0][, .(year = 0, ecoregion, species,
-                                                       maxB = maxBiomass,
-                                                       maxANPP, establishprob = SEP)]
-  sim$speciesEcoregion <- speciesEcoregion
-  sim$ecoregion <- simulationMaps$ecoregion
-  sim$ecoregionMap <- simulationMaps$ecoregionMap
+  sim$biomassMap <- raster(sim$rasterToMatch)
+  sim$biomassMap[pixelData$pixelIndex] <- pixelData$totalBiomass
 
-  sim$initialCommunitiesMap <- Cache(createInitCommMap, simulationMaps$initialCommunityMap,
-                                     as.integer(simulationMaps$initialCommunityMap[]),
-                                     file.path(outputPath(sim), "initialCommunitiesMap.tif"),
-                                     userTags = "stable")
-  .gc()
+  sim$ecoregionMap <- raster(ecoregionFiles$ecoregionMap)
+  sim$ecoregionMap[pixelData$pixelIndex] <- as.integer(pixelData$ecoregionGroup)
+  levels(sim$ecoregionMap) <- data.frame(ID = seq(levels(pixelData$ecoregionGroup)),
+                                         ecoregion = gsub("_.*", "", levels(pixelData$ecoregionGroup)),
+                                         ecoregionGroup = levels(pixelData$ecoregionGroup),
+                                         stringsAsFactors = TRUE)
 
-  message("9: ", Sys.time())
-
-  # species traits inputs
-  speciesTable <- sim$speciesTable
-  names(speciesTable) <- c("species", "Area", "longevity", "sexualmature", "shadetolerance", "firetolerance",
-                           "seeddistance_eff", "seeddistance_max", "resproutprob", "resproutage_min",
-                           "resproutage_max", "postfireregen", "leaflongevity", "wooddecayrate",
-                           "mortalityshape", "growthcurve", "leafLignin", "hardsoft")
-  speciesTable[, ':='(Area = NULL, hardsoft = NULL)]
-  species_char <- as.character(speciesTable$species)
-  speciesTable$species1 <- substring(species_char, 1, 4)
-  speciesTable$species2 <- substring(species_char, 6, nchar(species_char))
-  speciesTable[, ':='(species = paste(as.character(substring(species1, 1, 1)),
-                                      tolower(as.character(substring(species1, 2, nchar(species1)))),
-                                      "_", as.character(substring(species2, 1, 1)),
-                                      tolower(as.character(substring(species2, 2, nchar(species2)))),
-                                      sep = ""))]
-
-  speciesTable$species <- toSentenceCase(speciesTable$species)
-
-  speciesTable[species %in% c("Abie_las", "Abie_bal"), species := "Abie_sp"]
-  speciesTable[species %in% c("Pinu_ban", "Pinu_con", "Pinu_con.con", "Pinu_con.lat"), species := "Pinu_sp"]
-
-  message("10: ", Sys.time())
-
-  # Take the smallest values of every column, within species, because it is northern boreal forest
-  speciesTable <- speciesTable[species %in% names(sim$specieslayers), ][
-    , ':='(species1 = NULL, species2 = NULL)] %>%
-    .[, lapply(.SD, function(x) if (is.numeric(x)) min(x, na.rm = TRUE) else x[1]), by = "species"]
-
-  initialCommunities <- simulationMaps$initialCommunity[, .(mapcode, description = NA, species)]
-  set(initialCommunities, NULL, paste("age", 1:15, sep = ""), NA)
-  initialCommunities <- data.frame(initialCommunities)
-  message("11: ", Sys.time())
-
-  initialCommunitiesFn <- function(initialCommunities, speciesTable) {
-    for (i in 1:nrow(initialCommunities)) {
-      agelength <- sample(1:15, 1)
-      ages <- sort(sample(1:speciesTable[species == initialCommunities$species[i],]$longevity,
-                          agelength))
-      initialCommunities[i, 4:(agelength + 3)] <- ages
-    }
-    data.table::data.table(initialCommunities)
-  }
-  message("12: ", Sys.time())
-
-  sim$initialCommunities <- Cache(initialCommunitiesFn, initialCommunities, speciesTable,
-                                  userTags = "stable")
-
-  sim$species <- speciesTable
-  sim$minRelativeB <- data.frame(ecoregion = sim$ecoregion[active == "yes",]$ecoregion,
+  sim$minRelativeB <- data.frame(ecoregionGroup = levels(pixelData$ecoregionGroup),
                                  X1 = 0.2, X2 = 0.4, X3 = 0.5,
                                  X4 = 0.7, X5 = 0.9)
-  message("Done Boreal_LBMRDataPrep: ", Sys.time())
 
-  # ! ----- STOP EDITING ----- ! #
+  speciesEcoregion[, ecoregionGroup := factor(as.character(ecoregionGroup))]
+
+  sim$speciesEcoregion <- speciesEcoregion
+
+  sim$speciesLayers <- lapply(seq(numLayers(sim$speciesLayers)), function(x) {
+    writeRaster(sim$speciesLayers[[x]],
+                file.path(outputPath(sim), paste0(names(sim$speciesLayers)[x], ".tif")),
+                datatype = "INT2U", overwrite = TRUE)
+  }) %>% raster::stack()
+
+  ###########################
+  #  Collapse pixelCohortData to its cohortData : need pixelGroupMap
+  ################################
+  sim$pixelGroupMap <- raster(sim$rasterToMatch)
+  sim$pixelGroupMap[pixelData$pixelIndex] <- as.integer(pixelData$pixelGroup)
+
+  sim$cohortData <- unique(pixelCohortData,
+                       by = c("pixelGroup", columnsForPixelGroups))
+  sim$cohortData[ , `:=`(pixelIndex = NULL)]
+
+  message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", "),
+               "\n  Resulted in", magenta(length(unique(sim$cohortData$pixelGroup))),
+               "unique pixelGroup values"))
+  LandR::assertERGs(sim$ecoregionMap, cohortData = sim$cohortData,
+                    speciesEcoregion = speciesEcoregion,
+                    minRelativeB = sim$minRelativeB)
+
+  assertCohortData(sim$cohortData, sim$pixelGroupMap)
+
+  LandR::assertUniqueCohortData(sim$cohortData, c("pixelGroup", "ecoregionGroup", "speciesCode"))
+
+  message("Done Boreal_LBMRDataPrep: ", Sys.time())
   return(invisible(sim))
 }
 
@@ -321,34 +524,18 @@ Save <- function(sim) {
   return(invisible(sim))
 }
 
-.gc <- function() for (i in 1:10) gc() ## free memory if possible
-
 ## see other helper functions in R/ subdirectory
 
 .inputObjects <- function(sim) {
-  # Any code written here will be run during the simInit for the purpose of creating
-  # any objects required by this module and identified in the inputObjects element of defineModule.
-  # This is useful if there is something required before simulation to produce the module
-  # object dependencies, including such things as downloading default datasets, e.g.,
-  # downloadData("LCC2005", modulePath(sim)).
-  # Nothing should be created here that does not create an named object in inputObjects.
-  # Any other initiation procedures should be put in "init" eventType of the doEvent function.
-  # Note: the module developer can use 'sim$.userSuppliedObjNames' in their function below to
-  # selectively skip unnecessary steps because the user has provided those inputObjects in the
-  # simInit call. e.g.,
-  # if(!('defaultColor' %in% sim$userSuppliedObjNames)) {
-  #  defaultColor <- 'red'
-  # }
-  # ! ----- EDIT BELOW ----- ! #
-  cpath <- cachePath(sim)
-  dPath <- asPath(dataPath(sim), 1)
+  cacheTags <- c(currentModule(sim), "function:.inputObjects")
+  dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
+  message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
   # 1. test if all input objects are already present (e.g., from inputs, objects or another module)
   a <- depends(sim)
   whThisMod <- which(unlist(lapply(a@dependencies, function(x) x@name)) == "Boreal_LBMRDataPrep")
   objNames <- a@dependencies[[whThisMod]]@inputObjects$objectName
-  objExists <- !unlist(lapply(objNames,
-                              function(x) is.null(sim[[x]])))
+  objExists <- !unlist(lapply(objNames, function(x) is.null(sim[[x]])))
   names(objExists) <- objNames
 
   # Filenames
@@ -365,178 +552,175 @@ Save <- function(sim) {
   ecodistrictAE <- basename(paste0(tools::file_path_sans_ext(ecodistrictFilename), ".", fexts))
   ecozoneAE <- basename(paste0(tools::file_path_sans_ext(ecozoneFilename), ".", fexts))
 
-  # This is from sim$biomassMap
-  crsUsed <- "+proj=lcc +lat_1=49 +lat_2=77 +lat_0=0 +lon_0=-95 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
+  if (!suppliedElsewhere("studyArea", sim)) {
+    message("'studyArea' was not provided by user. Using a polygon in southwestern Alberta, Canada,")
 
-  if (!identical(crsUsed, crs(sim$shpStudyRegionFull))) {
-    sim$shpStudyRegionFull <- spTransform(sim$shpStudyRegionFull, crsUsed) #faster without Cache
+    sim$studyArea <- randomStudyArea(seed = 1234)
   }
 
-  if (!identical(crsUsed, crs(sim$shpStudySubRegion))) {
-    shpStudySubRegion <- spTransform(sim$shpStudySubRegion, crsUsed) #faster without Cache
+  if (!suppliedElsewhere("studyAreaLarge", sim)) {
+    message("'studyAreaLarge' was not provided by user. Using the same as 'studyArea'")
+    sim <- objectSynonyms(sim, list(c("studyAreaLarge", "studyArea")))
   }
 
-  cacheTags = c(currentModule(sim), "function:.inputObjects", "function:spades")
+  needRTM <- FALSE
+  if (is.null(sim$rasterToMatch)) {
+    if (!suppliedElsewhere("rasterToMatch", sim)) {
+      needRTM <- TRUE
+      message("There is no rasterToMatch supplied; will attempt to use biomassMap")
+    } else {
+      stop("rasterToMatch is going to be supplied, but ", currentModule(sim), " requires it ",
+           "as part of its .inputObjects. Please make it accessible to ", currentModule(sim),
+           " in the .inputObjects by passing it in as an object in simInit(objects = list(rasterToMatch = aRaster)",
+           " or in a module that gets loaded prior to ", currentModule(sim))
+    }
+  }
 
-  if (!suppliedElsewhere("biomassMap", sim)) {
+  if (!suppliedElsewhere("biomassMap", sim) || needRTM) {
     sim$biomassMap <- Cache(prepInputs,
-                            url = extractURL("biomassMap"),
-                            targetFile = biomassMapFilename,
+                            targetFile = asPath(basename(biomassMapFilename)),
                             archive = asPath(c("kNN-StructureBiomass.tar",
                                                "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
+                            url = extractURL("biomassMap"),
                             destinationPath = dPath,
-                            studyArea = sim$shpStudySubRegion,
+                            studyArea = sim$studyArea,
+                            rasterToMatch = sim$rasterToMatch, ## TODO: biomass map needs rasterToMatch but it _is_ the rasterToMatch!!
+                            maskWithRTM = TRUE,
+                            useSAcrs = TRUE,
                             method = "bilinear",
                             datatype = "INT2U",
-                            filename2 = TRUE,
-                            userTags = c("stable", currentModule(sim)))
+                            filename2 = TRUE, overwrite = TRUE,
+                            userTags = c(cacheTags, "stable"))
+  }
+
+  if (needRTM) {
+    # if we need rasterToMatch, that means a) we don't have it, but b) we will have biomassMap
+    sim$rasterToMatch <- sim$biomassMap
+    message("  Rasterizing the studyArea polygon map")
+    if (!is(sim$studyArea, "SpatialPolygonsDataFrame")) {
+      dfData <- if (is.null(rownames(sim$studyArea))) {
+        polyID <- sapply(slot(sim$studyArea, "polygons"), function(x) slot(x, "ID"))
+        data.frame("field" = as.character(seq_along(length(sim$studyArea))), row.names = polyID)
+      } else {
+        polyID <- sapply(slot(sim$studyArea, "polygons"), function(x) slot(x, "ID"))
+        data.frame("field" = rownames(sim$studyArea), row.names = polyID)
+      }
+      sim$studyArea <- SpatialPolygonsDataFrame(sim$studyArea, data = dfData)
+    }
+    #TODO: review whether this is necessary (or will break LandWeb if removed) see Git Issue #22
+    # layers provided by David Andison sometimes have LTHRC, sometimes LTHFC ... chose whichever
+    LTHxC <- grep("(LTH.+C)", names(sim$studyArea), value = TRUE)
+    fieldName <- if (length(LTHxC)) {
+      LTHxC
+    } else {
+      if (length(names(sim$studyArea)) > 1) {
+        ## study region may be a simple polygon
+        names(sim$studyArea)[1]
+      } else NULL
+    }
+
+    sim$rasterToMatch <- crop(fasterizeFromSp(sim$studyArea, sim$rasterToMatch, fieldName),
+                              sim$studyArea)
+    sim$rasterToMatch <- Cache(writeRaster, sim$rasterToMatch,
+                               filename = file.path(dataPath(sim), "rasterToMatch.tif"),
+                               datatype = "INT2U", overwrite = TRUE)
   }
 
   # LCC2005
   if (!suppliedElsewhere("LCC2005", sim)) {
     sim$LCC2005 <- Cache(prepInputs,
-                         url = extractURL("LCC2005"),
                          targetFile = lcc2005Filename,
                          archive = asPath("LandCoverOfCanada2005_V1_4.zip"),
+                         url = extractURL("LCC2005"),
                          destinationPath = dPath,
-                         studyArea = sim$shpStudySubRegion,
-                         rasterToMatch = sim$biomassMap,
+                         studyArea = sim$studyArea,
+                         rasterToMatch = sim$rasterToMatch,
                          method = "bilinear",
                          datatype = "INT2U",
-                         filename2 = TRUE,
+                         filename2 = TRUE, overwrite = TRUE,
                          userTags = currentModule(sim))
 
-    projection(sim$LCC2005) <- projection(sim$biomassMap)
+    projection(sim$LCC2005) <- projection(sim$rasterToMatch)
   }
 
   if (!suppliedElsewhere("ecoDistrict", sim)) {
     sim$ecoDistrict <- Cache(prepInputs,
-                             url = extractURL("ecoDistrict"),
                              targetFile = asPath(ecodistrictFilename),
                              archive = asPath("ecodistrict_shp.zip"),
+                             url = extractURL("ecoDistrict"),
                              alsoExtract = ecodistrictAE,
                              destinationPath = dPath,
-                             studyArea = sim$shpStudyRegionFull,
+                             studyArea = sim$studyAreaLarge,
+                             overwrite = TRUE,
+                             useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
                              fun = "raster::shapefile",
                              filename2 = TRUE,
                              userTags = cacheTags)
   }
 
-  if (!suppliedElsewhere("ecoRegion", sim)) {
-    sim$ecoRegion <- Cache(prepInputs,
-                           url = extractURL("ecoRegion"),
-                           targetFile = asPath(ecoregionFilename),
-                           archive = asPath("ecoregion_shp.zip"),
-                           alsoExtract = ecoregionAE,
-                           destinationPath = dPath,
-                           studyArea = sim$shpStudyRegionFull,
-                           fun = "raster::shapefile",
-                           filename2 = TRUE,
-                           userTags = cacheTags)
-  }
-
-  if (!suppliedElsewhere("ecoZone", sim)) {
-    sim$ecoZone <- Cache(prepInputs, #notOlderThan = Sys.time(),
-                         url = extractURL("ecoZone"),
-                         targetFile = asPath(ecozoneFilename),
-                         archive = asPath("ecozone_shp.zip"),
-                         alsoExtract = ecozoneAE,
-                         destinationPath = dPath,
-                         studyArea = sim$shpStudyRegionFull,
-                         fun = "raster::shapefile",
-                         filename2 = TRUE,
-                         userTags = cacheTags)
-  }
-
   # stand age map
   if (!suppliedElsewhere("standAgeMap", sim)) {
-    sim$standAgeMap <- Cache(prepInputs, #notOlderThan = Sys.time(),
-                             url = extractURL("standAgeMap"),
-                             targetFile = standAgeMapFilename,
+    sim$standAgeMap <- Cache(prepInputs,
+                             targetFile = basename(standAgeMapFilename), ## TODO: undefined filename
                              archive = asPath(c("kNN-StructureStandVolume.tar",
                                                 "NFI_MODIS250m_kNN_Structure_Stand_Age_v0.zip")),
                              destinationPath = dPath,
+                             url = extractURL("standAgeMap"),
                              fun = "raster::raster",
-                             studyArea = sim$shpStudyRegionFull,
-                             rasterToMatch = sim$biomassMap,
+                             studyArea = sim$studyAreaLarge,
+                             rasterToMatch = sim$rasterToMatch,
                              method = "bilinear",
                              datatype = "INT2U",
-                             filename2 = TRUE,
+                             filename2 = TRUE, overwrite = TRUE,
                              userTags = c("stable", currentModule(sim)))
+    sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
   }
 
-  if (!suppliedElsewhere("specieslayers", sim)) {
-    sim$specieslayers <- Cache(loadAllSpeciesLayers,
-                               url = extractURL("specieslayers"),
-                               dataPath = dPath,
-                               biomassMap = sim$biomassMap,
-                               shpStudyRegionFull = sim$shpStudyRegionFull,
-                               moduleName = currentModule(sim),
-                               cachePath = asPath(cpath),
-                               userTags = cacheTags)
+  if (!suppliedElsewhere("sppEquiv", sim)) {
+    data("sppEquivalencies_CA", package = "LandR", envir = environment())
+    sim$sppEquiv <- as.data.table(sppEquivalencies_CA)
+
+    ## By default, Abies_las is renamed to Abies_sp
+    sim$sppEquiv[KNN == "Abie_Las", LandR := "Abie_sp"]
+  }
+
+  if (!suppliedElsewhere("speciesLayers", sim)) {
+    #opts <- options(reproducible.useCache = "overwrite")
+    speciesLayersList <- Cache(loadkNNSpeciesLayers,
+                               dPath = dPath,
+                               rasterToMatch = sim$rasterToMatch,
+                               studyArea = sim$studyAreaLarge,
+                               sppEquiv = sim$sppEquiv,
+                               knnNamesCol = "KNN",
+                               sppEquivCol = P(sim)$sppEquivCol,
+                               # thresh = 10,
+                               url = extractURL("speciesLayers"),
+                               userTags = c(cacheTags, "speciesLayers"))
+
+    #options(opts)
+    speciesLayersList$speciesLayers <- writeRaster(speciesLayersList$speciesLayers,
+                                                   file.path(outputPath(sim), "speciesLayers.grd"),
+                                                   overwrite = TRUE)
+    sim$speciesLayers <- speciesLayersList$speciesLayers
   }
 
   # 3. species maps
-  sim$speciesTable <- Cache(prepInputs, "speciesTraits.csv",
-                            url = extractURL("speciesTable"),
-                            destinationPath = dPath,
-                            fun = "utils::read.csv", header = TRUE,
-                            stringsAsFactors = FALSE) %>%
-    data.table()
-
-  sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
-                                    X0 = 1,
-                                    X1 = c(0.5, rep(1, 4)),
-                                    X2 = c(0, 0.5, rep(1, 3)),
-                                    X3 = c(rep(0, 2), 0.5, rep(1, 2)),
-                                    X4 = c(rep(0, 3), 0.5, 1), X5 = c(rep(0, 4), 1))
-
-  if (!suppliedElsewhere("seedingAlgorithm", sim))
-    sim$seedingAlgorithm <- "wardDispersal"
-  if (!suppliedElsewhere("successionTimestep", sim))
-    sim$successionTimestep <- 10
-
-  if (!suppliedElsewhere(sim$studyArea)) {
-    sim$studyArea <- sim$shpStudyRegionFull
+  if (!suppliedElsewhere("speciesTable", sim)) {
+    sim$speciesTable <- getSpeciesTable(dPath, cacheTags)
   }
-  if (!suppliedElsewhere(sim$rstStudyRegion)) {
-    needRstSR <- TRUE
-  } else {
-    if (!identical(extent(sim$rstStudyRegion), extent(biomassMap))) {
-      needRstSR <- TRUE
-    } else {
-      needRstSR <- FALSE
-    }
+
+  if (!suppliedElsewhere("sufficientLight", sim)) {
+    sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
+                                      X0 = 1,
+                                      X1 = c(0.5, rep(1, 4)),
+                                      X2 = c(0, 0.5, rep(1, 3)),
+                                      X3 = c(rep(0, 2), 0.5, rep(1, 2)),
+                                      X4 = c(rep(0, 3), 0.5, 1),
+                                      X5 = c(rep(0, 4), 1))
   }
-  if (needRstSR) {
-    message("  Rasterizing the shpStudyRegionFull polygon map")
-    if (!is(sim$shpStudyRegionFull, "SpatialPolygonsDataFrame")) {
-      dfData <- if (is.null(rownames(sim$shpStudyRegionFull))) {
-        data.frame("field" = as.character(seq_along(length(sim$shpStudyRegionFull))))
-      } else {
-        data.frame("field" = rownames(sim$shpStudyRegionFull))
-      }
-      sim$shpStudyRegionFull <- SpatialPolygonsDataFrame(sim$shpStudyRegionFull, data = dfData)
-    }
-    fieldName <- if ("LTHRC" %in% names(sim$shpStudyRegionFull)) {
-      "LTHRC"
-    } else {
-      names(sim$shpStudyRegionFull)[1]
-    }
 
-    fasterizeFromSp <- function(sp, raster, fieldName) {
-      sfObj <- sf::st_as_sf(sp)
-      if (!any( fieldName %in% colnames(sfObj))) {
-        fieldName <- colnames(sfObj)[1]
-      }
-      fasterize::fasterize(sfObj, raster, field = fieldName)
-    }
-    sim$rstStudyRegion <- crop(fasterizeFromSp(sim$shpStudyRegionFull, sim$biomassMap, fieldName),
-                               sim$shpStudyRegionFull)
-    sim$rstStudyRegion <- Cache(writeRaster, sim$rstStudyRegion,
-                                filename = file.path(dataPath(sim), "rstStudyRegion.tif"),
-                                datatype = "INT2U", overwrite = TRUE)
-
+  if (!suppliedElsewhere("columnsForPixelGroups", sim)) {
+    sim$columnsForPixelGroups <- LandR::columnsForPixelGroups
   }
 
   return(invisible(sim))

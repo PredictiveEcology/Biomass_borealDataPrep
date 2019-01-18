@@ -4,6 +4,9 @@
 .Rproj.user
 *.Rproj
 
+## module cache files
+cache/
+
 ## OAuth tokens
 .httr-oauth
 .httr-oauth-SUSPENDED
@@ -11,9 +14,4 @@
 ## misc OS files
 Thumbs.db
 
-## !! Module data should be gitignored in the respective module's data dir !!
-
-
-data/LC_2005_Legend_39Classes\.pdf
-
-data/Canada_2005_metadata_v1_4\.doc
+ ## !! Module data should be gitignored in the respective module's data dir !! 
