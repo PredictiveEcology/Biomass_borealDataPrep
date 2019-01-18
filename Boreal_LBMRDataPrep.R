@@ -695,11 +695,9 @@ Save <- function(sim) {
                                userTags = c(cacheTags, "speciesLayers"))
 
     #options(opts)
-    speciesLayersList <- writeRaster(speciesLayersList,
+    sim$speciesLayers <- writeRaster(speciesLayersList,
                                      file.path(outputPath(sim), "speciesLayers.grd"),
                                      overwrite = TRUE)
-    
-    sim$speciesLayers <- speciesLayersList
   }
 
   # 3. species maps
