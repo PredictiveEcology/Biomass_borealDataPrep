@@ -695,15 +695,16 @@ Save <- function(sim) {
                                userTags = c(cacheTags, "speciesLayers"))
 
     #options(opts)
-    speciesLayersList$speciesLayers <- writeRaster(speciesLayersList$speciesLayers,
-                                                   file.path(outputPath(sim), "speciesLayers.grd"),
-                                                   overwrite = TRUE)
-    sim$speciesLayers <- speciesLayersList$speciesLayers
+    speciesLayersList <- writeRaster(speciesLayersList,
+                                     file.path(outputPath(sim), "speciesLayers.grd"),
+                                     overwrite = TRUE)
+    
+    sim$speciesLayers <- speciesLayersList
   }
 
   # 3. species maps
   if (!suppliedElsewhere("speciesTable", sim)) {
-    sim$speciesTable <- getSpeciesTable(dPath, cacheTags)
+    sim$speciesTable <- getSpeciesTable(dPath = dPath, cacheTags = cacheTags)
   }
 
   if (!suppliedElsewhere("sufficientLight", sim)) {
