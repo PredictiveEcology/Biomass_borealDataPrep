@@ -316,7 +316,7 @@ createLBMRInputs <- function(sim) {
   cohortDataNo34to36NoBiomass <- cohortDataNo34to36[eval(rmZeroBiomassQuote),
                                                     .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
 
-  assert1(cohortData34to36, pixelCohortData)
+  assert1(cohortData34to36, pixelCohortData[eval(rmZeroBiomassQuote)])
 
   ##############################################################
   # Statistical estimation of establishprob, maxB and maxANPP
