@@ -352,8 +352,9 @@ createLBMRInputs <- function(sim) {
                              .specialData = cohortDataNo34to36NoBiomass,
                              useCloud = useCloud,
                              cloudFolderID = P(sim)$cloudFolderID,
-                             showSimilar = TRUE, omitArgs = c("showSimilar", ".specialData",
-                                                              "useCloud", "cloudFolderID"))
+                             showSimilar = TRUE,
+                             omitArgs = c("showSimilar", ".specialData",
+                                          "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
   print(modelBiomass$rsq)
 
