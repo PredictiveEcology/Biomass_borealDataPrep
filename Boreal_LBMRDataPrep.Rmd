@@ -44,7 +44,7 @@ library(SpaDES)
 # Set up paths
 ```{r module_usage}
 moduleName <- "Boreal_LBMRDataPrep"
-spadesModulesDirectory <- "modules" # where the module will be downloaded
+spadesModulesDirectory <- "m" # where the module will be downloaded
 
 inputPath <- file.path(dirname(spadesModulesDirectory), "inputs") %>% checkPath(create = TRUE)
 outputPath <- file.path(dirname(spadesModulesDirectory), "outputs") 
