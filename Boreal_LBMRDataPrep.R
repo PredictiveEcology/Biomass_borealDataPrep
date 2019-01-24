@@ -585,7 +585,7 @@ Save <- function(sim) {
                             url = extractURL("biomassMap"),
                             destinationPath = dPath,
                             studyArea = sim$studyArea,
-                            rasterToMatch = sim$rasterToMatch, ## TODO: biomass map needs rasterToMatch but it _is_ the rasterToMatch!!
+                            rasterToMatch = if (!needRTM) sim$rasterToMatch else NULL, ## TODO: biomass map needs rasterToMatch but it _is_ the rasterToMatch!!
                             maskWithRTM = TRUE,
                             useSAcrs = TRUE,
                             method = "bilinear",
@@ -596,7 +596,8 @@ Save <- function(sim) {
 
   if (needRTM) {
     # if we need rasterToMatch, that means a) we don't have it, but b) we will have biomassMap
-    sim$rasterToMatch <- sim$biomassMap
+    sim <- objectSynonyms(sim, list(c("rasterToMatch", "biomassMap")))
+    # sim$rasterToMatch <- sim$biomassMap
     message("  Rasterizing the studyArea polygon map")
     if (!is(sim$studyArea, "SpatialPolygonsDataFrame")) {
       dfData <- if (is.null(rownames(sim$studyArea))) {
