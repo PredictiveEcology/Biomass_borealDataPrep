@@ -44,7 +44,8 @@ library(SpaDES)
 # Set up paths
 ```{r module_usage}
 moduleName <- "Boreal_LBMRDataPrep"
-spadesModulesDirectory <- "m" # where the module will be downloaded
+spadesModulesDirectory <- ".." # where the module will be located -- this is correct, if this module
+                               # is an Rstudio project, i.e., one up from the project
 
 inputPath <- file.path(dirname(spadesModulesDirectory), "inputs") %>% checkPath(create = TRUE)
 outputPath <- file.path(dirname(spadesModulesDirectory), "outputs") 
@@ -69,22 +70,20 @@ library(raster)
 
 ## do you want to hand-draw a map or use defaults?
 # - note that large areas will take longer to compute
-handDrawMap <- FALSE
+handDrawMap <- TRUE
 
 if (handDrawMap) {
   dev()
   clearPlot()
   canadaMap <- Cache(getData, 'GADM', country = 'CAN', level = 1, path = "data/",
                      cacheRepo = getPaths()$cachePath, quick = FALSE)
-  LIM_SA <- shapefile("../LandscapesInMotion/data/maps/Foothills_study_area.shp")
   Plot(canadaMap, speedup = 5, visualSqueeze = 0.9) # 5 seemed optimal
-  Plot(LIM_SA, addTo = "canadaMap", col = "green")
   
   ## hand-drawn study area
   if (!exists("studyAreaLarge")) {
     message("Since there is no object called 'studyAreaLarge', please draw a study area with 10 points")
-    severalrandompoints <- clickCoordinates(10)
-    if(startsWith(attr(severalrandompoints, "tags"), "cache")) message("Taking studyAreaLarge from Cache")
+    severalrandompoints <- Cache(clickCoordinates, 10)
+    # if(startsWith(attr(severalrandompoints, "tags"), "cache")) message("Taking studyAreaLarge from Cache")
     studyAreaLarge <- SpatialPolygons(list(Polygons(list(Polygon(severalrandompoints$coords)), ID = 1)),
                                           proj4string = crs(canadaMap))
   }
@@ -97,7 +96,7 @@ objects <- if (handDrawMap) list("studyAreaLarge" = studyAreaLarge,
                                  "studyArea" = studyAreaLarge) else list()
 
 mySim <- simInit(times = times, #params = parameters, 
-                 modules = append(modules, "LBMR"),
+                 modules = modules, #, "LBMR"),
                  objects = objects, paths = getPaths())
 ```
 
