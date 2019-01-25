@@ -75,7 +75,7 @@ handDrawMap <- TRUE
 if (handDrawMap) {
   dev()
   clearPlot()
-  canadaMap <- Cache(getData, 'GADM', country = 'CAN', level = 1, path = "data/",
+  canadaMap <- Cache(getData, 'GADM', country = 'CAN', level = 1, path = Paths$inputPath,
                      cacheRepo = getPaths()$cachePath, quick = FALSE)
   Plot(canadaMap, speedup = 5, visualSqueeze = 0.9) # 5 seemed optimal
   
