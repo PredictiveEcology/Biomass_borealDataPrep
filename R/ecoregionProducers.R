@@ -27,14 +27,17 @@ ecoregionProducer <- function(ecoregionMaps, ecoregionName,
   for (erm in seq(ecoregionMaps)) {
     if (!is(ecoregionMaps[[erm]], "Raster")) {
       message("ecoregionProducer fastRasterize: ", Sys.time())
-      rstEcoregion[[erm]] <- fasterize::fasterize(sf::st_as_sf(ecoregionMaps[[erm]]), raster(rasterToMatch),
+      rstEcoregion[[erm]] <- fasterize::fasterize(sf::st_as_sf(ecoregionMaps[[erm]]), 
+                                                  raster(rasterToMatch),
                                                   field = ecoregionName)
     } else {
       rstEcoregion[[erm]] <- ecoregionMaps[[erm]]
     }
     rstEcoregion[[erm]][rtmNAs] <- NA
   }
-  a <- lapply(rstEcoregion, function(x) getValues(x)[!rtmNAs] )
+  rstEcoregionNAs <- do.call(`|`, lapply(rstEcoregion, function(x) is.na(x[]) | x[] == 0))
+  NAs <- rtmNAs | rstEcoregionNAs
+  a <- lapply(rstEcoregion, function(x) getValues(x)[!NAs] )
   b <- as.data.table(a)
   b[, (names(b)) := lapply(.SD, function(x) paddedFloatToChar(x, max(nchar(x), na.rm = TRUE)))]
 
@@ -44,7 +47,7 @@ ecoregionProducer <- function(ecoregionMaps, ecoregionName,
   rstEcoregion <- raster(rstEcoregion[[1]])
   ecoregionFactorLevels <- levels(ecoregionValues)
 
-  rstEcoregion[!rtmNAs] <- as.integer(ecoregionValues)
+  rstEcoregion[!NAs] <- as.integer(ecoregionValues)
   levels(rstEcoregion) <- data.frame(ID = seq(ecoregionFactorLevels),
                                      mapcode = seq(ecoregionFactorLevels),
                                      ecoRegion = gsub("_.*", "", ecoregionFactorLevels),
