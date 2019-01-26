@@ -266,6 +266,7 @@ createLBMRInputs <- function(sim) {
   coverMatrix <- matrix(asInteger(sim$speciesLayers[]),
                         ncol = length(names(sim$speciesLayers)))
   colnames(coverMatrix) <- names(sim$speciesLayers)
+  browser()
   pixelTable <- data.table(age = asInteger(ceiling(asInteger(sim$standAgeMap[]) /
                                                      P(sim)$pixelGroupAgeClass) *
                                              P(sim)$pixelGroupAgeClass),
@@ -311,13 +312,13 @@ createLBMRInputs <- function(sim) {
   pseudoSpeciesEcoregion <- unique(availableCombinations[,
                                                          .(speciesCode, initialEcoregionCode)])
   newLCCClasses <- Cache(convertUnwantedLCC, pixelClassesToReplace = 34:36,
-                         rstLCC = LCC2005Adj,
-                         ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
-                                                           ecoregionFiles$ecoregionMap[],
-                                                           att = "ecoregion"),
-                         speciesEcoregion = pseudoSpeciesEcoregion,
-                         availableERC_by_Sp = availableCombinations)
-  
+                                      rstLCC = LCC2005Adj,
+                                      ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
+                                                                        ecoregionFiles$ecoregionMap[],
+                                                                        att = "ecoregion"),
+                                      speciesEcoregion = pseudoSpeciesEcoregion,
+                                      availableERC_by_Sp = availableCombinations)
+  browser(expr = exists("aaaa"))
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
   cohortData34to36 <- pixelCohortData[pixelIndex %in% newLCCClasses$pixelIndex]
