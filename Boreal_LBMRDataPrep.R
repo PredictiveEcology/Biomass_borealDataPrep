@@ -266,7 +266,6 @@ createLBMRInputs <- function(sim) {
   coverMatrix <- matrix(asInteger(sim$speciesLayers[]),
                         ncol = length(names(sim$speciesLayers)))
   colnames(coverMatrix) <- names(sim$speciesLayers)
-  browser()
   pixelTable <- data.table(age = asInteger(ceiling(asInteger(sim$standAgeMap[]) /
                                                      P(sim)$pixelGroupAgeClass) *
                                              P(sim)$pixelGroupAgeClass),
