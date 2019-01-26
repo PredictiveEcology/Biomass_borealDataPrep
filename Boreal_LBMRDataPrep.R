@@ -318,7 +318,6 @@ createLBMRInputs <- function(sim) {
                                                                         att = "ecoregion"),
                                       speciesEcoregion = pseudoSpeciesEcoregion,
                                       availableERC_by_Sp = availableCombinations)
-  browser(expr = exists("aaaa"))
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
   cohortData34to36 <- pixelCohortData[pixelIndex %in% newLCCClasses$pixelIndex]
