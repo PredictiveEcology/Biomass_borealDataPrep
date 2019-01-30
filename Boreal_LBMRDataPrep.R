@@ -17,7 +17,7 @@ defineModule(sim, list(
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
   reqdPkgs = list("crayon", "data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos", "sp",
                   "PredictiveEcology/LandR@development", "lme4",
-                  "PredictiveEcology/pemisc@development"),
+                  "PredictiveEcology/pemisc@development", "achubaty/amc@development"),
   parameters = rbind(
     defineParameter("biomassQuotedFormula", "name",
                     quote(B ~ logAge * speciesCode + (speciesCode | ecoregionGroup) + cover * speciesCode),
@@ -266,6 +266,7 @@ createLBMRInputs <- function(sim) {
   coverMatrix <- matrix(asInteger(sim$speciesLayers[]),
                         ncol = length(names(sim$speciesLayers)))
   colnames(coverMatrix) <- names(sim$speciesLayers)
+
   pixelTable <- data.table(age = asInteger(ceiling(asInteger(sim$standAgeMap[]) /
                                                      P(sim)$pixelGroupAgeClass) *
                                              P(sim)$pixelGroupAgeClass),
@@ -282,13 +283,16 @@ createLBMRInputs <- function(sim) {
   
   coverColNames <- paste0("cover.", sim$species$species)
   pixelTable1 <- na.omit(pixelTable, cols = c("rasterToMatch"))
-    
-  pixelTable <- na.omit(pixelTable1, cols = c(coverColNames))
+  pixelTable2 <- na.omit(pixelTable, cols = c("rasterToMatch", "initialEcoregionCode"))
+  pixelTable <- na.omit(pixelTable2, cols = c(coverColNames))
+  
   if (NROW(pixelTable1) != NROW(pixelTable))
     warning("Setting pixels to NA where there is NA in sim$speciesLayers. If this is correct,",
             "\n  please modify 'sim$rasterToMatch' (which has values in pixels where there is",
             "\n  no data for species cover.",
             "\n  sim$rasterToMatch is expected to only have data where there is cover data. ")
+  if (NROW(pixelTable2) != NROW(pixelTable))
+    warning("Setting pixels to NA where there is NA in sim$ecoDistrict")
   
   message(blue("rm NAs, leaving", magenta(NROW(pixelTable)), "pixels with data"))
   message(blue("This is the summary of the input data for age, ecoregionGroup, biomass, speciesLayers:"))
@@ -300,6 +304,7 @@ createLBMRInputs <- function(sim) {
   pixelCohortData <- Cache(makeAndCleanInitialCohortData, pixelTable,
                            sppColumns = coverColNames,
                            pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass)
+
   
   #######################################################
   # replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*
@@ -340,11 +345,10 @@ createLBMRInputs <- function(sim) {
   # will be added back as establishprob = 0
   message(blue("Estimating Species Establishment Probability using P(sim)$coverQuotedFormula, which is\n",
                format(P(sim)$coverQuotedFormula)))
-  
   useCloud <- if (!is.na(P(sim)$cloudFolderID)) P(sim)$useCloudCacheForStats else FALSE
   modelCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula,
                            uniqueEcoregionGroup = unique(cohortDataShort$ecoregionGroup),
-                           cohortDataShort, family = binomial,
+                           .specialData = cohortDataShort, family = binomial,
                            useCloud = useCloud,
                            cloudFolderID = P(sim)$cloudFolderID,
                            showSimilar = TRUE, omitArgs = c("showSimilar", ".specialData",
@@ -396,7 +400,7 @@ createLBMRInputs <- function(sim) {
   cohortDataShort[postfireregen == "resprout", establishprob := pmax(0, pmin(1, establishprob * P(sim)$establishProbAdjFacResprout))]
   cohortDataShort[postfireregen != "resprout", establishprob := pmax(0, pmin(1, establishprob * P(sim)$establishProbAdjFacNonResprout))]
   if (getOption("LandR.verbose") > 0) {
-    message("Dividing the establishment probability of resprouting species by", P(sim)$establishProbAdjFacResprout)
+    message("Dividing the establishment probability of resprouting species by ", P(sim)$establishProbAdjFacResprout)
   }
   cohortDataShort <- rbindlist(list(cohortDataShort, cohortDataShortNoCover),
                                use.names = TRUE, fill = TRUE)
