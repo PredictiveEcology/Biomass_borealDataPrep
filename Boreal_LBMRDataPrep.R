@@ -176,16 +176,20 @@ createLBMRInputs <- function(sim) {
   
   if (grepl("aspenDispersal", P(sim)$runName)) {
     ## seed dispersal (see LandWeb#96, LandWeb#112)
+    sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 25, 160
     sim$species[species == "Pice_gla", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 100, 303
     sim$species[species == "Pice_mar", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 80, 200
-    sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 25, 160
+    sim$species[species == "Pinu_ban", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 30, 100
+    sim$species[species == "Pinu_con", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 30, 100
     sim$species[species == "Pinu_sp", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 30, 100
     sim$species[species == "Popu_sp", `:=`(seeddistance_eff = 100, seeddistance_max = 235)] # defaults 200, 5000
   } else {
     ## seed dispersal (see LandWeb#96, LandWeb#112)
+    sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 100, seeddistance_max = 750)] # defaults 25, 160
     sim$species[species == "Pice_gla", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 100, 303
     sim$species[species == "Pice_mar", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 80, 200
-    sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 100, seeddistance_max = 750)] # defaults 25, 160
+    sim$species[species == "Pinu_ban", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 30, 100
+    sim$species[species == "Pinu_con", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 30, 100
     sim$species[species == "Pinu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 30, 100
     #sim$species[species == "Popu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 3000)] # defaults 200, 500
   }
@@ -200,16 +204,20 @@ createLBMRInputs <- function(sim) {
   
   ## growth curves:
   #   Biomass Succession User Guide p17, 0 is faster growth, 1 was the prev assumption
+  sim$species[species == "Abie_sp", growthcurve := P(sim)$growthCurveNonDecid] # original default 0
   sim$species[species == "Pice_gla", growthcurve := P(sim)$growthCurveNonDecid] # original default 1
   sim$species[species == "Pice_mar", growthcurve := P(sim)$growthCurveNonDecid] # original default 1
-  sim$species[species == "Abie_sp", growthcurve := P(sim)$growthCurveNonDecid] # original default 0
+  sim$species[species == "Pinu_ban", growthcurve := P(sim)$growthCurveNonDecid] # original default 0
+  sim$species[species == "Pinu_con", growthcurve := P(sim)$growthCurveNonDecid] # original default 0
   sim$species[species == "Pinu_sp", growthcurve := P(sim)$growthCurveNonDecid] # original default 0
   sim$species[species == "Popu_sp", growthcurve := P(sim)$growthCurveDecid] # original default 0
   
   ## mortality
+  sim$species[species == "Abie_sp", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
   sim$species[species == "Pice_gla", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
   sim$species[species == "Pice_mar", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
-  sim$species[species == "Abie_sp", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
+  sim$species[species == "Pinu_ban", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
+  sim$species[species == "Pinu_con", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
   sim$species[species == "Pinu_sp", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
   sim$species[species == "Popu_sp", mortalityshape := P(sim)$mortalityShapeDecid] # default 25
   
