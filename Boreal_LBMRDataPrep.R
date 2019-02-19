@@ -24,6 +24,10 @@ defineModule(sim, list(
                     NA, NA,
                     paste0("This formula is for estimating biomass (B) from ecoregionGroup (currently ecoDistrict * LandCoverClass), ",
                            "speciesCode, logAge (gives a downward curving relationship), and cover")),
+    defineParameter("convertUnwantedLCCClasses", "numeric", 34:35, NA, NA, 
+                    paste("This will replace these classes on the landscape with the closest forest class (1 to 15). Users may wish to include 36 (cities), and 34:35 (burns). ",
+                          "Since this is about estimating parameters for growth, it doesn't make any sense to have unique estimates for 34:35 or 36,",
+                          "in most cases")),
     defineParameter("coverQuotedFormula", "name",
                     quote(cbind(coverPres, coverNum) ~ speciesCode + (1 | ecoregionGroup)),
                     NA, NA,
@@ -323,7 +327,7 @@ createLBMRInputs <- function(sim) {
                                                   .(speciesCode, initialEcoregionCode, pixelIndex)])
   pseudoSpeciesEcoregion <- unique(availableCombinations[,
                                                          .(speciesCode, initialEcoregionCode)])
-  newLCCClasses <- Cache(convertUnwantedLCC, pixelClassesToReplace = 34:36,
+  newLCCClasses <- Cache(convertUnwantedLCC, pixelClassesToReplace = P(sim)$convertUnwantedLCCClasses,
                                       rstLCC = LCC2005Adj,
                                       ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
                                                                         ecoregionFiles$ecoregionMap[],
