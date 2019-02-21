@@ -364,7 +364,9 @@ createLBMRInputs <- function(sim) {
   if (is.null(sim$cloudFolderID)) 
     if (!is.null(P(sim)$cloudFolderID)) 
       sim$cloudFolderID <- P(sim)$cloudFolderID
-  useCloud <- if (!is.null(sim$cloudFolderID)) P(sim)$useCloudCacheForStats else FALSE
+  useCloud <- if (!is.null(sim$cloudFolderID)) {
+    getOption("reproducible.useCache", FALSE) && P(sim)$useCloudCacheForStats else FALSE
+  }
   modelCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula,
                            uniqueEcoregionGroup = unique(cohortDataShort$ecoregionGroup),
                            .specialData = cohortDataShort, family = binomial,
