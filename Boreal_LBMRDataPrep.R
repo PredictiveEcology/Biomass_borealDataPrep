@@ -627,7 +627,7 @@ Save <- function(sim) {
                             method = "bilinear",
                             datatype = "INT2U",
                             filename2 = TRUE, overwrite = TRUE,
-                            userTags = c(cacheTags, "stable"))
+                            omitArgs = c("destinationPath", "targetFile", cacheTags, "stable"))
   }
   if (needRTM) {
     # if we need rasterToMatch, that means a) we don't have it, but b) we will have biomassMap
@@ -684,7 +684,8 @@ Save <- function(sim) {
                          method = "bilinear",
                          datatype = "INT2U",
                          filename2 = TRUE, overwrite = TRUE,
-                         userTags = currentModule(sim))
+                         userTags = c("prepInputsLCC2005_rtm", currentModule(sim)), # use at least 1 unique userTag
+                         omitArgs = c("destinationPath", "targetFile"))
     
     projection(sim$LCC2005) <- projection(sim$rasterToMatch)
   }
@@ -700,8 +701,9 @@ Save <- function(sim) {
                              overwrite = TRUE,
                              useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
                              fun = "raster::shapefile",
-                             filename2 = TRUE,
-                             userTags = cacheTags)
+                             #filename2 = TRUE,
+                             userTags = c("prepInputsEcoDistrict_SA", currentModule(sim), cacheTags), # use at least 1 unique userTag
+                             omitArgs = c("destinationPath", "targetFile", "overwrite", "alsoExtract"))
   }
   
   # stand age map
@@ -717,8 +719,10 @@ Save <- function(sim) {
                              rasterToMatch = sim$rasterToMatch,
                              method = "bilinear",
                              datatype = "INT2U",
-                             filename2 = TRUE, overwrite = TRUE,
-                             userTags = c("stable", currentModule(sim)))
+                             filename2 = NULL, 
+                             overwrite = TRUE,
+                             userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags), # use at least 1 unique userTag
+                             omitArgs = c("destinationPath", "targetFile", "overwrite", "alsoExtract"))
     sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
   }
   
