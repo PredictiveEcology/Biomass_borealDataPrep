@@ -262,4 +262,4 @@
 "rasterToMatch.tif" "91fa9043d26d93e9" "1212" "xxhash64"
 "rstStudyRegion.tif" "264e9fd679127ec5" "175651" "xxhash64"
 "speciesTraits.csv" "155e633022e134cf" "9994" "xxhash64"
-"NFI_MODIS250m_kNN_Species_Ulmu_Tho_v0.tif" "13329afe32c21905" "7550402" "xxhash64"
+"NFI_MODIS250m_kNN_Species_Popu_Tri_v0.tif" "1700f1f8f92de714" "8062062" "xxhash64"
