@@ -365,13 +365,15 @@ createLBMRInputs <- function(sim) {
     if (!is.null(P(sim)$cloudFolderID)) 
       sim$cloudFolderID <- P(sim)$cloudFolderID
   useCloud <- if (!is.null(sim$cloudFolderID)) P(sim)$useCloudCacheForStats else FALSE
-  modelCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula,
-                           uniqueEcoregionGroup = unique(cohortDataShort$ecoregionGroup),
-                           .specialData = cohortDataShort, family = binomial,
-                           useCloud = useCloud,
-                           cloudFolderID = sim$cloudFolderID,
-                           showSimilar = TRUE, omitArgs = c("showSimilar", ".specialData",
-                                                            "useCloud", "cloudFolderID"))
+#  modelCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula,
+#                           uniqueEcoregionGroup = unique(cohortDataShort$ecoregionGroup),
+#                           .specialData = cohortDataShort, family = binomial,
+#                           useCloud = useCloud, cacheId = "c6481500076b95cf",
+#                           cloudFolderID = sim$cloudFolderID,
+#                           showSimilar = TRUE, omitArgs = c("showSimilar", ".specialData",
+#                                                            "useCloud", "cloudFolderID"))
+modelCover <- get(load(file.path(getwd(), "inputs/c6481500076b95cf.rda")))
+message(red("... BYPASSING PROBLEM WITH CLOUD CACHE ..."))
   message(blue("  The rsquared is: "))
   print(modelCover$rsq)
   
