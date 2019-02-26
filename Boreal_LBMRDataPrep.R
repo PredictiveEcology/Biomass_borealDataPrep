@@ -32,10 +32,6 @@ defineModule(sim, list(
                     quote(cbind(coverPres, coverNum) ~ speciesCode + (1 | ecoregionGroup)),
                     NA, NA,
                     "This formula is for estimating cover from ecoregion and speciesCode and potentially others"),
-    defineParameter("establishProbAdjFacResprout", "numeric", 0.1, 0, 1,
-                    "The establishprob of resprouting spcies may be estimated too high. This number will be multiplied by establishprob for resprouting species, e.g., Populus tremuloides"),
-    defineParameter("establishProbAdjFacNonResprout", "numeric", 2, 1, 2,
-                    "The establishprob of non resprouting species may be estimated too high. This number will be the multiplied by establishprob for non resprouting species"),
     defineParameter("growthCurveDecid", "numeric", 0, 0, 1,
                     "growth curve shape for deciduous species (i.e., aspen). LANDIS-II uses 0 for aspen."),
     defineParameter("growthCurveNonDecid", "numeric", 1, 0, 1,
@@ -70,7 +66,7 @@ defineModule(sim, list(
                  desc = "total biomass raster layer in study area, default is Canada national biomass map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureBiomass.tar"),
     expectsInput("cloudFolderID", "character", 
-                    "The google drive location where cloudCache will store large statistical objects"),
+                 "The google drive location where cloudCache will store large statistical objects"),
     expectsInput("columnsForPixelGroups", "character",
                  "The names of the columns in cohortData that define unique pixelGroups. Default is c('ecoregionGroup', 'speciesCode', 'age', 'B') "),
     expectsInput("ecoDistrict", "SpatialPolygonsDataFrame",
@@ -278,7 +274,7 @@ createLBMRInputs <- function(sim) {
   coverMatrix <- matrix(asInteger(sim$speciesLayers[]),
                         ncol = length(names(sim$speciesLayers)))
   colnames(coverMatrix) <- names(sim$speciesLayers)
-
+  
   pixelTable <- data.table(age = asInteger(ceiling(asInteger(sim$standAgeMap[]) /
                                                      P(sim)$pixelGroupAgeClass) *
                                              P(sim)$pixelGroupAgeClass),
@@ -316,7 +312,7 @@ createLBMRInputs <- function(sim) {
   pixelCohortData <- Cache(makeAndCleanInitialCohortData, pixelTable,
                            sppColumns = coverColNames,
                            pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass)
-
+  
   
   #######################################################
   # replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*
@@ -331,12 +327,12 @@ createLBMRInputs <- function(sim) {
   pseudoSpeciesEcoregion <- unique(availableCombinations[,
                                                          .(speciesCode, initialEcoregionCode)])
   newLCCClasses <- Cache(convertUnwantedLCC, pixelClassesToReplace = P(sim)$convertUnwantedLCCClasses,
-                                      rstLCC = LCC2005Adj,
-                                      ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
-                                                                        ecoregionFiles$ecoregionMap[],
-                                                                        att = "ecoregion"),
-                                      speciesEcoregion = pseudoSpeciesEcoregion,
-                                      availableERC_by_Sp = availableCombinations)
+                         rstLCC = LCC2005Adj,
+                         ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
+                                                           ecoregionFiles$ecoregionMap[],
+                                                           att = "ecoregion"),
+                         speciesEcoregion = pseudoSpeciesEcoregion,
+                         availableERC_by_Sp = availableCombinations)
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
   cohortData34to36 <- pixelCohortData[pixelIndex %in% newLCCClasses$pixelIndex]
@@ -415,13 +411,14 @@ createLBMRInputs <- function(sim) {
   cohortDataShort[, establishprob := establishprobBySuccessionTimestep]
   
   ############################################
-  # Lower establishprob
+  # Calc. establishProb
   ############################################
+  ## for resprouters, establishProb is calculated as the fraction of predicted cover (establishprobBySuccessionTimestep)
+  ## that did not result from resprouting. Both reprouters and non-resprouters can be dealt with at the same time
+  ## because resproutprob = 0 for non-resprouters
+  cohortDataShort <- sim$species[, .(resproutprob, postfireregen, speciesCode)][cohortDataShort, on = "speciesCode"]
+  cohortDataShort[, establishprob := pmax(0, pmin(1, (establishprob * (1 - resproutprob))))]
   
-  cohortDataShort <- sim$species[, .(postfireregen, speciesCode)][cohortDataShort, on = "speciesCode"]
-  #cohortDataShort[postfireregen == "none", establishprob := pmin(1, establishprob * P(sim)$establishProbAdjFacResprout)]
-  cohortDataShort[postfireregen == "resprout", establishprob := pmax(0, pmin(1, establishprob * P(sim)$establishProbAdjFacResprout))]
-  cohortDataShort[postfireregen != "resprout", establishprob := pmax(0, pmin(1, establishprob * P(sim)$establishProbAdjFacNonResprout))]
   if (getOption("LandR.verbose") > 0) {
     message("Dividing the establishment probability of resprouting species by ", P(sim)$establishProbAdjFacResprout)
   }
