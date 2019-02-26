@@ -24,12 +24,14 @@ defineModule(sim, list(
                     NA, NA,
                     paste0("This formula is for estimating biomass (B) from ecoregionGroup (currently ecoDistrict * LandCoverClass), ",
                            "speciesCode, logAge (gives a downward curving relationship), and cover")),
+    defineParameter("convertUnwantedLCCClasses", "numeric", 34:35, NA, NA, 
+                    paste("This will replace these classes on the landscape with the closest forest class (1 to 15). Users may wish to include 36 (cities), and 34:35 (burns). ",
+                          "Since this is about estimating parameters for growth, it doesn't make any sense to have unique estimates for 34:35 or 36,",
+                          "in most cases")),
     defineParameter("coverQuotedFormula", "name",
                     quote(cbind(coverPres, coverNum) ~ speciesCode + (1 | ecoregionGroup)),
                     NA, NA,
                     "This formula is for estimating cover from ecoregion and speciesCode and potentially others"),
-    defineParameter("cloudFolderID", "character", NA, NA, NA,
-                    "The google drive location where cloudCache will store large statistical objects"),
     defineParameter("establishProbAdjFacResprout", "numeric", 0.1, 0, 1,
                     "The establishprob of resprouting spcies may be estimated too high. This number will be multiplied by establishprob for resprouting species, e.g., Populus tremuloides"),
     defineParameter("establishProbAdjFacNonResprout", "numeric", 2, 1, 2,
@@ -67,6 +69,8 @@ defineModule(sim, list(
     expectsInput("biomassMap", "RasterLayer",
                  desc = "total biomass raster layer in study area, default is Canada national biomass map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureBiomass.tar"),
+    expectsInput("cloudFolderID", "character", 
+                    "The google drive location where cloudCache will store large statistical objects"),
     expectsInput("columnsForPixelGroups", "character",
                  "The names of the columns in cohortData that define unique pixelGroups. Default is c('ecoregionGroup', 'speciesCode', 'age', 'B') "),
     expectsInput("ecoDistrict", "SpatialPolygonsDataFrame",
@@ -317,13 +321,16 @@ createLBMRInputs <- function(sim) {
   #######################################################
   # replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*
   #######################################################
-  message("Replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*")
+  uwc <- P(sim)$convertUnwantedLCCClasses
+  message("Replace ",paste(uwc, collapse = ", "),
+          " values -- ","burns"[any(uwc %in% 34:35)], "and cities"[any(uwc %in% 36)], 
+          " -- to a neighbour class *that exists*")
   rmZeroBiomassQuote <- quote(B > 0)
   availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
                                                   .(speciesCode, initialEcoregionCode, pixelIndex)])
   pseudoSpeciesEcoregion <- unique(availableCombinations[,
                                                          .(speciesCode, initialEcoregionCode)])
-  newLCCClasses <- Cache(convertUnwantedLCC, pixelClassesToReplace = 34:36,
+  newLCCClasses <- Cache(convertUnwantedLCC, pixelClassesToReplace = P(sim)$convertUnwantedLCCClasses,
                                       rstLCC = LCC2005Adj,
                                       ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
                                                                         ecoregionFiles$ecoregionMap[],
@@ -353,12 +360,20 @@ createLBMRInputs <- function(sim) {
   # will be added back as establishprob = 0
   message(blue("Estimating Species Establishment Probability using P(sim)$coverQuotedFormula, which is\n",
                format(P(sim)$coverQuotedFormula)))
-  useCloud <- if (!is.na(P(sim)$cloudFolderID)) P(sim)$useCloudCacheForStats else FALSE
+  # for backwards compatibility -- change from parameter to object
+  if (is.null(sim$cloudFolderID)) 
+    if (!is.null(P(sim)$cloudFolderID)) 
+      sim$cloudFolderID <- P(sim)$cloudFolderID
+  useCloud <- if (!is.null(sim$cloudFolderID)) {
+    (getOption("reproducible.useCache", FALSE) && P(sim)$useCloudCacheForStats) 
+  } else {
+    FALSE
+  }
   modelCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula,
                            uniqueEcoregionGroup = unique(cohortDataShort$ecoregionGroup),
                            .specialData = cohortDataShort, family = binomial,
                            useCloud = useCloud,
-                           cloudFolderID = P(sim)$cloudFolderID,
+                           cloudFolderID = sim$cloudFolderID,
                            showSimilar = TRUE, omitArgs = c("showSimilar", ".specialData",
                                                             "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
@@ -372,7 +387,7 @@ createLBMRInputs <- function(sim) {
                              uniqueEcoregionGroup = unique(cohortDataNo34to36NoBiomass$ecoregionGroup),
                              .specialData = cohortDataNo34to36NoBiomass,
                              useCloud = useCloud,
-                             cloudFolderID = P(sim)$cloudFolderID,
+                             cloudFolderID = sim$cloudFolderID,
                              showSimilar = TRUE,
                              omitArgs = c("showSimilar", ".specialData",
                                           "useCloud", "cloudFolderID"))
@@ -612,7 +627,7 @@ Save <- function(sim) {
                             method = "bilinear",
                             datatype = "INT2U",
                             filename2 = TRUE, overwrite = TRUE,
-                            userTags = c(cacheTags, "stable"))
+                            omitArgs = c("destinationPath", "targetFile", cacheTags, "stable"))
   }
   if (needRTM) {
     # if we need rasterToMatch, that means a) we don't have it, but b) we will have biomassMap
@@ -669,7 +684,8 @@ Save <- function(sim) {
                          method = "bilinear",
                          datatype = "INT2U",
                          filename2 = TRUE, overwrite = TRUE,
-                         userTags = currentModule(sim))
+                         userTags = c("prepInputsLCC2005_rtm", currentModule(sim)), # use at least 1 unique userTag
+                         omitArgs = c("destinationPath", "targetFile"))
     
     projection(sim$LCC2005) <- projection(sim$rasterToMatch)
   }
@@ -685,8 +701,9 @@ Save <- function(sim) {
                              overwrite = TRUE,
                              useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
                              fun = "raster::shapefile",
-                             filename2 = TRUE,
-                             userTags = cacheTags)
+                             #filename2 = TRUE,
+                             userTags = c("prepInputsEcoDistrict_SA", currentModule(sim), cacheTags), # use at least 1 unique userTag
+                             omitArgs = c("destinationPath", "targetFile", "overwrite", "alsoExtract"))
   }
   
   # stand age map
@@ -702,8 +719,10 @@ Save <- function(sim) {
                              rasterToMatch = sim$rasterToMatch,
                              method = "bilinear",
                              datatype = "INT2U",
-                             filename2 = TRUE, overwrite = TRUE,
-                             userTags = c("stable", currentModule(sim)))
+                             filename2 = NULL, 
+                             overwrite = TRUE,
+                             userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags), # use at least 1 unique userTag
+                             omitArgs = c("destinationPath", "targetFile", "overwrite", "alsoExtract"))
     sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
   }
   
