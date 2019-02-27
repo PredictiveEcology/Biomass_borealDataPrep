@@ -156,9 +156,10 @@ doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE
 }
 
 createLBMRInputs <- function(sim) {
+  # # ! ----- EDIT BELOW ----- ! #
   if (is.null(P(sim)$pixelGroupAgeClass))
     params(sim)[[currentModule(sim)]]$pixelGroupAgeClass <- P(sim)$successionTimestep
-  # # ! ----- EDIT BELOW ----- ! #
+  
   message(blue("Starting to createLBMRInputs in Boreal_LBMRDataPrep: ", Sys.time()))
   cPath <- cachePath(sim)
   sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$speciesLayers))
@@ -530,15 +531,13 @@ createLBMRInputs <- function(sim) {
                 file.path(outputPath(sim), paste0(names(sim$speciesLayers)[x], ".tif")),
                 datatype = "INT2U", overwrite = TRUE)
   }) %>% raster::stack()
-  
-  ###########################
-  #  Collapse pixelCohortData to its cohortData : need pixelGroupMap
-  ################################
+
+  ##############################################################################
+  ##  Collapse pixelCohortData to its cohortData : need pixelGroupMap
   sim$pixelGroupMap <- raster(sim$rasterToMatch)
   sim$pixelGroupMap[pixelData$pixelIndex] <- as.integer(pixelData$pixelGroup)
-  
-  sim$cohortData <- unique(pixelCohortData,
-                           by = c("pixelGroup", columnsForPixelGroups))
+
+  sim$cohortData <- unique(pixelCohortData, by = c("pixelGroup", columnsForPixelGroups))
   sim$cohortData[ , `:=`(pixelIndex = NULL)]
   
   message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", "),
