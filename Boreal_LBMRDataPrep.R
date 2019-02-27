@@ -375,7 +375,7 @@ createLBMRInputs <- function(sim) {
                            .specialData = cohortDataShort, family = binomial,
                            useCloud = useCloud,
                            cloudFolderID = sim$cloudFolderID,
-                           showSimilar = TRUE,
+                           showSimilar = getOption("reproducible.showSimilar", FALSE),
                            omitArgs = c("showSimilar", ".specialData",
                                         "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
@@ -390,7 +390,7 @@ createLBMRInputs <- function(sim) {
                              .specialData = cohortDataNo34to36NoBiomass,
                              useCloud = useCloud,
                              cloudFolderID = sim$cloudFolderID,
-                             showSimilar = TRUE,
+                             showSimilar = getOption("reproducible.showSimilar", FALSE),
                              omitArgs = c("showSimilar", ".specialData",
                                           "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
