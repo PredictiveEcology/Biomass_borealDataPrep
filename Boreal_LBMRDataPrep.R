@@ -371,7 +371,7 @@ createLBMRInputs <- function(sim) {
     FALSE
   }
   modelCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula,
-                           uniqueEcoregionGroup = unique(cohortDataShort$ecoregionGroup),
+                           uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataShort$ecoregionGroup)),
                            .specialData = cohortDataShort, family = binomial,
                            useCloud = useCloud,
                            cloudFolderID = sim$cloudFolderID,
@@ -386,7 +386,7 @@ createLBMRInputs <- function(sim) {
   message(blue("Estimating maxB with P(sim)$biomassQuotedFormula, which is:\n",
                magenta(paste0(format(P(sim)$biomassQuotedFormula, appendLF = FALSE), collapse = ""))))
   modelBiomass <- cloudCache(statsModel, form = P(sim)$biomassQuotedFormula,
-                             uniqueEcoregionGroup = unique(cohortDataNo34to36NoBiomass$ecoregionGroup),
+                             uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataNo34to36NoBiomass$ecoregionGroup)),
                              .specialData = cohortDataNo34to36NoBiomass,
                              useCloud = useCloud,
                              cloudFolderID = sim$cloudFolderID,
