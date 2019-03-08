@@ -24,7 +24,7 @@ defineModule(sim, list(
                     NA, NA,
                     paste0("This formula is for estimating biomass (B) from ecoregionGroup (currently ecoDistrict * LandCoverClass), ",
                            "speciesCode, logAge (gives a downward curving relationship), and cover")),
-    defineParameter("convertUnwantedLCCClasses", "numeric", 34:35, 34, 36,
+    defineParameter("convertUnwantedLCCClasses", "numeric", 34:35, NA, NA,
                     paste("This will replace these classes on the landscape with the closest forest class (1 to 15). Users may wish to include 36 (cities), and 34:35 (burns). ",
                           "Since this is about estimating parameters for growth, it doesn't make any sense to have unique estimates for 34:35 or 36,",
                           "in most cases")),
@@ -70,7 +70,7 @@ defineModule(sim, list(
                  desc = "total biomass raster layer in study area, default is Canada national biomass map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureBiomass.tar"),
     expectsInput("cloudFolderID", "character",
-                    "The google drive location where cloudCache will store large statistical objects"),
+                 "The google drive location where cloudCache will store large statistical objects"),
     expectsInput("columnsForPixelGroups", "character",
                  "The names of the columns in cohortData that define unique pixelGroups. Default is c('ecoregionGroup', 'speciesCode', 'age', 'B') "),
     expectsInput("ecoDistrict", "SpatialPolygonsDataFrame",
@@ -332,12 +332,12 @@ createLBMRInputs <- function(sim) {
   pseudoSpeciesEcoregion <- unique(availableCombinations[,
                                                          .(speciesCode, initialEcoregionCode)])
   newLCCClasses <- Cache(convertUnwantedLCC, pixelClassesToReplace = P(sim)$convertUnwantedLCCClasses,
-                                      rstLCC = LCC2005Adj,
-                                      ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
-                                                                        ecoregionFiles$ecoregionMap[],
-                                                                        att = "ecoregion"),
-                                      speciesEcoregion = pseudoSpeciesEcoregion,
-                                      availableERC_by_Sp = availableCombinations)
+                         rstLCC = LCC2005Adj,
+                         ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
+                                                           ecoregionFiles$ecoregionMap[],
+                                                           att = "ecoregion"),
+                         speciesEcoregion = pseudoSpeciesEcoregion,
+                         availableERC_by_Sp = availableCombinations)
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
   cohortData34to36 <- pixelCohortData[pixelIndex %in% newLCCClasses$pixelIndex]
@@ -361,6 +361,7 @@ createLBMRInputs <- function(sim) {
   # will be added back as establishprob = 0
   message(blue("Estimating Species Establishment Probability using P(sim)$coverQuotedFormula, which is\n",
                format(P(sim)$coverQuotedFormula)))
+
   # for backwards compatibility -- change from parameter to object
   if (is.null(sim$cloudFolderID))
     if (!is.null(P(sim)$cloudFolderID))
