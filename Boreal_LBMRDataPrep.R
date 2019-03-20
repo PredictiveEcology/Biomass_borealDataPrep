@@ -65,7 +65,7 @@ defineModule(sim, list(
     expectsInput("biomassMap", "RasterLayer",
                  desc = "total biomass raster layer in study area, default is Canada national biomass map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureBiomass.tar"),
-    expectsInput("cloudFolderID", "character", 
+    expectsInput("cloudFolderID", "character",
                  "The google drive location where cloudCache will store large statistical objects"),
     expectsInput("columnsForPixelGroups", "character",
                  "The names of the columns in cohortData that define unique pixelGroups. Default is c('ecoregionGroup', 'speciesCode', 'age', 'B') "),
@@ -275,7 +275,7 @@ createLBMRInputs <- function(sim) {
   coverMatrix <- matrix(asInteger(sim$speciesLayers[]),
                         ncol = length(names(sim$speciesLayers)))
   colnames(coverMatrix) <- names(sim$speciesLayers)
-  
+
   pixelTable <- data.table(age = asInteger(ceiling(asInteger(sim$standAgeMap[]) /
                                                      P(sim)$pixelGroupAgeClass) *
                                              P(sim)$pixelGroupAgeClass),
@@ -313,8 +313,8 @@ createLBMRInputs <- function(sim) {
   pixelCohortData <- Cache(makeAndCleanInitialCohortData, pixelTable,
                            sppColumns = coverColNames,
                            pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass)
-  
-  
+
+
   #######################################################
   # replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*
   #######################################################
@@ -327,17 +327,21 @@ createLBMRInputs <- function(sim) {
                                                   .(speciesCode, initialEcoregionCode, pixelIndex)])
   pseudoSpeciesEcoregion <- unique(availableCombinations[,
                                                          .(speciesCode, initialEcoregionCode)])
-  newLCCClasses <- Cache(convertUnwantedLCC, pixelClassesToReplace = P(sim)$convertUnwantedLCCClasses,
+
+  newLCCClasses <- Cache(convertUnwantedLCC,
+                         pixelClassesToReplace = P(sim)$convertUnwantedLCCClasses,
                          rstLCC = LCC2005Adj,
                          ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
                                                            ecoregionFiles$ecoregionMap[],
                                                            att = "ecoregion"),
                          speciesEcoregion = pseudoSpeciesEcoregion,
                          availableERC_by_Sp = availableCombinations)
+
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
   cohortData34to36 <- pixelCohortData[pixelIndex %in% newLCCClasses$pixelIndex]
-  cohortData34to36 <- newLCCClasses[cohortData34to36, on = "pixelIndex"]
+  cohortData34to36 <- merge(newLCCClasses, cohortData34to36, all.x = TRUE,
+                            all.y = FALSE, by = "pixelIndex")
   cohortDataNo34to36 <- pixelCohortData[!pixelIndex %in% newLCCClasses$pixelIndex]
   setnames(cohortDataNo34to36, "initialEcoregionCode", "ecoregionGroup")
   #cohortDataNo34to36[, ecoregionGroup := initialEcoregionCode]
@@ -420,7 +424,7 @@ createLBMRInputs <- function(sim) {
   ## because resproutprob = 0 for non-resprouters
   cohortDataShort <- sim$species[, .(resproutprob, postfireregen, speciesCode)][cohortDataShort, on = "speciesCode"]
   cohortDataShort[, establishprob := pmax(0, pmin(1, (establishprob * (1 - resproutprob))))]
-  
+
   if (getOption("LandR.verbose") > 0) {
     message("Dividing the establishment probability of resprouting species by ", P(sim)$establishProbAdjFacResprout)
   }
