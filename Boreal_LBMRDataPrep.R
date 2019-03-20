@@ -646,7 +646,7 @@ Save <- function(sim) {
       }
       studyArea <- SpatialPolygonsDataFrame(studyArea, data = dfData)
     }
-    if (!identical(crs(studyArea), crs(sim$biomassMap))) {
+    if (!identical(crs(studyArea), crs(sim$rasterToMatch))) {
       studyArea <- spTransform(studyArea, crs(sim$rasterToMatch))
       studyArea <- fixErrors(studyArea)
     }
