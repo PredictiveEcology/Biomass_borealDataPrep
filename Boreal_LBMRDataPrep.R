@@ -70,7 +70,7 @@ defineModule(sim, list(
                  desc = "total biomass raster layer in study area, default is Canada national biomass map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureBiomass.tar"),
     expectsInput("cloudFolderID", "character",
-                    "The google drive location where cloudCache will store large statistical objects"),
+                 "The google drive location where cloudCache will store large statistical objects"),
     expectsInput("columnsForPixelGroups", "character",
                  "The names of the columns in cohortData that define unique pixelGroups. Default is c('ecoregionGroup', 'speciesCode', 'age', 'B') "),
     expectsInput("ecoDistrict", "SpatialPolygonsDataFrame",
@@ -332,12 +332,12 @@ createLBMRInputs <- function(sim) {
   pseudoSpeciesEcoregion <- unique(availableCombinations[,
                                                          .(speciesCode, initialEcoregionCode)])
   newLCCClasses <- Cache(convertUnwantedLCC, pixelClassesToReplace = P(sim)$convertUnwantedLCCClasses,
-                                      rstLCC = LCC2005Adj,
-                                      ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
-                                                                        ecoregionFiles$ecoregionMap[],
-                                                                        att = "ecoregion"),
-                                      speciesEcoregion = pseudoSpeciesEcoregion,
-                                      availableERC_by_Sp = availableCombinations)
+                         rstLCC = LCC2005Adj,
+                         ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
+                                                           ecoregionFiles$ecoregionMap[],
+                                                           att = "ecoregion"),
+                         speciesEcoregion = pseudoSpeciesEcoregion,
+                         availableERC_by_Sp = availableCombinations)
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
   cohortData34to36 <- pixelCohortData[pixelIndex %in% newLCCClasses$pixelIndex]
@@ -361,6 +361,7 @@ createLBMRInputs <- function(sim) {
   # will be added back as establishprob = 0
   message(blue("Estimating Species Establishment Probability using P(sim)$coverQuotedFormula, which is\n",
                format(P(sim)$coverQuotedFormula)))
+
   # for backwards compatibility -- change from parameter to object
   if (is.null(sim$cloudFolderID))
     if (!is.null(P(sim)$cloudFolderID))
@@ -371,7 +372,7 @@ createLBMRInputs <- function(sim) {
     FALSE
   }
   modelCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula,
-                           uniqueEcoregionGroup = unique(cohortDataShort$ecoregionGroup),
+                           uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataShort$ecoregionGroup)),
                            .specialData = cohortDataShort, family = binomial,
                            useCloud = useCloud,
                            cloudFolderID = sim$cloudFolderID,
@@ -386,7 +387,7 @@ createLBMRInputs <- function(sim) {
   message(blue("Estimating maxB with P(sim)$biomassQuotedFormula, which is:\n",
                magenta(paste0(format(P(sim)$biomassQuotedFormula, appendLF = FALSE), collapse = ""))))
   modelBiomass <- cloudCache(statsModel, form = P(sim)$biomassQuotedFormula,
-                             uniqueEcoregionGroup = unique(cohortDataNo34to36NoBiomass$ecoregionGroup),
+                             uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataNo34to36NoBiomass$ecoregionGroup)),
                              .specialData = cohortDataNo34to36NoBiomass,
                              useCloud = useCloud,
                              cloudFolderID = sim$cloudFolderID,
