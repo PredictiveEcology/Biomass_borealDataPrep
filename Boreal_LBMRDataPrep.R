@@ -426,9 +426,6 @@ createLBMRInputs <- function(sim) {
   cohortDataShort <- sim$species[, .(resproutprob, postfireregen, speciesCode)][cohortDataShort, on = "speciesCode"]
   cohortDataShort[, establishprob := pmax(0, pmin(1, (establishprob * (1 - resproutprob))))]
 
-  if (getOption("LandR.verbose") > 0) {
-    message("Dividing the establishment probability of resprouting species by ", P(sim)$establishProbAdjFacResprout)
-  }
   cohortDataShort <- rbindlist(list(cohortDataShort, cohortDataShortNoCover),
                                use.names = TRUE, fill = TRUE)
   cohortDataShort[is.na(establishprob), establishprob := 0]
