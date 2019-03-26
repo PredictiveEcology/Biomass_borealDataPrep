@@ -296,10 +296,10 @@ createLBMRInputs <- function(sim) {
   pixelTable <- na.omit(pixelTable2, cols = c(coverColNames))
 
   if (NROW(pixelTable1) != NROW(pixelTable))
-    warning("Setting pixels to NA where there is NA in sim$speciesLayers. If this is correct,",
-            "\n  please modify 'sim$rasterToMatch' (which has values in pixels where there is",
-            "\n  no data for species cover.",
-            "\n  sim$rasterToMatch is expected to only have data where there is cover data. ")
+    warning("Setting pixels to NA where there is NA in sim$speciesLayers'. Vegetation succession",
+            "\n  parameters will only be calculated where there is data for species cover.",
+            "\n  Check if sim$rasterToMatch shoudn't also only have data where there is cover data,",
+            "\n  as this may affect other modules.")
   if (NROW(pixelTable2) != NROW(pixelTable))
     warning("Setting pixels to NA where there is NA in sim$ecoDistrict")
 
