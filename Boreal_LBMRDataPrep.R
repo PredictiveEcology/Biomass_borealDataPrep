@@ -481,14 +481,13 @@ createLBMRInputs <- function(sim) {
   pixelCohortData <- rbindlist(list(cohortData34to36, cohortDataNo34to36),
                                use.names = TRUE, fill = TRUE)
   pixelCohortData[, ecoregionGroup := factor(as.character(ecoregionGroup))] # refactor because the "_34" and "_35" ones are still levels
-  # sim$columnsForPixelGroups <- c("ecoregionGroup", "speciesCode", "age", "B")
 
   pixelCohortData[ , `:=`(logAge = NULL, coverOrig = NULL, totalBiomass = NULL, #pixelIndex = NULL,
                           initialEcoregionCode = NULL, cover = NULL, lcc = NULL)]
   pixelCohortData <- pixelCohortData[B > 0]
-  cd <- pixelCohortData[,c("pixelIndex", columnsForPixelGroups), with = FALSE]
+  cd <- pixelCohortData[, .SD, .SDcols = c("pixelIndex", sim$columnsForPixelGroups)]
   pixelCohortData[, pixelGroup := Cache(generatePixelGroups, cd, maxPixelGroup = 0,
-                                        columns = columnsForPixelGroups)]
+                                        columns = sim$columnsForPixelGroups)]
 
   ########################################################################
   ########################################################################
@@ -502,7 +501,7 @@ createLBMRInputs <- function(sim) {
   sim$ecoregion <- data.table(active = "yes",
                               ecoregionGroup = factor(as.character(unique(pixelCohortData$ecoregionGroup))))
 
-  # Some ecoregions have NO BIOMASS -- so they are no active
+  # Some ecoregions have NO BIOMASS -- so they are not active
   sim$ecoregion[!ecoregionGroup %in% unique(speciesEcoregion$ecoregionGroup), active := "no"]
 
   pixelData <- unique(pixelCohortData, by = "pixelIndex")
@@ -590,7 +589,6 @@ Save <- function(sim) {
 
   if (!suppliedElsewhere("studyArea", sim)) {
     message("'studyArea' was not provided by user. Using a polygon in southwestern Alberta, Canada,")
-
     sim$studyArea <- randomStudyArea(seed = 1234)
   }
 
@@ -727,10 +725,6 @@ Save <- function(sim) {
 
   if (!suppliedElsewhere("sppEquiv", sim)) {
 
-    #possibleSpecies
-    #assign(".possibleSpecies", envir = .GlobalEnv)
-
-    # stop("You must select which species you would like to include. ")
     data("sppEquivalencies_CA", package = "LandR", envir = environment())
     sim$sppEquiv <- as.data.table(sppEquivalencies_CA)
     if (!is.null(P(sim)$sppEquivCol))
@@ -752,11 +746,6 @@ Save <- function(sim) {
                                thresh = 5,
                                url = extractURL("speciesLayers"),
                                userTags = c(cacheTags, "speciesLayers"))
-
-    # They are already written to disk individually -- no need for this next line
-    #sim$speciesLayers <- writeRaster(speciesLayersList,
-    #                                 file.path(outputPath(sim), "speciesLayers.grd"),
-    #                                 overwrite = TRUE)
   }
 
   # 3. species maps
