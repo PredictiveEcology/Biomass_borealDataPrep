@@ -124,9 +124,9 @@ defineModule(sim, list(
     createsOutput("speciesEcoregion", "data.table",
                   desc = "define the maxANPP, maxB and establishprob change with both ecoregion and simulation time"),
     createsOutput("studyArea", "", desc = ""),
-    createsOutput("speciesEstablishmentProbMap", "RasterStack",
-                  paste("Species establishment probability as a map, ",
-                        "by species. This is written to disk to save RAM space")),
+    # createsOutput("speciesEstablishmentProbMap", "RasterStack",
+    #               paste("Species establishment probability as a map, ",
+    #                     "by species. This is written to disk to save RAM space")),
     createsOutput("useCache", "logic",
                   desc = "define which the caching for spinup simulation should be used, default is TRUE")
   )
