@@ -258,6 +258,7 @@ createLBMRInputs <- function(sim) {
   LCC2005Adj[pixelsToRm] <- NA
   rstEcoregionMap[pixelsToRm] <- NA
 
+  ## TODO: clean up - not the most effient function (maybe contains redundancies). Producing a non-used object
   message(blue("Make initial ecoregionGroups ", Sys.time()))
   ecoregionFiles <- Cache(ecoregionProducer,
                           ecoregionMaps = list(rstEcoregionMap, LCC2005Adj),
