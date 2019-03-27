@@ -323,8 +323,10 @@ createLBMRInputs <- function(sim) {
           " values -- ","burns"[any(uwc %in% 34:35)], "and cities"[any(uwc %in% 36)],
           " -- to a neighbour class *that exists*")
   rmZeroBiomassQuote <- quote(B > 0)
-  availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
-                                                  .(speciesCode, initialEcoregionCode, pixelIndex)])
+  ## why only on biomass > 0? what about cover?
+  # availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
+  #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
+  availableCombinations <- unique(pixelCohortData[, .(speciesCode, initialEcoregionCode, pixelIndex)])
   pseudoSpeciesEcoregion <- unique(availableCombinations[,
                                                          .(speciesCode, initialEcoregionCode)])
 
