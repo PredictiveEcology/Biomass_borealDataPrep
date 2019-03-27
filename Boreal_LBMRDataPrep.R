@@ -84,7 +84,7 @@ defineModule(sim, list(
                  desc = "cover percentage raster layers by species in Canada species map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
     expectsInput("speciesTable", "data.table",
-                 desc = "species attributes table, default is from Dominic and Yan's project",
+                 desc = "species attributes table, default is from Dominic Cyr and Yan's project",
                  sourceURL = "https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv"),
     expectsInput("sppEquiv", "data.table",
                  desc = "table of species equivalencies. See LandR::sppEquivalencies_CA.",
