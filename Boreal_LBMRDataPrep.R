@@ -591,8 +591,8 @@ Save <- function(sim) {
   ecozoneAE <- basename(paste0(tools::file_path_sans_ext(ecozoneFilename), ".", fexts))
 
   if (!suppliedElsewhere("studyArea", sim)) {
-    message("'studyArea' was not provided by user. Using a polygon in southwestern Alberta, Canada,")
-    sim$studyArea <- randomStudyArea(seed = 1234)
+    message("'studyArea' was not provided by user. Using a polygon (6250000 m^2) in southwestern Alberta, Canada")
+    sim$studyArea <- randomStudyArea(seed = 1234, size = (250^2)*100)
   }
 
   if (!suppliedElsewhere("studyAreaLarge", sim)) {
