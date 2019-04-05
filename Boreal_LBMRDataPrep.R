@@ -368,6 +368,7 @@ createLBMRInputs <- function(sim) {
   if (is.null(sim$cloudFolderID))
     if (!is.null(P(sim)$cloudFolderID))
       sim$cloudFolderID <- P(sim)$cloudFolderID
+
   useCloud <- if (!is.null(sim$cloudFolderID)) {
     (getOption("reproducible.useCache", FALSE) && P(sim)$useCloudCacheForStats)
   } else {
