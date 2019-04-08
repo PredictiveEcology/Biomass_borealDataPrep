@@ -250,12 +250,10 @@ createLBMRInputs <- function(sim) {
   ecoregionMap <- Cache(postProcess, sim$ecoDistrict, studyArea = sim$studyArea, filename2 = NULL)
   rstEcoregionMap <- fasterize::fasterize(sf::st_as_sf(ecoregionMap), raster = sim$rasterToMatch,
                                           field = "ECODISTRIC")
-  ecoregionstatus <- data.table(active = "yes",
-                                ecoregion = 1:1031)
-  #  also rm 37, 38, 39 --> make them NA
+  ecoregionstatus <- data.table(active = "yes", ecoregion = 1:1031)
   LCC2005Adj <- sim$LCC2005
 
-  # Rm rock and ice pixels
+  # remove rock and ice pixels
   lcc37_39 <- sim$LCC2005[] %in% c(0, 37:39) # these are lakes, rock and ice
   coverNA <- is.na(sim$speciesLayers[[1]][])
   pixelsToRm <- lcc37_39 | coverNA
