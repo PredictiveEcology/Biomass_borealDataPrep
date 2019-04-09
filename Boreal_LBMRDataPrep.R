@@ -330,16 +330,13 @@ createLBMRInputs <- function(sim) {
   availableCombinations <- unique(pixelCohortData[, .(speciesCode, initialEcoregionCode, pixelIndex)])
   pseudoSpeciesEcoregion <- unique(availableCombinations[,
                                                          .(speciesCode, initialEcoregionCode)])
-
-  newLCCClasses <- Cache(convertUnwantedLCC,
-                         pixelClassesToReplace = P(sim)$convertUnwantedLCCClasses,
+  newLCCClasses <- Cache(convertUnwantedLCC, pixelClassesToReplace = P(sim)$convertUnwantedLCCClasses,
                          rstLCC = LCC2005Adj,
                          ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
                                                            ecoregionFiles$ecoregionMap[],
                                                            att = "ecoregion"),
                          speciesEcoregion = pseudoSpeciesEcoregion,
                          availableERC_by_Sp = availableCombinations)
-
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
   cohortData34to36 <- pixelCohortData[pixelIndex %in% newLCCClasses$pixelIndex]
@@ -362,8 +359,9 @@ createLBMRInputs <- function(sim) {
   cohortDataShortNoCover <- cohortDataShort[coverPres == 0] #
   cohortDataShort <- cohortDataShort[coverPres > 0] # remove places where there is 0 cover
   # will be added back as establishprob = 0
-  message(blue("Estimating Species Establishment Probability using P(sim)$coverQuotedFormula, which is\n"),
-          magenta(format(P(sim)$coverQuotedFormula)))
+  message(blue("Estimating Species Establishment Probability using P(sim)$coverQuotedFormula, which is\n",
+               format(P(sim)$coverQuotedFormula)))
+
   # for backwards compatibility -- change from parameter to object
   if (is.null(sim$cloudFolderID))
     if (!is.null(P(sim)$cloudFolderID))
