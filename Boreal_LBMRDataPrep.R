@@ -49,6 +49,8 @@ defineModule(sim, list(
                           "This will form the basis of cache path and output path, and affect dispersal parameterization.")),
     defineParameter("sppEquivCol", "character", "Boreal", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
+    defineParameter("subsetDataBiomassModel", "numeric", NULL, NA, NA,
+                    "the number of samples to use when subsampling the biomass data model; if TRUE, uses 50"),
     defineParameter("successionTimestep", "numeric", 10, NA, NA, "defines the simulation time step, default is 10 years"),
     defineParameter("useCloudCacheForStats", "logical", TRUE, NA, NA,
                     "Some of the statistical models take long (at least 30 minutes, likely longer). If this is TRUE, then it will try to get previous cached runs from googledrive"),
@@ -244,12 +246,10 @@ createLBMRInputs <- function(sim) {
   ecoregionMap <- Cache(postProcess, sim$ecoDistrict, studyArea = sim$studyArea, filename2 = NULL)
   rstEcoregionMap <- fasterize::fasterize(sf::st_as_sf(ecoregionMap), raster = sim$rasterToMatch,
                                           field = "ECODISTRIC")
-  ecoregionstatus <- data.table(active = "yes",
-                                ecoregion = 1:1031)
-  #  also rm 37, 38, 39 --> make them NA
+  ecoregionstatus <- data.table(active = "yes", ecoregion = 1:1031)
   LCC2005Adj <- sim$LCC2005
 
-  # Rm rock and ice pixels
+  # remove rock and ice pixels
   lcc37_39 <- sim$LCC2005[] %in% c(0, 37:39) # these are lakes, rock and ice
   coverNA <- is.na(sim$speciesLayers[[1]][])
   pixelsToRm <- lcc37_39 | coverNA
@@ -366,6 +366,7 @@ createLBMRInputs <- function(sim) {
   if (is.null(sim$cloudFolderID))
     if (!is.null(P(sim)$cloudFolderID))
       sim$cloudFolderID <- P(sim)$cloudFolderID
+
   useCloud <- if (!is.null(sim$cloudFolderID)) {
     (getOption("reproducible.useCache", FALSE) && P(sim)$useCloudCacheForStats)
   } else {
@@ -383,8 +384,23 @@ createLBMRInputs <- function(sim) {
   message(blue("  The rsquared is: "))
   print(modelCover$rsq)
 
-  # For biomass
-  # For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
+  ## For biomass
+  ### Subsample cases where there are more than 50 points in an ecoregionGroup * speciesCode
+  if (!is.null(P(sim)$subsetDataBiomassModel)) {
+    if (!isFALSE(P(sim)$subsetDataBiomassModel)) {
+      sam <- if (is.numeric(P(sim)$subsetDataBiomassModel)) P(sim)$subsetDataBiomassModel else 50
+      message("subsampling initial dataset for faster estimation of maxBiomass parameter: ",
+              "using maximum of ", sam, " samples per combination of ecoregionGroup and speciesCode. ",
+              "Change P(sim)$subsetDataBiomassModel to a different number if this is not enough")
+      # subset -- add line numbers of those that were sampled
+      a <- cohortDataNo34to36NoBiomass[, list(lineNum = .I[sample(.N, size = min(.N, sam))]),
+                                       by = c("ecoregionGroup", "speciesCode")]
+      # Select only those row numbers from whole dataset
+      cohortDataNo34to36NoBiomass <- cohortDataNo34to36NoBiomass[a$lineNum]
+    }
+  }
+
+  ### For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
   message(blue("Estimating maxB with P(sim)$biomassQuotedFormula, which is:\n",
                magenta(paste0(format(P(sim)$biomassQuotedFormula), collapse = ""))))
   modelBiomass <- cloudCache(statsModel, form = P(sim)$biomassQuotedFormula,
