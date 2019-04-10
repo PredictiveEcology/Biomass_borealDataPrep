@@ -372,6 +372,7 @@ createLBMRInputs <- function(sim) {
   } else {
     FALSE
   }
+
   modelCover <- cloudCache(statsModel, P(sim)$coverQuotedFormula,
                            uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataShort$ecoregionGroup)),
                            .specialData = cohortDataShort, family = binomial,
