@@ -338,27 +338,21 @@ createLBMRInputs <- function(sim) {
                            sppColumns = coverColNames,
                            pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass)
 
-
   #######################################################
   # replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*
   #######################################################
   uwc <- P(sim)$LCCClassesToReplaceNN
-  message("Replace ",paste(uwc, collapse = ", "),
-          " values -- ","burns"[any(uwc %in% 34:35)], "and cities"[any(uwc %in% 36)],
+  message("Replace ", paste(uwc, collapse = ", "),
+          " values -- ", "burns"[any(uwc %in% 34:35)], "and cities"[any(uwc %in% 36)],
           " -- to a neighbour class *that exists*")
   rmZeroBiomassQuote <- quote(B > 0)
   availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
                                                   .(speciesCode, initialEcoregionCode, pixelIndex)])
-  pseudoSpeciesEcoregion <- unique(availableCombinations[,
-                                                         .(speciesCode, initialEcoregionCode)])
+  pseudoSpeciesEcoregion <- unique(availableCombinations[, .(speciesCode, initialEcoregionCode)])
   browser()
   newLCCClasses <- Cache(convertUnwantedLCC, classesToReplace = P(sim)$LCCClassesToReplaceNN,
-                         rstLCC = rstLCCAdj,
-                         # ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
-                         #                                  ecoregionFiles$ecoregionMap[],
-                         #                                  att = "ecoregion"),
-                         # speciesEcoregion = pseudoSpeciesEcoregion,
-                         availableERC_by_Sp = availableCombinations)
+                         rstLCC = rstLCCAdj, availableERC_by_Sp = availableCombinations)
+
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
   cohortData34to36 <- pixelCohortData[pixelIndex %in% newLCCClasses$pixelIndex]
@@ -491,8 +485,7 @@ createLBMRInputs <- function(sim) {
   ########################################################################
   # Clean up unneeded columns
   ########################################################################
-  speciesEcoregion[ , `:=`(logAge = NULL, cover = NULL, longevity = NULL, #pixelIndex = NULL,
-                           lcc = NULL)]
+  speciesEcoregion[ , `:=`(logAge = NULL, cover = NULL, longevity = NULL, lcc = NULL)]
 
   speciesEcoregion[ , year := time(sim)]
 
@@ -520,17 +513,18 @@ createLBMRInputs <- function(sim) {
   # Rejoin back the pixels that were 34 and 35
   pixelCohortData <- rbindlist(list(cohortData34to36, cohortDataNo34to36),
                                use.names = TRUE, fill = TRUE)
-  pixelCohortData[, ecoregionGroup := factor(as.character(ecoregionGroup))] # refactor because the "_34" and "_35" ones are still levels
+
+  ## refactor because the "_34" and "_35" ones are still levels
+  pixelCohortData[, ecoregionGroup := factor(as.character(ecoregionGroup))]
   # sim$columnsForPixelGroups <- c("ecoregionGroup", "speciesCode", "age", "B")
 
-  pixelCohortData[ , `:=`(logAge = NULL, coverOrig = NULL, totalBiomass = NULL, #pixelIndex = NULL,
+  pixelCohortData[ , `:=`(logAge = NULL, coverOrig = NULL, totalBiomass = NULL,
                           initialEcoregionCode = NULL, cover = NULL, lcc = NULL)]
   pixelCohortData <- pixelCohortData[B > 0]
   cd <- pixelCohortData[,c("pixelIndex", columnsForPixelGroups), with = FALSE]
   pixelCohortData[, pixelGroup := Cache(generatePixelGroups, cd, maxPixelGroup = 0,
                                         columns = columnsForPixelGroups)]
 
-  ########################################################################
   ########################################################################
   ## rebuild ecoregion, ecoregionMap objects -- some initial ecoregions disappeared (e.g., 34, 35, 36)
   ## rebuild biomassMap object -- biomasses have been adjusted
