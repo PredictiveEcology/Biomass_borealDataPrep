@@ -9,7 +9,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@friresearch.ca", role = c("ctb"))
   ),
   childModules = character(0),
-  version = list(SpaDES.core = "0.2.3.9009", Boreal_LBMRDataPrep = numeric_version("1.3.3")),
+  version = list(SpaDES.core = "0.2.3.9009", Boreal_LBMRDataPrep = numeric_version("1.3.4")),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
@@ -20,14 +20,11 @@ defineModule(sim, list(
                   "PredictiveEcology/pemisc@development", "achubaty/amc@development"),
   parameters = rbind(
     defineParameter("biomassQuotedFormula", "name",
+                    #quote(B ~ logAge * speciesCode + (speciesCode | ecoregionGroup) + cover * speciesCode),
                     quote(B ~ logAge * speciesCode + (speciesCode | ecoregionGroup) + cover * speciesCode),
                     NA, NA,
                     paste0("This formula is for estimating biomass (B) from ecoregionGroup (currently ecoDistrict * LandCoverClass), ",
                            "speciesCode, logAge (gives a downward curving relationship), and cover")),
-    defineParameter("convertUnwantedLCCClasses", "numeric", 34:35, 34, 36,
-                    paste("This will replace these classes on the landscape with the closest forest class (1 to 15). Users may wish to include 36 (cities), and 34:35 (burns). ",
-                          "Since this is about estimating parameters for growth, it doesn't make any sense to have unique estimates for 34:35 or 36,",
-                          "in most cases")),
     defineParameter("coverQuotedFormula", "name",
                     quote(cbind(coverPres, coverNum) ~ speciesCode + (1 | ecoregionGroup)),
                     NA, NA,
@@ -40,6 +37,8 @@ defineModule(sim, list(
                     "mortality curve shape for deciduous species (i.e., aspen). LANDIS-II uses 25 by default."),
     defineParameter("mortalityShapeNonDecid", "numeric", 15, 12, 27,
                     "mortality curve shape for non-deciduous species. LANDIS-II uses 15 by default."),
+    defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
+                    "Should this module use only treed pixels, as identified by nonTreePixels object?"),
     defineParameter("pixelGroupAgeClass", "numeric", params(sim)$Boreal_LBMRDataPrep$successionTimestep, NA, NA,
                     "When assigning pixelGroup membership, this defines the resolution of ages that will be considered 'the same pixelGroup', e.g., if it is 10, then 6 and 14 will be the same"),
     defineParameter("pixelGroupBiomassClass", "numeric", 100, NA, NA,
@@ -52,6 +51,12 @@ defineModule(sim, list(
     defineParameter("subsetDataBiomassModel", "numeric", NULL, NA, NA,
                     "the number of samples to use when subsampling the biomass data model; if TRUE, uses 50"),
     defineParameter("successionTimestep", "numeric", 10, NA, NA, "defines the simulation time step, default is 10 years"),
+    defineParameter("LCCClassesToReplaceNN", "numeric", 34:35, NA, NA,
+                    paste("This will replace these classes on the landscape with the closest forest class P(sim)$forestedLCCClasses.",
+                          "If the user is using the default 2005 data product for rstLCC, then users may wish to",
+                          "include 36 (cities -- if running a historic range of variation project), and 34:35 (burns)",
+                          "Since this is about estimating parameters for growth, it doesn't make any sense to have",
+                          "unique estimates for transient classes in most cases")),
     defineParameter("useCloudCacheForStats", "logical", TRUE, NA, NA,
                     "Some of the statistical models take long (at least 30 minutes, likely longer). If this is TRUE, then it will try to get previous cached runs from googledrive"),
     defineParameter(".plotInitialTime", "numeric", NA, NA, NA,
@@ -74,9 +79,20 @@ defineModule(sim, list(
     expectsInput("ecoDistrict", "SpatialPolygonsDataFrame",
                  desc = "ecodistricts in study area, default is Canada national ecodistricts",
                  sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip"),
-    expectsInput("LCC2005", "RasterLayer",
-                 desc = "2005 land classification map in study area, default is Canada national land classification in 2005",
-                 #sourceURL = "ftp://ftp.ccrs.nrcan.gc.ca/ad/NLCCLandCover/LandcoverCanada2005_250m/LandCoverOfCanada2005_V1_4.zip"),
+    expectsInput("nonTreePixels", "integer",
+                 desc = paste("A vector of pixels IDs which does not contain trees; i.e., grasslands, wetlands, etc. These will be",
+                              "removed from the SpeciesLayers, rstLCC when estimating statistical models"),
+                 sourceURL = NA),
+    expectsInput("rstLCC", "RasterLayer",
+                 desc = paste("A land classification map in study area. It must be 'corrected', in the sense that:\n",
+                              "1) Every class must not conflict with any other map in this module\n",
+                              "    (e.g., speciesLayers should not have data in LCC classes that are non-treed);\n",
+                              "2) It can have treed and non-treed classes. The non-treed will be removed within this\n",
+                              "    module if P(sim)$omitNonTreedPixels is TRUE;\n",
+                              "3) It can have transient pixels, such as 'young fire'. These will be converted to a\n",
+                              "    the nearest non-transient class, probabilistically if there is more than 1 nearest\n",
+                              "    neighbour class, based on P(sim)$LCCClassesToReplaceNN.\n",
+                              "The default layer used, if not supplied, is Canada national land classification in 2005"),
                  sourceURL = "https://drive.google.com/file/d/1g9jr0VrQxqxGjZ4ckF6ZkSMP-zuYzHQC/view?usp=sharing"),
     expectsInput("rasterToMatch", "RasterLayer",
                  #desc = "this raster contains two pieces of information: Full study area with fire return interval attribute",
@@ -247,21 +263,23 @@ createLBMRInputs <- function(sim) {
   rstEcoregionMap <- fasterize::fasterize(sf::st_as_sf(ecoregionMap), raster = sim$rasterToMatch,
                                           field = "ECODISTRIC")
   ecoregionstatus <- data.table(active = "yes", ecoregion = 1:1031)
-  LCC2005Adj <- sim$LCC2005
+  rstLCCAdj <- sim$rstLCC
 
-  # remove rock and ice pixels
-  lcc37_39 <- sim$LCC2005[] %in% c(0, 37:39) # these are lakes, rock and ice
-  coverNA <- is.na(sim$speciesLayers[[1]][])
-  pixelsToRm <- lcc37_39 | coverNA
+  # remove non-forested if asked by user
+  pixelsToRm <- is.na(sim$speciesLayers[[1]][])
+  if (P(sim)$omitNonTreedPixels) {
+    lccPixelsRemoveTF <- !(sim$rstLCC[] %in% P(sim)$forestedLCCClasses) # these are lakes, rock and ice
+    pixelsToRm <- lccPixelsRemoveTF | pixelsToRm
+  }
 
   sim$rasterToMatch[pixelsToRm] <- NA
-  LCC2005Adj[pixelsToRm] <- NA
+  rstLCCAdj[pixelsToRm] <- NA
   rstEcoregionMap[pixelsToRm] <- NA
 
   ## TODO: clean up - not the most effient function (maybe contains redundancies). Producing a non-used object
   message(blue("Make initial ecoregionGroups ", Sys.time()))
   ecoregionFiles <- Cache(ecoregionProducer,
-                          ecoregionMaps = list(rstEcoregionMap, LCC2005Adj),
+                          ecoregionMaps = list(rstEcoregionMap, rstLCCAdj),
                           ecoregionName = "ECODISTRIC",
                           ecoregionActiveStatus = ecoregionstatus,
                           rasterToMatch = sim$rasterToMatch,
@@ -287,7 +305,7 @@ createLBMRInputs <- function(sim) {
                            totalBiomass = asInteger(sim$biomassMap[]) * 100, # change units
                            cover = coverMatrix,
                            pixelIndex = seq(ncell(sim$standAgeMap)),
-                           lcc = LCC2005Adj[],
+                           lcc = rstLCCAdj[],
                            rasterToMatch = sim$rasterToMatch[]
   )
 
@@ -315,28 +333,22 @@ createLBMRInputs <- function(sim) {
                            sppColumns = coverColNames,
                            pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass)
 
-
   #######################################################
   # replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*
   #######################################################
-  uwc <- P(sim)$convertUnwantedLCCClasses
-  message("Replace ",paste(uwc, collapse = ", "),
-          " values -- ","burns"[any(uwc %in% 34:35)], "and cities"[any(uwc %in% 36)],
+  uwc <- P(sim)$LCCClassesToReplaceNN
+  message("Replace ", paste(uwc, collapse = ", "),
+          " values -- ", "burns"[any(uwc %in% 34:35)], "and cities"[any(uwc %in% 36)],
           " -- to a neighbour class *that exists*")
   rmZeroBiomassQuote <- quote(B > 0)
-  ## why only on biomass > 0? what about cover?
+  pseudoSpeciesEcoregion <- unique(availableCombinations[, .(speciesCode, initialEcoregionCode)])
+  browser()
+  newLCCClasses <- Cache(convertUnwantedLCC, classesToReplace = P(sim)$LCCClassesToReplaceNN,
+                         rstLCC = rstLCCAdj, availableERC_by_Sp = availableCombinations)
+
   # availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
   #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
   availableCombinations <- unique(pixelCohortData[, .(speciesCode, initialEcoregionCode, pixelIndex)])
-  pseudoSpeciesEcoregion <- unique(availableCombinations[,
-                                                         .(speciesCode, initialEcoregionCode)])
-  newLCCClasses <- Cache(convertUnwantedLCC, classesToReplace = P(sim)$convertUnwantedLCCClasses,
-                         rstLCC = LCC2005Adj,
-                         ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
-                                                           ecoregionFiles$ecoregionMap[],
-                                                           att = "ecoregion"),
-                         speciesEcoregion = pseudoSpeciesEcoregion,
-                         availableERC_by_Sp = availableCombinations)
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
   cohortData34to36 <- pixelCohortData[pixelIndex %in% newLCCClasses$pixelIndex]
@@ -468,8 +480,7 @@ createLBMRInputs <- function(sim) {
   ########################################################################
   # Clean up unneeded columns
   ########################################################################
-  speciesEcoregion[ , `:=`(logAge = NULL, cover = NULL, longevity = NULL, #pixelIndex = NULL,
-                           lcc = NULL)]
+  speciesEcoregion[ , `:=`(logAge = NULL, cover = NULL, longevity = NULL, lcc = NULL)]
 
   speciesEcoregion[ , year := time(sim)]
 
@@ -499,14 +510,13 @@ createLBMRInputs <- function(sim) {
                                use.names = TRUE, fill = TRUE)
   pixelCohortData[, ecoregionGroup := factor(as.character(ecoregionGroup))] # refactor because the "_34" and "_35" ones are still levels
 
-  pixelCohortData[ , `:=`(logAge = NULL, coverOrig = NULL, totalBiomass = NULL, #pixelIndex = NULL,
+  pixelCohortData[ , `:=`(logAge = NULL, coverOrig = NULL, totalBiomass = NULL,
                           initialEcoregionCode = NULL, cover = NULL, lcc = NULL)]
   pixelCohortData <- pixelCohortData[B > 0]
   cd <- pixelCohortData[, .SD, .SDcols = c("pixelIndex", sim$columnsForPixelGroups)]
   pixelCohortData[, pixelGroup := Cache(generatePixelGroups, cd, maxPixelGroup = 0,
                                         columns = sim$columnsForPixelGroups)]
 
-  ########################################################################
   ########################################################################
   ## rebuild ecoregion, ecoregionMap objects -- some initial ecoregions disappeared (e.g., 34, 35, 36)
   ## rebuild biomassMap object -- biomasses have been adjusted
@@ -595,7 +605,7 @@ Save <- function(sim) {
   ecodistrictFilename <- file.path(dPath, "ecodistricts.shp")
   ecozoneFilename <-   file.path(dPath, "ecozones.shp")
   biomassMapFilename <- file.path(dPath, "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.tif")
-  lcc2005Filename <- file.path(dPath, "LCC2005_V1_4a.tif")
+  lcc2005Filename <- file.path(dPath, "rstLCC_V1_4a.tif")
   standAgeMapFilename <- file.path(dPath, "NFI_MODIS250m_kNN_Structure_Stand_Age_v0.tif")
 
   # Also extract
@@ -686,22 +696,22 @@ Save <- function(sim) {
     stop("sim$rasterToMatch is too small, it should have more than 10,000 pixels")
 
 
-  # LCC2005
-  if (!suppliedElsewhere("LCC2005", sim)) {
-    sim$LCC2005 <- Cache(prepInputs,
+  # rstLCC
+  if (!suppliedElsewhere("rstLCC", sim)) {
+    sim$rstLCC <- Cache(prepInputs,
                          targetFile = lcc2005Filename,
                          archive = asPath("LandCoverOfCanada2005_V1_4.zip"),
-                         url = extractURL("LCC2005"),
+                         url = extractURL("rstLCC"),
                          destinationPath = dPath,
                          studyArea = sim$studyArea,
                          rasterToMatch = sim$rasterToMatch,
                          method = "bilinear",
                          datatype = "INT2U",
                          filename2 = TRUE, overwrite = TRUE,
-                         userTags = c("prepInputsLCC2005_rtm", currentModule(sim)), # use at least 1 unique userTag
+                         userTags = c("prepInputsrstLCC_rtm", currentModule(sim)), # use at least 1 unique userTag
                          omitArgs = c("destinationPath", "targetFile"))
 
-    projection(sim$LCC2005) <- projection(sim$rasterToMatch)
+    projection(sim$rstLCC) <- projection(sim$rasterToMatch)
   }
 
   if (!suppliedElsewhere("ecoDistrict", sim)) {
