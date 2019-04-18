@@ -330,7 +330,7 @@ createLBMRInputs <- function(sim) {
   availableCombinations <- unique(pixelCohortData[, .(speciesCode, initialEcoregionCode, pixelIndex)])
   pseudoSpeciesEcoregion <- unique(availableCombinations[,
                                                          .(speciesCode, initialEcoregionCode)])
-  newLCCClasses <- Cache(convertUnwantedLCC, pixelClassesToReplace = P(sim)$convertUnwantedLCCClasses,
+  newLCCClasses <- Cache(convertUnwantedLCC, classesToReplace = P(sim)$convertUnwantedLCCClasses,
                          rstLCC = LCC2005Adj,
                          ecoregionGroupVec = factorValues2(ecoregionFiles$ecoregionMap,
                                                            ecoregionFiles$ecoregionMap[],
