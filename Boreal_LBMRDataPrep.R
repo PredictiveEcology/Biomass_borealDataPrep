@@ -29,6 +29,8 @@ defineModule(sim, list(
                     quote(cbind(coverPres, coverNum) ~ speciesCode + (1 | ecoregionGroup)),
                     NA, NA,
                     "This formula is for estimating cover from ecoregion and speciesCode and potentially others"),
+    defineParameter("forestedLCCClasses", "numeric", c(1:15, 20, 32, 34:35), 0, 40,
+                    "The classes in the rstLCC layer that are 'treed' and will therefore be run in LBMR"),
     defineParameter("growthCurveDecid", "numeric", 0, 0, 1,
                     "growth curve shape for deciduous species (i.e., aspen). LANDIS-II uses 0 for aspen."),
     defineParameter("growthCurveNonDecid", "numeric", 1, 0, 1,
