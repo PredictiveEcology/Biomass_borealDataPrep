@@ -270,6 +270,9 @@ createLBMRInputs <- function(sim) {
   # remove non-forested if asked by user
   pixelsToRm <- is.na(sim$speciesLayers[[1]][])
   if (P(sim)$omitNonTreedPixels) {
+    if (is.null(P(sim)$forestedLCCClasses))
+      stop("No P(sim)$forestedLCCClasses provided, but P(sim)$omitNonTreedPixels is TRUE.
+           \nPlease provide a vector of forested classes in P(sim)$forestedLCCClasses")
     lccPixelsRemoveTF <- !(sim$rstLCC[] %in% P(sim)$forestedLCCClasses) # these are lakes, rock and ice
     pixelsToRm <- lccPixelsRemoveTF | pixelsToRm
   }
