@@ -347,7 +347,6 @@ createLBMRInputs <- function(sim) {
           " -- to a neighbour class *that exists*")
   rmZeroBiomassQuote <- quote(B > 0)
   pseudoSpeciesEcoregion <- unique(availableCombinations[, .(speciesCode, initialEcoregionCode)])
-  browser()
   newLCCClasses <- Cache(convertUnwantedLCC, classesToReplace = P(sim)$LCCClassesToReplaceNN,
                          rstLCC = rstLCCAdj, availableERC_by_Sp = availableCombinations)
 
