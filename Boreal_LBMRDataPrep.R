@@ -589,7 +589,7 @@ createLBMRInputs <- function(sim) {
                     speciesEcoregion = speciesEcoregion,
                     minRelativeB = sim$minRelativeB)
 
-  assertCohortData(sim$cohortData, sim$pixelGroupMap)
+  LandR::assertCohortData(sim$cohortData, sim$pixelGroupMap)
 
   LandR::assertUniqueCohortData(sim$cohortData, c("pixelGroup", "ecoregionGroup", "speciesCode"))
 
