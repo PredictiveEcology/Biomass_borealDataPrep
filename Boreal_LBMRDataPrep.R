@@ -342,9 +342,11 @@ createLBMRInputs <- function(sim) {
   # replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*
   #######################################################
   uwc <- P(sim)$LCCClassesToReplaceNN
+
   message("Replace ", paste(uwc, collapse = ", "),
           " values -- ", "burns"[any(uwc %in% 34:35)], "and cities"[any(uwc %in% 36)],
           " -- to a neighbour class *that exists*")
+
   rmZeroBiomassQuote <- quote(B > 0)
   pseudoSpeciesEcoregion <- unique(availableCombinations[, .(speciesCode, initialEcoregionCode)])
   newLCCClasses <- Cache(convertUnwantedLCC, classesToReplace = P(sim)$LCCClassesToReplaceNN,
@@ -419,7 +421,7 @@ createLBMRInputs <- function(sim) {
   ### For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
   ### force parameter values to avoid more checks
   message(blue("Estimating biomass using P(sim)$biomassQuotedFormula as:\n"),
-            magenta(paste0(format(P(sim)$biomassQuotedFormula, appendLF = FALSE), collapse = "")))
+          magenta(paste0(format(P(sim)$biomassQuotedFormula, appendLF = FALSE), collapse = "")))
                              uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataNo34to36NoBiomass$ecoregionGroup)),
                              .specialData = cohortDataNo34to36NoBiomass,
                              useCloud = useCloud,
@@ -427,6 +429,7 @@ createLBMRInputs <- function(sim) {
                              showSimilar = getOption("reproducible.showSimilar", FALSE),
                              omitArgs = c("showSimilar", ".specialData",
                                           "useCloud", "cloudFolderID"))
+
   message(blue("  The rsquared is: "))
   print(modelBiomass$rsq)
 
@@ -703,17 +706,17 @@ Save <- function(sim) {
   # rstLCC
   if (!suppliedElsewhere("rstLCC", sim)) {
     sim$rstLCC <- Cache(prepInputs,
-                         targetFile = lcc2005Filename,
-                         archive = asPath("LandCoverOfCanada2005_V1_4.zip"),
-                         url = extractURL("rstLCC"),
-                         destinationPath = dPath,
-                         studyArea = sim$studyArea,
-                         rasterToMatch = sim$rasterToMatch,
-                         method = "bilinear",
-                         datatype = "INT2U",
-                         filename2 = TRUE, overwrite = TRUE,
-                         userTags = c("prepInputsrstLCC_rtm", currentModule(sim)), # use at least 1 unique userTag
-                         omitArgs = c("destinationPath", "targetFile"))
+                        targetFile = lcc2005Filename,
+                        archive = asPath("LandCoverOfCanada2005_V1_4.zip"),
+                        url = extractURL("rstLCC"),
+                        destinationPath = dPath,
+                        studyArea = sim$studyArea,
+                        rasterToMatch = sim$rasterToMatch,
+                        method = "bilinear",
+                        datatype = "INT2U",
+                        filename2 = TRUE, overwrite = TRUE,
+                        userTags = c("prepInputsrstLCC_rtm", currentModule(sim)), # use at least 1 unique userTag
+                        omitArgs = c("destinationPath", "targetFile"))
 
     projection(sim$rstLCC) <- projection(sim$rasterToMatch)
   }
