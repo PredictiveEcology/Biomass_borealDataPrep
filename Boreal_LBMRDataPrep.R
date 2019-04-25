@@ -19,7 +19,7 @@ defineModule(sim, list(
                   "PredictiveEcology/LandR@development", "lme4",
                   "PredictiveEcology/pemisc@development", "achubaty/amc@development"),
   parameters = rbind(
-    defineParameter("biomassQuotedFormula", "name",
+    defineParameter("biomassModel", "call",
                     quote(lme4::lmer(B ~ logAge * speciesCode + cover * speciesCode + (logAge + cover + speciesCode | ecoregionGroup))),
                     NA, NA,
                     paste("This formula is for estimating biomass (B) from ecoregionGroup (currently ecoDistrict * LandCoverClass),",
@@ -28,7 +28,7 @@ defineModule(sim, list(
                           "For faster fitting try P(sim)$subsetDataBiomassModel == TRUE, or",
                           "quote(RcppArmadillo::fastLm(formula = B ~ logAge * speciesCode * ecoregionGroup + cover",
                           "* speciesCode * ecoregionGroup))")),
-    defineParameter("coverQuotedFormula", "call",
+    defineParameter("coverModel", "call",
                     quote(lme4::glmer(cbind(coverPres, coverNum) ~ speciesCode + (1 | ecoregionGroup),
                                       family = binomial)),
                     NA, NA,
@@ -383,8 +383,8 @@ createLBMRInputs <- function(sim) {
   cohortDataShortNoCover <- cohortDataShort[coverPres == 0] #
   cohortDataShort <- cohortDataShort[coverPres > 0] # remove places where there is 0 cover
   # will be added back as establishprob = 0
-  message(blue("Estimating Species Establishment Probability using P(sim)$coverQuotedFormula, which is\n",
-               magenta(paste0(format(P(sim)$coverQuotedFormula, appendLF = FALSE), collapse = ""))))
+  message(blue("Estimating Species Establishment Probability using P(sim)$coverModel, which is\n",
+               magenta(paste0(format(P(sim)$coverModel, appendLF = FALSE), collapse = ""))))
 
   # for backwards compatibility -- change from parameter to object
   if (is.null(sim$cloudFolderID))
@@ -398,7 +398,7 @@ createLBMRInputs <- function(sim) {
   }
 
   modelCover <- cloudCache(statsModel,
-                           modelFn = P(sim)$coverQuotedFormula,
+                           modelFn = P(sim)$coverModel,
                            uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataShort$ecoregionGroup)),
                            .specialData = cohortDataShort,
                            useCloud = useCloud,
@@ -427,10 +427,10 @@ createLBMRInputs <- function(sim) {
 
   ### For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
   ### force parameter values to avoid more checks
-  message(blue("Estimating biomass using P(sim)$biomassQuotedFormula as:\n"),
-          magenta(paste0(format(P(sim)$biomassQuotedFormula, appendLF = FALSE), collapse = "")))
+  message(blue("Estimating biomass using P(sim)$biomassModel as:\n"),
+          magenta(paste0(format(P(sim)$biomassModel, appendLF = FALSE), collapse = "")))
   modelBiomass <- cloudCache(statsModel,
-                             modelFn = P(sim)$biomassQuotedFormula,
+                             modelFn = P(sim)$biomassModel,
                              uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataNo34to36NoBiomass$ecoregionGroup)),
                              .specialData = cohortDataNo34to36NoBiomass,
                              useCloud = useCloud,
