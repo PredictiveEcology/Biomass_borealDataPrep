@@ -823,6 +823,12 @@ Save <- function(sim) {
     sim$speciesTable <- getSpeciesTable(dPath = dPath, cacheTags = cacheTags)
   }
 
+  ## override longevity values - from
+  sim$speciesTable[LandisCode == "PICE.GLA", Longevity := 400]
+  sim$speciesTable[LandisCode == "PINU.CON.LAT", Longevity := 335]
+  sim$speciesTable[LandisCode == "PICE.MAR", Longevity := 250]
+  sim$speciesTable[LandisCode == "POPU.TRE", Longevity := 200]
+
   if (!suppliedElsewhere("sufficientLight", sim)) {
     sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
                                       X0 = 1,
