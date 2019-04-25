@@ -376,7 +376,7 @@ createLBMRInputs <- function(sim) {
   cohortDataShort <- cohortDataShort[coverPres > 0] # remove places where there is 0 cover
   # will be added back as establishprob = 0
   message(blue("Estimating Species Establishment Probability using P(sim)$coverQuotedFormula, which is\n",
-               format(P(sim)$coverQuotedFormula)))
+               paste0(format(P(sim)$coverQuotedFormula, appendLF = FALSE), collapse = "")))
 
   # for backwards compatibility -- change from parameter to object
   if (is.null(sim$cloudFolderID))
@@ -417,9 +417,9 @@ createLBMRInputs <- function(sim) {
   }
 
   ### For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
-  message(blue("Estimating maxB with P(sim)$biomassQuotedFormula, which is:\n",
-               magenta(paste0(format(P(sim)$biomassQuotedFormula), collapse = ""))))
-  modelBiomass <- cloudCache(statsModel, form = P(sim)$biomassQuotedFormula,
+  ### force parameter values to avoid more checks
+  message(blue("Estimating biomass using P(sim)$biomassQuotedFormula as:\n"),
+            magenta(paste0(format(P(sim)$biomassQuotedFormula, appendLF = FALSE), collapse = "")))
                              uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataNo34to36NoBiomass$ecoregionGroup)),
                              .specialData = cohortDataNo34to36NoBiomass,
                              useCloud = useCloud,
