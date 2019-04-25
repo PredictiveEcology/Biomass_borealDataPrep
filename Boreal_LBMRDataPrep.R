@@ -354,13 +354,13 @@ createLBMRInputs <- function(sim) {
           " -- to a neighbour class *that exists*")
 
   rmZeroBiomassQuote <- quote(B > 0)
+  # availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
+  #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
+  availableCombinations <- unique(pixelCohortData[, .(speciesCode, initialEcoregionCode, pixelIndex)])
   pseudoSpeciesEcoregion <- unique(availableCombinations[, .(speciesCode, initialEcoregionCode)])
   newLCCClasses <- Cache(convertUnwantedLCC, classesToReplace = P(sim)$LCCClassesToReplaceNN,
                          rstLCC = rstLCCAdj, availableERC_by_Sp = availableCombinations)
 
-  # availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
-  #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
-  availableCombinations <- unique(pixelCohortData[, .(speciesCode, initialEcoregionCode, pixelIndex)])
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
   cohortData34to36 <- pixelCohortData[pixelIndex %in% newLCCClasses$pixelIndex]
