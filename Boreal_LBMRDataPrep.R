@@ -378,7 +378,7 @@ createLBMRInputs <- function(sim) {
   cohortDataShort <- cohortDataShort[coverPres > 0] # remove places where there is 0 cover
   # will be added back as establishprob = 0
   message(blue("Estimating Species Establishment Probability using P(sim)$coverQuotedFormula, which is\n",
-               paste0(format(P(sim)$coverQuotedFormula, appendLF = FALSE), collapse = "")))
+               magenta(paste0(format(P(sim)$coverQuotedFormula, appendLF = FALSE), collapse = ""))))
 
   # for backwards compatibility -- change from parameter to object
   if (is.null(sim$cloudFolderID))
