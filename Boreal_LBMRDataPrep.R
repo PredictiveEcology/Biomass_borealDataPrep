@@ -343,7 +343,7 @@ createLBMRInputs <- function(sim) {
   message(blue("rm NAs, leaving", magenta(NROW(pixelTable)), "pixels with data"))
   message(blue("This is the summary of the input data for age, ecoregionGroup, biomass, speciesLayers:"))
   print(summary(pixelTable))
-
+browser()
   #######################################################
   # Make the initial pixelCohortData table
   #######################################################
