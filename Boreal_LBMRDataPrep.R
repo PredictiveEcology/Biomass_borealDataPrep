@@ -63,6 +63,8 @@ defineModule(sim, list(
                           "This will form the basis of cache path and output path, and affect dispersal parameterization.")),
     defineParameter("sppEquivCol", "character", "Boreal", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
+    defineParameter("subsetDataAgeModel", "numeric", NULL, NA, NA,
+                    "the number of samples to use when subsampling the biomass data model; if TRUE, uses 50"),
     defineParameter("subsetDataBiomassModel", "numeric", NULL, NA, NA,
                     "the number of samples to use when subsampling the biomass data model; if TRUE, uses 50"),
     defineParameter("successionTimestep", "numeric", 10, NA, NA, "defines the simulation time step, default is 10 years"),
@@ -347,7 +349,8 @@ createLBMRInputs <- function(sim) {
   #######################################################
   pixelCohortData <- Cache(makeAndCleanInitialCohortData, pixelTable,
                            sppColumns = coverColNames,
-                           pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass)
+                           pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
+                           doSubset = P(sim)$subsetDataAgeModel)
 
   #######################################################
   # replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*
@@ -416,19 +419,9 @@ createLBMRInputs <- function(sim) {
 
   ## For biomass
   ### Subsample cases where there are more than 50 points in an ecoregionGroup * speciesCode
-  if (!is.null(P(sim)$subsetDataBiomassModel)) {
-    if (!isFALSE(P(sim)$subsetDataBiomassModel)) {
-      sam <- if (is.numeric(P(sim)$subsetDataBiomassModel)) P(sim)$subsetDataBiomassModel else 50
-      message("subsampling initial dataset for faster estimation of maxBiomass parameter: ",
-              "using maximum of ", sam, " samples per combination of ecoregionGroup and speciesCode. ",
-              "Change P(sim)$subsetDataBiomassModel to a different number if this is not enough")
-      # subset -- add line numbers of those that were sampled
-      a <- cohortDataNo34to36NoBiomass[, list(lineNum = .I[sample(.N, size = min(.N, sam))]),
-                                       by = c("ecoregionGroup", "speciesCode")]
-      # Select only those row numbers from whole dataset
-      cohortDataNo34to36NoBiomass <- cohortDataNo34to36NoBiomass[a$lineNum]
-    }
-  }
+  cohortDataNo34to36NoBiomass <- subsetDT(cohortDataNo34to36NoBiomass,
+                                          by = c("ecoregionGroup", "speciesCode"),
+                                          doSubset = P(sim)$subsetDataBiomassModel)
 
   ### For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
   ### force parameter values to avoid more checks
