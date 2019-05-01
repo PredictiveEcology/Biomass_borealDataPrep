@@ -37,7 +37,8 @@ defineModule(sim, list(
                           "and potentially others. Defaults to a GLMEM if there are > 1 grouping levels.",
                           "A custom model call can also be provided, as long as the 'data' argument is NOT included")),
     defineParameter("forestedLCCClasses", "numeric", c(1:15, 20, 32, 34:35), 0, 39,
-                    "The classes in the rstLCC layer that are 'treed' and will therefore be run in LBMR"),
+                    "The classes in the rstLCC layer that are 'treed' and will therefore be run in LBMR.
+                    Defaults to forested classes in LCC2005 map."),
     defineParameter("growthCurveDecid", "numeric", 0, 0, 1,
                     "growth curve shape for deciduous species (i.e., aspen). LANDIS-II uses 0 for aspen."),
     defineParameter("growthCurveNonDecid", "numeric", 1, 0, 1,
@@ -280,17 +281,19 @@ createLBMRInputs <- function(sim) {
   ecoregionstatus <- data.table(active = "yes", ecoregion = 1:1031)
   rstLCCAdj <- sim$rstLCC
 
-  # remove non-forested if asked by user
+  ## Clean pixels for veg. succession model
+  ## remove pixes with no spp data
   pixelsToRm <- is.na(sim$speciesLayers[[1]][])
+
+  ## remove non-forested if asked by user
   if (P(sim)$omitNonTreedPixels) {
     if (is.null(P(sim)$forestedLCCClasses))
       stop("No P(sim)$forestedLCCClasses provided, but P(sim)$omitNonTreedPixels is TRUE.
            \nPlease provide a vector of forested classes in P(sim)$forestedLCCClasses")
-    lccPixelsRemoveTF <- !(sim$rstLCC[] %in% P(sim)$forestedLCCClasses) # these are lakes, rock and ice
+    lccPixelsRemoveTF <- !(sim$rstLCC[] %in% P(sim)$forestedLCCClasses)
     pixelsToRm <- lccPixelsRemoveTF | pixelsToRm
   }
 
-  sim$rasterToMatch[pixelsToRm] <- NA
   rstLCCAdj[pixelsToRm] <- NA
   rstEcoregionMap[pixelsToRm] <- NA
 
@@ -335,7 +338,7 @@ createLBMRInputs <- function(sim) {
   if (NROW(pixelTable1) != NROW(pixelTable))
     warning("Setting pixels to NA where there is NA in sim$speciesLayers'. Vegetation succession",
             "\n  parameters will only be calculated where there is data for species cover.",
-            "\n  Check if sim$rasterToMatch shoudn't also only have data where there is cover data,",
+            "\n  Check if these pixels should also be excluded in other layers,",
             "\n  as this may affect other modules.")
   if (NROW(pixelTable2) != NROW(pixelTable))
     warning("Setting pixels to NA where there is NA in sim$ecoDistrict")
