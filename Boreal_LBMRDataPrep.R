@@ -357,7 +357,7 @@ createLBMRInputs <- function(sim) {
   uwc <- P(sim)$LCCClassesToReplaceNN
 
   message("Replace ", paste(uwc, collapse = ", "),
-          " values -- ", "burns"[any(uwc %in% 34:35)], "and cities"[any(uwc %in% 36)],
+          " values -- ", "burns"[any(uwc %in% 34:35)], " and cities"[any(uwc %in% 36)],
           " -- to a neighbour class *that exists*")
 
   rmZeroBiomassQuote <- quote(B > 0)
