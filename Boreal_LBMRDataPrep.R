@@ -486,7 +486,7 @@ createLBMRInputs <- function(sim) {
   speciesEcoregion[ , maxB := asInteger(predict(modelBiomass$mod,
                                                 newdata = speciesEcoregion,
                                                 type = "response"))]
-  speciesEcoregion[maxB < 0, maxB := 0] # fix negative predictions
+  speciesEcoregion[maxB < 0, maxB := 0L] # fix negative predictions
 
   ########################################################################
   # maxANPP
