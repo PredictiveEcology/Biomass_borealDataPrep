@@ -540,7 +540,7 @@ createLBMRInputs <- function(sim) {
 
   pixelCohortData <- pixelCohortData[ecoregionGroup %in% ecoregionsWeHaveParametersFor] # keep only ones we have params for
   pixelCohortData[ , ecoregionGroup := factor(as.character(ecoregionGroup))]
-  pixelCohortData[, totalBiomass := sum(B), by = "pixelIndex"]
+  pixelCohortData[, totalBiomass := asInteger(sum(B)), by = "pixelIndex"]
   sim$ecoregion <- data.table(active = "yes",
                               ecoregionGroup = factor(as.character(unique(pixelCohortData$ecoregionGroup))))
 
