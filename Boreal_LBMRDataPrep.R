@@ -451,13 +451,15 @@ createLBMRInputs <- function(sim) {
   #   doesn't include combinations with B = 0 because those places can't have the species/ecoregion combo
   ########################################################################
   message(blue("Create speciesEcoregion"))
-  joinOn <- c("ecoregionGroup", "speciesCode")
-  speciesEcoregion <- unique(cohortDataNo34to36NoBiomass, by = joinOn)
-  speciesEcoregion[, c("B", "logAge", "cover") := NULL]
-  speciesEcoregion[lcc %in% unique(cohortDataNo34to36NoBiomass$lcc)] # shouldn't do anything because already correct
-  sim$species[, speciesCode := as.factor(species)]
-  speciesEcoregion <- sim$species[, .(speciesCode, longevity)][speciesEcoregion, on = "speciesCode"]
-  speciesEcoregion[ , ecoregionGroup := factor(as.character(ecoregionGroup))]
+  speciesEcoregion <- makeSpeciesEcoregion(cohortData = cohortDataNo34to36NoBiomass,
+                                           species = sim$species)
+  # joinOn <- c("ecoregionGroup", "speciesCode")
+  # speciesEcoregion <- unique(cohortDataNo34to36NoBiomass, by = joinOn)
+  # speciesEcoregion[, c("B", "logAge", "cover") := NULL]
+  # speciesEcoregion[lcc %in% unique(cohortDataNo34to36NoBiomass$lcc)] # shouldn't do anything because already correct
+  # sim$species[, speciesCode := as.factor(species)]
+  # speciesEcoregion <- sim$species[, .(speciesCode, longevity)][speciesEcoregion, on = "speciesCode"]
+  # speciesEcoregion[ , ecoregionGroup := factor(as.character(ecoregionGroup))]
 
   ########################################################################
   # Make predictions from statistical models for
