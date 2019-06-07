@@ -424,10 +424,9 @@ createLBMRInputs <- function(sim) {
 
   ## For biomass
   ### Subsample cases where there are more than 50 points in an ecoregionGroup * speciesCode
-  cohortDataNo34to36NoBiomass <- Cache(subsetDT,
-                                       DT = cohortDataNo34to36NoBiomass,
-                                       by = c("ecoregionGroup", "speciesCode"),
-                                       doSubset = P(sim)$subsetDataBiomassModel)
+  cohortDataNo34to36NoBiomass <- subsetDT(cohortDataNo34to36NoBiomass,
+                                          by = c("ecoregionGroup", "speciesCode"),
+                                          doSubset = P(sim)$subsetDataBiomassModel)
 
   ### For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
   ### force parameter values to avoid more checks
