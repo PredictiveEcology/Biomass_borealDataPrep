@@ -15,9 +15,11 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
-  reqdPkgs = list("crayon", "data.table", "dplyr", "fasterize", "gdalUtils", "raster", "rgeos", "sp",
-                  "PredictiveEcology/LandR@development", "lme4",
-                  "PredictiveEcology/pemisc@development", "achubaty/amc@development"),
+  reqdPkgs = list("crayon", "data.table", "dplyr", "fasterize", "gdalUtils", "lme4", "plyr",
+                  "raster", "rgeos", "sp",
+                  "achubaty/amc@development",
+                  "PredictiveEcology/LandR@development",
+                  "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
                     quote(lme4::lmer(B ~ logAge * speciesCode + cover * speciesCode + (logAge + cover + speciesCode | ecoregionGroup))),
@@ -483,7 +485,7 @@ createLBMRInputs <- function(sim) {
   speciesEcoregion[ , maxB := asInteger(predict(modelBiomass$mod,
                                                 newdata = speciesEcoregion,
                                                 type = "response"))]
-  speciesEcoregion[maxB < 0, maxB := 0] # fix negative predictions
+  speciesEcoregion[maxB < 0, maxB := 0L] # fix negative predictions
 
   ########################################################################
   # maxANPP
@@ -537,7 +539,7 @@ createLBMRInputs <- function(sim) {
 
   pixelCohortData <- pixelCohortData[ecoregionGroup %in% ecoregionsWeHaveParametersFor] # keep only ones we have params for
   pixelCohortData[ , ecoregionGroup := factor(as.character(ecoregionGroup))]
-  pixelCohortData[, totalBiomass := sum(B), by = "pixelIndex"]
+  pixelCohortData[, totalBiomass := asInteger(sum(B)), by = "pixelIndex"]
   sim$ecoregion <- data.table(active = "yes",
                               ecoregionGroup = factor(as.character(unique(pixelCohortData$ecoregionGroup))))
 
