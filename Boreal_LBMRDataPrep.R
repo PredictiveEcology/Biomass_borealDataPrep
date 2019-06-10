@@ -530,7 +530,7 @@ createLBMRInputs <- function(sim) {
   ########################################################################
   # Rejoin back the pixels that were 34 and 35
 
-  ## HERE
+  ## TODO: HERE - code below needs to be converted to funtions to avoid repeating code across modules (LBMR)
 
   pixelCohortData <- rbindlist(list(cohortData34to36, cohortDataNo34to36),
                                use.names = TRUE, fill = TRUE)
