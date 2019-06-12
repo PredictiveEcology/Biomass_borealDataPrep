@@ -227,11 +227,10 @@ createLBMRInputs <- function(sim) {
     #sim$species[species == "Popu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 3000)] # defaults 200, 500
   }
 
+  ## resprouting (normally, only aspen resprouts)
   if (grepl("noDispersal|aspenDispersal", P(sim)$runName)) {
-    sim$species[, postfireregen := "none"]
+    sim$species[, postfireregen := "resprout"] ## force all species to resprout
   }
-
-  ## resprouting (only aspen resprouts)
   sim$species[species == "Popu_sp", resproutage_min := 25] # default 10
   #speciesTable[species == "Popu_sp", resproutprob := 0.1]  # default 0.5
 
