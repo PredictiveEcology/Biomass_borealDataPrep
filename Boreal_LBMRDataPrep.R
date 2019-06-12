@@ -9,7 +9,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@friresearch.ca", role = c("ctb"))
   ),
   childModules = character(0),
-  version = list(SpaDES.core = "0.2.3.9009", Boreal_LBMRDataPrep = numeric_version("1.3.4")),
+  version = list(SpaDES.core = "0.2.3.9009", Boreal_LBMRDataPrep = numeric_version("1.3.4.9000")),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
@@ -274,7 +274,9 @@ createLBMRInputs <- function(sim) {
   sim$ecoDistrict <- fixErrors(sim$ecoDistrict)
 
   ecoregionMap <- Cache(postProcess, sim$ecoDistrict, studyArea = sim$studyArea, filename2 = NULL)
-  rstEcoregionMap <- fasterize::fasterize(sf::st_as_sf(ecoregionMap), raster = sim$rasterToMatch,
+  ecoregionMapSF <- sf::st_as_sf(ecoregionMap)
+  if (is(ecoregionMapSF$ECODISTRIC, "character")) ecoregionMapSF$ECODISTRIC <- as.numeric(ecoregionMapSF$ECODISTRIC)
+  rstEcoregionMap <- fasterize::fasterize(ecoregionMapSF, raster = sim$rasterToMatch,
                                           field = "ECODISTRIC")
   ecoregionstatus <- data.table(active = "yes", ecoregion = 1:1031)
   rstLCCAdj <- sim$rstLCC
@@ -308,50 +310,26 @@ createLBMRInputs <- function(sim) {
   ## put together pixelTable object
   ################################################################
   #  Round age to pixelGroupAgeClass
-  message(blue("Round age to nearest P(sim)$pixelGroupAgeClass, which is",
-               P(sim)$pixelGroupAgeClass))
-  coverMatrix <- matrix(asInteger(sim$speciesLayers[]),
-                        ncol = length(names(sim$speciesLayers)))
-  colnames(coverMatrix) <- names(sim$speciesLayers)
-
-  pixelTable <- data.table(age = asInteger(ceiling(asInteger(sim$standAgeMap[]) /
-                                                     P(sim)$pixelGroupAgeClass) *
-                                             P(sim)$pixelGroupAgeClass),
-                           logAge = log(sim$standAgeMap[]),
-                           initialEcoregionCode = factor(factorValues2(ecoregionFiles$ecoregionMap,
-                                                                       ecoregionFiles$ecoregionMap[],
-                                                                       att = 5)),
-                           totalBiomass = asInteger(sim$biomassMap[]) * 100, # change units
-                           cover = coverMatrix,
-                           pixelIndex = seq(ncell(sim$standAgeMap)),
-                           lcc = rstLCCAdj[],
-                           rasterToMatch = sim$rasterToMatch[]
-  )
-
-  coverColNames <- paste0("cover.", sim$species$species)
-  pixelTable1 <- na.omit(pixelTable, cols = c("rasterToMatch"))
-  pixelTable2 <- na.omit(pixelTable, cols = c("rasterToMatch", "initialEcoregionCode"))
-  pixelTable <- na.omit(pixelTable2, cols = c(coverColNames))
-
-  if (NROW(pixelTable1) != NROW(pixelTable))
-    warning("Setting pixels to NA where there is NA in sim$speciesLayers'. Vegetation succession",
-            "\n  parameters will only be calculated where there is data for species cover.",
-            "\n  Check if these pixels should also be excluded in other layers,",
-            "\n  as this may affect other modules.")
-  if (NROW(pixelTable2) != NROW(pixelTable))
-    warning("Setting pixels to NA where there is NA in sim$ecoDistrict")
-
-  message(blue("rm NAs, leaving", magenta(NROW(pixelTable)), "pixels with data"))
-  message(blue("This is the summary of the input data for age, ecoregionGroup, biomass, speciesLayers:"))
-  print(summary(pixelTable))
+  pixelTable <- Cache(makePixelTable,
+                      speciesLayers = sim$speciesLayers,
+                      species = sim$species,
+                      standAgeMap = sim$standAgeMap,
+                      ecoregionFiles = ecoregionFiles,
+                      biomassMap = sim$biomassMap,
+                      rasterToMatch = sim$rasterToMatch,
+                      LCC2005 = rstLCCAdj,
+                      pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
+                      userTags = "stable")
 
   #######################################################
   # Make the initial pixelCohortData table
   #######################################################
+  coverColNames <- paste0("cover.", sim$species$species)
   pixelCohortData <- Cache(makeAndCleanInitialCohortData, pixelTable,
                            sppColumns = coverColNames,
                            pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
-                           doSubset = P(sim)$subsetDataAgeModel)
+                           doSubset = P(sim)$subsetDataAgeModel,
+                           userTags = "stable")
 
   #######################################################
   # replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*
@@ -446,58 +424,14 @@ createLBMRInputs <- function(sim) {
   #   doesn't include combinations with B = 0 because those places can't have the species/ecoregion combo
   ########################################################################
   message(blue("Create speciesEcoregion"))
-  joinOn <- c("ecoregionGroup", "speciesCode")
-  speciesEcoregion <- unique(cohortDataNo34to36NoBiomass, by = joinOn)
-  speciesEcoregion[, c("B", "logAge", "cover") := NULL]
-  speciesEcoregion[lcc %in% unique(cohortDataNo34to36NoBiomass$lcc)] # shouldn't do anything because already correct
-  sim$species[, speciesCode := as.factor(species)]
-  speciesEcoregion <- sim$species[, .(speciesCode, longevity)][speciesEcoregion, on = "speciesCode"]
-  speciesEcoregion[ , ecoregionGroup := factor(as.character(ecoregionGroup))]
-
-  ########################################################################
-  # Make predictions from statistical models for
-  ########################################################################
-  # establishprob -- already is on the short dataset -- need to add back the zeros too
-  establishprobBySuccessionTimestep <- 1 - (1 - modelCover$pred)^P(sim)$successionTimestep
-  cohortDataShort[, establishprob := establishprobBySuccessionTimestep]
-
-  ############################################
-  # Calc. establishProb
-  ############################################
-  ## for resprouters, establishProb is calculated as the fraction of predicted cover (establishprobBySuccessionTimestep)
-  ## that did not result from resprouting. Both reprouters and non-resprouters can be dealt with at the same time
-  ## because resproutprob = 0 for non-resprouters
-  cohortDataShort <- sim$species[, .(resproutprob, postfireregen, speciesCode)][cohortDataShort, on = "speciesCode"]
-  cohortDataShort[, establishprob := pmax(0, pmin(1, (establishprob * (1 - resproutprob))))]
-
-  cohortDataShort <- rbindlist(list(cohortDataShort, cohortDataShortNoCover),
-                               use.names = TRUE, fill = TRUE)
-  cohortDataShort[is.na(establishprob), establishprob := 0]
-
-  # Join cohortDataShort with establishprob predictions to speciesEcoregion
-  speciesEcoregion <- cohortDataShort[, .(ecoregionGroup, speciesCode, establishprob)][
-    speciesEcoregion, on = joinOn]
-
-  ########################################################################
-  # maxB
-  # Set age to the age of longevity and cover to 100%
-  speciesEcoregion[, `:=`(logAge = log(longevity), cover = 100)]
-  speciesEcoregion[ , maxB := asInteger(predict(modelBiomass$mod,
-                                                newdata = speciesEcoregion,
-                                                type = "response"))]
-  speciesEcoregion[maxB < 0, maxB := 0L] # fix negative predictions
-
-  ########################################################################
-  # maxANPP
-  message(blue("Add maxANPP to speciesEcoregion -- currently --> maxB/30"))
-  speciesEcoregion[ , maxANPP := asInteger(maxB / 30)]
-
-  ########################################################################
-  # Clean up unneeded columns
-  ########################################################################
-  speciesEcoregion[ , `:=`(logAge = NULL, cover = NULL, longevity = NULL, lcc = NULL)]
-
-  speciesEcoregion[ , year := time(sim)]
+  speciesEcoregion <- makeSpeciesEcoregion(cohortDataNoBiomass = cohortDataNo34to36NoBiomass,
+                                           cohortDataShort = cohortDataShort,
+                                           cohortDataShortNoCover = cohortDataShortNoCover,
+                                           species = sim$species,
+                                           modelCover = modelCover,
+                                           modelBiomass = modelBiomass,
+                                           successionTimestep = P(sim)$successionTimestep,
+                                           currentYear = time(sim))
 
   #######################################
   if (!is.na(P(sim)$.plotInitialTime)) {
@@ -521,6 +455,8 @@ createLBMRInputs <- function(sim) {
   # Create initial communities, i.e., pixelGroups
   ########################################################################
   # Rejoin back the pixels that were 34 and 35
+
+  ## TODO: code below needs to be converted to funtions to avoid repeating code across modules (LBMR)
   pixelCohortData <- rbindlist(list(cohortData34to36, cohortDataNo34to36),
                                use.names = TRUE, fill = TRUE)
   pixelCohortData[, ecoregionGroup := factor(as.character(ecoregionGroup))] # refactor because the "_34" and "_35" ones are still levels
