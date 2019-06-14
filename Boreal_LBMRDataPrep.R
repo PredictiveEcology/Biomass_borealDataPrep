@@ -228,12 +228,13 @@ createLBMRInputs <- function(sim) {
   }
 
   if (grepl("noDispersal|aspenDispersal", P(sim)$runName)) {
-    sim$species[, postfireregen := "none"]
+    sim$species[, postfireregen := "resprout"] ## force all species to resprout
+    sim$species[, resproutprob := 1.0]  # default 0.5
   }
 
   ## resprouting (only aspen resprouts)
   sim$species[species == "Popu_sp", resproutage_min := 25] # default 10
-  #speciesTable[species == "Popu_sp", resproutprob := 0.1]  # default 0.5
+  #sim$species[species == "Popu_sp", resproutprob := 0.1]  # default 0.5
 
   ## growth curves:
   #   Biomass Succession User Guide p17, 0 is faster growth, 1 was the prev assumption
@@ -290,6 +291,7 @@ createLBMRInputs <- function(sim) {
     if (is.null(P(sim)$forestedLCCClasses))
       stop("No P(sim)$forestedLCCClasses provided, but P(sim)$omitNonTreedPixels is TRUE.
            \nPlease provide a vector of forested classes in P(sim)$forestedLCCClasses")
+
     lccPixelsRemoveTF <- !(sim$rstLCC[] %in% P(sim)$forestedLCCClasses)
     pixelsToRm <- lccPixelsRemoveTF | pixelsToRm
   }
@@ -762,7 +764,6 @@ Save <- function(sim) {
     sim$speciesTable[LandisCode == "PICE.MAR", Longevity := 250]
     sim$speciesTable[LandisCode == "POPU.TRE", Longevity := 200]
   }
-
 
   if (!suppliedElsewhere("sufficientLight", sim)) {
     sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
