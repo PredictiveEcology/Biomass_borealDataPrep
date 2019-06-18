@@ -231,6 +231,7 @@ createLBMRInputs <- function(sim) {
   if (grepl("noDispersal|aspenDispersal", P(sim)$runName)) {
     sim$species[, postfireregen := "resprout"] ## force all species to resprout
     sim$species[, resproutprob := 1.0]  # default 0.5
+    sim$species[, shadetolerance := 5]  # defaults vary by species
   }
   sim$species[species == "Popu_sp", resproutage_min := 25] # default 10
   #sim$species[species == "Popu_sp", resproutprob := 0.1]  # default 0.5
