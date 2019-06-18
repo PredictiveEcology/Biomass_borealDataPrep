@@ -41,20 +41,12 @@ defineModule(sim, list(
     defineParameter("forestedLCCClasses", "numeric", c(1:15, 20, 32, 34:35), 0, 39,
                     "The classes in the rstLCC layer that are 'treed' and will therefore be run in LBMR.
                     Defaults to forested classes in LCC2005 map."),
-    defineParameter("growthCurveDecid", "numeric", 0, 0, 1,
-                    "growth curve shape for deciduous species (i.e., aspen). LANDIS-II uses 0 for aspen."),
-    defineParameter("growthCurveNonDecid", "numeric", 1, 0, 1,
-                    "growth curve shape for non-deciduous species. LANDIS-II uses 1 for spruce, 0 for other non deciduous."),
     defineParameter("LCCClassesToReplaceNN", "numeric", 34:35, NA, NA,
                     paste("This will replace these classes on the landscape with the closest forest class P(sim)$forestedLCCClasses.",
                           "If the user is using the default 2005 data product for rstLCC, then users may wish to",
                           "include 36 (cities -- if running a historic range of variation project), and 34:35 (burns)",
                           "Since this is about estimating parameters for growth, it doesn't make any sense to have",
                           "unique estimates for transient classes in most cases")),
-    defineParameter("mortalityShapeDecid", "numeric", 25, 12, 27,
-                    "mortality curve shape for deciduous species (i.e., aspen). LANDIS-II uses 25 by default."),
-    defineParameter("mortalityShapeNonDecid", "numeric", 15, 12, 27,
-                    "mortality curve shape for non-deciduous species. LANDIS-II uses 15 by default."),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by P(sim)$forestedLCCClasses?"),
     defineParameter("pixelGroupAgeClass", "numeric", params(sim)$Boreal_LBMRDataPrep$successionTimestep, NA, NA,
@@ -64,6 +56,8 @@ defineModule(sim, list(
     defineParameter("runName", "character", "", NA, NA,
                     paste("A description for run.",
                           "This will form the basis of cache path and output path, and affect dispersal parameterization.")),
+    defineParameter("speciesUpdateFunction", "call", NULL, NA, NA,
+                    "Quoted function that updates species table to customize values"),
     defineParameter("sppEquivCol", "character", "Boreal", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter("subsetDataAgeModel", "numeric", NULL, NA, NA,
@@ -206,57 +200,12 @@ createLBMRInputs <- function(sim) {
                                   sppEquivCol = P(sim)$sppEquivCol)
 
   ### override species table values ##############################
-
-  if (grepl("aspenDispersal", P(sim)$runName)) {
-    ## seed dispersal (see LandWeb#96, LandWeb#112)
-    sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 25, 160
-    sim$species[species == "Pice_gla", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 100, 303
-    sim$species[species == "Pice_mar", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 80, 200
-    sim$species[species == "Pinu_ban", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 30, 100
-    sim$species[species == "Pinu_con", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 30, 100
-    sim$species[species == "Pinu_sp", `:=`(seeddistance_eff = 0, seeddistance_max = 125)] # defaults 30, 100
-    sim$species[species == "Popu_sp", `:=`(seeddistance_eff = 100, seeddistance_max = 235)] # defaults 200, 5000
-  } else if (grepl("highDispersal", P(sim)$runName)) {
-    ## seed dispersal (see LandWeb#96, LandWeb#112)
-    sim$species[species == "Abie_sp", `:=`(seeddistance_eff = 100, seeddistance_max = 750)]  # defaults 25, 160
-    sim$species[species == "Pice_gla", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 100, 303
-    sim$species[species == "Pice_mar", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 80, 200
-    sim$species[species == "Pinu_ban", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 30, 100
-    sim$species[species == "Pinu_con", `:=`(seeddistance_eff = 300, seeddistance_max = 750)] # defaults 30, 100
-    sim$species[species == "Pinu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 750)]  # defaults 30, 100
-    #sim$species[species == "Popu_sp", `:=`(seeddistance_eff = 300, seeddistance_max = 3000)] # defaults 200, 500
-  }
-
-  ## resprouting (normally, only aspen resprouts)
-  if (grepl("noDispersal|aspenDispersal", P(sim)$runName)) {
-    sim$species[, postfireregen := "resprout"] ## force all species to resprout
-    sim$species[, resproutprob := 1.0]  # default 0.5
-    sim$species[, shadetolerance := 5]  # defaults vary by species
-  }
-  sim$species[species == "Popu_sp", resproutage_min := 25] # default 10
-  #sim$species[species == "Popu_sp", resproutprob := 0.1]  # default 0.5
-
-  ## growth curves:
-  #   Biomass Succession User Guide p17, 0 is faster growth, 1 was the prev assumption
-  sim$species[species == "Abie_sp", growthcurve := P(sim)$growthCurveNonDecid]  # original default 0
-  sim$species[species == "Pice_gla", growthcurve := P(sim)$growthCurveNonDecid] # original default 1
-  sim$species[species == "Pice_mar", growthcurve := P(sim)$growthCurveNonDecid] # original default 1
-  sim$species[species == "Pinu_ban", growthcurve := P(sim)$growthCurveNonDecid] # original default 0
-  sim$species[species == "Pinu_con", growthcurve := P(sim)$growthCurveNonDecid] # original default 0
-  sim$species[species == "Pinu_sp", growthcurve := P(sim)$growthCurveNonDecid]  # original default 0
-  sim$species[species == "Popu_sp", growthcurve := P(sim)$growthCurveDecid]     # original default 0
-
-  ## mortality
-  sim$species[species == "Abie_sp", mortalityshape := P(sim)$mortalityShapeNonDecid]  # default 15
-  sim$species[species == "Pice_gla", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
-  sim$species[species == "Pice_mar", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
-  sim$species[species == "Pinu_ban", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
-  sim$species[species == "Pinu_con", mortalityshape := P(sim)$mortalityShapeNonDecid] # default 15
-  sim$species[species == "Pinu_sp", mortalityshape := P(sim)$mortalityShapeNonDecid]  # default 15
-  sim$species[species == "Popu_sp", mortalityshape := P(sim)$mortalityShapeDecid]     # default 25
-
-  if (grepl("aspen80", P(sim)$runName)) {
-    sim$species[species == "Popu_sp", longevity := 80] # default 150
+  if (!is.null(P(sim)$speciesUpdateFunction)) {
+    if (is(P(sim)$speciesUpdateFunction, "call")) {
+      sim$species <- eval(P(sim)$speciesUpdateFunction)(sim$species, P(sim)$runName)
+    } else {
+      stop("speciesUpdateFunction should contain a quoted expression.")
+    }
   }
 
   if (getOption("LandR.verbose") > 0) {
