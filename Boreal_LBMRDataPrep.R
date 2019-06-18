@@ -205,7 +205,7 @@ createLBMRInputs <- function(sim) {
       if (is(fn, "call")) {
         sim$species <- eval(fn)(sim$species, P(sim)$runName)
       } else {
-        stop("speciesUpdateFunction should be a list of quoted expressions.")
+        stop("speciesUpdateFunction should be a list of quoted functions.")
       }
     }
   }
