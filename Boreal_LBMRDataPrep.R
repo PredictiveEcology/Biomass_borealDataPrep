@@ -56,8 +56,8 @@ defineModule(sim, list(
     defineParameter("runName", "character", "", NA, NA,
                     paste("A description for run.",
                           "This will form the basis of cache path and output path, and affect dispersal parameterization.")),
-    defineParameter("speciesUpdateFunction", "call", NULL, NA, NA,
-                    "Quoted function that updates species table to customize values"),
+    defineParameter("speciesUpdateFunction", "list", NULL, NA, NA,
+                    "Unnamed list of quoted functions that updates species table to customize values."),
     defineParameter("sppEquivCol", "character", "Boreal", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter("subsetDataAgeModel", "numeric", NULL, NA, NA,
@@ -201,10 +201,12 @@ createLBMRInputs <- function(sim) {
 
   ### override species table values ##############################
   if (!is.null(P(sim)$speciesUpdateFunction)) {
-    if (is(P(sim)$speciesUpdateFunction, "call")) {
-      sim$species <- eval(P(sim)$speciesUpdateFunction)(sim$species, P(sim)$runName)
-    } else {
-      stop("speciesUpdateFunction should contain a quoted expression.")
+    for (fn in P(sim)$speciesUpdateFunction) {
+      if (is(fn, "call")) {
+        sim$species <- eval(fn)(sim$species, P(sim)$runName)
+      } else {
+        stop("speciesUpdateFunction should be a list of quoted expressions.")
+      }
     }
   }
 
