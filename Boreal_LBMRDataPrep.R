@@ -200,13 +200,11 @@ createLBMRInputs <- function(sim) {
                                   sppEquivCol = P(sim)$sppEquivCol)
 
   ### override species table values ##############################
-  if (!is.null(P(sim)$speciesUpdateFunction)) {
-    for (fn in P(sim)$speciesUpdateFunction) {
-      if (is(fn, "function")) {
-        sim$species <- fn(sim$species, P(sim)$runName)
-      } else {
-        stop("speciesUpdateFunction should be a list of functions.")
-      }
+  for (fn in P(sim)$speciesUpdateFunction) {
+    if (is(fn, "call")) {
+      sim$species <- eval(fn)
+    } else {
+      stop("speciesUpdateFunction should be a list of functions.")
     }
   }
 
