@@ -335,15 +335,14 @@ createLBMRInputs <- function(sim) {
     FALSE
   }
 
-  modelCover <- cloudCache(statsModel,
-                           modelFn = P(sim)$coverModel,
-                           uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataShort$ecoregionGroup)),
-                           .specialData = cohortDataShort,
-                           useCloud = useCloud,
-                           cloudFolderID = sim$cloudFolderID,
-                           showSimilar = getOption("reproducible.showSimilar", FALSE),
-                           omitArgs = c("showSimilar", ".specialData",
-                                        "useCloud", "cloudFolderID"))
+  modelCover <- Cache(statsModel,
+                      modelFn = P(sim)$coverModel,
+                      uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataShort$ecoregionGroup)),
+                      .specialData = cohortDataShort,
+                      useCloud = useCloud,
+                      cloudFolderID = sim$cloudFolderID,
+                      showSimilar = getOption("reproducible.showSimilar", FALSE),
+                      omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
   print(modelCover$rsq)
 
@@ -357,15 +356,14 @@ createLBMRInputs <- function(sim) {
   ### force parameter values to avoid more checks
   message(blue("Estimating biomass using P(sim)$biomassModel as:\n"),
           magenta(paste0(format(P(sim)$biomassModel, appendLF = FALSE), collapse = "")))
-  modelBiomass <- cloudCache(statsModel,
-                             modelFn = P(sim)$biomassModel,
-                             uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataNo34to36NoBiomass$ecoregionGroup)),
-                             .specialData = cohortDataNo34to36NoBiomass,
-                             useCloud = useCloud,
-                             cloudFolderID = sim$cloudFolderID,
-                             showSimilar = getOption("reproducible.showSimilar", FALSE),
-                             omitArgs = c("showSimilar", ".specialData",
-                                          "useCloud", "cloudFolderID"))
+  modelBiomass <- Cache(statsModel,
+                        modelFn = P(sim)$biomassModel,
+                        uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataNo34to36NoBiomass$ecoregionGroup)),
+                        .specialData = cohortDataNo34to36NoBiomass,
+                        useCloud = useCloud,
+                        cloudFolderID = sim$cloudFolderID,
+                        showSimilar = getOption("reproducible.showSimilar", FALSE),
+                        omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID"))
 
   message(blue("  The rsquared is: "))
   print(modelBiomass$rsq)
