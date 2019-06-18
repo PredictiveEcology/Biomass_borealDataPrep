@@ -202,10 +202,10 @@ createLBMRInputs <- function(sim) {
   ### override species table values ##############################
   if (!is.null(P(sim)$speciesUpdateFunction)) {
     for (fn in P(sim)$speciesUpdateFunction) {
-      if (is(fn, "call")) {
-        sim$species <- eval(fn)(sim$species, P(sim)$runName)
+      if (is(fn, "function")) {
+        sim$species <- fn(sim$species, P(sim)$runName)
       } else {
-        stop("speciesUpdateFunction should be a list of quoted expressions.")
+        stop("speciesUpdateFunction should be a list of functions.")
       }
     }
   }
@@ -344,8 +344,7 @@ createLBMRInputs <- function(sim) {
                       useCloud = useCloud,
                       cloudFolderID = sim$cloudFolderID,
                       showSimilar = getOption("reproducible.showSimilar", FALSE),
-                      omitArgs = c("showSimilar", ".specialData",
-                                   "useCloud", "cloudFolderID"))
+                      omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
   print(modelCover$rsq)
 
@@ -366,9 +365,8 @@ createLBMRInputs <- function(sim) {
                         useCloud = useCloud,
                         cloudFolderID = sim$cloudFolderID,
                         showSimilar = getOption("reproducible.showSimilar", FALSE),
-                        omitArgs = c("showSimilar", ".specialData",
-                                     "useCloud", "cloudFolderID"))
-  
+                        omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID"))
+
   message(blue("  The rsquared is: "))
   print(modelBiomass$rsq)
 
