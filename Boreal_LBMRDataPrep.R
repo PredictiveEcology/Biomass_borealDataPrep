@@ -56,8 +56,11 @@ defineModule(sim, list(
     defineParameter("runName", "character", "", NA, NA,
                     paste("A description for run.",
                           "This will form the basis of cache path and output path, and affect dispersal parameterization.")),
-    defineParameter("speciesUpdateFunction", "list", NULL, NA, NA,
-                    "Unnamed list of quoted functions that updates species table to customize values."),
+    defineParameter("speciesUpdateFunction", "list",
+                    list(quote(LandR::speciesTableUpdate(sim$species, sim$speciesTable, sim$sppEquiv, P(sim)$sppEquivCol))),
+                    NA, NA,
+                    "Unnamed list of quoted functions that updates species table to customize values.
+                    Default should always come first."),
     defineParameter("sppEquivCol", "character", "Boreal", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter("subsetDataAgeModel", "numeric", NULL, NA, NA,
@@ -200,13 +203,17 @@ createLBMRInputs <- function(sim) {
                                   sppEquivCol = P(sim)$sppEquivCol)
 
   ### override species table values ##############################
-  if (!is.null(P(sim)$speciesUpdateFunction)) {
-    for (fn in P(sim)$speciesUpdateFunction) {
-      if (is(fn, "function")) {
-        sim$species <- fn(sim$species, P(sim)$runName)
-      } else {
-        stop("speciesUpdateFunction should be a list of functions.")
-      }
+  defaultQuote <- quote(LandR::speciesTableUpdate(sim$species, sim$speciesTable,
+                                                  sim$sppEquiv, P(sim)$sppEquivCol))
+  if (P(sim)$speciesUpdateFunction[[1]] != defaultQuote) {
+    stop("Make sure that the first entry in speciesUpdateFunction is the default expression")
+  }
+
+  for (fn in P(sim)$speciesUpdateFunction) {
+    if (is(fn, "call")) {
+      sim$species <- eval(fn)
+    } else {
+      stop("speciesUpdateFunction should be a list of functions.")
     }
   }
 
@@ -707,11 +714,6 @@ Save <- function(sim) {
   # 3. species maps
   if (!suppliedElsewhere("speciesTable", sim)) {
     sim$speciesTable <- getSpeciesTable(dPath = dPath, cacheTags = cacheTags)
-    ## override longevity values - from
-    sim$speciesTable[LandisCode == "PICE.GLA", Longevity := 400]
-    sim$speciesTable[LandisCode == "PINU.CON.LAT", Longevity := 335]
-    sim$speciesTable[LandisCode == "PICE.MAR", Longevity := 250]
-    sim$speciesTable[LandisCode == "POPU.TRE", Longevity := 200]
   }
 
   if (!suppliedElsewhere("sufficientLight", sim)) {
