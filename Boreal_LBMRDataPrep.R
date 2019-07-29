@@ -52,6 +52,12 @@ defineModule(sim, list(
                           "include 36 (cities -- if running a historic range of variation project), and 34:35 (burns)",
                           "Since this is about estimating parameters for growth, it doesn't make any sense to have",
                           "unique estimates for transient classes in most cases")),
+    defineParameter("maxANPPUpdateFunction", 'list', list(quote(LandR::maxANPPUpdate(speciesEcoregion))), NA, NA, 
+                    desc = "a quoted function that modifies speciesEcoregion (maxB and aNPP values
+                    for each combination of species and ecodistrictGroup. The purpose of this parameter is to use pre-determined
+                    proportions of estimated maximum biomass to give better maximum aNPP estimates for each species. To keep the 
+                    original estimates, pass P(sim)$maxANPPUpdateFunction <- list(quote(return(speciesEcoregion)). Note the
+                    speciesEcoregion table has not been assigned to sim at the time it is called"),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by P(sim)$forestedLCCClasses?"),
     defineParameter("pixelGroupAgeClass", "numeric", params(sim)$Boreal_LBMRDataPrep$successionTimestep, NA, NA,
@@ -395,6 +401,8 @@ createLBMRInputs <- function(sim) {
                                            modelBiomass = modelBiomass,
                                            successionTimestep = P(sim)$successionTimestep,
                                            currentYear = time(sim))
+  #modify maxANPP estimates
+  speciesEcoregion <- eval(P(sim)$maxANPPUpdateFunction[[1]]) 
 
   #######################################
   if (!is.na(P(sim)$.plotInitialTime)) {
