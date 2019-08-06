@@ -136,8 +136,6 @@ defineModule(sim, list(
     expectsInput("standAgeMap", "RasterLayer",
                  desc = "stand age map in study area, default is Canada national stand age map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
-    expectsInput("sufficientLight", "data.frame",
-                 desc = "define how the species with different shade tolerance respond to stand shadeness")
   ),
   outputObjects = bind_rows(
     createsOutput("ecoDistrict", "", desc = ""), ## TODO: description and type needed
@@ -151,18 +149,16 @@ defineModule(sim, list(
                   desc = "initial community map that has mapcodes match initial community table"),
     createsOutput("minRelativeB", "data.frame",
                   desc = "define the cut points to classify stand shadeness"),
-    createsOutput("notEnoughDataMaxBiomass", "data.table",
-                  desc = "The collection of ecoregion-species combinations that don't have values for maxB or maxANPP"),
     createsOutput("species", "data.table",
                   desc = "a table that has species traits such as longevity..."),
     createsOutput("speciesEcoregion", "data.table",
                   desc = "define the maxANPP, maxB and establishprob change with both ecoregion and simulation time"),
     createsOutput("studyArea", "", desc = ""),
+    createsOutput("sufficientLight", "data.frame",
+                 desc = "define how the species with different shade tolerance respond to stand shadeness")
     # createsOutput("speciesEstablishmentProbMap", "RasterStack",
     #               paste("Species establishment probability as a map, ",
     #                     "by species. This is written to disk to save RAM space")),
-    createsOutput("useCache", "logic",
-                  desc = "define which the caching for spinup simulation should be used, default is TRUE")
   )
 ))
 
@@ -191,7 +187,6 @@ createLBMRInputs <- function(sim) {
     params(sim)[[currentModule(sim)]]$pixelGroupAgeClass <- P(sim)$successionTimestep
 
   message(blue("Starting to createLBMRInputs in Boreal_LBMRDataPrep: ", Sys.time()))
-  cPath <- cachePath(sim)
   sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$speciesLayers))
 
   sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
@@ -226,6 +221,15 @@ createLBMRInputs <- function(sim) {
     message("Adjusting species-level traits, part 2, for LandWeb")
     print(sim$species)
   }
+
+  ### make table of light shade tolerance  #######################
+  sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
+                                    X0 = 1,
+                                    X1 = c(0.5, rep(1, 4)),
+                                    X2 = c(0, 0.5, rep(1, 3)),
+                                    X3 = c(rep(0, 2), 0.5, rep(1, 2)),
+                                    X4 = c(rep(0, 3), 0.5, 1),
+                                    X5 = c(rep(0, 4), 1))
 
   ################################################################
   ## initialEcoregionMap
@@ -309,7 +313,6 @@ createLBMRInputs <- function(sim) {
   # availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
   #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
   availableCombinations <- unique(pixelCohortData[, .(speciesCode, initialEcoregionCode, pixelIndex)])
-  pseudoSpeciesEcoregion <- unique(availableCombinations[, .(speciesCode, initialEcoregionCode)])
   newLCCClasses <- Cache(convertUnwantedLCC, classesToReplace = P(sim)$LCCClassesToReplaceNN,
                          rstLCC = rstLCCAdj, availableERC_by_Sp = availableCombinations)
 
@@ -719,16 +722,6 @@ Save <- function(sim) {
   # 3. species maps
   if (!suppliedElsewhere("speciesTable", sim)) {
     sim$speciesTable <- getSpeciesTable(dPath = dPath, cacheTags = cacheTags)
-  }
-
-  if (!suppliedElsewhere("sufficientLight", sim)) {
-    sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
-                                      X0 = 1,
-                                      X1 = c(0.5, rep(1, 4)),
-                                      X2 = c(0, 0.5, rep(1, 3)),
-                                      X3 = c(rep(0, 2), 0.5, rep(1, 2)),
-                                      X4 = c(rep(0, 3), 0.5, 1),
-                                      X5 = c(rep(0, 4), 1))
   }
 
   if (!suppliedElsewhere("columnsForPixelGroups", sim)) {
