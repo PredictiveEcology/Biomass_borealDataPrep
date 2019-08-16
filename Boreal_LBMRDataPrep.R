@@ -425,18 +425,15 @@ createLBMRInputs <- function(sim) {
   # Create initial communities, i.e., pixelGroups
   ########################################################################
   # Rejoin back the pixels that were 34 and 35
-
-  ## TODO: code below needs to be converted to funtions to avoid repeating code across modules (LBMR)
   pixelCohortData <- rbindlist(list(cohortData34to36, cohortDataNo34to36),
                                use.names = TRUE, fill = TRUE)
-  pixelCohortData[, ecoregionGroup := factor(as.character(ecoregionGroup))] # refactor because the "_34" and "_35" ones are still levels
 
-  pixelCohortData[ , `:=`(logAge = NULL, coverOrig = NULL, totalBiomass = NULL,
-                          initialEcoregionCode = NULL, cover = NULL, lcc = NULL)]
-  pixelCohortData <- pixelCohortData[B > 0]
-  cd <- pixelCohortData[, .SD, .SDcols = c("pixelIndex", sim$columnsForPixelGroups)]
-  pixelCohortData[, pixelGroup := Cache(generatePixelGroups, cd, maxPixelGroup = 0,
-                                        columns = sim$columnsForPixelGroups)]
+  ## make cohortDataFiles: pixelCohortData (rm unnecessary cols, subset pixels with B>0,
+  ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
+  cohortDataFiles <- makeCohortDataFiles(pixelCohortData, columnsForPixelGroups, speciesEcoregion)
+  sim$cohortData <- cohortDataFiles$cohortData
+  pixelCohortData <- cohortDataFiles$pixelCohortData
+  rm(cohortDataFiles)
 
   ########################################################################
   ## rebuild ecoregion, ecoregionMap objects -- some initial ecoregions disappeared (e.g., 34, 35, 36)
@@ -484,9 +481,6 @@ createLBMRInputs <- function(sim) {
   sim$pixelGroupMap <- raster(sim$rasterToMatch)
   sim$pixelGroupMap[pixelData$pixelIndex] <- as.integer(pixelData$pixelGroup)
 
-  sim$cohortData <- unique(pixelCohortData, by = c("pixelGroup", columnsForPixelGroups))
-  sim$cohortData[ , `:=`(pixelIndex = NULL)]
-
   message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", "),
                "\n  Resulted in", magenta(length(unique(sim$cohortData$pixelGroup))),
                "unique pixelGroup values"))
@@ -496,7 +490,6 @@ createLBMRInputs <- function(sim) {
 
   LandR::assertCohortData(sim$cohortData, sim$pixelGroupMap)
 
-  LandR::assertUniqueCohortData(sim$cohortData, c("pixelGroup", "ecoregionGroup", "speciesCode"))
 
   message("Done Boreal_LBMRDataPrep: ", Sys.time())
   return(invisible(sim))
