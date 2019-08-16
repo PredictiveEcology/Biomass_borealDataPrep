@@ -86,9 +86,6 @@ defineModule(sim, list(
                     "This describes the simulation time interval between save events")
   ),
   inputObjects = bind_rows(
-    expectsInput("biomassMap", "RasterLayer",
-                 desc = "total biomass raster layer in study area, default is Canada national biomass map",
-                 sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureBiomass.tar"),
     expectsInput("cloudFolderID", "character",
                  "The google drive location where cloudCache will store large statistical objects"),
     expectsInput("columnsForPixelGroups", "character",
@@ -111,6 +108,9 @@ defineModule(sim, list(
                  #desc = "this raster contains two pieces of information: Full study area with fire return interval attribute",
                  desc = "DESCRIPTION NEEDED",
                  sourceURL = NA),
+    expectsInput("rawBiomassMap", "RasterLayer",
+                 desc = "total biomass raster layer in study area, default is Canada national biomass map",
+                 sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureBiomass.tar"),
     expectsInput("speciesLayers", "RasterStack",
                  desc = "cover percentage raster layers by species in Canada species map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
@@ -138,6 +138,9 @@ defineModule(sim, list(
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
   ),
   outputObjects = bind_rows(
+    createsOutput("biomassMap", "RasterLayer",
+                 desc = paste("total biomass raster layer in study area,",
+                              "filtered for pixels covered by cohortData")),
     createsOutput("ecoDistrict", "", desc = ""), ## TODO: description and type needed
     createsOutput("ecoregion", "data.table",
                   desc = "ecoregion look up table"),
@@ -284,7 +287,7 @@ createLBMRInputs <- function(sim) {
                       species = sim$species,
                       standAgeMap = sim$standAgeMap,
                       ecoregionFiles = ecoregionFiles,
-                      biomassMap = sim$biomassMap,
+                      biomassMap = sim$rawBiomassMap,
                       rasterToMatch = sim$rasterToMatch,
                       LCC2005 = rstLCCAdj,
                       pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
@@ -521,7 +524,7 @@ Save <- function(sim) {
   ecoregionFilename <-   file.path(dPath, "ecoregions.shp")
   ecodistrictFilename <- file.path(dPath, "ecodistricts.shp")
   ecozoneFilename <-   file.path(dPath, "ecozones.shp")
-  biomassMapFilename <- file.path(dPath, "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.tif")
+  rawBiomassMapFilename <- file.path(dPath, "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.tif")
   lcc2005Filename <- file.path(dPath, "LCC2005_V1_4a.tif")
   standAgeMapFilename <- file.path(dPath, "NFI_MODIS250m_kNN_Structure_Stand_Age_v0.tif")
 
@@ -555,11 +558,11 @@ Save <- function(sim) {
   }
 
   if (!suppliedElsewhere("biomassMap", sim) || needRTM) {
-    sim$biomassMap <- Cache(prepInputs,
-                            targetFile = asPath(basename(biomassMapFilename)),
+    sim$rawBiomassMap <- Cache(prepInputs,
+                            targetFile = asPath(basename(rawBiomassMapFilename)),
                             archive = asPath(c("kNN-StructureBiomass.tar",
                                                "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
-                            url = extractURL("biomassMap"),
+                            url = extractURL("rawBiomassMap"),
                             destinationPath = dPath,
                             studyArea = sim$studyArea,
                             rasterToMatch = if (!needRTM) sim$rasterToMatch else NULL, ## TODO: biomass map needs rasterToMatch but it _is_ the rasterToMatch!!
@@ -571,9 +574,9 @@ Save <- function(sim) {
                             omitArgs = c("destinationPath", "targetFile", cacheTags, "stable"))
   }
   if (needRTM) {
-    # if we need rasterToMatch, that means a) we don't have it, but b) we will have biomassMap
+    # if we need rasterToMatch, that means a) we don't have it, but b) we will have rawBiomassMap
     # sim <- objectSynonyms(sim, list(c("rasterToMatch", "biomassMap")))
-    sim$rasterToMatch <- sim$biomassMap
+    sim$rasterToMatch <- sim$rawBiomassMap
     studyArea <- sim$studyArea # temporary copy because it will be overwritten if it is suppliedElsewhere
     message("  Rasterizing the studyArea polygon map")
     if (!is(studyArea, "SpatialPolygonsDataFrame")) {
