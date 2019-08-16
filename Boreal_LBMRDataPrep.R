@@ -435,10 +435,8 @@ createLBMRInputs <- function(sim) {
   pixelCohortData <- cohortDataFiles$pixelCohortData
   rm(cohortDataFiles)
 
-  ########################################################################
-  ## rebuild ecoregion, ecoregionMap objects -- some initial ecoregions disappeared (e.g., 34, 35, 36)
-  ## rebuild biomassMap object -- biomasses have been adjusted
-  ecoregionsWeHaveParametersFor <- levels(speciesEcoregion$ecoregionGroup)
+  ## make a table of available active and inactive (no biomass) ecoregions
+  sim$ecoregion <- makeEcoregionDT(pixelCohortData, speciesEcoregion)
 
   pixelCohortData <- pixelCohortData[ecoregionGroup %in% ecoregionsWeHaveParametersFor] # keep only ones we have params for
   pixelCohortData[ , ecoregionGroup := factor(as.character(ecoregionGroup))]
