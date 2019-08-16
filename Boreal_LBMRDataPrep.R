@@ -444,7 +444,7 @@ createLBMRInputs <- function(sim) {
   sim$ecoregion <- data.table(active = "yes",
                               ecoregionGroup = factor(as.character(unique(pixelCohortData$ecoregionGroup))))
 
-  # Some ecoregions have NO BIOMASS -- so they are not active
+  ## make ecoregionGroup a factor and export speciesEcoregion to sim
   sim$ecoregion[!ecoregionGroup %in% unique(speciesEcoregion$ecoregionGroup), active := "no"]
 
   pixelData <- unique(pixelCohortData, by = "pixelIndex")
@@ -465,16 +465,16 @@ createLBMRInputs <- function(sim) {
                                  X4 = 0.7, X5 = 0.9)
 
   speciesEcoregion[, ecoregionGroup := factor(as.character(ecoregionGroup))]
-
   sim$speciesEcoregion <- speciesEcoregion
 
+  ## write species layers to disk
   sim$speciesLayers <- lapply(seq(numLayers(sim$speciesLayers)), function(x) {
     writeRaster(sim$speciesLayers[[x]],
                 file.path(outputPath(sim), paste0(names(sim$speciesLayers)[x], ".tif")),
                 datatype = "INT2U", overwrite = TRUE)
   }) %>% raster::stack()
 
-  ##############################################################################
+  ## do assertions
   ##  Collapse pixelCohortData to its cohortData : need pixelGroupMap
   sim$pixelGroupMap <- raster(sim$rasterToMatch)
   sim$pixelGroupMap[pixelData$pixelIndex] <- as.integer(pixelData$pixelGroup)
@@ -487,7 +487,6 @@ createLBMRInputs <- function(sim) {
                     minRelativeB = sim$minRelativeB)
 
   LandR::assertCohortData(sim$cohortData, sim$pixelGroupMap)
-
 
   message("Done Boreal_LBMRDataPrep: ", Sys.time())
   return(invisible(sim))
