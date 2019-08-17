@@ -83,12 +83,11 @@ defineModule(sim, list(
     defineParameter(".saveInitialTime", "numeric", NA, NA, NA,
                     "This describes the simulation time at which the first save event should occur"),
     defineParameter(".saveInterval", "numeric", NA, NA, NA,
-                    "This describes the simulation time interval between save events")
+                    "This describes the simulation time interval between save events"),
+    defineParameter(".useCache", "logical", "init", NA, NA,
+                    desc = "Controls cache; caches the init event by default")
   ),
   inputObjects = bind_rows(
-    expectsInput("biomassMap", "RasterLayer",
-                 desc = "total biomass raster layer in study area, default is Canada national biomass map",
-                 sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureBiomass.tar"),
     expectsInput("cloudFolderID", "character",
                  "The google drive location where cloudCache will store large statistical objects"),
     expectsInput("columnsForPixelGroups", "character",
@@ -111,6 +110,9 @@ defineModule(sim, list(
                  #desc = "this raster contains two pieces of information: Full study area with fire return interval attribute",
                  desc = "DESCRIPTION NEEDED",
                  sourceURL = NA),
+    expectsInput("rawBiomassMap", "RasterLayer",
+                 desc = "total biomass raster layer in study area, default is Canada national biomass map",
+                 sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureBiomass.tar"),
     expectsInput("speciesLayers", "RasterStack",
                  desc = "cover percentage raster layers by species in Canada species map",
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
@@ -138,13 +140,17 @@ defineModule(sim, list(
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
   ),
   outputObjects = bind_rows(
+    createsOutput("biomassMap", "RasterLayer",
+                 desc = paste("total biomass raster layer in study area,",
+                              "filtered for pixels covered by cohortData")),
+    createsOutput("cohortData", "data.table",
+                  desc = paste("initial community table, created from available biomass,",
+                               "age and species cover data, as well as eco zonation information")),
     createsOutput("ecoDistrict", "", desc = ""), ## TODO: description and type needed
     createsOutput("ecoregion", "data.table",
                   desc = "ecoregion look up table"),
     createsOutput("ecoregionMap", "RasterLayer",
                   desc = "ecoregion map that has mapcodes match ecoregion table and speciesEcoregion table"),
-    createsOutput("cohortData", "data.table",
-                  desc = "initial community table"),
     createsOutput("pixelGroupMap", "RasterLayer",
                   desc = "initial community map that has mapcodes match initial community table"),
     createsOutput("minRelativeB", "data.frame",
@@ -284,7 +290,7 @@ createLBMRInputs <- function(sim) {
                       species = sim$species,
                       standAgeMap = sim$standAgeMap,
                       ecoregionFiles = ecoregionFiles,
-                      biomassMap = sim$biomassMap,
+                      biomassMap = sim$rawBiomassMap,
                       rasterToMatch = sim$rasterToMatch,
                       LCC2005 = rstLCCAdj,
                       pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
@@ -421,68 +427,37 @@ createLBMRInputs <- function(sim) {
   # Create initial communities, i.e., pixelGroups
   ########################################################################
   # Rejoin back the pixels that were 34 and 35
-
-  ## TODO: code below needs to be converted to funtions to avoid repeating code across modules (LBMR)
   pixelCohortData <- rbindlist(list(cohortData34to36, cohortDataNo34to36),
                                use.names = TRUE, fill = TRUE)
-  pixelCohortData[, ecoregionGroup := factor(as.character(ecoregionGroup))] # refactor because the "_34" and "_35" ones are still levels
 
-  pixelCohortData[ , `:=`(logAge = NULL, coverOrig = NULL, totalBiomass = NULL,
-                          initialEcoregionCode = NULL, cover = NULL, lcc = NULL)]
-  pixelCohortData <- pixelCohortData[B > 0]
-  cd <- pixelCohortData[, .SD, .SDcols = c("pixelIndex", sim$columnsForPixelGroups)]
-  pixelCohortData[, pixelGroup := Cache(generatePixelGroups, cd, maxPixelGroup = 0,
-                                        columns = sim$columnsForPixelGroups)]
+  ## make cohortDataFiles: pixelCohortData (rm unnecessary cols, subset pixels with B>0,
+  ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
+  cohortDataFiles <- makeCohortDataFiles(pixelCohortData, columnsForPixelGroups, speciesEcoregion)
+  sim$cohortData <- cohortDataFiles$cohortData
+  pixelCohortData <- cohortDataFiles$pixelCohortData
+  rm(cohortDataFiles)
 
-  ########################################################################
-  ## rebuild ecoregion, ecoregionMap objects -- some initial ecoregions disappeared (e.g., 34, 35, 36)
-  ## rebuild biomassMap object -- biomasses have been adjusted
-  ecoregionsWeHaveParametersFor <- levels(speciesEcoregion$ecoregionGroup)
+  ## make a table of available active and inactive (no biomass) ecoregions
+  sim$ecoregion <- makeEcoregionDT(pixelCohortData, speciesEcoregion)
 
-  pixelCohortData <- pixelCohortData[ecoregionGroup %in% ecoregionsWeHaveParametersFor] # keep only ones we have params for
-  pixelCohortData[ , ecoregionGroup := factor(as.character(ecoregionGroup))]
-  pixelCohortData[, totalBiomass := asInteger(sum(B)), by = "pixelIndex"]
-  sim$ecoregion <- data.table(active = "yes",
-                              ecoregionGroup = factor(as.character(unique(pixelCohortData$ecoregionGroup))))
+  ## make biomassMap, ecoregionMap, minRelativeB, pixelGroupMap
+  sim$biomassMap <- makeBiomassMap(pixelCohortData, sim$rasterToMatch)
+  sim$ecoregionMap <- makeEcoregionMap(ecoregionFiles, pixelCohortData)
+  sim$minRelativeB <- makeMinRelativeB(pixelCohortData)
+  sim$pixelGroupMap <- makePixelGroupMap(pixelCohortData, sim$rasterToMatch)
 
-  # Some ecoregions have NO BIOMASS -- so they are not active
-  sim$ecoregion[!ecoregionGroup %in% unique(speciesEcoregion$ecoregionGroup), active := "no"]
-
-  pixelData <- unique(pixelCohortData, by = "pixelIndex")
-  pixelData[, ecoregionGroup := factor(as.character(ecoregionGroup))] # resorts them in order
-
-  sim$biomassMap <- raster(sim$rasterToMatch)
-  sim$biomassMap[pixelData$pixelIndex] <- pixelData$totalBiomass
-
-  sim$ecoregionMap <- raster(ecoregionFiles$ecoregionMap)
-  sim$ecoregionMap[pixelData$pixelIndex] <- as.integer(pixelData$ecoregionGroup)
-  levels(sim$ecoregionMap) <- data.frame(ID = seq(levels(pixelData$ecoregionGroup)),
-                                         ecoregion = gsub("_.*", "", levels(pixelData$ecoregionGroup)),
-                                         ecoregionGroup = levels(pixelData$ecoregionGroup),
-                                         stringsAsFactors = TRUE)
-
-  sim$minRelativeB <- data.frame(ecoregionGroup = levels(pixelData$ecoregionGroup),
-                                 X1 = 0.2, X2 = 0.4, X3 = 0.5,
-                                 X4 = 0.7, X5 = 0.9)
-
+  ## make ecoregionGroup a factor and export speciesEcoregion to sim
   speciesEcoregion[, ecoregionGroup := factor(as.character(ecoregionGroup))]
-
   sim$speciesEcoregion <- speciesEcoregion
 
+  ## write species layers to disk
   sim$speciesLayers <- lapply(seq(numLayers(sim$speciesLayers)), function(x) {
     writeRaster(sim$speciesLayers[[x]],
                 file.path(outputPath(sim), paste0(names(sim$speciesLayers)[x], ".tif")),
                 datatype = "INT2U", overwrite = TRUE)
   }) %>% raster::stack()
 
-  ##############################################################################
-  ##  Collapse pixelCohortData to its cohortData : need pixelGroupMap
-  sim$pixelGroupMap <- raster(sim$rasterToMatch)
-  sim$pixelGroupMap[pixelData$pixelIndex] <- as.integer(pixelData$pixelGroup)
-
-  sim$cohortData <- unique(pixelCohortData, by = c("pixelGroup", columnsForPixelGroups))
-  sim$cohortData[ , `:=`(pixelIndex = NULL)]
-
+  ## do assertions
   message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", "),
                "\n  Resulted in", magenta(length(unique(sim$cohortData$pixelGroup))),
                "unique pixelGroup values"))
@@ -491,8 +466,6 @@ createLBMRInputs <- function(sim) {
                     minRelativeB = sim$minRelativeB)
 
   LandR::assertCohortData(sim$cohortData, sim$pixelGroupMap)
-
-  LandR::assertUniqueCohortData(sim$cohortData, c("pixelGroup", "ecoregionGroup", "speciesCode"))
 
   message("Done Boreal_LBMRDataPrep: ", Sys.time())
   return(invisible(sim))
@@ -521,7 +494,7 @@ Save <- function(sim) {
   ecoregionFilename <-   file.path(dPath, "ecoregions.shp")
   ecodistrictFilename <- file.path(dPath, "ecodistricts.shp")
   ecozoneFilename <-   file.path(dPath, "ecozones.shp")
-  biomassMapFilename <- file.path(dPath, "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.tif")
+  rawBiomassMapFilename <- file.path(dPath, "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.tif")
   lcc2005Filename <- file.path(dPath, "LCC2005_V1_4a.tif")
   standAgeMapFilename <- file.path(dPath, "NFI_MODIS250m_kNN_Structure_Stand_Age_v0.tif")
 
@@ -555,11 +528,11 @@ Save <- function(sim) {
   }
 
   if (!suppliedElsewhere("biomassMap", sim) || needRTM) {
-    sim$biomassMap <- Cache(prepInputs,
-                            targetFile = asPath(basename(biomassMapFilename)),
+    sim$rawBiomassMap <- Cache(prepInputs,
+                            targetFile = asPath(basename(rawBiomassMapFilename)),
                             archive = asPath(c("kNN-StructureBiomass.tar",
                                                "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
-                            url = extractURL("biomassMap"),
+                            url = extractURL("rawBiomassMap"),
                             destinationPath = dPath,
                             studyArea = sim$studyArea,
                             rasterToMatch = if (!needRTM) sim$rasterToMatch else NULL, ## TODO: biomass map needs rasterToMatch but it _is_ the rasterToMatch!!
@@ -571,9 +544,9 @@ Save <- function(sim) {
                             omitArgs = c("destinationPath", "targetFile", cacheTags, "stable"))
   }
   if (needRTM) {
-    # if we need rasterToMatch, that means a) we don't have it, but b) we will have biomassMap
+    # if we need rasterToMatch, that means a) we don't have it, but b) we will have rawBiomassMap
     # sim <- objectSynonyms(sim, list(c("rasterToMatch", "biomassMap")))
-    sim$rasterToMatch <- sim$biomassMap
+    sim$rasterToMatch <- sim$rawBiomassMap
     studyArea <- sim$studyArea # temporary copy because it will be overwritten if it is suppliedElsewhere
     message("  Rasterizing the studyArea polygon map")
     if (!is(studyArea, "SpatialPolygonsDataFrame")) {
