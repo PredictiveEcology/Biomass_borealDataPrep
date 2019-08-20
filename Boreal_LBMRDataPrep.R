@@ -292,7 +292,7 @@ createLBMRInputs <- function(sim) {
                       ecoregionFiles = ecoregionFiles,
                       biomassMap = sim$rawBiomassMap,
                       rasterToMatch = sim$rasterToMatch,
-                      LCC2005 = rstLCCAdj,
+                      rstLCC = rstLCCAdj,
                       pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
                       userTags = "stable")
 
