@@ -64,8 +64,8 @@ defineModule(sim, list(
     defineParameter("speciesUpdateFunction", "list",
                     list(quote(LandR::speciesTableUpdate(sim$species, sim$speciesTable, sim$sppEquiv, P(sim)$sppEquivCol))),
                     NA, NA,
-                    "Unnamed list of quoted functions that updates species table to customize values.
-                    Default should always come first."),
+                    paste("Unnamed list of quoted functions that updates species table to customize values.",
+                          "Default should always come first.")),
     defineParameter("sppEquivCol", "character", "Boreal", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter("subsetDataAgeModel", "numeric", NULL, NA, NA,
