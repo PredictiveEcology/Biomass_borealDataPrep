@@ -44,8 +44,8 @@ defineModule(sim, list(
                           "and potentially others. Defaults to a GLMEM if there are > 1 grouping levels.",
                           "A custom model call can also be provided, as long as the 'data' argument is NOT included")),
     defineParameter("forestedLCCClasses", "numeric", c(1:15, 20, 32, 34:35), 0, 39,
-                    "The classes in the rstLCC layer that are 'treed' and will therefore be run in LBMR.
-                    Defaults to forested classes in LCC2005 map."),
+                    paste("The classes in the rstLCC layer that are 'treed' and will therefore be run in LBMR.",
+                          "Defaults to forested classes in LCC2005 map.")),
     defineParameter("LCCClassesToReplaceNN", "numeric", 34:35, NA, NA,
                     paste("This will replace these classes on the landscape with the closest forest class P(sim)$forestedLCCClasses.",
                           "If the user is using the default 2005 data product for rstLCC, then users may wish to",
