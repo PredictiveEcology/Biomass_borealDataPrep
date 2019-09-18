@@ -527,7 +527,7 @@ Save <- function(sim) {
     }
   }
 
-  if (!suppliedElsewhere("biomassMap", sim) || needRTM) {
+  if (!suppliedElsewhere("rawBiomassMap", sim) || needRTM) {
     sim$rawBiomassMap <- Cache(prepInputs,
                             targetFile = asPath(basename(rawBiomassMapFilename)),
                             archive = asPath(c("kNN-StructureBiomass.tar",
