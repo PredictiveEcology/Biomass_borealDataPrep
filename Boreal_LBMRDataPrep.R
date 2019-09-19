@@ -342,7 +342,6 @@ createLBMRInputs <- function(sim) {
                             all.y = FALSE, by = "pixelIndex")
   cohortDataNo34to36 <- pixelCohortData[!pixelIndex %in% newLCCClasses$pixelIndex]
   setnames(cohortDataNo34to36, "initialEcoregionCode", "ecoregionGroup")
-  #cohortDataNo34to36[, ecoregionGroup := initialEcoregionCode]
   cohortDataNo34to36NoBiomass <- cohortDataNo34to36[eval(rmZeroBiomassQuote),
                                                     .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
 
@@ -440,8 +439,6 @@ createLBMRInputs <- function(sim) {
   # Create initial communities, i.e., pixelGroups
   ########################################################################
   # Rejoin back the pixels that were 34 and 35
-  ## TODO: TEST WITH DIFFERENT SA AND SAlARGE
-  browser()
   pixelCohortData <- rbindlist(list(cohortData34to36, cohortDataNo34to36),
                                use.names = TRUE, fill = TRUE)
 
@@ -605,15 +602,13 @@ Save <- function(sim) {
                                     filename = file.path(dataPath(sim), "rasterToMatchLarge.tif"),
                                     datatype = "INT2U", overwrite = TRUE)
 
-    ## TODO: test with different SA/SALarge
     sim$rasterToMatch <- Cache(postProcess,
                                x = sim$rasterToMatchLarge,
                                destinationPath = dPath,
-                               studyArea = sim$studyArea,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                               # studyArea = sim$studyArea,
+                               studyArea = sim$studyArea,
                                rasterToMatch = sim$rawBiomassMap,
                                useSAcrs = FALSE,
-                               maskWithRTM = FALSE,   ## mask to SA
+                               maskWithRTM = FALSE,   ## mask with SA
                                method = "bilinear",
                                datatype = "INT2U",
                                filename2 = TRUE, overwrite = TRUE,
