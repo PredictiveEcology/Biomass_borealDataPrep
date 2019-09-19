@@ -130,7 +130,7 @@ defineModule(sim, list(
                               "Defaults to a square shapefile in Southwestern Alberta, Canada."),
                  sourceURL = ""),
     expectsInput("studyAreaLarge", "SpatialPolygonsDataFrame",
-                 desc = paste("multipolygon (larger area than studyArea) to use for parameter estimation,",
+                 desc = paste("multipolygon (larger area than studyArea) used for parameter estimation,",
                               "with attribute LTHFC describing the fire return interval.",
                               "Defaults to a square shapefile in Southwestern Alberta, Canada."),
                  sourceURL = ""),
@@ -330,8 +330,10 @@ createLBMRInputs <- function(sim) {
   # availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
   #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
   availableCombinations <- unique(pixelCohortData[, .(speciesCode, initialEcoregionCode, pixelIndex)])
-  newLCCClasses <- Cache(convertUnwantedLCC, classesToReplace = P(sim)$LCCClassesToReplaceNN,
-                         rstLCC = rstLCCAdj, availableERC_by_Sp = availableCombinations)
+  newLCCClasses <- Cache(convertUnwantedLCC,
+                         classesToReplace = P(sim)$LCCClassesToReplaceNN,
+                         rstLCC = rstLCCAdj,
+                         availableERC_by_Sp = availableCombinations)
 
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
@@ -494,7 +496,7 @@ createLBMRInputs <- function(sim) {
                "\n  Resulted in", magenta(length(unique(sim$cohortData$pixelGroup))),
                "unique pixelGroup values"))
   LandR::assertERGs(sim$ecoregionMap, cohortData = sim$cohortData,
-                    speciesEcoregion = speciesEcoregion,
+                    speciesEcoregion = sim$speciesEcoregion,
                     minRelativeB = sim$minRelativeB)
 
   LandR::assertCohortData(sim$cohortData, sim$pixelGroupMap)
