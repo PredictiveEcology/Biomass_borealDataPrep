@@ -345,7 +345,8 @@ createLBMRInputs <- function(sim) {
   cohortDataNo34to36NoBiomass <- cohortDataNo34to36[eval(rmZeroBiomassQuote),
                                                     .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
 
-  assert1(cohortData34to36, pixelCohortData[eval(rmZeroBiomassQuote)])
+  ## make sure ecoregionGroups match
+  assert1(cohortData34to36, pixelCohortData, rmZeroBiomassQuote)
 
   ##############################################################
   # Statistical estimation of establishprob, maxB and maxANPP
@@ -453,11 +454,34 @@ createLBMRInputs <- function(sim) {
                                 x = rasterToMatchLarge,
                                 rasterToMatch = sim$rasterToMatch,
                                 maskWithRTM = TRUE)
+
+    if (any(!identical(extent(rasterToMatchLarge), extent(sim$rasterToMatch)),
+            !identical(res(rasterToMatchLarge), res(sim$rasterToMatch))))
+      stop("Downsizing to rasterToMatch after estimating parameters didn't work.
+           Please debug Boreal_LBMRDataPrep::createLBMRInputs()")
   }
 
+  ## subset pixels that are in studyArea/rasterToMatch only
   pixToKeep <- na.omit(getValues(rasterToMatchLarge))
   pixelCohortData <- pixelCohortData[pixelIndex %in% pixToKeep]
+
+  # re-do pixelIndex (it now needs to match rasterToMatch)
+  newPixDT <- data.table(pixelIndex = getValues(rasterToMatchLarge),
+                         newPixelIndex = as.integer(1:ncell(rasterToMatchLarge)))
+  newPixDT[, inPixelCohortData := RTMvals %in% pixelCohortData$pixelIndex]
+  newPixDT <- newPixDT[inPixelCohortData == TRUE]
+  pixelCohortData <- newPixDT[pixelCohortData, on = "pixelIndex"]
+  pixelCohortData[, pixelIndex := newPixelIndex]
+  pixelCohortData[, newPixelIndex := NULL]
   rm(rasterToMatchLarge)
+  if (ncell(sim$rasterToMatch) > 3e6) .gc()
+
+
+  ## subset ecoregionFiles$ecoregionMap to smaller area.
+  ecoregionFiles$ecoregionMap <- Cache(postProcess,
+                                       x = ecoregionFiles$ecoregionMap,
+                                       rasterToMatch = sim$rasterToMatch,
+                                       maskWithRTM = TRUE)
 
   ## make cohortDataFiles: pixelCohortData (rm unnecessary cols, subset pixels with B>0,
   ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
@@ -683,7 +707,8 @@ Save <- function(sim) {
                         destinationPath = dPath,
                         studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                         # studyArea = sim$studyArea,
-                        rasterToMatch = sim$rasterToMatch,
+                        rasterToMatch = sim$rasterToMatchLarge,
+                        # rasterToMatch = sim$rasterToMatch,
                         maskWithRTM = TRUE,
                         method = "bilinear",
                         datatype = "INT2U",
@@ -722,7 +747,8 @@ Save <- function(sim) {
                              url = extractURL("standAgeMap"),
                              fun = "raster::raster",
                              studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                             rasterToMatch = sim$rasterToMatch,
+                             rasterToMatch = sim$rasterToMatchLarge,
+                             # rasterToMatch = sim$rasterToMatch,
                              maskWithRTM = TRUE,
                              method = "bilinear",
                              datatype = "INT2U",
@@ -775,7 +801,8 @@ Save <- function(sim) {
     #opts <- options(reproducible.useCache = "overwrite")
     sim$speciesLayers <- Cache(loadkNNSpeciesLayers,
                                dPath = dPath,
-                               rasterToMatch = sim$rasterToMatch,
+                               rasterToMatch = sim$rasterToMatchLarge,
+                               # rasterToMatch = sim$rasterToMatch,
                                studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                                sppEquiv = sim$sppEquiv,
                                knnNamesCol = "KNN",
