@@ -172,7 +172,6 @@ defineModule(sim, list(
 
 doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE) {
   if (eventType == "init") {
-    # names(sim$speciesLayers) <- equivalentName(names(sim$speciesLayers), sim$sppEquiv, "Latin_full")
     sim <- createLBMRInputs(sim)
 
     # schedule future event(s)
