@@ -259,7 +259,7 @@ createLBMRInputs <- function(sim) {
   ecoregionMap <- Cache(postProcess,
                         x = sim$ecoDistrict,
                         studyArea = sim$studyAreaLarge,
-                        filename2 = NULL)
+                        filename2 = NULL,
                         userTags = c(cacheTags, "ecoregionMapLarge"),
                         omitArgs = c("userTags"))
 
@@ -458,6 +458,7 @@ createLBMRInputs <- function(sim) {
                                 x = rasterToMatchLarge,
                                 rasterToMatch = sim$rasterToMatch,
                                 maskWithRTM = TRUE,
+                                filename2 = NULL,
                                 userTags = c(cacheTags, "rasterToMatchLarge"),
                                 omitArgs = c("userTags"))
 
@@ -488,6 +489,7 @@ createLBMRInputs <- function(sim) {
                                        x = ecoregionFiles$ecoregionMap,
                                        rasterToMatch = sim$rasterToMatch,
                                        maskWithRTM = TRUE,
+                                       filename2 = NULL,
                                        userTags = c(cacheTags, "ecoregionMap"),
                                        omitArgs = c("userTags"))
 
