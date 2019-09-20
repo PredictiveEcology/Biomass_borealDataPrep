@@ -191,6 +191,8 @@ createLBMRInputs <- function(sim) {
   if (is.null(P(sim)$pixelGroupAgeClass))
     params(sim)[[currentModule(sim)]]$pixelGroupAgeClass <- P(sim)$successionTimestep
 
+  cacheTags <- c(currentModule(sim), "init")
+
   message(blue("Starting to createLBMRInputs in Boreal_LBMRDataPrep: ", Sys.time()))
   sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$speciesLayers))
 
@@ -259,6 +261,9 @@ createLBMRInputs <- function(sim) {
                         x = sim$ecoDistrict,
                         studyArea = sim$studyAreaLarge,
                         filename2 = NULL)
+                        userTags = c(cacheTags, "ecoregionMapLarge"),
+                        omitArgs = c("userTags"))
+
   ecoregionMapSF <- sf::st_as_sf(ecoregionMap)
   if (is(ecoregionMapSF$ECODISTRIC, "character")) ecoregionMapSF$ECODISTRIC <- as.numeric(ecoregionMapSF$ECODISTRIC)
   rstEcoregionMap <- fasterize::fasterize(ecoregionMapSF, raster = sim$rasterToMatchLarge,
@@ -453,7 +458,9 @@ createLBMRInputs <- function(sim) {
     rasterToMatchLarge <- Cache(postProcess,
                                 x = rasterToMatchLarge,
                                 rasterToMatch = sim$rasterToMatch,
-                                maskWithRTM = TRUE)
+                                maskWithRTM = TRUE,
+                                userTags = c(cacheTags, "rasterToMatchLarge"),
+                                omitArgs = c("userTags"))
 
     if (any(!identical(extent(rasterToMatchLarge), extent(sim$rasterToMatch)),
             !identical(res(rasterToMatchLarge), res(sim$rasterToMatch))))
@@ -481,7 +488,9 @@ createLBMRInputs <- function(sim) {
   ecoregionFiles$ecoregionMap <- Cache(postProcess,
                                        x = ecoregionFiles$ecoregionMap,
                                        rasterToMatch = sim$rasterToMatch,
-                                       maskWithRTM = TRUE)
+                                       maskWithRTM = TRUE,
+                                       userTags = c(cacheTags, "ecoregionMap"),
+                                       omitArgs = c("userTags"))
 
   ## make cohortDataFiles: pixelCohortData (rm unnecessary cols, subset pixels with B>0,
   ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
@@ -607,7 +616,8 @@ Save <- function(sim) {
                                method = "bilinear",
                                datatype = "INT2U",
                                filename2 = TRUE, overwrite = TRUE,
-                               omitArgs = c("destinationPath", "targetFile", cacheTags, "stable"))
+                               userTags = cacheTags,
+                               omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
   }
   if (needRTM) {
     ## if we need rasterToMatch/rasterToMatchLarge, that means a) we don't have it, but b) we will have rawBiomassMap
