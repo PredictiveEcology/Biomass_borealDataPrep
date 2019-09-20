@@ -633,12 +633,11 @@ Save <- function(sim) {
     sim$rasterToMatchLarge[!is.na(RTMvals)] <- 1
 
     sim$rasterToMatchLarge <- Cache(writeRaster, sim$rasterToMatchLarge,
-                                    filename = file.path(dataPath(sim), "rasterToMatchLarge.tif"),
+                                    filename = file.path(dPath, "rasterToMatchLarge.tif"),
                                     datatype = "INT2U", overwrite = TRUE)
 
     sim$rasterToMatch <- Cache(postProcess,
                                x = sim$rasterToMatchLarge,
-                               destinationPath = dPath,
                                studyArea = sim$studyArea,
                                rasterToMatch = sim$rawBiomassMap,
                                useSAcrs = FALSE,
@@ -685,7 +684,7 @@ Save <- function(sim) {
       sim$rasterToMatch <- crop(fasterizeFromSp(studyArea, sim$rasterToMatch, fieldName),
                                 studyArea)
       sim$rasterToMatch <- Cache(writeRaster, sim$rasterToMatch,
-                                 filename = file.path(dataPath(sim), "rasterToMatch.tif"),
+                                 filename = file.path(dPath, "rasterToMatch.tif"),
                                  datatype = "INT2U", overwrite = TRUE)
     }
   }
