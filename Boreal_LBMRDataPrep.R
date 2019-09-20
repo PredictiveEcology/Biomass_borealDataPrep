@@ -644,7 +644,8 @@ Save <- function(sim) {
                                method = "bilinear",
                                datatype = "INT2U",
                                filename2 = TRUE, overwrite = TRUE,
-                               omitArgs = c("destinationPath", "targetFile", cacheTags, "stable"))
+                               userTags = cacheTags,
+                               omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
 
     ## this is old, and potentially not needed anymore
     if (FALSE) {
