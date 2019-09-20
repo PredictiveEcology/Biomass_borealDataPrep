@@ -575,8 +575,7 @@ Save <- function(sim) {
       } else NULL
     }
 
-    sim$rasterToMatch <- crop(fasterizeFromSp(studyArea, sim$rasterToMatch, fieldName),
-                              studyArea)
+    sim$rasterToMatch <- crop(fasterizeFromSp(studyArea, sim$rasterToMatch, fieldName), studyArea)
     sim$rasterToMatch <- Cache(writeRaster, sim$rasterToMatch,
                                filename = file.path(dataPath(sim), "rasterToMatch.tif"),
                                datatype = "INT2U", overwrite = TRUE)
