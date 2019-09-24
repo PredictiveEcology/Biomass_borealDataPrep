@@ -585,6 +585,16 @@ Save <- function(sim) {
     sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crs(sim$studyArea))
   }
 
+  ## check whether SA is within SALarge
+  ## convert to temp sf objects
+  studyArea <- st_as_sf(sim$studyArea)
+  studyAreaLarge <- st_as_sf(sim$studyAreaLarge)
+
+  if (!st_within(studyArea, studyAreaLarge)[[1]])
+    stop("studyArea is not fully within studyAreaLarge.
+           Please check the aligment, projection and shapes of these polygons")
+  rm(studyArea, studyAreaLarge)
+
   needRTM <- FALSE
   if (is.null(sim$rasterToMatch) || is.null(sim$rasterToMatchLarge)) {
     if (!suppliedElsewhere("rasterToMatch", sim) ||
