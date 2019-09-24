@@ -569,6 +569,7 @@ Save <- function(sim) {
   ecodistrictAE <- basename(paste0(tools::file_path_sans_ext(ecodistrictFilename), ".", fexts))
   ecozoneAE <- basename(paste0(tools::file_path_sans_ext(ecozoneFilename), ".", fexts))
 
+  ## Study area(s) ------------------------------------------------
   if (!suppliedElsewhere("studyArea", sim)) {
     message("'studyArea' was not provided by user. Using a polygon (6250000 m^2) in southwestern Alberta, Canada")
     sim$studyArea <- randomStudyArea(seed = 1234, size = (250^2)*100)
@@ -595,6 +596,7 @@ Save <- function(sim) {
            Please check the aligment, projection and shapes of these polygons")
   rm(studyArea, studyAreaLarge)
 
+  ## Raster(s) to match ------------------------------------------------
   needRTM <- FALSE
   if (is.null(sim$rasterToMatch) || is.null(sim$rasterToMatchLarge)) {
     if (!suppliedElsewhere("rasterToMatch", sim) ||
@@ -719,7 +721,7 @@ Save <- function(sim) {
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
 
-  # rstLCC
+  ## Land cover raster ------------------------------------------------
   if (!suppliedElsewhere("rstLCC", sim)) {
     sim$rstLCC <- Cache(prepInputs,
                         targetFile = lcc2005Filename,
@@ -742,6 +744,7 @@ Save <- function(sim) {
       projection(sim$rstLCC) <- projection(sim$rasterToMatch) ## Ceres: this shouldn't be necessary anymore
   }
 
+  ## Ecodistrict ------------------------------------------------
   if (!suppliedElsewhere("ecoDistrict", sim)) {
     sim$ecoDistrict <- Cache(prepInputs,
                              targetFile = asPath(ecodistrictFilename),
@@ -758,7 +761,7 @@ Save <- function(sim) {
                              omitArgs = c("destinationPath", "targetFile", "overwrite", "alsoExtract"))
   }
 
-  # stand age map
+  ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
     sim$standAgeMap <- Cache(prepInputs,
                              targetFile = basename(standAgeMapFilename), ## TODO: undefined filename
@@ -780,6 +783,7 @@ Save <- function(sim) {
     sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
   }
 
+  ## Species equivalencies table -------------------------------------------
   if (!suppliedElsewhere("sppEquiv", sim)) {
     if (!is.null(sim$sppColorVect))
       stop("If you provide sppColorVect, you MUST also provide sppEquiv")
@@ -818,6 +822,7 @@ Save <- function(sim) {
       stop("If you provide 'sppEquiv' you MUST also provide 'sppColorVect'")
   }
 
+  ## Species raster layers -------------------------------------------
   if (!suppliedElsewhere("speciesLayers", sim)) {
     #opts <- options(reproducible.useCache = "overwrite")
     sim$speciesLayers <- Cache(loadkNNSpeciesLayers,
