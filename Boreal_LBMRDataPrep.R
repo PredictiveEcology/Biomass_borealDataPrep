@@ -704,7 +704,7 @@ Save <- function(sim) {
   }
 
   # if (ncell(sim$rasterToMatch) < 1e4)
-    # stop("sim$rasterToMatch is too small, it should have more than 10,000 pixels")
+  # stop("sim$rasterToMatch is too small, it should have more than 10,000 pixels")
 
   ## TODO: KEEP THIS HERE OR ONLY INIT?
   if (!identical(crs(sim$studyArea), crs(sim$rasterToMatch))) {
