@@ -104,7 +104,7 @@ defineModule(sim, list(
                               "The default layer used, if not supplied, is Canada national land classification in 2005"),
                  sourceURL = "https://drive.google.com/file/d/1g9jr0VrQxqxGjZ4ckF6ZkSMP-zuYzHQC/view?usp=sharing"),
     expectsInput("rasterToMatch", "RasterLayer",
-                 desc = "a raster of the studyArea in the same resolution and projection as biomassMap ",
+                 desc = "a raster of the studyArea in the same resolution and projection as biomassMap",
                  sourceURL = NA),
     expectsInput("rasterToMatchLarge", "RasterLayer",
                  desc = "a raster of the studyAreaLarge in the same resolution and projection as biomassMap",
