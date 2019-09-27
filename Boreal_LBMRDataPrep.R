@@ -457,10 +457,9 @@ createLBMRInputs <- function(sim) {
   ## 3. Re-do pixel ID numbering so that it matches the final rasterToMatch
   ## Note: if SA and SALarge are the same, no subsetting will take place.
 
+  if (!identical(extent(sim$rasterToMatch), extent(sim$rasterToMatchLarge))) {
   rasterToMatchLarge <- sim$rasterToMatchLarge
   rasterToMatchLarge <- setValues(rasterToMatchLarge, seq(ncell(rasterToMatchLarge)))
-
-  if (!identical(extent(sim$rasterToMatch), extent(sim$rasterToMatchLarge))) {
     rasterToMatchLarge <- Cache(postProcess,
                                 x = rasterToMatchLarge,
                                 rasterToMatch = sim$rasterToMatch,
@@ -473,7 +472,6 @@ createLBMRInputs <- function(sim) {
             !identical(res(rasterToMatchLarge), res(sim$rasterToMatch))))
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.
            Please debug Boreal_LBMRDataPrep::createLBMRInputs()")
-  }
 
   ## subset pixels that are in studyArea/rasterToMatch only
   pixToKeep <- na.omit(getValues(rasterToMatchLarge))
@@ -487,6 +485,7 @@ createLBMRInputs <- function(sim) {
   pixelCohortData[, pixelIndex := NULL]
   setnames(pixelCohortData, old = "newPixelIndex", new = "pixelIndex")
   rm(rasterToMatchLarge)
+  }
 
   if (ncell(sim$rasterToMatch) > 3e6) .gc()
 
