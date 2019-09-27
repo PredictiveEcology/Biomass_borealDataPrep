@@ -448,9 +448,15 @@ createLBMRInputs <- function(sim) {
   pixelCohortData <- rbindlist(list(cohortData34to36, cohortDataNo34to36),
                                use.names = TRUE, fill = TRUE)
 
-  ## Subset pixels on rasterToMatch
-  ## identify which pixels are in both RTMs
-  ## create temp copies
+  ########################################################################
+  # "Downsize" to studyArea after estimating parameters on studyAreaLarge
+  ########################################################################
+  ## 1. Subset pixels (IDs) on rasterToMatchLarge, using rasterToMatch
+  ## 2. Subset data.tables using the pixel IDs / ecoregion/species combinations
+  ##    that are common across the two rasters
+  ## 3. Re-do pixel ID numbering so that it matches the final rasterToMatch
+  ## Note: if SA and SALarge are the same, no subsetting will take place.
+
   rasterToMatchLarge <- sim$rasterToMatchLarge
   rasterToMatchLarge <- setValues(rasterToMatchLarge, seq(ncell(rasterToMatchLarge)))
 
