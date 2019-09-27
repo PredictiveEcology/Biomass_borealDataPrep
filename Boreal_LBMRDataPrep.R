@@ -413,7 +413,7 @@ createLBMRInputs <- function(sim) {
   # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
   #   doesn't include combinations with B = 0 because those places can't have the species/ecoregion combo
   ########################################################################
-  message(blue("Create speciesEcoregion"))
+  message(blue("Create speciesEcoregion using modelCover and modelBiomass to estimate species traits"))
   speciesEcoregion <- makeSpeciesEcoregion(cohortDataNoBiomass = cohortDataNo34to36NoBiomass,
                                            cohortDataShort = cohortDataShort,
                                            cohortDataShortNoCover = cohortDataShortNoCover,
@@ -458,8 +458,9 @@ createLBMRInputs <- function(sim) {
   ## Note: if SA and SALarge are the same, no subsetting will take place.
 
   if (!identical(extent(sim$rasterToMatch), extent(sim$rasterToMatchLarge))) {
-  rasterToMatchLarge <- sim$rasterToMatchLarge
-  rasterToMatchLarge <- setValues(rasterToMatchLarge, seq(ncell(rasterToMatchLarge)))
+    message(blue("Subsetting to studyArea"))
+    rasterToMatchLarge <- sim$rasterToMatchLarge
+    rasterToMatchLarge <- setValues(rasterToMatchLarge, seq(ncell(rasterToMatchLarge)))
     rasterToMatchLarge <- Cache(postProcess,
                                 x = rasterToMatchLarge,
                                 rasterToMatch = sim$rasterToMatch,
@@ -473,18 +474,18 @@ createLBMRInputs <- function(sim) {
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.
            Please debug Boreal_LBMRDataPrep::createLBMRInputs()")
 
-  ## subset pixels that are in studyArea/rasterToMatch only
-  pixToKeep <- na.omit(getValues(rasterToMatchLarge))
-  pixelCohortData <- pixelCohortData[pixelIndex %in% pixToKeep]
+    ## subset pixels that are in studyArea/rasterToMatch only
+    pixToKeep <- na.omit(getValues(rasterToMatchLarge))
+    pixelCohortData <- pixelCohortData[pixelIndex %in% pixToKeep]
 
-  # re-do pixelIndex (it now needs to match rasterToMatch)
-  newPixelIndexDT <- data.table(pixelIndex = getValues(rasterToMatchLarge),
-                                newPixelIndex = as.integer(1:ncell(rasterToMatchLarge)))
+    # re-do pixelIndex (it now needs to match rasterToMatch)
+    newPixelIndexDT <- data.table(pixelIndex = getValues(rasterToMatchLarge),
+                                  newPixelIndex = as.integer(1:ncell(rasterToMatchLarge)))
 
-  pixelCohortData <- newPixelIndexDT[pixelCohortData, on = "pixelIndex"]
-  pixelCohortData[, pixelIndex := NULL]
-  setnames(pixelCohortData, old = "newPixelIndex", new = "pixelIndex")
-  rm(rasterToMatchLarge)
+    pixelCohortData <- newPixelIndexDT[pixelCohortData, on = "pixelIndex"]
+    pixelCohortData[, pixelIndex := NULL]
+    setnames(pixelCohortData, old = "newPixelIndex", new = "pixelIndex")
+    rm(rasterToMatchLarge)
   }
 
   if (ncell(sim$rasterToMatch) > 3e6) .gc()
