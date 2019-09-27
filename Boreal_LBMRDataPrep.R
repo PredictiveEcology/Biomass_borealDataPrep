@@ -480,8 +480,8 @@ createLBMRInputs <- function(sim) {
   pixelCohortData <- pixelCohortData[pixelIndex %in% pixToKeep]
 
   # re-do pixelIndex (it now needs to match rasterToMatch)
-  newPixDT <- data.table(pixelIndex = getValues(rasterToMatchLarge),
-                         newPixelIndex = as.integer(1:ncell(rasterToMatchLarge)))
+  newPixelIndexDT <- data.table(pixelIndex = getValues(rasterToMatchLarge),
+                                newPixelIndex = as.integer(1:ncell(rasterToMatchLarge)))
 
   pixelCohortData <- newPixelIndexDT[pixelCohortData, on = "pixelIndex"]
   pixelCohortData[, pixelIndex := NULL]
