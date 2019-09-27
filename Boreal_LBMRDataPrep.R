@@ -658,7 +658,8 @@ Save <- function(sim) {
                                maskWithRTM = FALSE,   ## mask with SA
                                method = "bilinear",
                                datatype = "INT2U",
-                               filename2 = TRUE, overwrite = TRUE,
+                               filename2 = file.path(cachePath(sim), "rasterToMatch.tif"),
+                               overwrite = TRUE,
                                userTags = cacheTags,
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
 
