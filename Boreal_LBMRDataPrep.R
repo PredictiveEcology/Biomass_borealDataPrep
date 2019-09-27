@@ -646,8 +646,8 @@ Save <- function(sim) {
     RTMvals <- getValues(sim$rasterToMatchLarge)
     sim$rasterToMatchLarge[!is.na(RTMvals)] <- 1
 
-    sim$rasterToMatchLarge <- Cache(writeRaster, sim$rasterToMatchLarge,
-                                    filename = file.path(dPath, "rasterToMatchLarge.tif"),
+    sim$rasterToMatchLarge <- Cache(writeOutputs, sim$rasterToMatchLarge,
+                                    filename2 = file.path(cachePath(sim), "rasters", "rasterToMatchLarge.tif"),
                                     datatype = "INT2U", overwrite = TRUE)
 
     sim$rasterToMatch <- Cache(postProcess,
