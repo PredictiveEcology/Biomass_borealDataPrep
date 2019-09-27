@@ -482,14 +482,13 @@ createLBMRInputs <- function(sim) {
   # re-do pixelIndex (it now needs to match rasterToMatch)
   newPixDT <- data.table(pixelIndex = getValues(rasterToMatchLarge),
                          newPixelIndex = as.integer(1:ncell(rasterToMatchLarge)))
-  newPixDT[, inPixelCohortData := pixelIndex %in% pixelCohortData$pixelIndex]
-  newPixDT <- newPixDT[inPixelCohortData == TRUE]
-  pixelCohortData <- newPixDT[pixelCohortData, on = "pixelIndex"]
-  pixelCohortData[, pixelIndex := newPixelIndex]
-  pixelCohortData[, newPixelIndex := NULL]
-  rm(rasterToMatchLarge)
-  if (ncell(sim$rasterToMatch) > 3e6) .gc()
 
+  pixelCohortData <- newPixelIndexDT[pixelCohortData, on = "pixelIndex"]
+  pixelCohortData[, pixelIndex := NULL]
+  setnames(pixelCohortData, old = "newPixelIndex", new = "pixelIndex")
+  rm(rasterToMatchLarge)
+
+  if (ncell(sim$rasterToMatch) > 3e6) .gc()
 
   ## subset ecoregionFiles$ecoregionMap to smaller area.
   ecoregionFiles$ecoregionMap <- Cache(postProcess,
