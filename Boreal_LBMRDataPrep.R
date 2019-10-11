@@ -668,6 +668,10 @@ Save <- function(sim) {
                                userTags = cacheTags,
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
 
+    ## covert to 'mask'
+    RTMvals <- getValues(sim$rasterToMatch)
+    sim$rasterToMatch[!is.na(RTMvals)] <- 1
+
     ## this is old, and potentially not needed anymore
     if (FALSE) {
       studyArea <- sim$studyArea # temporary copy because it will be overwritten if it is suppliedElsewhere
