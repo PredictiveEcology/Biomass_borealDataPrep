@@ -656,9 +656,9 @@ Save <- function(sim) {
                                     datatype = "INT2U", overwrite = TRUE)
 
     sim$rasterToMatch <- Cache(postProcess,
-                               x = sim$rasterToMatchLarge,
+                               x = sim$rawBiomassMap,
                                studyArea = sim$studyArea,
-                               rasterToMatch = sim$rawBiomassMap,
+                               rasterToMatch = sim$rasterToMatchLarge,
                                useSAcrs = FALSE,
                                maskWithRTM = FALSE,   ## mask with SA
                                method = "bilinear",
