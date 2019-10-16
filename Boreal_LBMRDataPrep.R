@@ -469,8 +469,9 @@ createLBMRInputs <- function(sim) {
                                 userTags = c(cacheTags, "rasterToMatchLarge"),
                                 omitArgs = c("userTags"))
 
-    if (any(!identical(extent(rasterToMatchLarge), extent(sim$rasterToMatch)),
-            !identical(res(rasterToMatchLarge), res(sim$rasterToMatch))))
+    if (!compareRaster(rasterToMatchLarge, sim$rasterToMatch,
+                       orig = TRUE, res = TRUE,
+                       stopiffalse = FALSE))
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.
            Please debug Boreal_LBMRDataPrep::createLBMRInputs()")
 
