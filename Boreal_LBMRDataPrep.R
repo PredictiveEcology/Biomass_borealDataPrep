@@ -296,7 +296,8 @@ createLBMRInputs <- function(sim) {
                           ecoregionName = "ECODISTRIC",
                           ecoregionActiveStatus = ecoregionstatus,
                           rasterToMatch = sim$rasterToMatchLarge,
-                          userTags = "stable")
+                          userTags = c(cacheTags, "stable"),
+                          omitArgs = c("userTags"))
 
   ################################################################
   ## put together pixelTable object
@@ -311,7 +312,8 @@ createLBMRInputs <- function(sim) {
                       rasterToMatch = sim$rasterToMatchLarge,
                       rstLCC = rstLCCAdj,
                       pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
-                      userTags = "stable")
+                      userTags = cacheTags,
+                      omitArgs = c("userTags"))
 
   #######################################################
   # Make the initial pixelCohortData table
@@ -321,7 +323,8 @@ createLBMRInputs <- function(sim) {
                            sppColumns = coverColNames,
                            pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
                            doSubset = P(sim)$subsetDataAgeModel,
-                           userTags = "stable")
+                           userTags = cacheTags,
+                           omitArgs = c("userTags"))
 
   #######################################################
   # replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*
@@ -339,7 +342,9 @@ createLBMRInputs <- function(sim) {
   newLCCClasses <- Cache(convertUnwantedLCC,
                          classesToReplace = P(sim)$LCCClassesToReplaceNN,
                          rstLCC = rstLCCAdj,
-                         availableERC_by_Sp = availableCombinations)
+                         availableERC_by_Sp = availableCombinations,
+                         userTags = c(cacheTags, "stable"),
+                         omitArgs = c("userTags"))
 
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
@@ -384,7 +389,8 @@ createLBMRInputs <- function(sim) {
                       useCloud = useCloud,
                       cloudFolderID = sim$cloudFolderID,
                       showSimilar = getOption("reproducible.showSimilar", FALSE),
-                      omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID"))
+                      userTags = cacheTags,
+                      omitArgs = c("userTags", "showSimilar", ".specialData", "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
   print(modelCover$rsq)
 
@@ -405,7 +411,8 @@ createLBMRInputs <- function(sim) {
                         useCloud = useCloud,
                         cloudFolderID = sim$cloudFolderID,
                         showSimilar = getOption("reproducible.showSimilar", FALSE),
-                        omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID"))
+                        userTags = cacheTags,
+                        omitArgs = c("userTags", "showSimilar", ".specialData", "useCloud", "cloudFolderID"))
 
   message(blue("  The rsquared is: "))
   print(modelBiomass$rsq)
@@ -655,7 +662,9 @@ Save <- function(sim) {
 
     sim$rasterToMatchLarge <- Cache(writeOutputs, sim$rasterToMatchLarge,
                                     filename2 = file.path(cachePath(sim), "rasters", "rasterToMatchLarge.tif"),
-                                    datatype = "INT2U", overwrite = TRUE)
+                                    datatype = "INT2U", overwrite = TRUE,
+                                    userTags = cacheTags,
+                                    omitArgs = c("userTags"))
 
     sim$rasterToMatch <- Cache(postProcess,
                                x = sim$rawBiomassMap,
@@ -712,7 +721,9 @@ Save <- function(sim) {
                                 studyArea)
       sim$rasterToMatch <- Cache(writeRaster, sim$rasterToMatch,
                                  filename = file.path(dPath, "rasterToMatch.tif"),
-                                 datatype = "INT2U", overwrite = TRUE)
+                                 datatype = "INT2U", overwrite = TRUE,
+                                 userTags = cacheTags,
+                                 omitArgs = c("userTags"))
     }
   }
 
@@ -750,7 +761,7 @@ Save <- function(sim) {
                         datatype = "INT2U",
                         filename2 = TRUE, overwrite = TRUE,
                         userTags = c("prepInputsrstLCC_rtm", currentModule(sim)), # use at least 1 unique userTag
-                        omitArgs = c("destinationPath", "targetFile"))
+                        omitArgs = c("destinationPath", "targetFile", "userTags"))
 
     if (!identical(projection(sim$rstLCC),
                    projection(sim$rasterToMatch)))
@@ -771,7 +782,7 @@ Save <- function(sim) {
                              fun = "raster::shapefile",
                              #filename2 = TRUE,
                              userTags = c("prepInputsEcoDistrict_SA", currentModule(sim), cacheTags), # use at least 1 unique userTag
-                             omitArgs = c("destinationPath", "targetFile", "overwrite", "alsoExtract"))
+                             omitArgs = c("destinationPath", "targetFile", "overwrite", "alsoExtract", "userTags"))
   }
 
   ## Stand age map ------------------------------------------------
@@ -792,7 +803,7 @@ Save <- function(sim) {
                              filename2 = NULL,
                              overwrite = TRUE,
                              userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags), # use at least 1 unique userTag
-                             omitArgs = c("destinationPath", "targetFile", "overwrite", "alsoExtract"))
+                             omitArgs = c("destinationPath", "targetFile", "overwrite", "alsoExtract", "userTags"))
     sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
   }
 
@@ -848,7 +859,8 @@ Save <- function(sim) {
                                sppEquivCol = P(sim)$sppEquivCol,
                                thresh = 5,
                                url = extractURL("speciesLayers"),
-                               userTags = c(cacheTags, "speciesLayers"))
+                               userTags = c(cacheTags, "speciesLayers"),
+                               omitArgs = c("userTags"))
   }
 
   # 3. species maps
