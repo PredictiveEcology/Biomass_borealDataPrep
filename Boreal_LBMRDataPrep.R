@@ -267,7 +267,7 @@ createLBMRInputs <- function(sim) {
   ecoregionMapSF <- sf::st_as_sf(ecoregionMap)
   if (is(ecoregionMapSF$ECODISTRIC, "character"))
     ecoregionMapSF$ECODISTRIC <- as.numeric(ecoregionMapSF$ECODISTRIC)
-  rstEcoregionMap <- fasterize::fasterize(ecoregionMapSF, raster = sim$rasterToMatch,
+  rstEcoregionMap <- fasterize::fasterize(ecoregionMapSF, raster = sim$rasterToMatchLarge,
                                           field = "ECODISTRIC")
   ecoregionstatus <- data.table(active = "yes", ecoregion = 1:1031)
   rstLCCAdj <- sim$rstLCC
