@@ -764,8 +764,8 @@ Save <- function(sim) {
                         omitArgs = c("destinationPath", "targetFile", "userTags"))
 
     if (!identical(projection(sim$rstLCC),
-                   projection(sim$rasterToMatch)))
-      projection(sim$rstLCC) <- projection(sim$rasterToMatch) ## Ceres: this shouldn't be necessary anymore
+                   projection(sim$rasterToMatchLarge)))
+      projection(sim$rstLCC) <- projection(sim$rasterToMatchLarge) ## Ceres: this shouldn't be necessary anymore
   }
 
   ## Ecodistrict ------------------------------------------------
