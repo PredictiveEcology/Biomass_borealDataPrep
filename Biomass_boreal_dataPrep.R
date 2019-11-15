@@ -1,5 +1,5 @@
 defineModule(sim, list(
-  name = "Boreal_LBMRDataPrep",
+  name = "Biomass_boreal_dataPrep",
   description = "A data preparation module for parameterizing LBMR from open data sources, within the Boreal forest of Canada",
   keywords = c("LandWeb", "LBMR"),
   authors = c(
@@ -9,13 +9,13 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@friresearch.ca", role = c("ctb"))
   ),
   childModules = character(0),
-  version = list(SpaDES.core = "0.2.3.9009", Boreal_LBMRDataPrep = numeric_version("1.3.4.9000"),
+  version = list(SpaDES.core = "0.2.3.9009", Biomass_boreal_dataPrep = numeric_version("1.3.4.9000"),
                  LandR = "0.0.2.9007"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
-  documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
+  documentation = list("README.txt", "Biomass_boreal_dataPrep.Rmd"),
   reqdPkgs = list("crayon", "data.table", "dplyr", "fasterize", "gdalUtils", "lme4", "plyr",
                   "raster", "rgeos", "sp",
                   "achubaty/amc@development",
@@ -54,7 +54,7 @@ defineModule(sim, list(
                           "unique estimates for transient classes in most cases")),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by P(sim)$forestedLCCClasses?"),
-    defineParameter("pixelGroupAgeClass", "numeric", params(sim)$Boreal_LBMRDataPrep$successionTimestep, NA, NA,
+    defineParameter("pixelGroupAgeClass", "numeric", params(sim)$Biomass_boreal_dataPrep$successionTimestep, NA, NA,
                     "When assigning pixelGroup membership, this defines the resolution of ages that will be considered 'the same pixelGroup', e.g., if it is 10, then 6 and 14 will be the same"),
     defineParameter("pixelGroupBiomassClass", "numeric", 100, NA, NA,
                     "When assigning pixelGroup membership, this defines the resolution of biomass that will be considered 'the same pixelGroup', e.g., if it is 100, then 5160 and 5240 will be the same"),
@@ -171,13 +171,13 @@ defineModule(sim, list(
 ## event types
 #   - type `init` is required for initialiazation
 
-doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE) {
+doEvent.Biomass_boreal_dataPrep <- function(sim, eventTime, eventType, debug = FALSE) {
   if (eventType == "init") {
     # names(sim$speciesLayers) <- equivalentName(names(sim$speciesLayers), sim$sppEquiv, "Latin_full")
     sim <- createLBMRInputs(sim)
 
     # schedule future event(s)
-    sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Boreal_LBMRDataPrep", "save")
+    sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_boreal_dataPrep", "save")
   } else if (eventType == "save") {
     sim <- Save(sim)
   } else {
@@ -192,7 +192,7 @@ createLBMRInputs <- function(sim) {
   if (is.null(P(sim)$pixelGroupAgeClass))
     params(sim)[[currentModule(sim)]]$pixelGroupAgeClass <- P(sim)$successionTimestep
 
-  message(blue("Starting to createLBMRInputs in Boreal_LBMRDataPrep: ", Sys.time()))
+  message(blue("Starting to createLBMRInputs in Biomass_boreal_dataPrep: ", Sys.time()))
   sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$speciesLayers))
 
   sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
@@ -467,7 +467,7 @@ createLBMRInputs <- function(sim) {
 
   LandR::assertCohortData(sim$cohortData, sim$pixelGroupMap)
 
-  message("Done Boreal_LBMRDataPrep: ", Sys.time())
+  message("Done Biomass_boreal_dataPrep: ", Sys.time())
   return(invisible(sim))
 }
 
@@ -485,7 +485,7 @@ Save <- function(sim) {
 
   # 1. test if all input objects are already present (e.g., from inputs, objects or another module)
   a <- depends(sim)
-  whThisMod <- which(unlist(lapply(a@dependencies, function(x) x@name)) == "Boreal_LBMRDataPrep")
+  whThisMod <- which(unlist(lapply(a@dependencies, function(x) x@name)) == "Biomass_boreal_dataPrep")
   objNames <- a@dependencies[[whThisMod]]@inputObjects$objectName
   objExists <- !unlist(lapply(objNames, function(x) is.null(sim[[x]])))
   names(objExists) <- objNames
