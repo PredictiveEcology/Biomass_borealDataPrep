@@ -1,7 +1,7 @@
 defineModule(sim, list(
   name = "Biomass_boreal_dataPrep",
-  description = "A data preparation module for parameterizing LBMR from open data sources, within the Boreal forest of Canada",
-  keywords = c("LandWeb", "LBMR"),
+  description = "A data preparation module for parameterizing Biomass_core from open data sources, within the Boreal forest of Canada",
+  keywords = c("LandWeb", "Biomass_core"),
   authors = c(
     person("Yong", "Luo", email = "yong.luo@canada.ca", role = c("aut")),
     person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@canada.ca", role = c("aut", "cre")),
@@ -44,7 +44,7 @@ defineModule(sim, list(
                           "and potentially others. Defaults to a GLMEM if there are > 1 grouping levels.",
                           "A custom model call can also be provided, as long as the 'data' argument is NOT included")),
     defineParameter("forestedLCCClasses", "numeric", c(1:15, 20, 32, 34:35), 0, 39,
-                    paste("The classes in the rstLCC layer that are 'treed' and will therefore be run in LBMR.",
+                    paste("The classes in the rstLCC layer that are 'treed' and will therefore be run in Biomass_core.",
                           "Defaults to forested classes in LCC2005 map.")),
     defineParameter("LCCClassesToReplaceNN", "numeric", 34:35, NA, NA,
                     paste("This will replace these classes on the landscape with the closest forest class P(sim)$forestedLCCClasses.",
@@ -174,7 +174,7 @@ defineModule(sim, list(
 doEvent.Biomass_boreal_dataPrep <- function(sim, eventTime, eventType, debug = FALSE) {
   if (eventType == "init") {
     # names(sim$speciesLayers) <- equivalentName(names(sim$speciesLayers), sim$sppEquiv, "Latin_full")
-    sim <- createLBMRInputs(sim)
+    sim <- createBiomass_coreInputs(sim)
 
     # schedule future event(s)
     sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_boreal_dataPrep", "save")
@@ -187,12 +187,12 @@ doEvent.Biomass_boreal_dataPrep <- function(sim, eventTime, eventType, debug = F
   return(invisible(sim))
 }
 
-createLBMRInputs <- function(sim) {
+createBiomass_coreInputs <- function(sim) {
   # # ! ----- EDIT BELOW ----- ! #
   if (is.null(P(sim)$pixelGroupAgeClass))
     params(sim)[[currentModule(sim)]]$pixelGroupAgeClass <- P(sim)$successionTimestep
 
-  message(blue("Starting to createLBMRInputs in Biomass_boreal_dataPrep: ", Sys.time()))
+  message(blue("Starting to createBiomass_coreInputs in Biomass_boreal_dataPrep: ", Sys.time()))
   sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$speciesLayers))
 
   sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)

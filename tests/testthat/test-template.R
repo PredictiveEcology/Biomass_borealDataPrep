@@ -55,10 +55,10 @@ test_that("test Event1 and Event2.", {
   #    Use this approach when using any function within the simList object
   #    (i.e., one version as a direct call, and one with `simList` object prepended).
 
-  if (exists("LandWeb_LBMRDataPrepEvent1", envir = .GlobalEnv)) {
-    simOutput <- LandWeb_LBMRDataPrepEvent1(mySim)
+  if (exists("Biomass_boreal_dataPrepEvent1", envir = .GlobalEnv)) {
+    simOutput <- Biomass_boreal_dataPrepEvent1(mySim)
   } else {
-    simOutput <- mySim$LandWeb_LBMRDataPrepEvent1(mySim)
+    simOutput <- mySim$Biomass_boreal_dataPrepEvent1(mySim)
   }
 
   expectedOutputEvent1Test1 <- " this is test for event 1. " # please define your expection of your output
@@ -66,10 +66,10 @@ test_that("test Event1 and Event2.", {
   expect_equal(simOutput$event1Test1, expectedOutputEvent1Test1) # or other expect function in testthat package.
   expect_equal(simOutput$event1Test2, as.numeric(999)) # or other expect function in testthat package.
 
-  if (exists("landWeb_LBMRDataPrepEvent2", envir = .GlobalEnv)) {
-    simOutput <- LandWeb_LBMRDataPrepEvent2(mySim)
+  if (exists("Biomass_boreal_dataPrepEvent2", envir = .GlobalEnv)) {
+    simOutput <- Biomass_boreal_dataPrepEvent2(mySim)
   } else {
-    simOutput <- mySim$LandWeb_LBMRDataPrepEvent2(mySim)
+    simOutput <- mySim$Biomass_boreal_dataPrepEvent2(mySim)
   }
 
   expectedOutputEvent2Test1 <- " this is test for event 2. " # please define your expection of your output
