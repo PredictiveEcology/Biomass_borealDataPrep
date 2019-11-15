@@ -3,18 +3,18 @@
 # 1. Rename this file based on the content you are testing using
 #    `test-functionName.R` format so that your can directly call `moduleCoverage`
 #    to calculate module coverage information.
-#    `functionName` is a function's name in your module (e.g., `Biomass_boreal_dataPrepEvent1`).
-# 2. Copy this file to the tests folder (i.e., `~/GitHub/LandWeb/Biomass_boreal_dataPrep/tests/testthat`).
+#    `functionName` is a function's name in your module (e.g., `Biomass_borealDataPrepEvent1`).
+# 2. Copy this file to the tests folder (i.e., `~/GitHub/LandWeb/Biomass_borealDataPrep/tests/testthat`).
 
 # 3. Modify the test description based on the content you are testing:
 test_that("test Event1 and Event2.", {
-  module <- list("Biomass_boreal_dataPrep")
+  module <- list("Biomass_borealDataPrep")
   path <- list(modulePath = "~/GitHub/LandWeb",
                outputPath = file.path(tempdir(), "outputs"))
   parameters <- list(
     #.progress = list(type = "graphical", interval = 1),
     .globals = list(verbose = FALSE),
-    Biomass_boreal_dataPrep = list(.saveInitialTime = NA)
+    Biomass_borealDataPrep = list(.saveInitialTime = NA)
   )
   times <- list(start = 0, end = 1)
 
@@ -55,10 +55,10 @@ test_that("test Event1 and Event2.", {
   #    Use this approach when using any function within the simList object
   #    (i.e., one version as a direct call, and one with `simList` object prepended).
 
-  if (exists("Biomass_boreal_dataPrepEvent1", envir = .GlobalEnv)) {
-    simOutput <- Biomass_boreal_dataPrepEvent1(mySim)
+  if (exists("Biomass_borealDataPrepEvent1", envir = .GlobalEnv)) {
+    simOutput <- Biomass_borealDataPrepEvent1(mySim)
   } else {
-    simOutput <- mySim$Biomass_boreal_dataPrepEvent1(mySim)
+    simOutput <- mySim$Biomass_borealDataPrepEvent1(mySim)
   }
 
   expectedOutputEvent1Test1 <- " this is test for event 1. " # please define your expection of your output
@@ -66,10 +66,10 @@ test_that("test Event1 and Event2.", {
   expect_equal(simOutput$event1Test1, expectedOutputEvent1Test1) # or other expect function in testthat package.
   expect_equal(simOutput$event1Test2, as.numeric(999)) # or other expect function in testthat package.
 
-  if (exists("Biomass_boreal_dataPrepEvent2", envir = .GlobalEnv)) {
-    simOutput <- Biomass_boreal_dataPrepEvent2(mySim)
+  if (exists("Biomass_borealDataPrepEvent2", envir = .GlobalEnv)) {
+    simOutput <- Biomass_borealDataPrepEvent2(mySim)
   } else {
-    simOutput <- mySim$Biomass_boreal_dataPrepEvent2(mySim)
+    simOutput <- mySim$Biomass_borealDataPrepEvent2(mySim)
   }
 
   expectedOutputEvent2Test1 <- " this is test for event 2. " # please define your expection of your output
