@@ -1,5 +1,5 @@
 ---
-title: "Boreal_LBMRDataPrep"
+title: "Biomass_borealDataPrep"
 author: "Yong Luo, Eliot McIntire, Ceres Barros"
 date: "24 September 2019"
 output:
@@ -86,7 +86,7 @@ library(SpaDES)
 
 # Set up paths
 ```{r module_usage}
-moduleName <- "Boreal_LBMRDataPrep"
+moduleName <- "Biomass_borealDataPrep"
 spadesModulesDirectory <- ".." # where the module will be located -- this is correct, if this module
                                # is an Rstudio project, i.e., one up from the project
 
@@ -134,7 +134,7 @@ if (handDrawMap) {
 }
 
 times <- list(start = 0, end = 10)
-modules <- list("Boreal_LBMRDataPrep")
+modules <- list("Biomass_borealDataPrep")
 objects <- if (handDrawMap) list("studyAreaLarge" = studyAreaLarge,
                                  "studyArea" = studyAreaLarge) else list()
 
