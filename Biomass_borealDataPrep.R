@@ -600,13 +600,24 @@ Save <- function(sim) {
             studyAreaLarge will be projected to match crs(studyArea)")
     sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crs(sim$studyArea))
   }
-
+  
   ## check whether SA is within SALarge
   ## convert to temp sf objects
   studyArea <- st_as_sf(sim$studyArea)
   studyAreaLarge <- st_as_sf(sim$studyAreaLarge)
 
-  if (!st_within(studyArea, studyAreaLarge)[[1]])
+  #this is necessary if studyArea and studyAreaLarge are multipolygon objects
+  if (nrow(studyArea) > 1) {
+    studyArea <- st_union(studyArea) %>%
+      st_as_sf(.)
+  }
+  
+  if (nrow(studyAreaLarge) > 1) {
+    studyAreaLarge <- st_union(studyArea) %>%
+      st_as_sf(.)
+  }
+  
+  if (!length(st_within(studyArea, studyAreaLarge))[[1]] == 0)
     stop("studyArea is not fully within studyAreaLarge.
            Please check the aligment, projection and shapes of these polygons")
   rm(studyArea, studyAreaLarge)
