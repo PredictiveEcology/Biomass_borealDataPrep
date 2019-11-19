@@ -617,7 +617,7 @@ Save <- function(sim) {
       st_as_sf(.)
   }
   
-  if (!length(st_within(studyArea, studyAreaLarge))[[1]] == 0)
+  if (length(st_within(studyArea, studyAreaLarge))[[1]] == 0)
     stop("studyArea is not fully within studyAreaLarge.
            Please check the aligment, projection and shapes of these polygons")
   rm(studyArea, studyAreaLarge)
