@@ -66,10 +66,10 @@ test_that("test Event1 and Event2.", {
   expect_equal(simOutput$event1Test1, expectedOutputEvent1Test1) # or other expect function in testthat package.
   expect_equal(simOutput$event1Test2, as.numeric(999)) # or other expect function in testthat package.
 
-  if (exists("landWeb_LBMRDataPrepEvent2", envir = .GlobalEnv)) {
-    simOutput <- LandWeb_LBMRDataPrepEvent2(mySim)
+  if (exists("Biomass_coreDataPrepEvent2", envir = .GlobalEnv)) {
+    simOutput <- Biomass_coreDataPrepEvent2(mySim)
   } else {
-    simOutput <- mySim$LandWeb_LBMRDataPrepEvent2(mySim)
+    simOutput <- mySim$Biomass_coreDataPrepEvent2(mySim)
   }
 
   expectedOutputEvent2Test1 <- " this is test for event 2. " # please define your expection of your output
