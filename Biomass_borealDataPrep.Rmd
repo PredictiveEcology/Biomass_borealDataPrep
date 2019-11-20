@@ -139,7 +139,7 @@ objects <- if (handDrawMap) list("studyAreaLarge" = studyAreaLarge,
                                  "studyArea" = studyAreaLarge) else list()
 
 mySim <- simInit(times = times, #params = parameters, 
-                 modules = modules, #, "LBMR"),
+                 modules = modules, #, "Biomass_core"),
                  objects = objects, paths = getPaths())
 ```
 
@@ -156,7 +156,7 @@ simOut <- spades(mySim, debug = TRUE)
 # Visualize
 
 The `Plot` function will visualize all known .quickPlot type objects, which includes `Raster*` and `SpatialPolygons*` objects.
-After running this module, these are the outputs, which would likely be used as inputs to `LBMR`.
+After running this module, these are the outputs, which would likely be used as inputs to `Biomass_core`.
 
 ```{r visualize}
 dev()
@@ -185,7 +185,7 @@ Also, this module gets its Species Traits table from [dcyr/LANDIS-II_IA_generalU
 
 # Outputs
 
-This will show the outputs of this module, which can be used directly as the inputs for LBMR:
+This will show the outputs of this module, which can be used directly as the inputs for Biomass_core:
 
 ```{r}
 # List all objects

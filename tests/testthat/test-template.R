@@ -3,7 +3,7 @@
 # 1. Rename this file based on the content you are testing using
 #    `test-functionName.R` format so that your can directly call `moduleCoverage`
 #    to calculate module coverage information.
-#    `functionName` is a function's name in your module (e.g., `LandWeb_LBMRDataPrepEvent1`).
+#    `functionName` is a function's name in your module (e.g., `Biomass_coreDataPrepEvent1`).
 # 2. Copy this file to the tests folder (i.e., `~/GitHub/LandWeb/Biomass_borealDataPrep/tests/testthat`).
 
 # 3. Modify the test description based on the content you are testing:
@@ -55,10 +55,10 @@ test_that("test Event1 and Event2.", {
   #    Use this approach when using any function within the simList object
   #    (i.e., one version as a direct call, and one with `simList` object prepended).
 
-  if (exists("LandWeb_LBMRDataPrepEvent1", envir = .GlobalEnv)) {
-    simOutput <- LandWeb_LBMRDataPrepEvent1(mySim)
+  if (exists("Biomass_coreDataPrepEvent1", envir = .GlobalEnv)) {
+    simOutput <- Biomass_coreDataPrepEvent1(mySim)
   } else {
-    simOutput <- mySim$LandWeb_LBMRDataPrepEvent1(mySim)
+    simOutput <- mySim$Biomass_coreDataPrepEvent1(mySim)
   }
 
   expectedOutputEvent1Test1 <- " this is test for event 1. " # please define your expection of your output
