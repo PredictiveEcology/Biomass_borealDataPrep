@@ -1,5 +1,5 @@
 defineModule(sim, list(
-  name = "Boreal_LBMRDataPrep",
+  name = "Biomass_borealDataPrep",
   description = "A data preparation module for parameterizing LBMR from open data sources, within the Boreal forest of Canada",
   keywords = c("LandWeb", "LBMR"),
   authors = c(
@@ -9,13 +9,13 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@friresearch.ca", role = c("ctb"))
   ),
   childModules = character(0),
-  version = list(SpaDES.core = "0.2.3.9009", Boreal_LBMRDataPrep = numeric_version("1.4.0.9000"),
+  version = list(SpaDES.core = "0.2.3.9009", Biomass_borealDataPrep = numeric_version("1.4.0.9000"),
                  LandR = "0.0.2.9007"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
-  documentation = list("README.txt", "Boreal_LBMRDataPrep.Rmd"),
+  documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
   reqdPkgs = list("crayon", "data.table", "dplyr", "fasterize", "plyr",
                   "raster", "sp", "sf",
                   "achubaty/amc@development",
@@ -54,7 +54,7 @@ defineModule(sim, list(
                           "unique estimates for transient classes in most cases")),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by P(sim)$forestedLCCClasses?"),
-    defineParameter("pixelGroupAgeClass", "numeric", params(sim)$Boreal_LBMRDataPrep$successionTimestep, NA, NA,
+    defineParameter("pixelGroupAgeClass", "numeric", params(sim)$Biomass_borealDataPrep$successionTimestep, NA, NA,
                     "When assigning pixelGroup membership, this defines the resolution of ages that will be considered 'the same pixelGroup', e.g., if it is 10, then 6 and 14 will be the same"),
     defineParameter("pixelGroupBiomassClass", "numeric", 100, NA, NA,
                     "When assigning pixelGroup membership, this defines the resolution of biomass that will be considered 'the same pixelGroup', e.g., if it is 100, then 5160 and 5240 will be the same"),
@@ -171,12 +171,12 @@ defineModule(sim, list(
 ## event types
 #   - type `init` is required for initialiazation
 
-doEvent.Boreal_LBMRDataPrep <- function(sim, eventTime, eventType, debug = FALSE) {
+doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FALSE) {
   if (eventType == "init") {
     sim <- createLBMRInputs(sim)
 
     # schedule future event(s)
-    sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Boreal_LBMRDataPrep", "save")
+    sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_borealDataPrep", "save")
   } else if (eventType == "save") {
     sim <- Save(sim)
   } else {
@@ -193,7 +193,7 @@ createLBMRInputs <- function(sim) {
 
   cacheTags <- c(currentModule(sim), "init")
 
-  message(blue("Starting to createLBMRInputs in Boreal_LBMRDataPrep: ", Sys.time()))
+  message(blue("Starting to createLBMRInputs in Biomass_borealDataPrep: ", Sys.time()))
   sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$speciesLayers))
 
   sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
@@ -481,7 +481,7 @@ createLBMRInputs <- function(sim) {
                        orig = TRUE, res = TRUE,
                        stopiffalse = FALSE))
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.
-           Please debug Boreal_LBMRDataPrep::createLBMRInputs()")
+           Please debug Biomass_borealDataPrep::createLBMRInputs()")
 
     ## subset pixels that are in studyArea/rasterToMatch only
     pixToKeep <- na.omit(getValues(rasterToMatchLarge))
@@ -547,7 +547,7 @@ createLBMRInputs <- function(sim) {
 
   LandR::assertCohortData(sim$cohortData, sim$pixelGroupMap)
 
-  message("Done Boreal_LBMRDataPrep: ", Sys.time())
+  message("Done Biomass_borealDataPrep: ", Sys.time())
   return(invisible(sim))
 }
 
@@ -565,7 +565,7 @@ Save <- function(sim) {
 
   # 1. test if all input objects are already present (e.g., from inputs, objects or another module)
   a <- depends(sim)
-  whThisMod <- which(unlist(lapply(a@dependencies, function(x) x@name)) == "Boreal_LBMRDataPrep")
+  whThisMod <- which(unlist(lapply(a@dependencies, function(x) x@name)) == "Biomass_borealDataPrep")
   objNames <- a@dependencies[[whThisMod]]@inputObjects$objectName
   objExists <- !unlist(lapply(objNames, function(x) is.null(sim[[x]])))
   names(objExists) <- objNames
@@ -600,13 +600,24 @@ Save <- function(sim) {
             studyAreaLarge will be projected to match crs(studyArea)")
     sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crs(sim$studyArea))
   }
-
+  
   ## check whether SA is within SALarge
   ## convert to temp sf objects
   studyArea <- st_as_sf(sim$studyArea)
   studyAreaLarge <- st_as_sf(sim$studyAreaLarge)
 
-  if (!st_within(studyArea, studyAreaLarge)[[1]])
+  #this is necessary if studyArea and studyAreaLarge are multipolygon objects
+  if (nrow(studyArea) > 1) {
+    studyArea <- st_union(studyArea) %>%
+      st_as_sf(.)
+  }
+  
+  if (nrow(studyAreaLarge) > 1) {
+    studyAreaLarge <- st_union(studyArea) %>%
+      st_as_sf(.)
+  }
+  
+  if (length(st_within(studyArea, studyAreaLarge))[[1]] == 0)
     stop("studyArea is not fully within studyAreaLarge.
            Please check the aligment, projection and shapes of these polygons")
   rm(studyArea, studyAreaLarge)
