@@ -118,7 +118,7 @@ defineModule(sim, list(
     expectsInput("speciesLayers", "RasterStack",
                  desc = paste("cover percentage raster layers by species in Canada species map.",
                  "Defaults to the Canadian Forestry Service, National Forest Inventory,",
-                 "kNN-derived species cover maps from 2001 -",
+                 "kNN-derived species cover maps from 2001 using a cover threshold of 10 -",
                  "see http://tree.pfc.forestry.ca/NFI_MAP_V0_metadata.xls for metadata"),
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
     expectsInput("speciesTable", "data.table",
@@ -877,7 +877,7 @@ Save <- function(sim) {
                                sppEquiv = sim$sppEquiv,
                                knnNamesCol = "KNN",
                                sppEquivCol = P(sim)$sppEquivCol,
-                               thresh = 5,
+                               thresh = 10,
                                url = extractURL("speciesLayers"),
                                userTags = c(cacheTags, "speciesLayers"),
                                omitArgs = c("userTags"))
