@@ -217,6 +217,10 @@ createBiomass_coreInputs <- function(sim) {
                                                             names(sim$speciesLayers)],
                                   sppEquivCol = P(sim)$sppEquivCol)
 
+  if (!nrow(sim$species))
+    stop("No trait values where found for ", paste(names(sim$speciesLayers), collapse = ", "), ".\n",
+         "Please check the species list and traits table")
+
   ### override species table values ##############################
   defaultQuote <- quote(LandR::speciesTableUpdate(sim$species, sim$speciesTable,
                                                   sim$sppEquiv, P(sim)$sppEquivCol))
