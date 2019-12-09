@@ -1,7 +1,7 @@
 defineModule(sim, list(
   name = "Biomass_borealDataPrep",
-  description = "A data preparation module for parameterizing LBMR from open data sources, within the Boreal forest of Canada",
-  keywords = c("LandWeb", "LBMR"),
+  description = "A data preparation module for parameterizing Biomass_core from open data sources, within the Boreal forest of Canada",
+  keywords = c("LandWeb", "Biomass_core"),
   authors = c(
     person("Yong", "Luo", email = "yong.luo@canada.ca", role = c("aut")),
     person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@canada.ca", role = c("aut", "cre")),
@@ -44,7 +44,7 @@ defineModule(sim, list(
                           "and potentially others. Defaults to a GLMEM if there are > 1 grouping levels.",
                           "A custom model call can also be provided, as long as the 'data' argument is NOT included")),
     defineParameter("forestedLCCClasses", "numeric", c(1:15, 20, 32, 34:35), 0, 39,
-                    paste("The classes in the rstLCC layer that are 'treed' and will therefore be run in LBMR.",
+                    paste("The classes in the rstLCC layer that are 'treed' and will therefore be run in Biomass_core.",
                           "Defaults to forested classes in LCC2005 map.")),
     defineParameter("LCCClassesToReplaceNN", "numeric", 34:35, NA, NA,
                     paste("This will replace these classes on the landscape with the closest forest class P(sim)$forestedLCCClasses.",
@@ -104,16 +104,21 @@ defineModule(sim, list(
                               "The default layer used, if not supplied, is Canada national land classification in 2005"),
                  sourceURL = "https://drive.google.com/file/d/1g9jr0VrQxqxGjZ4ckF6ZkSMP-zuYzHQC/view?usp=sharing"),
     expectsInput("rasterToMatch", "RasterLayer",
-                 desc = "a raster of the studyArea in the same resolution and projection as biomassMap",
+                 desc = "a raster of the studyArea in the same resolution and projection as rawBiomassMap",
                  sourceURL = NA),
     expectsInput("rasterToMatchLarge", "RasterLayer",
-                 desc = "a raster of the studyAreaLarge in the same resolution and projection as biomassMap",
+                 desc = "a raster of the studyAreaLarge in the same resolution and projection as rawBiomassMap",
                  sourceURL = NA),
     expectsInput("rawBiomassMap", "RasterLayer",
-                 desc = "total biomass raster layer in study area, default is Canada national biomass map",
-                 sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureBiomass.tar"),
+                 desc = paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
+                              "Service, National Forest Inventory, kNN-derived total aboveground biomass map",
+                              "from 2001. See http://tree.pfc.forestry.ca/NFI_MAP_V0_metadata.xls for metadata"),
+                              sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureBiomass.tar"),
     expectsInput("speciesLayers", "RasterStack",
-                 desc = "cover percentage raster layers by species in Canada species map",
+                 desc = paste("cover percentage raster layers by species in Canada species map.",
+                 "Defaults to the Canadian Forestry Service, National Forest Inventory,",
+                 "kNN-derived species cover maps from 2001 using a cover threshold of 10 -",
+                 "see http://tree.pfc.forestry.ca/NFI_MAP_V0_metadata.xls for metadata"),
                  sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
     expectsInput("speciesTable", "data.table",
                  desc = "species attributes table, default is from Dominic Cyr and Yan Boulanger's project",
@@ -124,6 +129,12 @@ defineModule(sim, list(
     expectsInput("sppEquiv", "data.table",
                  desc = "table of species equivalencies. See LandR::sppEquivalencies_CA.",
                  sourceURL = ""),
+    expectsInput("standAgeMap", "RasterLayer",
+                 desc =  paste("stand age map in study area.",
+                               "Defaults to the Canadian Forestry Service, National Forest Inventory,",
+                               "kNN-derived biomass map from 2001 -",
+                               "see http://tree.pfc.forestry.ca/NFI_MAP_V0_metadata.xls for metadata"),
+                 sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
     expectsInput("studyArea", "SpatialPolygonsDataFrame",
                  desc = paste("Polygon to use as the study area.",
                               "Defaults to  an area in Southwestern Alberta, Canada."),
@@ -132,10 +143,7 @@ defineModule(sim, list(
                  desc = paste("multipolygon (larger area than studyArea) used for parameter estimation,",
                               "with attribute LTHFC describing the fire return interval.",
                               "Defaults to a square shapefile in Southwestern Alberta, Canada."),
-                 sourceURL = ""),
-    expectsInput("standAgeMap", "RasterLayer",
-                 desc = "stand age map in study area, default is Canada national stand age map",
-                 sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
+                 sourceURL = "")
   ),
   outputObjects = bind_rows(
     createsOutput("biomassMap", "RasterLayer",
@@ -177,7 +185,7 @@ defineModule(sim, list(
 
 doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FALSE) {
   if (eventType == "init") {
-    sim <- createLBMRInputs(sim)
+    sim <- createBiomass_coreInputs(sim)
 
     # schedule future event(s)
     sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_borealDataPrep", "save")
@@ -190,14 +198,14 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
   return(invisible(sim))
 }
 
-createLBMRInputs <- function(sim) {
+createBiomass_coreInputs <- function(sim) {
   # # ! ----- EDIT BELOW ----- ! #
   if (is.null(P(sim)$pixelGroupAgeClass))
     params(sim)[[currentModule(sim)]]$pixelGroupAgeClass <- P(sim)$successionTimestep
 
   cacheTags <- c(currentModule(sim), "init")
 
-  message(blue("Starting to createLBMRInputs in Biomass_borealDataPrep: ", Sys.time()))
+  message(blue("Starting to createBiomass_coreInputs in Biomass_borealDataPrep: ", Sys.time()))
   sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$speciesLayers))
 
   sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
@@ -212,6 +220,10 @@ createLBMRInputs <- function(sim) {
                                   sppEquiv = sim$sppEquiv[get(P(sim)$sppEquivCol) %in%
                                                             names(sim$speciesLayers)],
                                   sppEquivCol = P(sim)$sppEquivCol)
+
+  if (!nrow(sim$species))
+    stop("No trait values where found for ", paste(names(sim$speciesLayers), collapse = ", "), ".\n",
+         "Please check the species list and traits table")
 
   ### override species table values ##############################
   defaultQuote <- quote(LandR::speciesTableUpdate(sim$species, sim$speciesTable,
@@ -485,7 +497,7 @@ createLBMRInputs <- function(sim) {
                        orig = TRUE, res = TRUE,
                        stopiffalse = FALSE))
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.
-           Please debug Biomass_borealDataPrep::createLBMRInputs()")
+           Please debug Biomass_borealDataPrep::createBiomass_coreInputs()")
 
     ## subset pixels that are in studyArea/rasterToMatch only
     pixToKeep <- na.omit(getValues(rasterToMatchLarge))
@@ -604,7 +616,7 @@ Save <- function(sim) {
             studyAreaLarge will be projected to match crs(studyArea)")
     sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crs(sim$studyArea))
   }
-  
+
   ## check whether SA is within SALarge
   ## convert to temp sf objects
   studyArea <- st_as_sf(sim$studyArea)
@@ -615,12 +627,12 @@ Save <- function(sim) {
     studyArea <- st_union(studyArea) %>%
       st_as_sf(.)
   }
-  
+
   if (nrow(studyAreaLarge) > 1) {
     studyAreaLarge <- st_union(studyArea) %>%
       st_as_sf(.)
   }
-  
+
   if (length(st_within(studyArea, studyAreaLarge))[[1]] == 0)
     stop("studyArea is not fully within studyAreaLarge.
            Please check the aligment, projection and shapes of these polygons")
@@ -872,7 +884,7 @@ Save <- function(sim) {
                                sppEquiv = sim$sppEquiv,
                                knnNamesCol = "KNN",
                                sppEquivCol = P(sim)$sppEquivCol,
-                               thresh = 5,
+                               thresh = 10,
                                url = extractURL("speciesLayers"),
                                userTags = c(cacheTags, "speciesLayers"),
                                omitArgs = c("userTags"))
