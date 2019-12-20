@@ -317,7 +317,7 @@ createBiomass_coreInputs <- function(sim) {
                           ecoregionName = "ECODISTRIC",
                           ecoregionActiveStatus = ecoregionstatus,
                           rasterToMatch = sim$rasterToMatchLarge,
-                          userTags = c(cacheTags, "stable"),
+                          userTags = c(cacheTags, "ecoregionFiles", "stable"),
                           omitArgs = c("userTags"))
 
   ################################################################
@@ -333,7 +333,7 @@ createBiomass_coreInputs <- function(sim) {
                       rasterToMatch = sim$rasterToMatchLarge,
                       rstLCC = rstLCCAdj,
                       pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
-                      userTags = cacheTags,
+                      userTags = c(cacheTags, "pixelTable"),
                       omitArgs = c("userTags"))
 
   #######################################################
@@ -344,7 +344,7 @@ createBiomass_coreInputs <- function(sim) {
                            sppColumns = coverColNames,
                            pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
                            doSubset = P(sim)$subsetDataAgeModel,
-                           userTags = cacheTags,
+                           userTags = c(cacheTags, "pixelCohortData"),
                            omitArgs = c("userTags"))
 
   #######################################################
@@ -364,7 +364,7 @@ createBiomass_coreInputs <- function(sim) {
                          classesToReplace = P(sim)$LCCClassesToReplaceNN,
                          rstLCC = rstLCCAdj,
                          availableERC_by_Sp = availableCombinations,
-                         userTags = c(cacheTags, "stable"),
+                         userTags = c(cacheTags, "newLCCClasses", "stable"),
                          omitArgs = c("userTags"))
 
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
@@ -410,7 +410,7 @@ createBiomass_coreInputs <- function(sim) {
                       useCloud = useCloud,
                       cloudFolderID = sim$cloudFolderID,
                       showSimilar = getOption("reproducible.showSimilar", FALSE),
-                      userTags = cacheTags,
+                      userTags = c(cacheTags, "modelCover"),
                       omitArgs = c("userTags", "showSimilar", ".specialData", "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
   print(modelCover$rsq)
@@ -432,7 +432,7 @@ createBiomass_coreInputs <- function(sim) {
                         useCloud = useCloud,
                         cloudFolderID = sim$cloudFolderID,
                         showSimilar = getOption("reproducible.showSimilar", FALSE),
-                        userTags = cacheTags,
+                        userTags = c(cacheTags, "modelBiomass"),
                         omitArgs = c("userTags", "showSimilar", ".specialData", "useCloud", "cloudFolderID"))
 
   message(blue("  The rsquared is: "))
@@ -680,7 +680,7 @@ Save <- function(sim) {
                                method = "bilinear",
                                datatype = "INT2U",
                                filename2 = TRUE, overwrite = TRUE,
-                               userTags = cacheTags,
+                               userTags = c(cacheTags, "rawBiomassMap"),
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
   }
   if (needRTM) {
@@ -699,7 +699,7 @@ Save <- function(sim) {
     sim$rasterToMatchLarge <- Cache(writeOutputs, sim$rasterToMatchLarge,
                                     filename2 = file.path(cachePath(sim), "rasters", "rasterToMatchLarge.tif"),
                                     datatype = "INT2U", overwrite = TRUE,
-                                    userTags = cacheTags,
+                                    userTags = c(cacheTags, "rasterToMatchLarge"),
                                     omitArgs = c("userTags"))
 
     sim$rasterToMatch <- Cache(postProcess,
@@ -712,7 +712,7 @@ Save <- function(sim) {
                                datatype = "INT2U",
                                filename2 = file.path(cachePath(sim), "rasterToMatch.tif"),
                                overwrite = TRUE,
-                               userTags = cacheTags,
+                               userTags = c(cacheTags, "rasterToMatch"),
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
 
     ## covert to 'mask'
@@ -758,7 +758,7 @@ Save <- function(sim) {
       sim$rasterToMatch <- Cache(writeRaster, sim$rasterToMatch,
                                  filename = file.path(dPath, "rasterToMatch.tif"),
                                  datatype = "INT2U", overwrite = TRUE,
-                                 userTags = cacheTags,
+                                 userTags = c(cacheTags, "rasterToMatch"),
                                  omitArgs = c("userTags"))
     }
   }
@@ -905,7 +905,8 @@ Save <- function(sim) {
 
   # 3. species maps
   if (!suppliedElsewhere("speciesTable", sim)) {
-    sim$speciesTable <- getSpeciesTable(dPath = dPath, cacheTags = cacheTags)
+    sim$speciesTable <- getSpeciesTable(dPath = dPath,
+                                        cacheTags = c(cacheTags, "speciesTable"))
   }
 
   if (!suppliedElsewhere("columnsForPixelGroups", sim)) {
