@@ -595,9 +595,7 @@ Save <- function(sim) {
   ecoregionFilename <-   file.path(dPath, "ecoregions.shp")
   ecodistrictFilename <- file.path(dPath, "ecodistricts.shp")
   ecozoneFilename <-   file.path(dPath, "ecozones.shp")
-  rawBiomassMapFilename <- file.path(dPath, "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.tif")
   lcc2005Filename <- file.path(dPath, "LCC2005_V1_4a.tif")
-  standAgeMapFilename <- file.path(dPath, "NFI_MODIS250m_kNN_Structure_Stand_Age_v0.tif")
 
   # Also extract
   fexts <- c("dbf", "prj", "sbn", "sbx", "shx")
@@ -662,11 +660,11 @@ Save <- function(sim) {
     browser()
     fileURLs <- getURL(extractURL("rawBiomassMap"), dirlistonly = TRUE)
     fileNames <- getHTMLLinks(fileURLs)
-    rawBiomassMapFileName <- grep("Biomass_TotalLiveAboveGround.*.tif$", fileNames, value = TRUE)
-    rawBiomassMapURL <- paste0(extractURL("rawBiomassMap"), rawBiomassMapFileName)
+    rawBiomassMapFilename <- grep("Biomass_TotalLiveAboveGround.*.tif$", fileNames, value = TRUE)
+    rawBiomassMapURL <- paste0(extractURL("rawBiomassMap"), rawBiomassMapFilename)
 
     sim$rawBiomassMap <- Cache(prepInputs,
-                               targetFile = asPath(rawBiomassMapFilename),
+                               targetFile = rawBiomassMapFilename,
                                url = rawBiomassMapURL,
                                destinationPath = dPath,
                                studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
@@ -826,11 +824,11 @@ Save <- function(sim) {
     browser()
     fileURLs <- getURL(extractURL("standAgeMap"), dirlistonly = TRUE)
     fileNames <- getHTMLLinks(fileURLs)
-    standAgeMapFileName <- grep("Structure_Stand_Age.*.tif$", fileNames, value = TRUE)
-    standAgeMapURL <- paste0(extractURL("standAgeMap"), standAgeMapFileName)
+    standAgeMapFilename <- grep("Structure_Stand_Age.*.tif$", fileNames, value = TRUE)
+    standAgeMapURL <- paste0(extractURL("standAgeMap"), standAgeMapFilename)
 
     sim$standAgeMap <- Cache(prepInputs,
-                             targetFile = basename(standAgeMapFilename), ## TODO: undefined filename
+                             targetFile = asPath(standAgeMapFilename),
                              destinationPath = dPath,
                              url = standAgeMapURL,
                              fun = "raster::raster",
