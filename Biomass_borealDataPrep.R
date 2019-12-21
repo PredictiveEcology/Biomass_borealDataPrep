@@ -828,7 +828,7 @@ Save <- function(sim) {
     standAgeMapURL <- paste0(extractURL("standAgeMap"), standAgeMapFilename)
 
     sim$standAgeMap <- Cache(prepInputs,
-                             targetFile = asPath(standAgeMapFilename),
+                             targetFile = standAgeMapFilename,
                              destinationPath = dPath,
                              url = standAgeMapURL,
                              fun = "raster::raster",
