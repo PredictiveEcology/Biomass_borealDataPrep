@@ -657,7 +657,6 @@ Save <- function(sim) {
   }
 
   if (!suppliedElsewhere("rawBiomassMap", sim) || needRTM) {
-    browser()
     fileURLs <- getURL(extractURL("rawBiomassMap"), dirlistonly = TRUE)
     fileNames <- getHTMLLinks(fileURLs)
     rawBiomassMapFilename <- grep("Biomass_TotalLiveAboveGround.*.tif$", fileNames, value = TRUE)
@@ -821,7 +820,6 @@ Save <- function(sim) {
 
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
-    browser()
     fileURLs <- getURL(extractURL("standAgeMap"), dirlistonly = TRUE)
     fileNames <- getHTMLLinks(fileURLs)
     standAgeMapFilename <- grep("Structure_Stand_Age.*.tif$", fileNames, value = TRUE)
