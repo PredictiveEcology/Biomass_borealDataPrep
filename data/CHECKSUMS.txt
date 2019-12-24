@@ -262,3 +262,5 @@
 "ecodistricts.shx" "85f14e40c3e8009e" "8300" "xxhash64"
 "NFI_MODIS250m_kNN_Structure_Stand_Age_v0.zip" "22cd9a6a9e4cdf1d" "407564483" "xxhash64"
 "NFI_MODIS250m_kNN_Structure_Stand_Age_v0.tif" "a816295a58b2851a" "427919414" "xxhash64"
+"NFI_MODIS250m_2001_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif" "295106f5686a923b" "309928216" "xxhash64"
+"NFI_MODIS250m_2001_kNN_Structure_Stand_Age_v1.tif" "b1450f888ed6723d" "260719869" "xxhash64"
