@@ -1,4 +1,4 @@
-$ Boreal_LBMRDataPrep
+$ Biomass_borealDataPrep
 
-A data preparation module for running the LBMR module in the LandWeb project.
+A data preparation module for running the Biomass_core module in boreal forest ecosystems.
 
