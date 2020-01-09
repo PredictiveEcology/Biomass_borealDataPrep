@@ -10,14 +10,14 @@ defineModule(sim, list(
   ),
   childModules = character(0),
   version = list(SpaDES.core = "0.2.3.9009", Biomass_borealDataPrep = numeric_version("1.4.0.9000"),
-                 LandR = "0.0.2.9007"),
+                 LandR = "0.0.3.9000"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
-  reqdPkgs = list("crayon", "data.table", "dplyr", "fasterize", "plyr",
-                  "raster", "sp", "sf",
+  reqdPkgs = list("RCurl", "XML", "crayon", "data.table", "dplyr",
+                  "fasterize", "plyr", "raster", "sp", "sf",
                   "achubaty/amc@development",
                   "PredictiveEcology/LandR@development",
                   "PredictiveEcology/pemisc@development"),
@@ -112,14 +112,17 @@ defineModule(sim, list(
     expectsInput("rawBiomassMap", "RasterLayer",
                  desc = paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
                               "Service, National Forest Inventory, kNN-derived total aboveground biomass map",
-                              "from 2001. See http://tree.pfc.forestry.ca/NFI_MAP_V0_metadata.xls for metadata"),
-                              sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureBiomass.tar"),
+                              "from 2001. See https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990",
+                              "for metadata"),
+                              sourceURL = paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
+                                                 "canada-forests-attributes_attributs-forests-canada/2001-attributes_attributs-2001/")),
     expectsInput("speciesLayers", "RasterStack",
                  desc = paste("cover percentage raster layers by species in Canada species map.",
                  "Defaults to the Canadian Forestry Service, National Forest Inventory,",
                  "kNN-derived species cover maps from 2001 using a cover threshold of 10 -",
-                 "see http://tree.pfc.forestry.ca/NFI_MAP_V0_metadata.xls for metadata"),
-                 sourceURL = "http://tree.pfc.forestry.ca/kNN-Species.tar"),
+                 "see https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata"),
+                 sourceURL = paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
+                                    "canada-forests-attributes_attributs-forests-canada/2001-attributes_attributs-2001/")),
     expectsInput("speciesTable", "data.table",
                  desc = "species attributes table, default is from Dominic Cyr and Yan Boulanger's project",
                  sourceURL = "https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv"),
@@ -133,8 +136,9 @@ defineModule(sim, list(
                  desc =  paste("stand age map in study area.",
                                "Defaults to the Canadian Forestry Service, National Forest Inventory,",
                                "kNN-derived biomass map from 2001 -",
-                               "see http://tree.pfc.forestry.ca/NFI_MAP_V0_metadata.xls for metadata"),
-                 sourceURL = "http://tree.pfc.forestry.ca/kNN-StructureStandVolume.tar"),
+                               "see https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata"),
+                 sourceURL = paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
+                                    "canada-forests-attributes_attributs-forests-canada/2001-attributes_attributs-2001/")),
     expectsInput("studyArea", "SpatialPolygonsDataFrame",
                  desc = paste("Polygon to use as the study area.",
                               "Defaults to  an area in Southwestern Alberta, Canada."),
@@ -164,7 +168,8 @@ defineModule(sim, list(
     createsOutput("rawBiomassMap", "RasterLayer",
                  desc = paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
                               "Service, National Forest Inventory, kNN-derived total aboveground biomass map",
-                              "from 2001. See http://tree.pfc.forestry.ca/NFI_MAP_V0_metadata.xls for metadata")),
+                              "from 2001. See https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990",
+                              "for metadata")),
     createsOutput("species", "data.table",
                   desc = "a table that has species traits such as longevity..."),
     createsOutput("speciesEcoregion", "data.table",
@@ -317,7 +322,7 @@ createBiomass_coreInputs <- function(sim) {
                           ecoregionName = "ECODISTRIC",
                           ecoregionActiveStatus = ecoregionstatus,
                           rasterToMatch = sim$rasterToMatchLarge,
-                          userTags = c(cacheTags, "stable"),
+                          userTags = c(cacheTags, "ecoregionFiles", "stable"),
                           omitArgs = c("userTags"))
 
   ################################################################
@@ -333,7 +338,7 @@ createBiomass_coreInputs <- function(sim) {
                       rasterToMatch = sim$rasterToMatchLarge,
                       rstLCC = rstLCCAdj,
                       pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
-                      userTags = cacheTags,
+                      userTags = c(cacheTags, "pixelTable"),
                       omitArgs = c("userTags"))
 
   #######################################################
@@ -344,7 +349,7 @@ createBiomass_coreInputs <- function(sim) {
                            sppColumns = coverColNames,
                            pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
                            doSubset = P(sim)$subsetDataAgeModel,
-                           userTags = cacheTags,
+                           userTags = c(cacheTags, "pixelCohortData"),
                            omitArgs = c("userTags"))
 
   #######################################################
@@ -364,7 +369,7 @@ createBiomass_coreInputs <- function(sim) {
                          classesToReplace = P(sim)$LCCClassesToReplaceNN,
                          rstLCC = rstLCCAdj,
                          availableERC_by_Sp = availableCombinations,
-                         userTags = c(cacheTags, "stable"),
+                         userTags = c(cacheTags, "newLCCClasses", "stable"),
                          omitArgs = c("userTags"))
 
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
@@ -405,11 +410,12 @@ createBiomass_coreInputs <- function(sim) {
   modelCover <- Cache(statsModel,
                       modelFn = P(sim)$coverModel,
                       uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataShort$ecoregionGroup)),
+                      sumResponse = sum(cohortDataShort$coverPres, cohortDataShort$coverNum, na.rm = TRUE),
                       .specialData = cohortDataShort,
                       useCloud = useCloud,
                       cloudFolderID = sim$cloudFolderID,
                       showSimilar = getOption("reproducible.showSimilar", FALSE),
-                      userTags = cacheTags,
+                      userTags = c(cacheTags, "modelCover"),
                       omitArgs = c("userTags", "showSimilar", ".specialData", "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
   print(modelCover$rsq)
@@ -427,11 +433,12 @@ createBiomass_coreInputs <- function(sim) {
   modelBiomass <- Cache(statsModel,
                         modelFn = P(sim)$biomassModel,
                         uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataNo34to36NoBiomass$ecoregionGroup)),
+                        sumResponse = sum(cohortDataShort$B, na.rm = TRUE),
                         .specialData = cohortDataNo34to36NoBiomass,
                         useCloud = useCloud,
                         cloudFolderID = sim$cloudFolderID,
                         showSimilar = getOption("reproducible.showSimilar", FALSE),
-                        userTags = cacheTags,
+                        userTags = c(cacheTags, "modelBiomass"),
                         omitArgs = c("userTags", "showSimilar", ".specialData", "useCloud", "cloudFolderID"))
 
   message(blue("  The rsquared is: "))
@@ -594,9 +601,7 @@ Save <- function(sim) {
   ecoregionFilename <-   file.path(dPath, "ecoregions.shp")
   ecodistrictFilename <- file.path(dPath, "ecodistricts.shp")
   ecozoneFilename <-   file.path(dPath, "ecozones.shp")
-  rawBiomassMapFilename <- file.path(dPath, "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.tif")
   lcc2005Filename <- file.path(dPath, "LCC2005_V1_4a.tif")
-  standAgeMapFilename <- file.path(dPath, "NFI_MODIS250m_kNN_Structure_Stand_Age_v0.tif")
 
   # Also extract
   fexts <- c("dbf", "prj", "sbn", "sbx", "shx")
@@ -658,11 +663,14 @@ Save <- function(sim) {
   }
 
   if (!suppliedElsewhere("rawBiomassMap", sim) || needRTM) {
+    fileURLs <- getURL(extractURL("rawBiomassMap"), dirlistonly = TRUE)
+    fileNames <- getHTMLLinks(fileURLs)
+    rawBiomassMapFilename <- grep("Biomass_TotalLiveAboveGround.*.tif$", fileNames, value = TRUE)
+    rawBiomassMapURL <- paste0(extractURL("rawBiomassMap"), rawBiomassMapFilename)
+
     sim$rawBiomassMap <- Cache(prepInputs,
-                               targetFile = asPath(basename(rawBiomassMapFilename)),
-                               archive = asPath(c("kNN-StructureBiomass.tar",
-                                                  "NFI_MODIS250m_kNN_Structure_Biomass_TotalLiveAboveGround_v0.zip")),
-                               url = extractURL("rawBiomassMap"),
+                               targetFile = rawBiomassMapFilename,
+                               url = rawBiomassMapURL,
                                destinationPath = dPath,
                                studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                                # studyArea = sim$studyArea,
@@ -675,7 +683,7 @@ Save <- function(sim) {
                                method = "bilinear",
                                datatype = "INT2U",
                                filename2 = TRUE, overwrite = TRUE,
-                               userTags = cacheTags,
+                               userTags = c(cacheTags, "rawBiomassMap"),
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
   }
   if (needRTM) {
@@ -694,7 +702,7 @@ Save <- function(sim) {
     sim$rasterToMatchLarge <- Cache(writeOutputs, sim$rasterToMatchLarge,
                                     filename2 = file.path(cachePath(sim), "rasters", "rasterToMatchLarge.tif"),
                                     datatype = "INT2U", overwrite = TRUE,
-                                    userTags = cacheTags,
+                                    userTags = c(cacheTags, "rasterToMatchLarge"),
                                     omitArgs = c("userTags"))
 
     sim$rasterToMatch <- Cache(postProcess,
@@ -707,7 +715,7 @@ Save <- function(sim) {
                                datatype = "INT2U",
                                filename2 = file.path(cachePath(sim), "rasterToMatch.tif"),
                                overwrite = TRUE,
-                               userTags = cacheTags,
+                               userTags = c(cacheTags, "rasterToMatch"),
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
 
     ## covert to 'mask'
@@ -753,7 +761,7 @@ Save <- function(sim) {
       sim$rasterToMatch <- Cache(writeRaster, sim$rasterToMatch,
                                  filename = file.path(dPath, "rasterToMatch.tif"),
                                  datatype = "INT2U", overwrite = TRUE,
-                                 userTags = cacheTags,
+                                 userTags = c(cacheTags, "rasterToMatch"),
                                  omitArgs = c("userTags"))
     }
   }
@@ -818,12 +826,15 @@ Save <- function(sim) {
 
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
+    fileURLs <- getURL(extractURL("standAgeMap"), dirlistonly = TRUE)
+    fileNames <- getHTMLLinks(fileURLs)
+    standAgeMapFilename <- grep("Structure_Stand_Age.*.tif$", fileNames, value = TRUE)
+    standAgeMapURL <- paste0(extractURL("standAgeMap"), standAgeMapFilename)
+
     sim$standAgeMap <- Cache(prepInputs,
-                             targetFile = basename(standAgeMapFilename), ## TODO: undefined filename
-                             archive = asPath(c("kNN-StructureStandVolume.tar",
-                                                "NFI_MODIS250m_kNN_Structure_Stand_Age_v0.zip")),
+                             targetFile = standAgeMapFilename,
                              destinationPath = dPath,
-                             url = extractURL("standAgeMap"),
+                             url = standAgeMapURL,
                              fun = "raster::raster",
                              studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                              rasterToMatch = sim$rasterToMatchLarge,
@@ -896,7 +907,8 @@ Save <- function(sim) {
 
   # 3. species maps
   if (!suppliedElsewhere("speciesTable", sim)) {
-    sim$speciesTable <- getSpeciesTable(dPath = dPath, cacheTags = cacheTags)
+    sim$speciesTable <- getSpeciesTable(dPath = dPath,
+                                        cacheTags = c(cacheTags, "speciesTable"))
   }
 
   if (!suppliedElsewhere("columnsForPixelGroups", sim)) {
