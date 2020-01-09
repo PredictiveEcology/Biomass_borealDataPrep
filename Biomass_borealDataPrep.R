@@ -383,8 +383,7 @@ createBiomass_coreInputs <- function(sim) {
   ##############################################################
   # Statistical estimation of establishprob, maxB and maxANPP
   ##############################################################
-  cohortDataShort <- cohortDataNo34to36[, list(coverNum = .N,
-                                               coverPres = sum(cover > 0)),
+  cohortDataShort <- cohortDataNo34to36[, list(coverNum = .N, coverPres = sum(cover > 0)),
                                         by = c("ecoregionGroup", "speciesCode")]
   cohortDataShortNoCover <- cohortDataShort[coverPres == 0] #
   cohortDataShort <- cohortDataShort[coverPres > 0] # remove places where there is 0 cover
