@@ -101,13 +101,15 @@ defineModule(sim, list(
                               "3) It can have transient pixels, such as 'young fire'. These will be converted to a\n",
                               "    the nearest non-transient class, probabilistically if there is more than 1 nearest\n",
                               "    neighbour class, based on P(sim)$LCCClassesToReplaceNN.\n",
-                              "The default layer used, if not supplied, is Canada national land classification in 2005"),
+                              "The default layer used, if not supplied, is Canada national land classification in 2005.",
+                              " The metadata (res, proj, ext, origin) need to match rasterToMatchLarge."),
                  sourceURL = "https://drive.google.com/file/d/1g9jr0VrQxqxGjZ4ckF6ZkSMP-zuYzHQC/view?usp=sharing"),
     expectsInput("rasterToMatch", "RasterLayer",
                  desc = "a raster of the studyArea in the same resolution and projection as rawBiomassMap",
                  sourceURL = NA),
     expectsInput("rasterToMatchLarge", "RasterLayer",
-                 desc = "a raster of the studyAreaLarge in the same resolution and projection as rawBiomassMap",
+                 desc = paste("A raster of the studyAreaLarge in the same resolution and projection as rawBiomassMap.",
+                              "The metadata (res, proj, ext, origin) need to match rasterToMatchLarge."),
                  sourceURL = NA),
     expectsInput("rawBiomassMap", "RasterLayer",
                  desc = paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
@@ -317,6 +319,7 @@ createBiomass_coreInputs <- function(sim) {
 
   ## TODO: clean up - not the most effient function (maybe contains redundancies). Producing a non-used object
   message(blue("Make initial ecoregionGroups ", Sys.time()))
+  assertthat::assert_that(isTRUE(all.equal(raster(rstEcoregionMap), raster(rstLCCAdj))))
   ecoregionFiles <- Cache(ecoregionProducer,
                           ecoregionMaps = list(rstEcoregionMap, rstLCCAdj),
                           ecoregionName = "ECODISTRIC",
