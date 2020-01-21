@@ -323,7 +323,8 @@ createBiomass_coreInputs <- function(sim) {
 
   ## TODO: clean up - not the most effient function (maybe contains redundancies). Producing a non-used object
   message(blue("Make initial ecoregionGroups ", Sys.time()))
-  assertthat::assert_that(isTRUE(all.equal(raster(rstEcoregionMap), raster(rstLCCAdj))))
+  assertthat::assert_that(isTRUE(compareRaster(rstEcoregionMap, rstLCCAdj,
+                                               res = TRUE, orig = TRUE, stopiffalse = FALSE)))
   ecoregionFiles <- Cache(ecoregionProducer,
                           ecoregionMaps = list(rstEcoregionMap, rstLCCAdj),
                           ecoregionName = "ECODISTRIC",
