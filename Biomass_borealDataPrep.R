@@ -213,6 +213,10 @@ createBiomass_coreInputs <- function(sim) {
   cacheTags <- c(currentModule(sim), "init")
 
   message(blue("Starting to createBiomass_coreInputs in Biomass_borealDataPrep: ", Sys.time()))
+  if (is.null(sim$speciesLayers))
+    stop(red(paste("'speciesLayers' are missing in Biomass_borealDataPrep init event.\n",
+         "This is likely due to the module producing 'speciesLayers' being scheduled after Biomass_borealDataPrep.\n",
+         "Please check module order.")))
   sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$speciesLayers))
 
   sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
