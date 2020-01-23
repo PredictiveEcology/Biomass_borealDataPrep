@@ -677,7 +677,6 @@ Save <- function(sim) {
 
   if (!suppliedElsewhere("rawBiomassMap", sim) || needRTM) {
     sim$rawBiomassMap <- Cache(prepInputs,
-                               targetFile = rawBiomassMapFilename,
                                url = extractURL("rawBiomassMap"),
                                destinationPath = dPath,
                                studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
