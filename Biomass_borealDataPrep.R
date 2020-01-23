@@ -44,6 +44,9 @@ defineModule(sim, list(
                     paste("Model and formula used for estimating cover from ecoregion and speciesCode",
                           "and potentially others. Defaults to a GLMEM if there are > 1 grouping levels.",
                           "A custom model call can also be provided, as long as the 'data' argument is NOT included")),
+    defineParameter("ecoregionPolygonsField", "character", NA, NA, NA,
+                    paste("the name of the field used to distinguish ecoregions. If none is provided,",
+                          "the default is 'ECODISTRIC' if available, else the row number of sim$ecoregionPolygons")),
     defineParameter("forestedLCCClasses", "numeric", c(1:15, 20, 32, 34:35), 0, 39,
                     paste("The classes in the rstLCC layer that are 'treed' and will therefore be run in Biomass_core.",
                           "Defaults to forested classes in LCC2005 map.")),
@@ -90,8 +93,10 @@ defineModule(sim, list(
                  "The google drive location where cloudCache will store large statistical objects"),
     expectsInput("columnsForPixelGroups", "character",
                  "The names of the columns in cohortData that define unique pixelGroups. Default is c('ecoregionGroup', 'speciesCode', 'age', 'B') "),
-    expectsInput("ecoDistrict", "SpatialPolygonsDataFrame",
-                 desc = "ecodistricts in study area, default is Canada national ecodistricts",
+    expectsInput("ecoregionPolygons", "SpatialPolygonsDataFrame",
+                 desc = paste("A SpatialPolygonsDataFrame that characterizes the unique ecological regions used to", 
+                              "parameterize the biomass, cover, and species establishment probability models.", 
+                              "It will be overlaid with landcover to generate classes for every ecoregion/LCC combination"),
                  sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip"),
     expectsInput("rstLCC", "RasterLayer",
                  desc = paste("A land classification map in study area. It must be 'corrected', in the sense that:\n",
@@ -163,7 +168,6 @@ defineModule(sim, list(
     createsOutput("cohortData", "data.table",
                   desc = paste("initial community table, created from available biomass,",
                                "age and species cover data, as well as eco zonation information")),
-    createsOutput("ecoDistrict", "", desc = ""), ## TODO: description and type needed
     createsOutput("ecoregion", "data.table",
                   desc = "ecoregion look up table"),
     createsOutput("ecoregionMap", "RasterLayer",
@@ -222,7 +226,7 @@ createBiomass_coreInputs <- function(sim) {
     stop(red(paste("'speciesLayers' are missing in Biomass_borealDataPrep init event.\n",
                    "This is likely due to the module producing 'speciesLayers' being scheduled after Biomass_borealDataPrep.\n",
                    "Please check module order.")))
-  sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$speciesLayers))
+  sim$ecoregionPolygons <- spTransform(sim$ecoregionPolygons, crs(sim$speciesLayers))
 
   sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
   sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
@@ -292,21 +296,39 @@ createBiomass_coreInputs <- function(sim) {
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
 
-  sim$ecoDistrict <- fixErrors(sim$ecoDistrict)
+  sim$ecoregionPolygons <- fixErrors(sim$ecoregionPolygons)
 
   ecoregionMap <- Cache(postProcess,
-                        x = sim$ecoDistrict,
+                        x = sim$ecoregionPolygons,
                         studyArea = sim$studyAreaLarge,
                         filename2 = NULL,
                         userTags = c(cacheTags, "ecoregionMapLarge"),
                         omitArgs = c("userTags"))
 
   ecoregionMapSF <- sf::st_as_sf(ecoregionMap)
+  
+  if (is.null(P(sim)$ecoregionPolygonsField)) {
+    if (!is.null(ecoregionMapSF$ECODISTRIC)) {
+      ecoregionmapSF$ecoregionPolygonsField <- as.numeric(ecoregionMapSF$ECODISTRIC)
+    } else {
+      ecoregionMapSF$ecoregionPolygonsField <- as.numeric(row.names(ecoregionMapSF))
+    }
+  } else {
+    testData <- as.data.table(ecoregionmapSF) 
+    if (is(testData[, ..P(sim)$ecoregionPolygonsField], "character")){
+      message ("converting P(sim)$ecoregionPolygonsField to numeric")
+      testData[, ecoregionPolygonsField := as.numeric(testData[, ..P(sim)$ecoregionPolygonsField])]
+      ecoregionMapSF$ecoregionPolygonsField <- testData$ecoregionPolygonsField
+    }
+  }
+  
   if (is(ecoregionMapSF$ECODISTRIC, "character"))
     ecoregionMapSF$ECODISTRIC <- as.numeric(ecoregionMapSF$ECODISTRIC)
   rstEcoregionMap <- fasterize::fasterize(ecoregionMapSF, raster = sim$rasterToMatchLarge,
-                                          field = "ECODISTRIC")
-  ecoregionstatus <- data.table(active = "yes", ecoregion = 1:1031)
+                                          field = 'ecoregionPolygonsField')
+  
+  #TODO: this object is passed to LandR::ecoregionProducer, but it is not used. Kept for cache purposes
+  ecoregionstatus <- data.table(active = "yes", ecoregion = min(rstEcoregionMap[]):max(rstEcoregionMap[]))
   rstLCCAdj <- sim$rstLCC
 
   ## Clean pixels for veg. succession model
@@ -612,16 +634,7 @@ Save <- function(sim) {
   names(objExists) <- objNames
 
   # Filenames
-  ecoregionFilename <-   file.path(dPath, "ecoregions.shp")
-  ecodistrictFilename <- file.path(dPath, "ecodistricts.shp")
-  ecozoneFilename <-   file.path(dPath, "ecozones.shp")
   lcc2005Filename <- file.path(dPath, "LCC2005_V1_4a.tif")
-
-  # Also extract
-  fexts <- c("dbf", "prj", "sbn", "sbx", "shx")
-  ecoregionAE <- basename(paste0(tools::file_path_sans_ext(ecoregionFilename), ".", fexts))
-  ecodistrictAE <- basename(paste0(tools::file_path_sans_ext(ecodistrictFilename), ".", fexts))
-  ecozoneAE <- basename(paste0(tools::file_path_sans_ext(ecozoneFilename), ".", fexts))
 
   ## Study area(s) ------------------------------------------------
   if (!suppliedElsewhere("studyArea", sim)) {
@@ -769,9 +782,9 @@ Save <- function(sim) {
   }
 
   ## Ecodistrict ------------------------------------------------
-  if (!suppliedElsewhere("ecoDistrict", sim)) {
-    sim$ecoDistrict <- Cache(prepInputs,
-                             targetFile = asPath(ecodistrictFilename),
+  if (!suppliedElsewhere("ecoregionPolygons", sim)) {
+    sim$ecoregionPolygons <- Cache(prepInputs,
+                             targetFile = file.path(dPath, "ecodistricts.shp"),
                              archive = asPath("ecodistrict_shp.zip"),
                              url = extractURL("ecoDistrict"),
                              alsoExtract = ecodistrictAE,
