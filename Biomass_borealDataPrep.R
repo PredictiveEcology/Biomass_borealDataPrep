@@ -20,7 +20,8 @@ defineModule(sim, list(
                   "fasterize", "plyr", "raster", "sp", "sf",
                   "achubaty/amc@development",
                   "PredictiveEcology/LandR@development",
-                  "PredictiveEcology/pemisc@development"),
+                  "PredictiveEcology/pemisc@development",
+                  "SpaDES.tools"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
                     quote(lme4::lmer(B ~ logAge * speciesCode + cover * speciesCode +
