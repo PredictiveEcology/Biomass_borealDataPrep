@@ -96,7 +96,8 @@ defineModule(sim, list(
     expectsInput("ecoregionPolygons", "SpatialPolygonsDataFrame",
                  desc = paste("A SpatialPolygonsDataFrame that characterizes the unique ecological regions used to", 
                               "parameterize the biomass, cover, and species establishment probability models.", 
-                              "It will be overlaid with landcover to generate classes for every ecoregion/LCC combination"),
+                              "It will be overlaid with landcover to generate classes for every ecoregion/LCC combination.",
+                              "It must have same extent and crs as studyAreaLarge if suppplied by user"),
                  sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip"),
     expectsInput("rstLCC", "RasterLayer",
                  desc = paste("A land classification map in study area. It must be 'corrected', in the sense that:\n",
@@ -783,11 +784,12 @@ Save <- function(sim) {
 
   ## Ecodistrict ------------------------------------------------
   if (!suppliedElsewhere("ecoregionPolygons", sim)) {
+   
     sim$ecoregionPolygons <- Cache(prepInputs,
                              targetFile = file.path(dPath, "ecodistricts.shp"),
                              archive = asPath("ecodistrict_shp.zip"),
-                             url = extractURL("ecoDistrict"),
-                             alsoExtract = ecodistrictAE,
+                             url = extractURL("ecoregionPolygons", sim),
+                             alsoExtract = 'showSimilar',
                              destinationPath = dPath,
                              studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                              overwrite = TRUE,
