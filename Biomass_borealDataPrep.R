@@ -790,7 +790,7 @@ Save <- function(sim) {
     standAgeMapFilename <- file.path(dPath, "NFI_MODIS250m_kNN_Structure_Stand_Age_v0.tif")
 
     sim$standAgeMap <- Cache(prepInputs,
-                             targetFile = standAgeMapFilename,
+                             # targetFile = standAgeMapFilename,
                              destinationPath = dPath,
                              url = extractURL("standAgeMap"),
                              fun = "raster::raster",
