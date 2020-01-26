@@ -82,8 +82,8 @@ defineModule(sim, list(
                     "This describes the simulation time at which the first save event should occur"),
     defineParameter(".saveInterval", "numeric", NA, NA, NA,
                     "This describes the simulation time interval between save events"),
-    defineParameter(".useCache", "logical", "init", NA, NA,
-                    desc = "Controls cache; caches the init event by default")
+    defineParameter(".useCache", "character", c(".inputObjects", "init"), NA, NA,
+                    desc = "Internal. Can be names of events or the whole module name; these will be cached by SpaDES")
   ),
   inputObjects = bind_rows(
     expectsInput("cloudFolderID", "character",
