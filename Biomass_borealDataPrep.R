@@ -6,7 +6,7 @@ defineModule(sim, list(
     person("Yong", "Luo", email = "yong.luo@canada.ca", role = c("aut")),
     person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@canada.ca", role = c("aut", "cre")),
     person(c("Ceres"), "Barros", email = "cbarros@mail.ubc.ca", role = c("ctb")),
-    person(c("Alex", "M."), "Chubaty", email = "achubaty@friresearch.ca", role = c("ctb"))
+    person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("ctb"))
   ),
   childModules = character(0),
   version = list(SpaDES.core = "0.2.3.9009", Biomass_borealDataPrep = numeric_version("1.4.0.9000"),
@@ -787,7 +787,7 @@ Save <- function(sim) {
 
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
-    
+
     sim$standAgeMap <- Cache(prepInputs,
                              destinationPath = dPath,
                              url = extractURL("standAgeMap"),
