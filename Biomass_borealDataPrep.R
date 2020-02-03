@@ -44,7 +44,7 @@ defineModule(sim, list(
                     paste("Model and formula used for estimating cover from ecoregion and speciesCode",
                           "and potentially others. Defaults to a GLMEM if there are > 1 grouping levels.",
                           "A custom model call can also be provided, as long as the 'data' argument is NOT included")),
-    defineParameter("ecoregionPolygonsField", "character", NA, NA, NA,
+    defineParameter("ecoregionPolygonsField", "character", NULL, NA, NA,
                     paste("the name of the field used to distinguish ecoregions. If none is provided,",
                           "the default is 'ECODISTRIC' if available, else the row number of sim$ecoregionPolygons")),
     defineParameter("forestedLCCClasses", "numeric", c(1:15, 20, 32, 34:35), 0, 39,
@@ -94,8 +94,8 @@ defineModule(sim, list(
     expectsInput("columnsForPixelGroups", "character",
                  "The names of the columns in cohortData that define unique pixelGroups. Default is c('ecoregionGroup', 'speciesCode', 'age', 'B') "),
     expectsInput("ecoregionPolygons", "SpatialPolygonsDataFrame",
-                 desc = paste("A SpatialPolygonsDataFrame that characterizes the unique ecological regions used to", 
-                              "parameterize the biomass, cover, and species establishment probability models.", 
+                 desc = paste("A SpatialPolygonsDataFrame that characterizes the unique ecological regions used to",
+                              "parameterize the biomass, cover, and species establishment probability models.",
                               "It will be overlaid with landcover to generate classes for every ecoregion/LCC combination.",
                               "It must have same extent and crs as studyAreaLarge if suppplied by user"),
                  sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip"),
@@ -310,7 +310,7 @@ createBiomass_coreInputs <- function(sim) {
   
   if (is.null(P(sim)$ecoregionPolygonsField)) {
     if (!is.null(ecoregionMapSF$ECODISTRIC)) {
-      ecoregionmapSF$ecoregionPolygonsField <- as.numeric(ecoregionMapSF$ECODISTRIC)
+      ecoregionMapSF$ecoregionPolygonsField <- as.numeric(ecoregionMapSF$ECODISTRIC)
     } else {
       ecoregionMapSF$ecoregionPolygonsField <- as.numeric(row.names(ecoregionMapSF))
     }
@@ -329,7 +329,8 @@ createBiomass_coreInputs <- function(sim) {
                                           field = 'ecoregionPolygonsField')
   
   #TODO: this object is passed to LandR::ecoregionProducer, but it is not used. Kept for cache purposes
-  ecoregionstatus <- data.table(active = "yes", ecoregion = min(rstEcoregionMap[]):max(rstEcoregionMap[]))
+
+  ecoregionstatus <- data.table(active = "yes", ecoregion = 1:1031)
   rstLCCAdj <- sim$rstLCC
 
   ## Clean pixels for veg. succession model
@@ -784,20 +785,18 @@ Save <- function(sim) {
 
   ## Ecodistrict ------------------------------------------------
   if (!suppliedElsewhere("ecoregionPolygons", sim)) {
-   
+
     sim$ecoregionPolygons <- Cache(prepInputs,
-                             targetFile = file.path(dPath, "ecodistricts.shp"),
-                             archive = asPath("ecodistrict_shp.zip"),
-                             url = extractURL("ecoregionPolygons", sim),
-                             alsoExtract = 'showSimilar',
-                             destinationPath = dPath,
-                             studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                             overwrite = TRUE,
-                             useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
-                             fun = "raster::shapefile",
-                             #filename2 = TRUE,
-                             userTags = c("prepInputsEcoDistrict_SA", currentModule(sim), cacheTags), # use at least 1 unique userTag
-                             omitArgs = c("destinationPath", "targetFile", "overwrite", "alsoExtract", "userTags"))
+                                   targetFile = 'ecodistricts.shp',
+                                   archive = asPath("ecodistrict_shp.zip"),
+                                   url = extractURL("ecoregionPolygons", sim),
+                                   alsoExtract = 'similar',
+                                   destinationPath = dPath,
+                                   studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
+                                   overwrite = TRUE,
+                                   useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
+                                   fun = "raster::shapefile",
+                                   userTags = c("prepInputsEcoDistrict_SA", currentModule(sim), cacheTags))
   }
 
   ## Stand age map ------------------------------------------------
