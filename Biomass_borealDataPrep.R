@@ -315,19 +315,21 @@ createBiomass_coreInputs <- function(sim) {
       ecoregionMapSF$ecoregionPolygonsField <- as.numeric(row.names(ecoregionMapSF))
     }
   } else {
-    testData <- as.data.table(ecoregionmapSF) 
-    if (is(testData[, ..P(sim)$ecoregionPolygonsField], "character")){
+    browser() #Ian this is where you are at
+    testData <- as.data.table(ecoregionMapSF)
+    theField <- P(sim)$ecoregionPolygonsField #data.table can't access P(sim)
+    if (is(testData[, ..theField], "character")){
       message ("converting P(sim)$ecoregionPolygonsField to numeric")
       testData[, ecoregionPolygonsField := as.numeric(testData[, ..P(sim)$ecoregionPolygonsField])]
       ecoregionMapSF$ecoregionPolygonsField <- testData$ecoregionPolygonsField
     }
   }
-  
+
   if (is(ecoregionMapSF$ECODISTRIC, "character"))
     ecoregionMapSF$ECODISTRIC <- as.numeric(ecoregionMapSF$ECODISTRIC)
   rstEcoregionMap <- fasterize::fasterize(ecoregionMapSF, raster = sim$rasterToMatchLarge,
                                           field = 'ecoregionPolygonsField')
-  
+
   #TODO: this object is passed to LandR::ecoregionProducer, but it is not used. Kept for cache purposes
 
   ecoregionstatus <- data.table(active = "yes", ecoregion = 1:1031)
