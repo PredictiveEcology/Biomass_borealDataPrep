@@ -219,9 +219,16 @@ createBiomass_coreInputs <- function(sim) {
 
   message(blue("Starting to createBiomass_coreInputs in Biomass_borealDataPrep: ", Sys.time()))
   if (is.null(sim$speciesLayers))
-    stop(red(paste("'speciesLayers' are missing in Biomass_borealDataPrep init event.\n",
-                   "This is likely due to the module producing 'speciesLayers' being scheduled after Biomass_borealDataPrep.\n",
-                   "Please check module order.")))
+    stop(red(paste(
+      "'speciesLayers' are missing in Biomass_borealDataPrep init event.\n",
+      "This is likely due to the module producing 'speciesLayers' being scheduled after Biomass_borealDataPrep.\n",
+      "Please check module order."
+    )))
+
+  ## check that input rasters all match
+  compareRaster(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstFlammable, sim$rstLCC,
+                sim$speciesLayers, sim$standAgeMap, orig = TRUE)
+
   sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$speciesLayers))
 
   sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
@@ -328,8 +335,7 @@ createBiomass_coreInputs <- function(sim) {
 
   ## TODO: clean up - not the most effient function (maybe contains redundancies). Producing a non-used object
   message(blue("Make initial ecoregionGroups ", Sys.time()))
-  assertthat::assert_that(isTRUE(compareRaster(rstEcoregionMap, rstLCCAdj,
-                                               res = TRUE, orig = TRUE, stopiffalse = FALSE)))
+  compareRaster(rstEcoregionMap, rstLCCAdj, res = TRUE, orig = TRUE, stopiffalse = FALSE)
   ecoregionFiles <- Cache(ecoregionProducer,
                           ecoregionMaps = list(rstEcoregionMap, rstLCCAdj),
                           ecoregionName = "ECODISTRIC",
@@ -518,9 +524,7 @@ createBiomass_coreInputs <- function(sim) {
                                 userTags = c(cacheTags, "rasterToMatchLarge"),
                                 omitArgs = c("userTags"))
 
-    if (!compareRaster(rasterToMatchLarge, sim$rasterToMatch,
-                       orig = TRUE, res = TRUE,
-                       stopiffalse = FALSE))
+    if (!compareRaster(rasterToMatchLarge, sim$rasterToMatch, orig = TRUE, stopiffalse = FALSE))
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.
            Please debug Biomass_borealDataPrep::createBiomass_coreInputs()")
 
