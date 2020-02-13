@@ -16,12 +16,11 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
-  reqdPkgs = list("RCurl", "XML", "crayon", "data.table", "dplyr",
-                  "fasterize", "plyr", "raster", "sp", "sf",
+  reqdPkgs = list("crayon", "data.table", "dplyr", "fasterize", "plyr", "raster", "sp", "sf",
+                  "SpaDES.tools",
                   "achubaty/amc@development",
                   "PredictiveEcology/LandR@development",
-                  "PredictiveEcology/pemisc@development",
-                  "SpaDES.tools"),
+                  "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
                     quote(lme4::lmer(B ~ logAge * speciesCode + cover * speciesCode +
