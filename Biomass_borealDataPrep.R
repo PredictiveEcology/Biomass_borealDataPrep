@@ -81,8 +81,8 @@ defineModule(sim, list(
                     "This describes the simulation time at which the first save event should occur"),
     defineParameter(".saveInterval", "numeric", NA, NA, NA,
                     "This describes the simulation time interval between save events"),
-    defineParameter(".useCache", "logical", "init", NA, NA,
-                    desc = "Controls cache; caches the init event by default")
+    defineParameter(".useCache", "character", c(".inputObjects", "init"), NA, NA,
+                    desc = "Internal. Can be names of events or the whole module name; these will be cached by SpaDES")
   ),
   inputObjects = bind_rows(
     expectsInput("cloudFolderID", "character",
@@ -135,6 +135,9 @@ defineModule(sim, list(
                  sourceURL = ""),
     expectsInput("sppEquiv", "data.table",
                  desc = "table of species equivalencies. See LandR::sppEquivalencies_CA.",
+                 sourceURL = ""),
+    expectsInput("sppNameVector", "character",
+                 desc = "an optional vector of species names to be pulled from sppEquiv. If not provided, then species will be taken from the entire P(sim)$sppEquivCol in sppEquiv. See LandR::sppEquivalencies_CA.",
                  sourceURL = ""),
     expectsInput("standAgeMap", "RasterLayer",
                  desc =  paste("stand age map in study area.",
@@ -809,10 +812,11 @@ Save <- function(sim) {
   }
 
   ## Species equivalencies table -------------------------------------------
+  
   if (!suppliedElsewhere("sppEquiv", sim)) {
     if (!is.null(sim$sppColorVect))
-      stop("If you provide sppColorVect, you MUST also provide sppEquiv")
-
+      message("No 'sppColorVect' provided; using default colour palette: Accent")
+    
     data("sppEquivalencies_CA", package = "LandR", envir = environment())
     sim$sppEquiv <- as.data.table(sppEquivalencies_CA)
     ## By default, Abies_las is renamed to Abies_sp
@@ -843,8 +847,12 @@ Save <- function(sim) {
     sim$sppColorVect <- sppColors(sim$sppEquiv, P(sim)$sppEquivCol,
                                   newVals = "Mixed", palette = "Accent")
   } else {
-    if (is.null(sim$sppColorVect))
-      stop("If you provide 'sppEquiv' you MUST also provide 'sppColorVect'")
+    if (is.null(sim$sppColorVect)) {
+      ## add default colors for species used in model
+      sim$sppColorVect <- sppColors(sim$sppEquiv, P(sim)$sppEquivCol,
+                                    newVals = "Mixed", palette = "Accent")
+      message("No 'sppColorVect' provided; using default colour palette: Accent")
+    }
   }
 
   ## Species raster layers -------------------------------------------
@@ -857,6 +865,7 @@ Save <- function(sim) {
                                studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                                sppEquiv = sim$sppEquiv,
                                knnNamesCol = "KNN",
+                               sppNameVector = sim$sppNameVector,
                                sppEquivCol = P(sim)$sppEquivCol,
                                thresh = 10,
                                url = extractURL("speciesLayers"),
