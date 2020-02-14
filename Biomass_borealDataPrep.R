@@ -225,7 +225,7 @@ createBiomass_coreInputs <- function(sim) {
     )))
 
   ## check that input rasters all match
-  compareRaster(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstFlammable, sim$rstLCC,
+  compareRaster(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC,
                 sim$speciesLayers, sim$standAgeMap, orig = TRUE)
 
   sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$speciesLayers))
