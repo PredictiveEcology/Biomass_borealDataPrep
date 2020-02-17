@@ -17,7 +17,7 @@ defineModule(sim, list(
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
   reqdPkgs = list("RCurl", "XML", "crayon", "data.table", "dplyr",
-                  "fasterize", "plyr", "raster", "sp", "sf",
+                  "fasterize", "plyr", "raster", "sp", "sf", "purrr",
                   "achubaty/amc@development",
                   "PredictiveEcology/LandR@development",
                   "PredictiveEcology/pemisc@development",
@@ -104,9 +104,10 @@ defineModule(sim, list(
     expectsInput('ecoregionRst', "RasterLayer",
                  desc = paste("A raster that characterizes the unique ecological regions used to",
                               "parameterize the biomass, cover, and species establishment probability models.",
+                              "If this object is provided, it will supersede sim$ecoregionLayer.",
                               "It will be overlaid with landcover to generate classes for every ecoregion/LCC combination.",
-                              "It must have same extent and crs as rasterToMatch if suppplied by user.",
-                              "If provded, it will supersede sim$ecoregionLayer")),
+                              "It must have same extent and crs as rasterToMatchLarge if suppplied by user - use reproducible::postProcess.",
+                              "If it uses an attribute table, it must contain the field 'ecoregion' to represent raster values")),
     expectsInput("rstLCC", "RasterLayer",
                  desc = paste("A land classification map in study area. It must be 'corrected', in the sense that:\n",
                               "1) Every class must not conflict with any other map in this module\n",
@@ -304,30 +305,6 @@ createBiomass_coreInputs <- function(sim) {
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
 
-  if (is.null(sim$ecoregionRst)) {
-
-    ecoregionMapSF <- sf::st_as_sf(ecoregionLayers)
-
-    if (is.null(P(sim)$ecoregionLayerField)) {
-      if (!is.null(ecoregionMapSF$ECODISTRIC)) {
-        ecoregionMapSF$ecoregionLayerField <- as.numeric(ecoregionMapSF$ECODISTRIC)
-      } else {
-        ecoregionMapSF$ecoregionLayerField <- as.numeric(row.names(ecoregionMapSF))
-      }
-    } else {
-      ecoDT <- as.data.table(ecoregionMapSF)
-      ecoregionField <- P(sim)$ecoregionLayerField #data.table can't access P(sim)
-      ecoDT[, ecoregionLayerField := ecoDT[, get(ecoregionField)]]
-      ecoregionMapSF$ecoregionLayerField <- ecoDT$ecoregionLayerField
-    }
-    ecoregionRst <- fasterize::fasterize(ecoregionMapSF, raster = sim$rasterToMatchLarge,
-                                            field = 'ecoregionLayerField')
-  } else {
-    ecoregionRst <- sim$ecoregionRst
-  }
-
-  #TODO: this object is passed to LandR::ecoregionProducer, but it is not used.
-  ecoregionstatus <- data.table(active = "yes", ecoregion = 1:1031)
   rstLCCAdj <- sim$rstLCC
 
   ## Clean pixels for veg. succession model
@@ -345,20 +322,94 @@ createBiomass_coreInputs <- function(sim) {
   }
 
   rstLCCAdj[pixelsToRm] <- NA
-  ecoregionRst[pixelsToRm] <- NA
 
-  ## TODO: clean up - not the most effient function (maybe contains redundancies). Producing a non-used object
-  #the table object isn't used, and only rasters are passed, so the ecoregionName object is also unused.
-  message(blue("Make initial ecoregionGroups ", Sys.time()))
-  assertthat::assert_that(isTRUE(compareRaster(ecoregionRst, rstLCCAdj,
-                                               res = TRUE, orig = TRUE, stopiffalse = FALSE)))
-  ecoregionFiles <- Cache(ecoregionProducer,
-                          ecoregionMaps = list(ecoregionRst, rstLCCAdj),
-                          ecoregionName = "ECODISTRIC",
-                          ecoregionActiveStatus = ecoregionstatus,
-                          rasterToMatch = sim$rasterToMatchLarge,
-                          userTags = c(cacheTags, "ecoregionFiles", "stable"),
-                          omitArgs = c("userTags"))
+  ecoregionFiles <- prepEcoregions(ecoregionRst = sim$ecoregionRst, ecoregionLayer = sim$ecoregionLayer,
+                                   ecoregionLayerField = P(sim)$ecoregionLayerField,
+                                   rasterToMatchLarge = sim$rasterToMatchLarge, rstLCC = sim$rstLCC,
+                                   pixelsToRm = pixelsToRm, cacheTags = cacheTags)
+
+  #
+  # if (is.null(sim$ecoregionRst)) {
+  #
+  #   sim$ecoregionLayers <- Cache(fixErrors, sim$ecoregionLayers,
+  #                                cacheRepo = cachePath(sim),
+  #                                userTags = c(currentModule(sim), 'fixErrors', 'sim$ecoregionLayers'),
+  #                                useCache = getOption('reproducible.useCache'))
+  #
+  #   ecoregionMapSF <- sf::st_as_sf(sim$ecoregionLayers)
+  #
+  #   if (is.null(P(sim)$ecoregionLayerField)) {
+  #     if (!is.null(ecoregionMapSF$ECODISTRIC)) {
+  #       ecoregionMapSF$ecoregionLayerField <- as.factor(ecoregionMapSF$ECODISTRIC)
+  #     } else {
+  #       ecoregionMapSF$ecoregionLayerField <- as.numeric(row.names(ecoregionMapSF))
+  #     }
+  #   } else {
+  #     ecoDT <- as.data.table(ecoregionMapSF)
+  #     ecoregionField <- P(sim)$ecoregionLayerField #data.table can't access P(sim)
+  #     ecoDT[, ecoregionLayerField := ecoDT[, get(ecoregionField)]]
+  #     ecoregionMapSF$ecoregionLayerField <- as.factor(ecoDT$ecoregionLayerField)
+  #   }
+  #   ecoregionRst <- fasterize::fasterize(ecoregionMapSF, raster = sim$rasterToMatchLarge,
+  #                                           field = 'ecoregionLayerField')
+  #   if (is.factor(ecoregionMapSF$ecoregionLayerField)) {
+  #     appendEcoregionFactor <- TRUE
+  #     #Preserve factor values
+  #     uniqVals <- unique(ecoregionMapSF$ecoregionLayerField)
+  #     df <- data.frame(ecoregionValue = seq_len(length(uniqVals)), ecoregion = uniqVals)
+  #     levels(ecoregionRst) <- df #this will preserve the factors, but they aren't kept in sim$ecoregionMap yet
+  #   }
+  #
+  # } else {
+  #   ecoregionRst <- sim$ecoregionRst
+  #   if (!is_empty(ecoregionRst@data@attributes)) {
+  #     if (is.null(ecoregionRst@data@attributes[[1]]$ecoregion)) {
+  #       warning("ecoregionRst's attribute table only preserved if it has a 'ecoregion' column corresponding to its values")
+  #     } else {
+  #       appendEcoregionFactor <- TRUE
+  #     }
+  #   }
+  # }
+  #
+  # rstLCCAdj <- sim$rstLCC
+  #
+  # ## Clean pixels for veg. succession model
+  # ## remove pixes with no spp data
+  # pixelsToRm <- is.na(sim$speciesLayers[[1]][])
+  #
+  # ## remove non-forested if asked by user
+  # if (P(sim)$omitNonTreedPixels) {
+  #   if (is.null(P(sim)$forestedLCCClasses))
+  #     stop("No P(sim)$forestedLCCClasses provided, but P(sim)$omitNonTreedPixels is TRUE.
+  #          \nPlease provide a vector of forested classes in P(sim)$forestedLCCClasses")
+  #
+  #   lccPixelsRemoveTF <- !(sim$rstLCC[] %in% P(sim)$forestedLCCClasses)
+  #   pixelsToRm <- lccPixelsRemoveTF | pixelsToRm
+  # }
+  #
+  # rstLCCAdj[pixelsToRm] <- NA
+  # ecoregionRst[pixelsToRm] <- NA
+  #
+  #
+  # message(blue("Make initial ecoregionGroups ", Sys.time()))
+  # assertthat::assert_that(isTRUE(compareRaster(ecoregionRst, rstLCCAdj,
+  #                                              res = TRUE, orig = TRUE, stopiffalse = FALSE)))
+  #
+  # ecoregionFiles <- Cache(ecoregionProducer,
+  #                         ecoregionMaps = list(ecoregionRst, rstLCCAdj),
+  #                         rasterToMatch = sim$rasterToMatchLarge,
+  #                         userTags = c(cacheTags, "ecoregionFiles", "stable"),
+  #                         omitArgs = c("userTags"))
+  #
+  # if (appendEcoregionFactor) {
+  #   browser() #test this works
+  #   ecoregionTable <- ecoregionRst@data@attributes[[1]]
+  #   ecoregionTable[, ecoregion := as.factor(paddedFloatToChar(ecoregion))] #this is required as ecoregion will have this
+  #   setkey(ecoregionTable, ecoregion)
+  #   setkey(ecoregionFiles$ecoregion, ecoregion)
+  #   ecoregionFiles$ecoregion <-  ecoregionFiles$ecoregion[ecoregionTable] #preserve ecoregion factor from ecoregionRst
+  # }
+
 
   ################################################################
   ## put together pixelTable object
@@ -578,6 +629,7 @@ createBiomass_coreInputs <- function(sim) {
   pixelCohortData <- cohortDataFiles$pixelCohortData
   rm(cohortDataFiles)
 
+  browser() #is this necessary?
   ## make a table of available active and inactive (no biomass) ecoregions
   sim$ecoregion <- makeEcoregionDT(pixelCohortData, speciesEcoregion)
 

@@ -1,0 +1,82 @@
+
+#' @param ecoregionRst an optional raster object that could be passed to sim, representing ecoregions
+#' @param ecoregionLayer a spatial polygons object representing ecoregions
+#' @param ecoregionLayerField the field in ecoregionLayer that represents ecoregions - optional
+#' @param rasterToMatchLarge the rasterToMatchLarge object from sim
+#' @param rstLCC raster layer representing landcover
+#' @param cacheTags UserTags to pass to cache
+#' @param pixelsToRm a vector of pixels to remove
+#' @importFrom data.table as.data.table data.table
+#' @importFrom fasterize fasterize
+#' @importFrom raster getValues levels raster
+#' @importFrom sf st_as_sf
+#' @importFrom LandR ecoregionProducer paddedFloatToChar
+#' @importFrom reproducible Cache
+#' @export
+prepEcoregions <- function(ecoregionRst = NULL, ecoregionLayer, ecoregionLayerField = NULL,
+                           rasterToMatchLarge, rstLCC, pixelsToRm, cacheTags){
+
+  appendEcoregionFactor <- FALSE #whether or not to add the ecoregionClasses to the data
+
+  if (is.null(ecoregionRst)) {
+
+    ecoregionLayer <-fixErrors(ecoregionLayer)
+
+    ecoregionMapSF <- sf::st_as_sf(ecoregionLayer)
+
+    if (is.null(ecoregionLayerField)) {
+      if (!is.null(ecoregionMapSF$ECODISTRIC)) {
+        ecoregionMapSF$ecoregionLayerField <- as.factor(ecoregionMapSF$ECODISTRIC)
+      } else {
+        ecoregionMapSF$ecoregionLayerField <- as.numeric(row.names(ecoregionMapSF))
+      }
+    } else {
+      ecoDT <- as.data.table(ecoregionMapSF)
+      ecoregionField <- ecoregionLayerField
+      ecoDT[, ecoregionLayerField := ecoDT[, get(ecoregionField)]]
+      ecoregionMapSF$ecoregionLayerField <- as.factor(ecoDT$ecoregionLayerField)
+      rm(ecoDT)
+    }
+    ecoregionRst <- fasterize::fasterize(ecoregionMapSF, raster = rasterToMatchLarge,
+                                         field = 'ecoregionLayerField')
+    rm(ecoregionLayer)
+    if (is.factor(ecoregionMapSF$ecoregionLayerField)) {
+      appendEcoregionFactor <- TRUE
+      #Preserve factor values
+      uniqVals <- unique(ecoregionMapSF$ecoregionLayerField)
+      df <- data.frame(ID = seq_len(length(uniqVals)), ecoregionName = uniqVals)
+      levels(ecoregionRst) <- df #this will preserve the factors
+    }
+
+  } else {
+
+    if (!is_empty(ecoregionRst@data@attributes)) {
+      if (is.null(ecoregionRst@data@attributes[[1]]$ecoregion)) {
+        warning("ecoregionRst's attribute table only preserved if it has a 'ecoregion' column corresponding to its values")
+      } else {
+        appendEcoregionFactor <- TRUE
+      }
+    }
+  }
+
+  ecoregionRst[pixelsToRm] <- NA
+
+  message(blue("Make initial ecoregionGroups ", Sys.time()))
+  assertthat::assert_that(isTRUE(compareRaster(ecoregionRst, rstLCCAdj,
+                                               res = TRUE, orig = TRUE, stopiffalse = FALSE)))
+
+  ecoregionFiles <- Cache(ecoregionProducer,
+                          ecoregionMaps = list(ecoregionRst, rstLCCAdj),
+                          rasterToMatch = rasterToMatchLarge,
+                          userTags = c(cacheTags, "ecoregionFiles", "stable"),
+                          omitArgs = c("userTags"))
+
+  if (appendEcoregionFactor) {
+    ecoregionTable <- as.data.table(ecoregionRst@data@attributes[[1]])
+    ecoregionTable[, ID := as.factor(paddedFloatToChar(ID, max(nchar(ID))))]
+    ecoregionFiles$ecoregion <- ecoregionFiles$ecoregion[ecoregionTable, on = c("ecoregion" = "ID")]
+  }
+
+  return(ecoregionFiles)
+
+}
