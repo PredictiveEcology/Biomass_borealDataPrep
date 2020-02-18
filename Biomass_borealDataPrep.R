@@ -452,19 +452,21 @@ createBiomass_coreInputs <- function(sim) {
   ### force parameter values to avoid more checks
   message(blue("Estimating biomass using P(sim)$biomassModel as:\n"),
           magenta(paste0(format(P(sim)$biomassModel, appendLF = FALSE), collapse = "")))
-  modelBiomass <- Cache(statsModel,
-                        modelFn = P(sim)$biomassModel,
-                        uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataNo34to36NoBiomass$ecoregionGroup)),
-                        sumResponse = sum(cohortDataShort$B, na.rm = TRUE),
-                        .specialData = cohortDataNo34to36NoBiomass,
-                        useCloud = useCloud,
-                        cloudFolderID = sim$cloudFolderID,
-                        showSimilar = getOption("reproducible.showSimilar", FALSE),
-                        userTags = c(cacheTags, "modelBiomass"),
-                        omitArgs = c("userTags", "showSimilar", ".specialData", "useCloud", "cloudFolderID"))
+  modelBiomass <- Cache(
+    statsModel,
+    modelFn = P(sim)$biomassModel,
+    uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataNo34to36NoBiomass$ecoregionGroup)),
+    sumResponse = sum(cohortDataShort$B, na.rm = TRUE),
+    .specialData = cohortDataNo34to36NoBiomass,
+    useCloud = useCloud,
+    cloudFolderID = sim$cloudFolderID,
+    showSimilar = getOption("reproducible.showSimilar", FALSE),
+    userTags = c(cacheTags, "modelBiomass"),
+    omitArgs = c("userTags", "showSimilar", ".specialData", "useCloud", "cloudFolderID")
+  )
 
   message(blue("  The rsquared is: "))
-  print(modelBiomass$rsq)
+  message(modelBiomass$rsq)
 
   ########################################################################
   # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
@@ -697,6 +699,13 @@ Save <- function(sim) {
                                filename2 = TRUE, overwrite = TRUE,
                                userTags = c(cacheTags, "rawBiomassMap"),
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
+
+    ## if using custom raster resolution, need to allocate biomass proportionally to each pixel
+    pixelSize <- unique(res(sim$rasterToMatchLarge))
+    if (pixelSize != 250) {
+      rescaleFactor <- (250 / pixelSize)^2
+      sim$rawBiomassMap <- sim$rawBiomassMap / rescaleFactor
+    }
   }
 
   if (needRTM) {
@@ -815,11 +824,11 @@ Save <- function(sim) {
   }
 
   ## Species equivalencies table -------------------------------------------
-  
+
   if (!suppliedElsewhere("sppEquiv", sim)) {
     if (!is.null(sim$sppColorVect))
       message("No 'sppColorVect' provided; using default colour palette: Accent")
-    
+
     data("sppEquivalencies_CA", package = "LandR", envir = environment())
     sim$sppEquiv <- as.data.table(sppEquivalencies_CA)
     ## By default, Abies_las is renamed to Abies_sp
