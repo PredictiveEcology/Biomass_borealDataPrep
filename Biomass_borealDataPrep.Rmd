@@ -24,25 +24,35 @@ Keeping data preparation outside of the LandR Biomass_core module maintains the 
 # Functioning
 
 The module defaults to using kNN species cover maps and a study area in Alberta.
-After downloading all the necessary data (see above), the module proceeds to prepare the necessary objects and parameters for the simulation. These are:
-* cohortData - a `data.table` contaning cohort-level information per pixelGroup (a group of pixels with identical species composition, ecoregion, age structure and biomass)
-* pixelGroupMap - a map of the study area with pixelGroup IDs
-* speciesEcoregion - a table of species parameters by ecoregion
-* sufficientLight - a table of light requirements corresponding to each shade tolerance trait value 1:5) and each shading amount in a pixel (1:5).  
-* ecoregion - a table with ecoregions coded as "active" or "inactive
-* biomassMap - a map stand biomasses used to initialise the simulation
-* ecoregionMap - a map of ecoregion IDs - note that ecoregions are a combination of land cover class and ecodistrict.
-* minRelativeB - a parameter defining the cut points to classify stand shadeness
+After downloading all the necessary data (see above), the module proceeds to prepare the necessary objects and parameters for the simulation.
 
-Depending on the objects, some are parametrised using empirical models, others using expert knowledge (sufficientLight)
+These are:
+* `cohortData` - a `data.table` contaning cohort-level information per pixelGroup (a group of pixels with identical species composition, ecoregion, age structure and biomass)
+* `pixelGroupMap` - a map of the study area with pixelGroup IDs
+* `speciesEcoregion` - a table of species parameters by ecoregion
+* `sufficientLight` - a table of light requirements corresponding to each shade tolerance trait value 1:5) and each shading amount in a pixel (1:5).  
+* `ecoregion` - a table with ecoregions coded as "active" or "inactive
+* `biomassMap` - a map stand biomasses used to initialise the simulation
+* `ecoregionMap` - a map of ecoregion IDs - note that ecoregions are a combination of land cover class and ecodistrict.
+* `minRelativeB` - a parameter defining the cut points to classify stand shadeness
+
+Depending on the objects, some are parametrised using empirical models, others using expert knowledge (`sufficientLight`)
+
+**NOTE:** all raster _inputs_ should be at the scale of `rasterToMatchLarge` and all raster _outputs_ will be at the scale of `rasterToMatch`.
 
 ## Filling data gaps
 
-* mismatches between stand age, stand biomass and species cover are dealt with by trusting species cover first. If cover > 0 and age == 0, age is empirically estimated using a LMEM :
-age ~ B * speciesCode + (1 | initialEcoregionCode) + cover
-If cover and age == 0 and biomass > 0, biomass is set to 0.
+* mismatches between stand age, stand biomass and species cover are dealt with by trusting species cover first.
+  If `cover > 0` and `age == 0`, `age` is empirically estimated using a LMEM:
+
+    age ~ B * speciesCode + (1 | initialEcoregionCode) + cover
+    
+  If `cover` and `age == 0` and `biomass > 0`, `biomass` is set to `0`.
+  
 * species longevities are taken from published numbers from closest regions and adjusted using expert opinion
-* the user can choose to deal with certain land cover classes, like urban tissue and recent burns, as a data gap. In this case, the module replaces these classes with the closest forest type, geographically.
+
+* the user can choose to deal with certain land cover classes, like urban tissue and recent burns, as a data gap.
+  In this case, the module replaces these classes with the closest forest type, geographically.
  
 
 ## Parametrisation
