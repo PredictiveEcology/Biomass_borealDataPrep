@@ -105,11 +105,12 @@ defineModule(sim, list(
                               " The metadata (res, proj, ext, origin) need to match rasterToMatchLarge."),
                  sourceURL = "ftp://ftp.ccrs.nrcan.gc.ca/ad/NLCCLandCover/LandcoverCanada2005_250m/LandCoverOfCanada2005_V1_4.zip"),
     expectsInput("rasterToMatch", "RasterLayer",
-                 desc = "a raster of the studyArea in the same resolution and projection as rawBiomassMap",
+                 desc = paste("A raster of the studyArea in the same resolution and projection as rawBiomassMap.",
+                              "This is the scale used for all *outputs* for use in the simulation."),
                  sourceURL = NA),
     expectsInput("rasterToMatchLarge", "RasterLayer",
                  desc = paste("A raster of the studyAreaLarge in the same resolution and projection as rawBiomassMap.",
-                              "The metadata (res, proj, ext, origin) need to match rasterToMatchLarge."),
+                              "This is the scale used for all *inputs* for use in the simulation."),
                  sourceURL = NA),
     expectsInput("rawBiomassMap", "RasterLayer",
                  desc = paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
@@ -566,13 +567,21 @@ createBiomass_coreInputs <- function(sim) {
   ## make a table of available active and inactive (no biomass) ecoregions
   sim$ecoregion <- makeEcoregionDT(pixelCohortData, speciesEcoregion)
 
-  ## make biomassMap, ecoregionMap, minRelativeB, pixelGroupMap
+  ## make biomassMap, ecoregionMap, minRelativeB, pixelGroupMap (at the scale of rasterToMatch)
   sim$biomassMap <- makeBiomassMap(pixelCohortData, sim$rasterToMatch)
   sim$ecoregionMap <- makeEcoregionMap(ecoregionFiles, pixelCohortData)
   sim$minRelativeB <- makeMinRelativeB(pixelCohortData)
   sim$pixelGroupMap <- makePixelGroupMap(pixelCohortData, sim$rasterToMatch)
 
-  compareRaster(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap, sim$rasterToMatch)
+  ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
+  sim$speciesLayers <- postProcess(sim$speciesLayers,
+                                   rasterToMatch = sim$rasterToMatch,
+                                   maskWithRTM = TRUE,
+                                   filename1 = NULL, filename2 = NULL,
+                                   userTags = c(currentModule(sim), "speciesLayers"))
+
+  ## double check these rasters all match RTM
+  compareRaster(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap, sim$rasterToMatch, sim$speciesLayers)
 
   ## rm ecoregions that may not be present in rasterToMatch
   ## make ecoregionGroup a factor and export speciesEcoregion to sim
