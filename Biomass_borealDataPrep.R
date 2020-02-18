@@ -114,8 +114,9 @@ defineModule(sim, list(
     expectsInput("rawBiomassMap", "RasterLayer",
                  desc = paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
                               "Service, National Forest Inventory, kNN-derived total aboveground biomass map",
-                              "from 2001. See https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990",
-                              "for metadata"),
+                              "from 2001. If necessary, biomass values are rescaled to match changes in resolution.",
+                              "See https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990",
+                              "for metadata."),
                  sourceURL = paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
                                     "canada-forests-attributes_attributs-forests-canada/",
                                     "2001-attributes_attributs-2001/",
@@ -699,13 +700,6 @@ Save <- function(sim) {
                                filename2 = TRUE, overwrite = TRUE,
                                userTags = c(cacheTags, "rawBiomassMap"),
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
-
-    ## if using custom raster resolution, need to allocate biomass proportionally to each pixel
-    pixelSize <- unique(res(sim$rasterToMatchLarge))
-    if (pixelSize != 250) {
-      rescaleFactor <- (250 / pixelSize)^2
-      sim$rawBiomassMap <- sim$rawBiomassMap / rescaleFactor
-    }
   }
 
   if (needRTM) {
@@ -743,6 +737,16 @@ Save <- function(sim) {
     ## covert to 'mask'
     RTMvals <- getValues(sim$rasterToMatch)
     sim$rasterToMatch[!is.na(RTMvals)] <- 1
+  }
+
+  ## if using custom raster resolution, need to allocate biomass proportionally to each pixel
+  ## if no rawBiomassMap/RTM/RTMLarge were suppliedElsewhere, the "original" pixel size respects
+  ## whatever resolution comes with the rawBiomassMap data
+  simPixelSize <- unique(res(sim$rasterToMatchLarge))
+  origPixelSize <- unique(res(sim$rawBiomassMap))
+  if (simPixelSize != origPixelSize) {
+    rescaleFactor <- (origPixelSize / simPixelSize)^2
+    sim$rawBiomassMap <- sim$rawBiomassMap / rescaleFactor
   }
 
   # if (ncell(sim$rasterToMatch) < 1e4)
