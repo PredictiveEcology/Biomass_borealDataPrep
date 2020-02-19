@@ -3,7 +3,7 @@
 #' @param ecoregionLayer a spatial polygons object representing ecoregions
 #' @param ecoregionLayerField the field in ecoregionLayer that represents ecoregions - optional
 #' @param rasterToMatchLarge the rasterToMatchLarge object from sim
-#' @param rstLCC raster layer representing landcover
+#' @param rstLCCAdj raster layer representing landcover adjusted for non-forest classes
 #' @param cacheTags UserTags to pass to cache
 #' @param pixelsToRm a vector of pixels to remove
 #' @importFrom data.table as.data.table data.table
@@ -14,7 +14,7 @@
 #' @importFrom reproducible Cache
 #' @export
 prepEcoregions <- function(ecoregionRst = NULL, ecoregionLayer, ecoregionLayerField = NULL,
-                           rasterToMatchLarge, rstLCC, pixelsToRm, cacheTags){
+                           rasterToMatchLarge, rstLCCAdj, pixelsToRm, cacheTags){
 
   appendEcoregionFactor <- FALSE #whether or not to add the ecoregionClasses to the data
 
@@ -51,11 +51,8 @@ prepEcoregions <- function(ecoregionRst = NULL, ecoregionLayer, ecoregionLayerFi
   } else {
 
     if (!is_empty(ecoregionRst@data@attributes)) {
-      if (is.null(ecoregionRst@data@attributes[[1]]$ecoregion)) {
-        warning("ecoregionRst's attribute table only preserved if it has a 'ecoregion' column corresponding to its values")
-      } else {
-        appendEcoregionFactor <- TRUE
-      }
+      appendEcoregionFactor <- TRUE
+
     }
   }
 
@@ -74,7 +71,9 @@ prepEcoregions <- function(ecoregionRst = NULL, ecoregionLayer, ecoregionLayerFi
   if (appendEcoregionFactor) {
     ecoregionTable <- as.data.table(ecoregionRst@data@attributes[[1]])
     ecoregionTable[, ID := as.factor(paddedFloatToChar(ID, max(nchar(ID))))]
-    ecoregionFiles$ecoregion <- ecoregionFiles$ecoregion[ecoregionTable, on = c("ecoregion" = "ID")]
+    ecoregionFiles$ecoregion <- ecoregionFiles$ecoregion[ecoregionTable, on = c("ecoregion" = "ID")] %>%
+      na.omit(.)
+    setnames(ecoregionFiles$ecoregion, old = "ecoregion_lcc", new = "ecoregionGroup")
   }
 
   return(ecoregionFiles)
