@@ -16,12 +16,11 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
-  reqdPkgs = list("RCurl", "XML", "crayon", "data.table", "dplyr",
-                  "fasterize", "plyr", "raster", "sp", "sf", "purrr",
+  reqdPkgs = list("crayon", "data.table", "dplyr", "fasterize", "plyr", "raster", "sp", "sf",
+                  "SpaDES.tools",
                   "achubaty/amc@development",
                   "PredictiveEcology/LandR@development",
-                  "PredictiveEcology/pemisc@development",
-                  "SpaDES.tools"),
+                  "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
                     quote(lme4::lmer(B ~ logAge * speciesCode + cover * speciesCode +
@@ -86,8 +85,8 @@ defineModule(sim, list(
                     "This describes the simulation time at which the first save event should occur"),
     defineParameter(".saveInterval", "numeric", NA, NA, NA,
                     "This describes the simulation time interval between save events"),
-    defineParameter(".useCache", "logical", "init", NA, NA,
-                    desc = "Controls cache; caches the init event by default")
+    defineParameter(".useCache", "character", c(".inputObjects", "init"), NA, NA,
+                    desc = "Internal. Can be names of events or the whole module name; these will be cached by SpaDES")
   ),
   inputObjects = bind_rows(
     expectsInput("cloudFolderID", "character",
@@ -121,17 +120,19 @@ defineModule(sim, list(
                               " The metadata (res, proj, ext, origin) need to match rasterToMatchLarge."),
                  sourceURL = "ftp://ftp.ccrs.nrcan.gc.ca/ad/NLCCLandCover/LandcoverCanada2005_250m/LandCoverOfCanada2005_V1_4.zip"),
     expectsInput("rasterToMatch", "RasterLayer",
-                 desc = "a raster of the studyArea in the same resolution and projection as rawBiomassMap",
+                 desc = paste("A raster of the studyArea in the same resolution and projection as rawBiomassMap.",
+                              "This is the scale used for all *outputs* for use in the simulation."),
                  sourceURL = NA),
     expectsInput("rasterToMatchLarge", "RasterLayer",
                  desc = paste("A raster of the studyAreaLarge in the same resolution and projection as rawBiomassMap.",
-                              "The metadata (res, proj, ext, origin) need to match rasterToMatchLarge."),
+                              "This is the scale used for all *inputs* for use in the simulation."),
                  sourceURL = NA),
     expectsInput("rawBiomassMap", "RasterLayer",
                  desc = paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
                               "Service, National Forest Inventory, kNN-derived total aboveground biomass map",
-                              "from 2001. See https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990",
-                              "for metadata"),
+                              "from 2001. If necessary, biomass values are rescaled to match changes in resolution.",
+                              "See https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990",
+                              "for metadata."),
                  sourceURL = paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
                                     "canada-forests-attributes_attributs-forests-canada/",
                                     "2001-attributes_attributs-2001/",
@@ -151,6 +152,9 @@ defineModule(sim, list(
                  sourceURL = ""),
     expectsInput("sppEquiv", "data.table",
                  desc = "table of species equivalencies. See LandR::sppEquivalencies_CA.",
+                 sourceURL = ""),
+    expectsInput("sppNameVector", "character",
+                 desc = "an optional vector of species names to be pulled from sppEquiv. If not provided, then species will be taken from the entire P(sim)$sppEquivCol in sppEquiv. See LandR::sppEquivalencies_CA.",
                  sourceURL = ""),
     expectsInput("standAgeMap", "RasterLayer",
                  desc =  paste("stand age map in study area.",
@@ -435,19 +439,21 @@ createBiomass_coreInputs <- function(sim) {
   ### force parameter values to avoid more checks
   message(blue("Estimating biomass using P(sim)$biomassModel as:\n"),
           magenta(paste0(format(P(sim)$biomassModel, appendLF = FALSE), collapse = "")))
-  modelBiomass <- Cache(statsModel,
-                        modelFn = P(sim)$biomassModel,
-                        uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataNo34to36NoBiomass$ecoregionGroup)),
-                        sumResponse = sum(cohortDataShort$B, na.rm = TRUE),
-                        .specialData = cohortDataNo34to36NoBiomass,
-                        useCloud = useCloud,
-                        cloudFolderID = sim$cloudFolderID,
-                        showSimilar = getOption("reproducible.showSimilar", FALSE),
-                        userTags = c(cacheTags, "modelBiomass"),
-                        omitArgs = c("userTags", "showSimilar", ".specialData", "useCloud", "cloudFolderID"))
+  modelBiomass <- Cache(
+    statsModel,
+    modelFn = P(sim)$biomassModel,
+    uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataNo34to36NoBiomass$ecoregionGroup)),
+    sumResponse = sum(cohortDataShort$B, na.rm = TRUE),
+    .specialData = cohortDataNo34to36NoBiomass,
+    useCloud = useCloud,
+    cloudFolderID = sim$cloudFolderID,
+    showSimilar = getOption("reproducible.showSimilar", FALSE),
+    userTags = c(cacheTags, "modelBiomass"),
+    omitArgs = c("userTags", "showSimilar", ".specialData", "useCloud", "cloudFolderID")
+  )
 
   message(blue("  The rsquared is: "))
-  print(modelBiomass$rsq)
+  message(modelBiomass$rsq)
 
   ########################################################################
   # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
@@ -509,9 +515,7 @@ createBiomass_coreInputs <- function(sim) {
                                 userTags = c(cacheTags, "rasterToMatchLarge"),
                                 omitArgs = c("userTags"))
 
-    if (!compareRaster(rasterToMatchLarge, sim$rasterToMatch,
-                       orig = TRUE, res = TRUE,
-                       stopiffalse = FALSE))
+    if (!compareRaster(rasterToMatchLarge, sim$rasterToMatch, orig = TRUE, stopiffalse = FALSE))
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.
            Please debug Biomass_borealDataPrep::createBiomass_coreInputs()")
 
@@ -548,12 +552,22 @@ createBiomass_coreInputs <- function(sim) {
   pixelCohortData <- cohortDataFiles$pixelCohortData
   rm(cohortDataFiles)
 
+  ## make a table of available active and inactive (no biomass) ecoregions
+  sim$ecoregion <- makeEcoregionDT(pixelCohortData, speciesEcoregion)
+
+  ## make biomassMap, ecoregionMap, minRelativeB, pixelGroupMap (at the scale of rasterToMatch)
   sim$ecoregion <- ecoregionFiles$ecoregion
   ## make biomassMap, ecoregionMap, minRelativeB, pixelGroupMap
   sim$biomassMap <- makeBiomassMap(pixelCohortData, sim$rasterToMatch)
   sim$ecoregionMap <- makeEcoregionMap(ecoregionFiles, pixelCohortData)
   sim$minRelativeB <- makeMinRelativeB(pixelCohortData)
   sim$pixelGroupMap <- makePixelGroupMap(pixelCohortData, sim$rasterToMatch)
+
+  ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
+  sim$speciesLayers <- crop(sim$speciesLayers, sim$rasterToMatch) ## TODO: use postProcess?
+
+  ## double check these rasters all match RTM
+  compareRaster(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap, sim$rasterToMatch, sim$speciesLayers)
 
   ## rm ecoregions that may not be present in rasterToMatch
   ## make ecoregionGroup a factor and export speciesEcoregion to sim
@@ -671,6 +685,7 @@ Save <- function(sim) {
                                userTags = c(cacheTags, "rawBiomassMap"),
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
   }
+
   if (needRTM) {
     ## if we need rasterToMatch/rasterToMatchLarge, that means a) we don't have it, but b) we will have rawBiomassMap
     ## even if one of the rasterToMatch is present re-do both.
@@ -706,6 +721,16 @@ Save <- function(sim) {
     ## covert to 'mask'
     RTMvals <- getValues(sim$rasterToMatch)
     sim$rasterToMatch[!is.na(RTMvals)] <- 1
+  }
+
+  ## if using custom raster resolution, need to allocate biomass proportionally to each pixel
+  ## if no rawBiomassMap/RTM/RTMLarge were suppliedElsewhere, the "original" pixel size respects
+  ## whatever resolution comes with the rawBiomassMap data
+  simPixelSize <- unique(res(sim$rasterToMatchLarge))
+  origPixelSize <- unique(res(sim$rawBiomassMap))
+  if (simPixelSize != origPixelSize) {
+    rescaleFactor <- (origPixelSize / simPixelSize)^2
+    sim$rawBiomassMap <- sim$rawBiomassMap / rescaleFactor
   }
 
   # if (ncell(sim$rasterToMatch) < 1e4)
@@ -786,9 +811,10 @@ Save <- function(sim) {
   }
 
   ## Species equivalencies table -------------------------------------------
+
   if (!suppliedElsewhere("sppEquiv", sim)) {
     if (!is.null(sim$sppColorVect))
-      stop("If you provide sppColorVect, you MUST also provide sppEquiv")
+      message("No 'sppColorVect' provided; using default colour palette: Accent")
 
     data("sppEquivalencies_CA", package = "LandR", envir = environment())
     sim$sppEquiv <- as.data.table(sppEquivalencies_CA)
@@ -820,8 +846,12 @@ Save <- function(sim) {
     sim$sppColorVect <- sppColors(sim$sppEquiv, P(sim)$sppEquivCol,
                                   newVals = "Mixed", palette = "Accent")
   } else {
-    if (is.null(sim$sppColorVect))
-      stop("If you provide 'sppEquiv' you MUST also provide 'sppColorVect'")
+    if (is.null(sim$sppColorVect)) {
+      ## add default colors for species used in model
+      sim$sppColorVect <- sppColors(sim$sppEquiv, P(sim)$sppEquivCol,
+                                    newVals = "Mixed", palette = "Accent")
+      message("No 'sppColorVect' provided; using default colour palette: Accent")
+    }
   }
 
   ## Species raster layers -------------------------------------------
@@ -834,6 +864,7 @@ Save <- function(sim) {
                                studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                                sppEquiv = sim$sppEquiv,
                                knnNamesCol = "KNN",
+                               sppNameVector = sim$sppNameVector,
                                sppEquivCol = P(sim)$sppEquivCol,
                                thresh = 10,
                                url = extractURL("speciesLayers"),
