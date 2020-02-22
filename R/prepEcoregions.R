@@ -49,6 +49,8 @@ prepEcoregions <- function(ecoregionRst = NULL, ecoregionLayer, ecoregionLayerFi
     }
 
   } else {
+print("Browser inside the function prepEcoregions in Biomass_borealDataPrep/R")
+browser()
 
     if (!is_empty(ecoregionRst@data@attributes)) {
       appendEcoregionFactor <- TRUE

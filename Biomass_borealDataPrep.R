@@ -439,6 +439,8 @@ createBiomass_coreInputs <- function(sim) {
   ### force parameter values to avoid more checks
   message(blue("Estimating biomass using P(sim)$biomassModel as:\n"),
           magenta(paste0(format(P(sim)$biomassModel, appendLF = FALSE), collapse = "")))
+print("Check biomass model!")
+browser()
   modelBiomass <- Cache(
     statsModel,
     modelFn = P(sim)$biomassModel,
@@ -446,10 +448,11 @@ createBiomass_coreInputs <- function(sim) {
     sumResponse = sum(cohortDataShort$B, na.rm = TRUE),
     .specialData = cohortDataNo34to36NoBiomass,
     useCloud = useCloud,
+    useCache = "overwrite",
     cloudFolderID = sim$cloudFolderID,
     showSimilar = getOption("reproducible.showSimilar", FALSE),
     userTags = c(cacheTags, "modelBiomass"),
-    omitArgs = c("userTags", "showSimilar", ".specialData", "useCloud", "cloudFolderID")
+    omitArgs = c("userTags", "showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
   )
 
   message(blue("  The rsquared is: "))
