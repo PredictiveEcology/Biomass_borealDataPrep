@@ -12,6 +12,7 @@
 #' @importFrom sf st_as_sf
 #' @importFrom LandR ecoregionProducer paddedFloatToChar
 #' @importFrom reproducible Cache
+#' @importFrom purrr is_empty
 #' @export
 prepEcoregions <- function(ecoregionRst = NULL, ecoregionLayer, ecoregionLayerField = NULL,
                            rasterToMatchLarge, rstLCCAdj, pixelsToRm, cacheTags){
@@ -49,8 +50,6 @@ prepEcoregions <- function(ecoregionRst = NULL, ecoregionLayer, ecoregionLayerFi
     }
 
   } else {
-print("Browser inside the function prepEcoregions in Biomass_borealDataPrep/R")
-browser()
 
     if (!is_empty(ecoregionRst@data@attributes)) {
       appendEcoregionFactor <- TRUE
