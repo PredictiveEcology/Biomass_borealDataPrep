@@ -747,9 +747,10 @@ Save <- function(sim) {
   ## if using custom raster resolution, need to allocate biomass proportionally to each pixel
   ## if no rawBiomassMap/RTM/RTMLarge were suppliedElsewhere, the "original" pixel size respects
   ## whatever resolution comes with the rawBiomassMap data
-  simPixelSize <- unique(res(sim$rasterToMatchLarge))
-  origPixelSize <- unique(res(sim$rawBiomassMap))
-  if (simPixelSize != origPixelSize) {
+  simPixelSize <- unique(asInteger(res(sim$rasterToMatchLarge)))
+  origPixelSize <- 250L # unique(res(sim$rawBiomassMap)) ## TODO: figure out a good way to not hardcode this
+
+  if (simPixelSize != origPixelSize) { ## make sure we are comparing integers, else else %!=%
     rescaleFactor <- (origPixelSize / simPixelSize)^2
     sim$rawBiomassMap <- sim$rawBiomassMap / rescaleFactor
   }
