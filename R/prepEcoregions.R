@@ -12,7 +12,6 @@
 #' @importFrom sf st_as_sf
 #' @importFrom LandR ecoregionProducer paddedFloatToChar
 #' @importFrom reproducible Cache
-#' @importFrom purrr is_empty
 #' @export
 prepEcoregions <- function(ecoregionRst = NULL, ecoregionLayer, ecoregionLayerField = NULL,
                            rasterToMatchLarge, rstLCCAdj, pixelsToRm, cacheTags){
@@ -51,7 +50,7 @@ prepEcoregions <- function(ecoregionRst = NULL, ecoregionLayer, ecoregionLayerFi
 
   } else {
 
-    if (!is_empty(ecoregionRst@data@attributes)) {
+    if (!length(ecoregionRst@data@attributes) == 0) { # Not sure this is what you intended. The is_empty was making the attribute table return empty
       appendEcoregionFactor <- TRUE
 
     }
@@ -60,6 +59,7 @@ prepEcoregions <- function(ecoregionRst = NULL, ecoregionLayer, ecoregionLayerFi
   ecoregionRst[pixelsToRm] <- NA
 
   message(blue("Make initial ecoregionGroups ", Sys.time()))
+
   assertthat::assert_that(isTRUE(compareRaster(ecoregionRst, rstLCCAdj,
                                                res = TRUE, orig = TRUE, stopiffalse = FALSE)))
 
