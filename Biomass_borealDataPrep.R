@@ -415,7 +415,8 @@ createBiomass_coreInputs <- function(sim) {
   } else {
     FALSE
   }
-
+print("Check cover model!")
+browser()
   modelCover <- Cache(statsModel,
                       modelFn = P(sim)$coverModel,
                       uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataShort$ecoregionGroup)),
@@ -423,9 +424,10 @@ createBiomass_coreInputs <- function(sim) {
                       .specialData = cohortDataShort,
                       useCloud = useCloud,
                       cloudFolderID = sim$cloudFolderID,
+                      useCache = "overwrite",
                       showSimilar = getOption("reproducible.showSimilar", FALSE),
                       userTags = c(cacheTags, "modelCover"),
-                      omitArgs = c("userTags", "showSimilar", ".specialData", "useCloud", "cloudFolderID"))
+                      omitArgs = c("showSimilar", "useCache", ".specialData", "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
   print(modelCover$rsq)
 
@@ -451,8 +453,8 @@ browser()
     useCache = "overwrite",
     cloudFolderID = sim$cloudFolderID,
     showSimilar = getOption("reproducible.showSimilar", FALSE),
-    userTags = c(cacheTags, "modelBiomass"),
-    omitArgs = c("userTags", "showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
+    userTags = c(cacheTags, "modelBiomass", paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
+    omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
   )
 
   message(blue("  The rsquared is: "))
