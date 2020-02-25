@@ -450,7 +450,6 @@ createBiomass_coreInputs <- function(sim) {
     modelCover <- cohortDataShort$pred
   }
 
-
   ## For biomass
   ### Subsample cases where there are more than 50 points in an ecoregionGroup * speciesCode
   cohortDataNo34to36NoBiomass <- subsetDT(cohortDataNo34to36NoBiomass,
@@ -577,11 +576,10 @@ createBiomass_coreInputs <- function(sim) {
   rm(cohortDataFiles)
 
   ## make a table of available active and inactive (no biomass) ecoregions
-  sim$ecoregion <- makeEcoregionDT(pixelCohortData, speciesEcoregion)
+  #sim$ecoregion <- makeEcoregionDT(pixelCohortData, speciesEcoregion) ## TODO: is makeEcoregionDT obsolete?
+  sim$ecoregion <- ecoregionFiles$ecoregion
 
   ## make biomassMap, ecoregionMap, minRelativeB, pixelGroupMap (at the scale of rasterToMatch)
-  sim$ecoregion <- ecoregionFiles$ecoregion
-  ## make biomassMap, ecoregionMap, minRelativeB, pixelGroupMap
   sim$biomassMap <- makeBiomassMap(pixelCohortData, sim$rasterToMatch)
   sim$ecoregionMap <- makeEcoregionMap(ecoregionFiles, pixelCohortData)
   sim$minRelativeB <- makeMinRelativeB(pixelCohortData)
@@ -819,7 +817,6 @@ Save <- function(sim) {
 
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
-
     sim$standAgeMap <- Cache(prepInputs,
                              destinationPath = dPath,
                              url = extractURL("standAgeMap"),
@@ -832,8 +829,9 @@ Save <- function(sim) {
                              datatype = "INT2U",
                              filename2 = NULL,
                              overwrite = TRUE,
-                             userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags), # use at least 1 unique userTag
-                             omitArgs = c("destinationPath", "targetFile", "overwrite", "alsoExtract", "userTags"))
+                             userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
+                             omitArgs = c("destinationPath", "targetFile", "overwrite",
+                                          "alsoExtract", "userTags"))
     sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
   }
 
