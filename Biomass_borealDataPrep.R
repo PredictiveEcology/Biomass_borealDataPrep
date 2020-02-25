@@ -576,8 +576,8 @@ createBiomass_coreInputs <- function(sim) {
   rm(cohortDataFiles)
 
   ## make a table of available active and inactive (no biomass) ecoregions
-  #sim$ecoregion <- makeEcoregionDT(pixelCohortData, speciesEcoregion) ## TODO: is makeEcoregionDT obsolete?
-  sim$ecoregion <- ecoregionFiles$ecoregion
+  sim$ecoregion <- makeEcoregionDT(pixelCohortData, speciesEcoregion)
+  #sim$ecoregion <- ecoregionFiles$ecoregion ## TODO: don't use this one yet (ever?)
 
   ## make biomassMap, ecoregionMap, minRelativeB, pixelGroupMap (at the scale of rasterToMatch)
   sim$biomassMap <- makeBiomassMap(pixelCohortData, sim$rasterToMatch)
