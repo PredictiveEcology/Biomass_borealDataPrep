@@ -475,7 +475,7 @@ createBiomass_coreInputs <- function(sim) {
   )
 
   message(blue("  The rsquared is: "))
-  message(black(paste0(capture.output(modelBiomass$rsq), collapse = "\n")))
+  print(modelBiomass$rsq)
 
   ########################################################################
   # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
