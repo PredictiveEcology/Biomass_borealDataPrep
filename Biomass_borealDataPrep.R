@@ -560,7 +560,6 @@ createBiomass_coreInputs <- function(sim) {
   if (ncell(sim$rasterToMatch) > 3e6) .gc()
 
   ## subset ecoregionFiles$ecoregionMap to smaller area.
-
   ecoregionFiles$ecoregionMap <- Cache(postProcess,
                                        x = ecoregionFiles$ecoregionMap,
                                        rasterToMatch = sim$rasterToMatch,
@@ -582,7 +581,7 @@ createBiomass_coreInputs <- function(sim) {
 
   ## make biomassMap, ecoregionMap, minRelativeB, pixelGroupMap (at the scale of rasterToMatch)
   sim$biomassMap <- makeBiomassMap(pixelCohortData, sim$rasterToMatch)
-  sim$ecoregionMap <- makeEcoregionMap(ecoregionFiles, pixelCohortData)
+  sim$ecoregionMap <- makeEcoregionMap(ecoregionFiles$ecoregionMap, pixelCohortData)
   sim$minRelativeB <- makeMinRelativeB(pixelCohortData)
   sim$pixelGroupMap <- makePixelGroupMap(pixelCohortData, sim$rasterToMatch)
 
