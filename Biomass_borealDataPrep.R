@@ -9,8 +9,8 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("ctb"))
   ),
   childModules = character(0),
-  version = list(SpaDES.core = "0.2.3.9009", Biomass_borealDataPrep = numeric_version("1.4.0.9000"),
-                 LandR = "0.0.3.9000"),
+  version = list(Biomass_borealDataPrep = numeric_version("1.4.0.9000"),
+                 LandR = "0.0.3.9003", SpaDES.core = "1.0.0"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
@@ -331,11 +331,14 @@ createBiomass_coreInputs <- function(sim) {
 
   rstLCCAdj[pixelsToRm] <- NA
 
-  ecoregionFiles <- Cache(prepEcoregions, ecoregionRst = sim$ecoregionRst, ecoregionLayer = sim$ecoregionLayer,
-                                   ecoregionLayerField = P(sim)$ecoregionLayerField,
-                                   rasterToMatchLarge = sim$rasterToMatchLarge, rstLCCAdj = rstLCCAdj,
-                                   pixelsToRm = pixelsToRm, cacheTags = cacheTags)
-
+  ecoregionFiles <- Cache(prepEcoregions,
+                          ecoregionRst = sim$ecoregionRst,
+                          ecoregionLayer = sim$ecoregionLayer,
+                          ecoregionLayerField = P(sim)$ecoregionLayerField,
+                          rasterToMatchLarge = sim$rasterToMatchLarge,
+                          rstLCCAdj = rstLCCAdj,
+                          pixelsToRm = pixelsToRm,
+                          cacheTags = cacheTags)
 
   ################################################################
   ## put together pixelTable object
