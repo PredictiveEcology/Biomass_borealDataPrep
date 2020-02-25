@@ -423,7 +423,6 @@ createBiomass_coreInputs <- function(sim) {
   } else {
     FALSE
   }
-  print("Check cover model!")
 
   # Remove all cases where there is 100% presence in an ecoregionGroup -- causes failures in binomial models
   cdsWh <- cohortDataShort$coverPres == cohortDataShort$coverNum
@@ -461,7 +460,6 @@ createBiomass_coreInputs <- function(sim) {
   ### force parameter values to avoid more checks
   message(blue("Estimating biomass using P(sim)$biomassModel as:\n"),
           magenta(paste0(format(P(sim)$biomassModel, appendLF = FALSE), collapse = "")))
-  message(black("Check biomass model!")) ## TODO: change colour to something legible with dark theme
   modelBiomass <- Cache(
     statsModel,
     modelFn = P(sim)$biomassModel,
