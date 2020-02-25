@@ -801,12 +801,11 @@ Save <- function(sim) {
 
   ## Ecodistrict ------------------------------------------------
   if (!suppliedElsewhere("ecoregionLayer", sim)) {
-
     sim$ecoregionLayer <- Cache(prepInputs,
-                                targetFile = 'ecodistricts.shp',
+                                targetFile = "ecodistricts.shp",
                                 archive = asPath("ecodistrict_shp.zip"),
                                 url = extractURL("ecoregionLayer", sim),
-                                alsoExtract = 'similar',
+                                alsoExtract = "similar",
                                 destinationPath = dPath,
                                 studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                                 overwrite = TRUE,
