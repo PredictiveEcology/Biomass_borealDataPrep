@@ -581,7 +581,7 @@ createBiomass_coreInputs <- function(sim) {
 
   ## make biomassMap, ecoregionMap, minRelativeB, pixelGroupMap (at the scale of rasterToMatch)
   sim$biomassMap <- makeBiomassMap(pixelCohortData, sim$rasterToMatch)
-  sim$ecoregionMap <- makeEcoregionMap(ecoregionFiles$ecoregionMap, pixelCohortData)
+  sim$ecoregionMap <- makeEcoregionMap(ecoregionFiles, pixelCohortData)
   sim$minRelativeB <- makeMinRelativeB(pixelCohortData)
   sim$pixelGroupMap <- makePixelGroupMap(pixelCohortData, sim$rasterToMatch)
 
