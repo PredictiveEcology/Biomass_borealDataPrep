@@ -396,6 +396,7 @@ createBiomass_coreInputs <- function(sim) {
   setnames(cohortDataNo34to36, "initialEcoregionCode", "ecoregionGroup")
   cohortDataNo34to36NoBiomass <- cohortDataNo34to36[eval(rmZeroBiomassQuote),
                                                     .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
+  cohortDataNo34to36NoBiomass <- unique(cohortDataNo34to36NoBiomass)
 
   ## make sure ecoregionGroups match
   assert1(cohortData34to36, pixelCohortData, rmZeroBiomassQuote)
