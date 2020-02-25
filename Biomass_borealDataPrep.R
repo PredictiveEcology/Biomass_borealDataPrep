@@ -240,7 +240,11 @@ createBiomass_coreInputs <- function(sim) {
     stop(red(paste("'speciesLayers' are missing in Biomass_borealDataPrep init event.\n",
                    "This is likely due to the module producing 'speciesLayers' being scheduled after Biomass_borealDataPrep.\n",
                    "Please check module order.")))
-  
+
+  ## check that input rasters all match
+  compareRaster(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC,
+                sim$speciesLayers, sim$standAgeMap, orig = TRUE)
+
   sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
   sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
   
