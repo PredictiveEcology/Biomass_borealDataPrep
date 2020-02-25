@@ -37,12 +37,16 @@ defineModule(sim, list(
                           "A custom model call can also be provided, as long as the 'data' argument",
                           "is NOT included.")),
     defineParameter("coverModel", "call",
-                    quote(lme4::glmer(cbind(coverPres, coverNum) ~ speciesCode + (1 | ecoregionGroup),
-                                      family = binomial)),
+                    quote(glm(cbind(coverPres, coverNum - coverPres) ~ speciesCode * ecoregionGroup, 
+                              family = binomial)),
                     NA, NA,
                     paste("Model and formula used for estimating cover from ecoregion and speciesCode",
                           "and potentially others. Defaults to a GLMEM if there are > 1 grouping levels.",
                           "A custom model call can also be provided, as long as the 'data' argument is NOT included")),
+    defineParameter("ecoregionLayerField", "character", NULL, NA, NA,
+                    paste("the name of the field used to distinguish ecoregions, if supplying a polygon.",
+                          "The default is 'ECODISTRIC' where available (for legacy reasons), else the row numbers of",
+                          "sim$ecoregionLayer. If this field is not numeric, it will be coerced to numeric")),
     defineParameter("forestedLCCClasses", "numeric", c(1:15, 20, 32, 34:35), 0, 39,
                     paste("The classes in the rstLCC layer that are 'treed' and will therefore be run in Biomass_core.",
                           "Defaults to forested classes in LCC2005 map.")),
@@ -89,9 +93,20 @@ defineModule(sim, list(
                  "The google drive location where cloudCache will store large statistical objects"),
     expectsInput("columnsForPixelGroups", "character",
                  "The names of the columns in cohortData that define unique pixelGroups. Default is c('ecoregionGroup', 'speciesCode', 'age', 'B') "),
-    expectsInput("ecoDistrict", "SpatialPolygonsDataFrame",
-                 desc = "ecodistricts in study area, default is Canada national ecodistricts",
+    expectsInput("ecoregionLayer", "SpatialPolygonsDataFrame",
+                 desc = paste("A SpatialPolygonsDataFrame that characterizes the unique ecological regions used to",
+                              "parameterize the biomass, cover, and species establishment probability models.",
+                              "It will be overlaid with landcover to generate classes for every ecoregion/LCC combination.",
+                              "It must have same extent and crs as studyAreaLarge if suppplied by user.",
+                              "It is superseded by sim$ecoregionRst if that object is supplied by the user"),
                  sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip"),
+    expectsInput('ecoregionRst', "RasterLayer",
+                 desc = paste("A raster that characterizes the unique ecological regions used to",
+                              "parameterize the biomass, cover, and species establishment probability models.",
+                              "If this object is provided, it will supersede sim$ecoregionLayer.",
+                              "It will be overlaid with landcover to generate classes for every ecoregion/LCC combination.",
+                              "It must have same extent and crs as rasterToMatchLarge if suppplied by user - use reproducible::postProcess.",
+                              "If it uses an attribute table, it must contain the field 'ecoregion' to represent raster values")),
     expectsInput("rstLCC", "RasterLayer",
                  desc = paste("A land classification map in study area. It must be 'corrected', in the sense that:\n",
                               "1) Every class must not conflict with any other map in this module\n",
@@ -167,7 +182,6 @@ defineModule(sim, list(
     createsOutput("cohortData", "data.table",
                   desc = paste("initial community table, created from available biomass,",
                                "age and species cover data, as well as eco zonation information")),
-    createsOutput("ecoDistrict", "", desc = ""), ## TODO: description and type needed
     createsOutput("ecoregion", "data.table",
                   desc = "ecoregion look up table"),
     createsOutput("ecoregionMap", "RasterLayer",
@@ -202,7 +216,7 @@ defineModule(sim, list(
 doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FALSE) {
   if (eventType == "init") {
     sim <- createBiomass_coreInputs(sim)
-
+    
     # schedule future event(s)
     sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_borealDataPrep", "save")
   } else if (eventType == "save") {
@@ -218,26 +232,18 @@ createBiomass_coreInputs <- function(sim) {
   # # ! ----- EDIT BELOW ----- ! #
   if (is.null(P(sim)$pixelGroupAgeClass))
     params(sim)[[currentModule(sim)]]$pixelGroupAgeClass <- P(sim)$successionTimestep
-
+  
   cacheTags <- c(currentModule(sim), "init")
-
+  
   message(blue("Starting to createBiomass_coreInputs in Biomass_borealDataPrep: ", Sys.time()))
   if (is.null(sim$speciesLayers))
-    stop(red(paste(
-      "'speciesLayers' are missing in Biomass_borealDataPrep init event.\n",
-      "This is likely due to the module producing 'speciesLayers' being scheduled after Biomass_borealDataPrep.\n",
-      "Please check module order."
-    )))
-
-  ## check that input rasters all match
-  compareRaster(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC,
-                sim$speciesLayers, sim$standAgeMap, orig = TRUE)
-
-  sim$ecoDistrict <- spTransform(sim$ecoDistrict, crs(sim$speciesLayers))
-
+    stop(red(paste("'speciesLayers' are missing in Biomass_borealDataPrep init event.\n",
+                   "This is likely due to the module producing 'speciesLayers' being scheduled after Biomass_borealDataPrep.\n",
+                   "Please check module order.")))
+  
   sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
   sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
-
+  
   ################################################################
   ## species traits inputs
   ################################################################
@@ -247,14 +253,14 @@ createBiomass_coreInputs <- function(sim) {
                                   sppEquiv = sim$sppEquiv[get(P(sim)$sppEquivCol) %in%
                                                             names(sim$speciesLayers)],
                                   sppEquivCol = P(sim)$sppEquivCol)
-
+  
   ### override species table values ##############################
   defaultQuote <- quote(LandR::speciesTableUpdate(sim$species, sim$speciesTable,
                                                   sim$sppEquiv, P(sim)$sppEquivCol))
   if (P(sim)$speciesUpdateFunction[[1]] != defaultQuote) {
     stop("Make sure that the first entry in speciesUpdateFunction is the default expression")
   }
-
+  
   for (fn in P(sim)$speciesUpdateFunction) {
     if (is(fn, "call")) {
       sim$species <- eval(fn)
@@ -262,12 +268,12 @@ createBiomass_coreInputs <- function(sim) {
       stop("speciesUpdateFunction should be a list of functions.")
     }
   }
-
+  
   if (getOption("LandR.verbose") > 0) {
     message("Adjusting species-level traits, part 2, for LandWeb")
     print(sim$species)
   }
-
+  
   ## check that all species have trait values.
   missingTraits <- setdiff(names(sim$speciesLayers), sim$species$species)
   if (length(missingTraits) == length(names(sim$speciesLayers))) {
@@ -276,7 +282,7 @@ createBiomass_coreInputs <- function(sim) {
   } else if (length(missingTraits))
     warning("No trait values where found for ", paste(missingTraits, collapse = ", "), ".\n",
             "Please check the species list and traits table")
-
+  
   ### make table of light shade tolerance  #######################
   sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
                                     X0 = 1,
@@ -285,7 +291,7 @@ createBiomass_coreInputs <- function(sim) {
                                     X3 = c(rep(0, 2), 0.5, rep(1, 2)),
                                     X4 = c(rep(0, 3), 0.5, 1),
                                     X5 = c(rep(0, 4), 1))
-
+  
   ################################################################
   ## initialEcoregionMap
   ################################################################
@@ -295,59 +301,38 @@ createBiomass_coreInputs <- function(sim) {
     sim$studyArea <- spTransform(sim$studyArea, crs(sim$rasterToMatch))
     sim$studyArea <- fixErrors(sim$studyArea)
   }
-
+  
   if (!identical(crs(sim$studyAreaLarge), crs(sim$rasterToMatchLarge))) {
     warning(paste0("studyAreaLarge and rasterToMatchLarge projections differ.\n",
                    "studyAreaLarge will be projected to match rasterToMatchLarge"))
     sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crs(sim$rasterToMatchLarge))
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
-
-  sim$ecoDistrict <- fixErrors(sim$ecoDistrict)
-
-  ecoregionMap <- Cache(postProcess,
-                        x = sim$ecoDistrict,
-                        studyArea = sim$studyAreaLarge,
-                        filename2 = NULL,
-                        userTags = c(cacheTags, "ecoregionMapLarge"),
-                        omitArgs = c("userTags"))
-
-  ecoregionMapSF <- sf::st_as_sf(ecoregionMap)
-  if (is(ecoregionMapSF$ECODISTRIC, "character"))
-    ecoregionMapSF$ECODISTRIC <- as.numeric(ecoregionMapSF$ECODISTRIC)
-  rstEcoregionMap <- fasterize::fasterize(ecoregionMapSF, raster = sim$rasterToMatchLarge,
-                                          field = "ECODISTRIC")
-  ecoregionstatus <- data.table(active = "yes", ecoregion = 1:1031)
+  
   rstLCCAdj <- sim$rstLCC
-
+  
   ## Clean pixels for veg. succession model
   ## remove pixes with no spp data
   pixelsToRm <- is.na(sim$speciesLayers[[1]][])
-
+  
   ## remove non-forested if asked by user
   if (P(sim)$omitNonTreedPixels) {
     if (is.null(P(sim)$forestedLCCClasses))
       stop("No P(sim)$forestedLCCClasses provided, but P(sim)$omitNonTreedPixels is TRUE.
            \nPlease provide a vector of forested classes in P(sim)$forestedLCCClasses")
-
+    
     lccPixelsRemoveTF <- !(sim$rstLCC[] %in% P(sim)$forestedLCCClasses)
     pixelsToRm <- lccPixelsRemoveTF | pixelsToRm
   }
-
+  
   rstLCCAdj[pixelsToRm] <- NA
-  rstEcoregionMap[pixelsToRm] <- NA
-
-  ## TODO: clean up - not the most effient function (maybe contains redundancies). Producing a non-used object
-  message(blue("Make initial ecoregionGroups ", Sys.time()))
-  compareRaster(rstEcoregionMap, rstLCCAdj, res = TRUE, orig = TRUE, stopiffalse = FALSE)
-  ecoregionFiles <- Cache(ecoregionProducer,
-                          ecoregionMaps = list(rstEcoregionMap, rstLCCAdj),
-                          ecoregionName = "ECODISTRIC",
-                          ecoregionActiveStatus = ecoregionstatus,
-                          rasterToMatch = sim$rasterToMatchLarge,
-                          userTags = c(cacheTags, "ecoregionFiles", "stable"),
-                          omitArgs = c("userTags"))
-
+  
+  ecoregionFiles <- Cache(prepEcoregions, ecoregionRst = sim$ecoregionRst, ecoregionLayer = sim$ecoregionLayer,
+                                   ecoregionLayerField = P(sim)$ecoregionLayerField,
+                                   rasterToMatchLarge = sim$rasterToMatchLarge, rstLCCAdj = rstLCCAdj,
+                                   pixelsToRm = pixelsToRm, cacheTags = cacheTags)
+  
+  
   ################################################################
   ## put together pixelTable object
   ################################################################
@@ -363,7 +348,7 @@ createBiomass_coreInputs <- function(sim) {
                       pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
                       userTags = c(cacheTags, "pixelTable"),
                       omitArgs = c("userTags"))
-
+  
   #######################################################
   # Make the initial pixelCohortData table
   #######################################################
@@ -374,16 +359,16 @@ createBiomass_coreInputs <- function(sim) {
                            doSubset = P(sim)$subsetDataAgeModel,
                            userTags = c(cacheTags, "pixelCohortData"),
                            omitArgs = c("userTags"))
-
+  
   #######################################################
   # replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*
   #######################################################
   uwc <- P(sim)$LCCClassesToReplaceNN
-
+  
   message("Replace ", paste(uwc, collapse = ", "),
           " values -- ", "burns"[any(uwc %in% 34:35)], " and cities"[any(uwc %in% 36)],
           " -- to a neighbour class *that exists*")
-
+  
   rmZeroBiomassQuote <- quote(B > 0)
   # availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
   #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
@@ -394,7 +379,7 @@ createBiomass_coreInputs <- function(sim) {
                          availableERC_by_Sp = availableCombinations,
                          userTags = c(cacheTags, "newLCCClasses", "stable"),
                          omitArgs = c("userTags"))
-
+  
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
   cohortData34to36 <- pixelCohortData[pixelIndex %in% newLCCClasses$pixelIndex]
@@ -404,10 +389,10 @@ createBiomass_coreInputs <- function(sim) {
   setnames(cohortDataNo34to36, "initialEcoregionCode", "ecoregionGroup")
   cohortDataNo34to36NoBiomass <- cohortDataNo34to36[eval(rmZeroBiomassQuote),
                                                     .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
-
+  
   ## make sure ecoregionGroups match
   assert1(cohortData34to36, pixelCohortData, rmZeroBiomassQuote)
-
+  
   ##############################################################
   # Statistical estimation of establishprob, maxB and maxANPP
   ##############################################################
@@ -419,41 +404,57 @@ createBiomass_coreInputs <- function(sim) {
   # will be added back as establishprob = 0
   message(blue("Estimating Species Establishment Probability using P(sim)$coverModel, which is\n",
                magenta(paste0(format(P(sim)$coverModel, appendLF = FALSE), collapse = ""))))
-
+  
   # for backwards compatibility -- change from parameter to object
   if (is.null(sim$cloudFolderID))
     if (!is.null(P(sim)$cloudFolderID))
       sim$cloudFolderID <- P(sim)$cloudFolderID
-
+  
   useCloud <- if (!is.null(sim$cloudFolderID)) {
     (getOption("reproducible.useCache", FALSE) && P(sim)$useCloudCacheForStats)
   } else {
     FALSE
   }
-
+  print("Check cover model!")
+  
+  # Remove all cases where there is 100% presence in an ecoregionGroup -- causes failures in binomial models
+  cdsWh <- cohortDataShort$coverPres == cohortDataShort$coverNum
+  cds <- Copy(cohortDataShort)
+  cds <- cds[!cdsWh]
   modelCover <- Cache(statsModel,
                       modelFn = P(sim)$coverModel,
+                      # modelFn = cm,
                       uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataShort$ecoregionGroup)),
                       sumResponse = sum(cohortDataShort$coverPres, cohortDataShort$coverNum, na.rm = TRUE),
-                      .specialData = cohortDataShort,
+                      .specialData = cds,
                       useCloud = useCloud,
                       cloudFolderID = sim$cloudFolderID,
+                      # useCache = "overwrite",
                       showSimilar = getOption("reproducible.showSimilar", FALSE),
                       userTags = c(cacheTags, "modelCover"),
-                      omitArgs = c("userTags", "showSimilar", ".specialData", "useCloud", "cloudFolderID"))
+                      omitArgs = c("showSimilar", "useCache", ".specialData", "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
-  print(modelCover$rsq)
-
+  message(blue(paste0(capture.output(modelCover$rsq), collapse = "\n")))
+  if (isTRUE(any(cdsWh))) {
+    cds[, pred := fitted(modelCover$mod, response = "response")]
+    cohortDataShort <- cds[, -c("coverPres", "coverNum")][cohortDataShort, 
+                             on = c('ecoregionGroup', 'speciesCode'), nomatch = NA]
+    cohortDataShort[is.na(pred), pred := 1]
+    modelCover <- cohortDataShort$pred
+  }
+  
+  
   ## For biomass
   ### Subsample cases where there are more than 50 points in an ecoregionGroup * speciesCode
   cohortDataNo34to36NoBiomass <- subsetDT(cohortDataNo34to36NoBiomass,
                                           by = c("ecoregionGroup", "speciesCode"),
                                           doSubset = P(sim)$subsetDataBiomassModel)
-
+  
   ### For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
   ### force parameter values to avoid more checks
   message(blue("Estimating biomass using P(sim)$biomassModel as:\n"),
           magenta(paste0(format(P(sim)$biomassModel, appendLF = FALSE), collapse = "")))
+  message(black("Check biomass model!"))
   modelBiomass <- Cache(
     statsModel,
     modelFn = P(sim)$biomassModel,
@@ -461,15 +462,16 @@ createBiomass_coreInputs <- function(sim) {
     sumResponse = sum(cohortDataShort$B, na.rm = TRUE),
     .specialData = cohortDataNo34to36NoBiomass,
     useCloud = useCloud,
+    # useCache = "overwrite",
     cloudFolderID = sim$cloudFolderID,
     showSimilar = getOption("reproducible.showSimilar", FALSE),
-    userTags = c(cacheTags, "modelBiomass"),
-    omitArgs = c("userTags", "showSimilar", ".specialData", "useCloud", "cloudFolderID")
+    userTags = c(cacheTags, "modelBiomass", paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
+    omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
   )
-
+  
   message(blue("  The rsquared is: "))
-  message(modelBiomass$rsq)
-
+  message(black(paste0(capture.output(modelBiomass$rsq), collapse = "\n")))
+  
   ########################################################################
   # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
   #   doesn't include combinations with B = 0 because those places can't have the species/ecoregion combo
@@ -483,7 +485,7 @@ createBiomass_coreInputs <- function(sim) {
                                            modelBiomass = modelBiomass,
                                            successionTimestep = P(sim)$successionTimestep,
                                            currentYear = time(sim))
-
+  
   #######################################
   if (!is.na(P(sim)$.plotInitialTime)) {
     uniqueSpeciesNames <- as.character(unique(speciesEcoregion$speciesCode))
@@ -499,16 +501,16 @@ createBiomass_coreInputs <- function(sim) {
     Plot(maxB, legendRange = c(0, max(maxValue(maxB))))
     quickPlot::dev(curDev)
   }
-
+  
   if (ncell(sim$rasterToMatchLarge) > 3e6) .gc()
-
+  
   ########################################################################
   # Create initial communities, i.e., pixelGroups
   ########################################################################
   # Rejoin back the pixels that were 34 and 35
   pixelCohortData <- rbindlist(list(cohortData34to36, cohortDataNo34to36),
                                use.names = TRUE, fill = TRUE)
-
+  
   ########################################################################
   # "Downsize" to studyArea after estimating parameters on studyAreaLarge
   ########################################################################
@@ -517,7 +519,7 @@ createBiomass_coreInputs <- function(sim) {
   ##    that are common across the two rasters
   ## 3. Re-do pixel ID numbering so that it matches the final rasterToMatch
   ## Note: if SA and SALarge are the same, no subsetting will take place.
-
+  
   if (!identical(extent(sim$rasterToMatch), extent(sim$rasterToMatchLarge))) {
     message(blue("Subsetting to studyArea"))
     rasterToMatchLarge <- sim$rasterToMatchLarge
@@ -529,28 +531,29 @@ createBiomass_coreInputs <- function(sim) {
                                 filename2 = NULL,
                                 userTags = c(cacheTags, "rasterToMatchLarge"),
                                 omitArgs = c("userTags"))
-
+    
     if (!compareRaster(rasterToMatchLarge, sim$rasterToMatch, orig = TRUE, stopiffalse = FALSE))
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.
            Please debug Biomass_borealDataPrep::createBiomass_coreInputs()")
-
+    
     ## subset pixels that are in studyArea/rasterToMatch only
     pixToKeep <- na.omit(getValues(rasterToMatchLarge))
     pixelCohortData <- pixelCohortData[pixelIndex %in% pixToKeep]
-
+    
     # re-do pixelIndex (it now needs to match rasterToMatch)
     newPixelIndexDT <- data.table(pixelIndex = getValues(rasterToMatchLarge),
                                   newPixelIndex = as.integer(1:ncell(rasterToMatchLarge)))
-
+    
     pixelCohortData <- newPixelIndexDT[pixelCohortData, on = "pixelIndex"]
     pixelCohortData[, pixelIndex := NULL]
     setnames(pixelCohortData, old = "newPixelIndex", new = "pixelIndex")
     rm(rasterToMatchLarge)
   }
-
+  
   if (ncell(sim$rasterToMatch) > 3e6) .gc()
-
+  
   ## subset ecoregionFiles$ecoregionMap to smaller area.
+  
   ecoregionFiles$ecoregionMap <- Cache(postProcess,
                                        x = ecoregionFiles$ecoregionMap,
                                        rasterToMatch = sim$rasterToMatch,
@@ -558,23 +561,25 @@ createBiomass_coreInputs <- function(sim) {
                                        filename2 = NULL,
                                        userTags = c(cacheTags, "ecoregionMap"),
                                        omitArgs = c("userTags"))
-
+  
   ## make cohortDataFiles: pixelCohortData (rm unnecessary cols, subset pixels with B>0,
   ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
   cohortDataFiles <- makeCohortDataFiles(pixelCohortData, columnsForPixelGroups, speciesEcoregion)
   sim$cohortData <- cohortDataFiles$cohortData
   pixelCohortData <- cohortDataFiles$pixelCohortData
   rm(cohortDataFiles)
-
+  
   ## make a table of available active and inactive (no biomass) ecoregions
   sim$ecoregion <- makeEcoregionDT(pixelCohortData, speciesEcoregion)
-
+  
   ## make biomassMap, ecoregionMap, minRelativeB, pixelGroupMap (at the scale of rasterToMatch)
+  sim$ecoregion <- ecoregionFiles$ecoregion
+  ## make biomassMap, ecoregionMap, minRelativeB, pixelGroupMap
   sim$biomassMap <- makeBiomassMap(pixelCohortData, sim$rasterToMatch)
   sim$ecoregionMap <- makeEcoregionMap(ecoregionFiles, pixelCohortData)
   sim$minRelativeB <- makeMinRelativeB(pixelCohortData)
   sim$pixelGroupMap <- makePixelGroupMap(pixelCohortData, sim$rasterToMatch)
-
+  
   ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
   ## TODO: use postProcess?
   sim$speciesLayers <- crop(sim$speciesLayers, sim$rasterToMatch)
@@ -582,20 +587,20 @@ createBiomass_coreInputs <- function(sim) {
 
   ## double check these rasters all match RTM
   compareRaster(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap, sim$rasterToMatch, sim$speciesLayers)
-
+  
   ## rm ecoregions that may not be present in rasterToMatch
   ## make ecoregionGroup a factor and export speciesEcoregion to sim
   speciesEcoregion <- speciesEcoregion[ecoregionGroup %in% pixelCohortData$ecoregionGroup]
   speciesEcoregion[, ecoregionGroup := factor(as.character(ecoregionGroup))]
   sim$speciesEcoregion <- speciesEcoregion
-
+  
   ## write species layers to disk
   sim$speciesLayers <- lapply(seq(numLayers(sim$speciesLayers)), function(x) {
     writeRaster(sim$speciesLayers[[x]],
                 file.path(outputPath(sim), paste0(names(sim$speciesLayers)[x], ".tif")),
                 datatype = "INT2U", overwrite = TRUE)
   }) %>% raster::stack()
-
+  
   ## do assertions
   message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", "),
                "\n  Resulted in", magenta(length(unique(sim$cohortData$pixelGroup))),
@@ -603,9 +608,9 @@ createBiomass_coreInputs <- function(sim) {
   LandR::assertERGs(sim$ecoregionMap, cohortData = sim$cohortData,
                     speciesEcoregion = sim$speciesEcoregion,
                     minRelativeB = sim$minRelativeB)
-
+  
   LandR::assertCohortData(sim$cohortData, sim$pixelGroupMap)
-
+  
   message("Done Biomass_borealDataPrep: ", Sys.time())
   return(invisible(sim))
 }
@@ -621,64 +626,55 @@ Save <- function(sim) {
   cacheTags <- c(currentModule(sim), "function:.inputObjects")
   dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
-
+  
   # 1. test if all input objects are already present (e.g., from inputs, objects or another module)
   a <- depends(sim)
   whThisMod <- which(unlist(lapply(a@dependencies, function(x) x@name)) == "Biomass_borealDataPrep")
   objNames <- a@dependencies[[whThisMod]]@inputObjects$objectName
   objExists <- !unlist(lapply(objNames, function(x) is.null(sim[[x]])))
   names(objExists) <- objNames
-
+  
   # Filenames
-  ecoregionFilename <-   file.path(dPath, "ecoregions.shp")
-  ecodistrictFilename <- file.path(dPath, "ecodistricts.shp")
-  ecozoneFilename <-   file.path(dPath, "ecozones.shp")
   lcc2005Filename <- file.path(dPath, "LCC2005_V1_4a.tif")
-
-  # Also extract
-  fexts <- c("dbf", "prj", "sbn", "sbx", "shx")
-  ecoregionAE <- basename(paste0(tools::file_path_sans_ext(ecoregionFilename), ".", fexts))
-  ecodistrictAE <- basename(paste0(tools::file_path_sans_ext(ecodistrictFilename), ".", fexts))
-  ecozoneAE <- basename(paste0(tools::file_path_sans_ext(ecozoneFilename), ".", fexts))
-
+  
   ## Study area(s) ------------------------------------------------
   if (!suppliedElsewhere("studyArea", sim)) {
     message("'studyArea' was not provided by user. Using a polygon (6250000 m^2) in southwestern Alberta, Canada")
     sim$studyArea <- randomStudyArea(seed = 1234, size = (250^2)*100)
   }
-
+  
   if (!suppliedElsewhere("studyAreaLarge", sim)) {
     message("'studyAreaLarge' was not provided by user. Using the same as 'studyArea'")
     sim <- objectSynonyms(sim, list(c("studyAreaLarge", "studyArea")))
   }
-
+  
   if (!identical(crs(sim$studyArea), crs(sim$studyAreaLarge))) {
     warning("studyArea and studyAreaLarge have different projections.\n
             studyAreaLarge will be projected to match crs(studyArea)")
     sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crs(sim$studyArea))
   }
-
+  
   ## check whether SA is within SALarge
   ## convert to temp sf objects
   studyArea <- st_as_sf(sim$studyArea)
   studyAreaLarge <- st_as_sf(sim$studyAreaLarge)
-
+  
   #this is necessary if studyArea and studyAreaLarge are multipolygon objects
   if (nrow(studyArea) > 1) {
     studyArea <- st_union(studyArea) %>%
       st_as_sf(.)
   }
-
+  
   if (nrow(studyAreaLarge) > 1) {
     studyAreaLarge <- st_union(studyArea) %>%
       st_as_sf(.)
   }
-
+  
   if (length(st_within(studyArea, studyAreaLarge))[[1]] == 0)
     stop("studyArea is not fully within studyAreaLarge.
-           Please check the aligment, projection and shapes of these polygons")
+         Please check the aligment, projection and shapes of these polygons")
   rm(studyArea, studyAreaLarge)
-
+  
   ## Raster(s) to match ------------------------------------------------
   needRTM <- FALSE
   if (is.null(sim$rasterToMatch) || is.null(sim$rasterToMatchLarge)) {
@@ -693,7 +689,7 @@ Save <- function(sim) {
            " or in a module that gets loaded prior to ", currentModule(sim))
     }
   }
-
+  
   if (!suppliedElsewhere("rawBiomassMap", sim) || needRTM) {
     sim$rawBiomassMap <- Cache(prepInputs,
                                url = extractURL("rawBiomassMap"),
@@ -708,26 +704,26 @@ Save <- function(sim) {
                                userTags = c(cacheTags, "rawBiomassMap"),
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
   }
-
+  
   if (needRTM) {
     ## if we need rasterToMatch/rasterToMatchLarge, that means a) we don't have it, but b) we will have rawBiomassMap
     ## even if one of the rasterToMatch is present re-do both.
-
+    
     if (is.null(sim$rasterToMatch) != is.null(sim$rasterToMatchLarge))
       warning(paste0("One of rasterToMatch/rasterToMatchLarge is missing. Both will be created \n",
                      "from rawBiomassMap and studyArea/studyAreaLarge.\n
-              If this is wrong, provide both rasters"))
-
+                     If this is wrong, provide both rasters"))
+    
     sim$rasterToMatchLarge <- sim$rawBiomassMap
     RTMvals <- getValues(sim$rasterToMatchLarge)
     sim$rasterToMatchLarge[!is.na(RTMvals)] <- 1
-
+    
     sim$rasterToMatchLarge <- Cache(writeOutputs, sim$rasterToMatchLarge,
                                     filename2 = file.path(cachePath(sim), "rasters", "rasterToMatchLarge.tif"),
                                     datatype = "INT2U", overwrite = TRUE,
                                     userTags = c(cacheTags, "rasterToMatchLarge"),
                                     omitArgs = c("userTags"))
-
+    
     sim$rasterToMatch <- Cache(postProcess,
                                x = sim$rawBiomassMap,
                                studyArea = sim$studyArea,
@@ -740,26 +736,26 @@ Save <- function(sim) {
                                overwrite = TRUE,
                                userTags = c(cacheTags, "rasterToMatch"),
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
-
+    
     ## covert to 'mask'
     RTMvals <- getValues(sim$rasterToMatch)
     sim$rasterToMatch[!is.na(RTMvals)] <- 1
   }
-
+  
   ## if using custom raster resolution, need to allocate biomass proportionally to each pixel
   ## if no rawBiomassMap/RTM/RTMLarge were suppliedElsewhere, the "original" pixel size respects
   ## whatever resolution comes with the rawBiomassMap data
   simPixelSize <- unique(asInteger(res(sim$rasterToMatchLarge)))
   origPixelSize <- 250L # unique(res(sim$rawBiomassMap)) ## TODO: figure out a good way to not hardcode this
-
+  
   if (simPixelSize != origPixelSize) { ## make sure we are comparing integers, else else %!=%
     rescaleFactor <- (origPixelSize / simPixelSize)^2
     sim$rawBiomassMap <- sim$rawBiomassMap / rescaleFactor
   }
-
+  
   # if (ncell(sim$rasterToMatch) < 1e4)
   # stop("sim$rasterToMatch is too small, it should have more than 10,000 pixels")
-
+  
   ## TODO: KEEP THIS HERE OR ONLY INIT?
   if (!identical(crs(sim$studyArea), crs(sim$rasterToMatch))) {
     warning(paste0("studyArea and rasterToMatch projections differ.\n",
@@ -767,14 +763,14 @@ Save <- function(sim) {
     sim$studyArea <- spTransform(sim$studyArea, crs(sim$rasterToMatch))
     sim$studyArea <- fixErrors(sim$studyArea)
   }
-
+  
   if (!identical(crs(sim$studyAreaLarge), crs(sim$rasterToMatchLarge))) {
     warning(paste0("studyAreaLarge and rasterToMatchLarge projections differ.\n",
                    "studyAreaLarge will be projected to match rasterToMatchLarge"))
     sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crs(sim$rasterToMatchLarge))
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
-
+  
   ## Land cover raster ------------------------------------------------
   if (!suppliedElsewhere("rstLCC", sim)) {
     sim$rstLCC <- Cache(prepInputs,
@@ -792,32 +788,31 @@ Save <- function(sim) {
                         filename2 = TRUE, overwrite = TRUE,
                         userTags = c("prepInputsrstLCC_rtm", currentModule(sim)), # use at least 1 unique userTag
                         omitArgs = c("destinationPath", "targetFile", "userTags"))
-
+    
     if (!identical(projection(sim$rstLCC),
                    projection(sim$rasterToMatchLarge)))
       projection(sim$rstLCC) <- projection(sim$rasterToMatchLarge) ## Ceres: this shouldn't be necessary anymore
   }
-
+  
   ## Ecodistrict ------------------------------------------------
-  if (!suppliedElsewhere("ecoDistrict", sim)) {
-    sim$ecoDistrict <- Cache(prepInputs,
-                             targetFile = asPath(ecodistrictFilename),
-                             archive = asPath("ecodistrict_shp.zip"),
-                             url = extractURL("ecoDistrict"),
-                             alsoExtract = ecodistrictAE,
-                             destinationPath = dPath,
-                             studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                             overwrite = TRUE,
-                             useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
-                             fun = "raster::shapefile",
-                             #filename2 = TRUE,
-                             userTags = c("prepInputsEcoDistrict_SA", currentModule(sim), cacheTags), # use at least 1 unique userTag
-                             omitArgs = c("destinationPath", "targetFile", "overwrite", "alsoExtract", "userTags"))
+  if (!suppliedElsewhere("ecoregionLayer", sim)) {
+    
+    sim$ecoregionLayer <- Cache(prepInputs,
+                                targetFile = 'ecodistricts.shp',
+                                archive = asPath("ecodistrict_shp.zip"),
+                                url = extractURL("ecoregionLayer", sim),
+                                alsoExtract = 'similar',
+                                destinationPath = dPath,
+                                studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
+                                overwrite = TRUE,
+                                useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
+                                fun = "raster::shapefile",
+                                userTags = c("prepInputsEcoDistrict_SA", currentModule(sim), cacheTags))
   }
-
+  
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
-
+    
     sim$standAgeMap <- Cache(prepInputs,
                              destinationPath = dPath,
                              url = extractURL("standAgeMap"),
@@ -834,18 +829,18 @@ Save <- function(sim) {
                              omitArgs = c("destinationPath", "targetFile", "overwrite", "alsoExtract", "userTags"))
     sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
   }
-
+  
   ## Species equivalencies table -------------------------------------------
-
+  
   if (!suppliedElsewhere("sppEquiv", sim)) {
     if (!is.null(sim$sppColorVect))
       message("No 'sppColorVect' provided; using default colour palette: Accent")
-
+    
     data("sppEquivalencies_CA", package = "LandR", envir = environment())
     sim$sppEquiv <- as.data.table(sppEquivalencies_CA)
     ## By default, Abies_las is renamed to Abies_sp
     sim$sppEquiv[KNN == "Abie_Las", LandR := "Abie_sp"]
-
+    
     ## check spp column to use
     if (P(sim)$sppEquivCol == "Boreal") {
       message(paste("There is no 'sppEquiv' table supplied;",
@@ -862,11 +857,11 @@ Save <- function(sim) {
              "Please provide conforming 'sppEquivCol', 'sppEquiv' and 'sppColorVect'")
       }
     }
-
+    
     ## remove empty lines/NAs
     sim$sppEquiv <- sim$sppEquiv[!"", on = P(sim)$sppEquivCol]
     sim$sppEquiv <- na.omit(sim$sppEquiv, P(sim)$sppEquivCol)
-
+    
     ## add default colors for species used in model
     sim$sppColorVect <- sppColors(sim$sppEquiv, P(sim)$sppEquivCol,
                                   newVals = "Mixed", palette = "Accent")
@@ -878,7 +873,7 @@ Save <- function(sim) {
       message("No 'sppColorVect' provided; using default colour palette: Accent")
     }
   }
-
+  
   ## Species raster layers -------------------------------------------
   if (!suppliedElsewhere("speciesLayers", sim)) {
     #opts <- options(reproducible.useCache = "overwrite")
@@ -896,16 +891,16 @@ Save <- function(sim) {
                                userTags = c(cacheTags, "speciesLayers"),
                                omitArgs = c("userTags"))
   }
-
+  
   # 3. species maps
   if (!suppliedElsewhere("speciesTable", sim)) {
     sim$speciesTable <- getSpeciesTable(dPath = dPath,
                                         cacheTags = c(cacheTags, "speciesTable"))
   }
-
+  
   if (!suppliedElsewhere("columnsForPixelGroups", sim)) {
     sim$columnsForPixelGroups <- LandR::columnsForPixelGroups
   }
-
+  
   return(invisible(sim))
 }
