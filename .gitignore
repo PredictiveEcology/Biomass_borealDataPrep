@@ -15,5 +15,3 @@ cache/
 Thumbs.db
 
  ## !! Module data should be gitignored in the respective module's data dir !! 
-
-inputs/gadm36_CAN_1_sp.rds
