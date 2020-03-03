@@ -367,8 +367,23 @@ createBiomass_coreInputs <- function(sim) {
                            userTags = c(cacheTags, "pixelCohortData"),
                            omitArgs = c("userTags"))
 
-  #######################################################
-  # replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*
+  ####################################################### replace 34 and 35 and
+  #36 values -- burns and cities -- to a neighbour class *that exists*. 
+  # 1. We need
+  #to have a spatial estimate of maxBiomass everywhere there is forest; we can't
+  #have gaps The pixels that are 34, 35 or 36 are places for which we don't want
+  #maxBiomass associated with their LCC ... i.e., we don't want a maximum
+  #biomass associated with 34 and 35 because those classes are transient. They
+  #will transition to another class before they arrive at a tree maximum
+  #biomass. So, 34 and 35 should not have estimates of maxBiomass 36 is urban.
+  #So, we SHOULD remove these pixels from our studies, except if we are doing
+  #NRV studies (e.g., LandWeb wanted to replace 36 with some forest class) We
+  #decided that we should not use 34 or 35 in our models of Biomass because the
+  #only objective of these models is to estimate maxBiomass, so don't use 34 or
+  #35 To associate the pixels that were 34 or 35 with a maxBiomass , we need to
+  #give them a "forest class" that they might "become" after they grow out of
+  #being 34 or 35. The pixels where there were 34 and 35 nevertheless have
+  #Biomass estimates in them from KNN and other sources. We leave those as is.
   #######################################################
   uwc <- P(sim)$LCCClassesToReplaceNN
 
