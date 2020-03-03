@@ -379,7 +379,8 @@ createBiomass_coreInputs <- function(sim) {
   rmZeroBiomassQuote <- quote(B > 0)
   # availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
   #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
-  availableCombinations <- unique(pixelCohortData[, .(speciesCode, initialEcoregionCode, pixelIndex)])
+  availableCombinations <- unique(pixelCohortData[!(lcc %in% uwc), 
+                                                  .(speciesCode, initialEcoregionCode, pixelIndex)])
   newLCCClasses <- Cache(convertUnwantedLCC,
                          classesToReplace = P(sim)$LCCClassesToReplaceNN,
                          rstLCC = rstLCCAdj,
