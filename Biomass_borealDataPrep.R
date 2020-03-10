@@ -457,7 +457,7 @@ createBiomass_coreInputs <- function(sim) {
                       userTags = c(cacheTags, "modelCover"),
                       omitArgs = c("showSimilar", "useCache", ".specialData", "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
-  message(blue(paste0(capture.output(modelCover$rsq), collapse = "\n")))
+  print(modelCover$rsq)
   if (isTRUE(any(cdsWh))) {
     cds[, pred := fitted(modelCover$mod, response = "response")]
     cohortDataShort <- cds[, -c("coverPres", "coverNum")][cohortDataShort,
