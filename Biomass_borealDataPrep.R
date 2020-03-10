@@ -368,7 +368,7 @@ createBiomass_coreInputs <- function(sim) {
                            omitArgs = c("userTags"))
 
   ####################################################### replace 34 and 35 and
-  #36 values -- burns and cities -- to a neighbour class *that exists*. 
+  #36 values -- burns and cities -- to a neighbour class *that exists*.
   # 1. We need
   #to have a spatial estimate of maxBiomass everywhere there is forest; we can't
   #have gaps The pixels that are 34, 35 or 36 are places for which we don't want
@@ -394,7 +394,7 @@ createBiomass_coreInputs <- function(sim) {
   rmZeroBiomassQuote <- quote(B > 0)
   # availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
   #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
-  availableCombinations <- unique(pixelCohortData[!(lcc %in% uwc), 
+  availableCombinations <- unique(pixelCohortData[!(lcc %in% uwc),
                                                   .(speciesCode, initialEcoregionCode, pixelIndex)])
   newLCCClasses <- Cache(convertUnwantedLCC,
                          classesToReplace = P(sim)$LCCClassesToReplaceNN,
@@ -474,7 +474,7 @@ createBiomass_coreInputs <- function(sim) {
 
   ### For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
   ### force parameter values to avoid more checks
-  # If using mixed effect model, see here for good discussion of 
+  # If using mixed effect model, see here for good discussion of
   #  shrinkage https://www.tjmahr.com/plotting-partial-pooling-in-mixed-effects-models/
   message(blue("Estimating biomass using P(sim)$biomassModel as:\n"),
           magenta(paste0(format(P(sim)$biomassModel, appendLF = FALSE), collapse = "")))
