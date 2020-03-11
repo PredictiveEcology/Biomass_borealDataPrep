@@ -464,7 +464,7 @@ createBiomass_coreInputs <- function(sim) {
                       userTags = c(cacheTags, "modelCover"),
                       omitArgs = c("showSimilar", "useCache", ".specialData", "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
-  print(modelCover$rsq)
+  out <- lapply(capture.output(as.data.frame(round(modelCover$rsq, 4))), function(x) message(blue(x)))
   if (isTRUE(any(cdsWh))) {
     cds[, pred := fitted(modelCover$mod, response = "response")]
     cohortDataShort <- cds[, -c("coverPres", "coverNum")][cohortDataShort,
@@ -500,7 +500,7 @@ createBiomass_coreInputs <- function(sim) {
   )
 
   message(blue("  The rsquared is: "))
-  print(modelBiomass$rsq)
+  out <- lapply(capture.output(as.data.frame(round(modelBiomass$rsq, 4))), function(x) message(blue(x)))
 
   ########################################################################
   # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
