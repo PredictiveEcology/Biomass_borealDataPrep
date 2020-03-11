@@ -392,10 +392,16 @@ createBiomass_coreInputs <- function(sim) {
           " -- to a neighbour class *that exists*")
 
   rmZeroBiomassQuote <- quote(B > 0)
-  # availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
-  #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
-  availableCombinations <- unique(pixelCohortData[!(lcc %in% uwc),
+  ## version 1: from before March 2019 - Ceres noticed it created issues with fitting modelCover
+  ## March 2020: seems to be the preferred behaviour?
+  availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
                                                   .(speciesCode, initialEcoregionCode, pixelIndex)])
+  ## version 2: Ceres's fix from March 2019 to solve issues with modelCover fitting (?)
+  # availableCombinations <- unique(pixelCohortData[,
+  #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
+  ## version 3: Feb 2020 Eliot's fix that is WRONG - this behaviour is being achieved in convertUnwantedLCC and creates empty tables if done here
+  # availableCombinations <- unique(pixelCohortData[!(lcc %in% uwc),
+  #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
   newLCCClasses <- Cache(convertUnwantedLCC,
                          classesToReplace = P(sim)$LCCClassesToReplaceNN,
                          rstLCC = rstLCCAdj,
