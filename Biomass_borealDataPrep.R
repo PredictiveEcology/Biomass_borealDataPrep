@@ -245,7 +245,7 @@ createBiomass_coreInputs <- function(sim) {
   compareRaster(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC,
                 sim$speciesLayers, sim$standAgeMap, orig = TRUE)
 
-  sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
+  # sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
   sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
 
   ################################################################
@@ -352,7 +352,7 @@ createBiomass_coreInputs <- function(sim) {
                       biomassMap = sim$rawBiomassMap,
                       rasterToMatch = sim$rasterToMatchLarge,
                       rstLCC = rstLCCAdj,
-                      pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
+                      # pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
                       userTags = c(cacheTags, "pixelTable"),
                       omitArgs = c("userTags"))
 
@@ -363,6 +363,7 @@ createBiomass_coreInputs <- function(sim) {
   pixelCohortData <- Cache(makeAndCleanInitialCohortData, pixelTable,
                            sppColumns = coverColNames,
                            pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
+                           pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
                            doSubset = P(sim)$subsetDataAgeModel,
                            userTags = c(cacheTags, "pixelCohortData"),
                            omitArgs = c("userTags"))
