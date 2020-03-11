@@ -17,9 +17,9 @@ defineModule(sim, list(
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
   reqdPkgs = list("crayon", "data.table", "dplyr", "fasterize", "plyr", "raster", "sp", "sf",
-                  "SpaDES.tools",
+                  "SpaDES.tools", "reproducible (>=1.0.0.9006)",
                   "achubaty/amc@development",
-                  "PredictiveEcology/LandR@development",
+                  "PredictiveEcology/LandR@development (>=0.0.3.9004)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
