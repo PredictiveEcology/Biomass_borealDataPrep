@@ -523,7 +523,7 @@ createBiomass_coreInputs <- function(sim) {
     names(uniqueSpeciesNames) <- uniqueSpeciesNames
     speciesEcoregionTable2 <- copy(speciesEcoregion)
     speciesEcoregionTable2[, ecoregionInt := as.integer(ecoregionGroup)]
-    maxB <- stack(lapply(uniqueSpeciesNames, function(sp) {
+    maxB <- raster::stack(lapply(uniqueSpeciesNames, function(sp) {
       rasterizeReduced(speciesEcoregionTable2[speciesCode == sp], ecoregionFiles$ecoregionMap,
                        "maxB", "ecoregionInt")
     }))
