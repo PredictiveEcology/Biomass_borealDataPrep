@@ -362,8 +362,8 @@ createBiomass_coreInputs <- function(sim) {
   coverColNames <- paste0("cover.", sim$species$species)
   pixelCohortData <- Cache(makeAndCleanInitialCohortData, pixelTable,
                            sppColumns = coverColNames,
-                           pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
-                           pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
+                           #pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
+                           #pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
                            doSubset = P(sim)$subsetDataAgeModel,
                            userTags = c(cacheTags, "pixelCohortData"),
                            omitArgs = c("userTags"))
@@ -475,6 +475,7 @@ createBiomass_coreInputs <- function(sim) {
 
   ## For biomass
   ### Subsample cases where there are more than 50 points in an ecoregionGroup * speciesCode
+  totalBiomass <- sum(cohortDataNo34to36NoBiomass$B, na.rm = TRUE)
   cohortDataNo34to36NoBiomass <- subsetDT(cohortDataNo34to36NoBiomass,
                                           by = c("ecoregionGroup", "speciesCode"),
                                           doSubset = P(sim)$subsetDataBiomassModel)
@@ -489,11 +490,11 @@ createBiomass_coreInputs <- function(sim) {
     statsModel,
     modelFn = P(sim)$biomassModel,
     uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataNo34to36NoBiomass$ecoregionGroup)),
-    sumResponse = sum(cohortDataShort$B, na.rm = TRUE),
+    sumResponse = totalBiomass,
     .specialData = cohortDataNo34to36NoBiomass,
-    useCloud = useCloud,
+    useCloud = FALSE, #useCloud,
     # useCache = "overwrite",
-    cloudFolderID = sim$cloudFolderID,
+    cloudFolderID = NULL, #sim$cloudFolderID,
     showSimilar = getOption("reproducible.showSimilar", FALSE),
     userTags = c(cacheTags, "modelBiomass", paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
     omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
@@ -593,7 +594,10 @@ createBiomass_coreInputs <- function(sim) {
 
   ## make cohortDataFiles: pixelCohortData (rm unnecessary cols, subset pixels with B>0,
   ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
-  cohortDataFiles <- makeCohortDataFiles(pixelCohortData, columnsForPixelGroups, speciesEcoregion)
+  cohortDataFiles <- makeCohortDataFiles(pixelCohortData, columnsForPixelGroups, speciesEcoregion,
+                                         pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
+                                         pixelGroupAgeClass = P(sim)$pixelGroupAgeClass
+  )
   sim$cohortData <- cohortDataFiles$cohortData
   pixelCohortData <- cohortDataFiles$pixelCohortData
   rm(cohortDataFiles)
