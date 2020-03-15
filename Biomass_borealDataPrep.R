@@ -17,9 +17,9 @@ defineModule(sim, list(
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
   reqdPkgs = list("crayon", "data.table", "dplyr", "fasterize", "plyr", "raster", "sp", "sf",
-                  "SpaDES.tools",
+                  "SpaDES.tools", "reproducible (>=1.0.0.9006)",
                   "achubaty/amc@development",
-                  "PredictiveEcology/LandR@development",
+                  "PredictiveEcology/LandR@development (>=0.0.3.9004)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
@@ -245,7 +245,7 @@ createBiomass_coreInputs <- function(sim) {
   compareRaster(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC,
                 sim$speciesLayers, sim$standAgeMap, orig = TRUE)
 
-  sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
+  # sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
   sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
 
   ################################################################
@@ -352,7 +352,7 @@ createBiomass_coreInputs <- function(sim) {
                       biomassMap = sim$rawBiomassMap,
                       rasterToMatch = sim$rasterToMatchLarge,
                       rstLCC = rstLCCAdj,
-                      pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
+                      # pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
                       userTags = c(cacheTags, "pixelTable"),
                       omitArgs = c("userTags"))
 
@@ -362,13 +362,29 @@ createBiomass_coreInputs <- function(sim) {
   coverColNames <- paste0("cover.", sim$species$species)
   pixelCohortData <- Cache(makeAndCleanInitialCohortData, pixelTable,
                            sppColumns = coverColNames,
-                           pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
+                           #pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
+                           #pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
                            doSubset = P(sim)$subsetDataAgeModel,
                            userTags = c(cacheTags, "pixelCohortData"),
                            omitArgs = c("userTags"))
 
-  #######################################################
-  # replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*
+  ####################################################### replace 34 and 35 and
+  #36 values -- burns and cities -- to a neighbour class *that exists*.
+  # 1. We need
+  #to have a spatial estimate of maxBiomass everywhere there is forest; we can't
+  #have gaps The pixels that are 34, 35 or 36 are places for which we don't want
+  #maxBiomass associated with their LCC ... i.e., we don't want a maximum
+  #biomass associated with 34 and 35 because those classes are transient. They
+  #will transition to another class before they arrive at a tree maximum
+  #biomass. So, 34 and 35 should not have estimates of maxBiomass 36 is urban.
+  #So, we SHOULD remove these pixels from our studies, except if we are doing
+  #NRV studies (e.g., LandWeb wanted to replace 36 with some forest class) We
+  #decided that we should not use 34 or 35 in our models of Biomass because the
+  #only objective of these models is to estimate maxBiomass, so don't use 34 or
+  #35 To associate the pixels that were 34 or 35 with a maxBiomass , we need to
+  #give them a "forest class" that they might "become" after they grow out of
+  #being 34 or 35. The pixels where there were 34 and 35 nevertheless have
+  #Biomass estimates in them from KNN and other sources. We leave those as is.
   #######################################################
   uwc <- P(sim)$LCCClassesToReplaceNN
 
@@ -377,9 +393,16 @@ createBiomass_coreInputs <- function(sim) {
           " -- to a neighbour class *that exists*")
 
   rmZeroBiomassQuote <- quote(B > 0)
-  # availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
+  ## version 1: from before March 2019 - Ceres noticed it created issues with fitting modelCover
+  ## March 2020: seems to be the preferred behaviour?
+  availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
+                                                  .(speciesCode, initialEcoregionCode, pixelIndex)])
+  ## version 2: Ceres's fix from March 2019 to solve issues with modelCover fitting (?)
+  # availableCombinations <- unique(pixelCohortData[,
   #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
-  availableCombinations <- unique(pixelCohortData[, .(speciesCode, initialEcoregionCode, pixelIndex)])
+  ## version 3: Feb 2020 Eliot's fix that is WRONG - this behaviour is being achieved in convertUnwantedLCC and creates empty tables if done here
+  # availableCombinations <- unique(pixelCohortData[!(lcc %in% uwc),
+  #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
   newLCCClasses <- Cache(convertUnwantedLCC,
                          classesToReplace = P(sim)$LCCClassesToReplaceNN,
                          rstLCC = rstLCCAdj,
@@ -440,7 +463,7 @@ createBiomass_coreInputs <- function(sim) {
                       userTags = c(cacheTags, "modelCover"),
                       omitArgs = c("showSimilar", "useCache", ".specialData", "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
-  message(blue(paste0(capture.output(modelCover$rsq), collapse = "\n")))
+  out <- lapply(capture.output(as.data.frame(round(modelCover$rsq, 4))), function(x) message(blue(x)))
   if (isTRUE(any(cdsWh))) {
     cds[, pred := fitted(modelCover$mod, response = "response")]
     cohortDataShort <- cds[, -c("coverPres", "coverNum")][cohortDataShort,
@@ -451,19 +474,22 @@ createBiomass_coreInputs <- function(sim) {
 
   ## For biomass
   ### Subsample cases where there are more than 50 points in an ecoregionGroup * speciesCode
+  totalBiomass <- sum(cohortDataNo34to36NoBiomass$B, na.rm = TRUE)
   cohortDataNo34to36NoBiomass <- subsetDT(cohortDataNo34to36NoBiomass,
                                           by = c("ecoregionGroup", "speciesCode"),
                                           doSubset = P(sim)$subsetDataBiomassModel)
 
   ### For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
   ### force parameter values to avoid more checks
+  # If using mixed effect model, see here for good discussion of
+  #  shrinkage https://www.tjmahr.com/plotting-partial-pooling-in-mixed-effects-models/
   message(blue("Estimating biomass using P(sim)$biomassModel as:\n"),
           magenta(paste0(format(P(sim)$biomassModel, appendLF = FALSE), collapse = "")))
   modelBiomass <- Cache(
     statsModel,
     modelFn = P(sim)$biomassModel,
     uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataNo34to36NoBiomass$ecoregionGroup)),
-    sumResponse = sum(cohortDataShort$B, na.rm = TRUE),
+    sumResponse = totalBiomass,
     .specialData = cohortDataNo34to36NoBiomass,
     useCloud = useCloud,
     # useCache = "overwrite",
@@ -474,7 +500,7 @@ createBiomass_coreInputs <- function(sim) {
   )
 
   message(blue("  The rsquared is: "))
-  print(modelBiomass$rsq)
+  out <- lapply(capture.output(as.data.frame(round(modelBiomass$rsq, 4))), function(x) message(blue(x)))
 
   ########################################################################
   # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
@@ -496,7 +522,7 @@ createBiomass_coreInputs <- function(sim) {
     names(uniqueSpeciesNames) <- uniqueSpeciesNames
     speciesEcoregionTable2 <- copy(speciesEcoregion)
     speciesEcoregionTable2[, ecoregionInt := as.integer(ecoregionGroup)]
-    maxB <- stack(lapply(uniqueSpeciesNames, function(sp) {
+    maxB <- raster::stack(lapply(uniqueSpeciesNames, function(sp) {
       rasterizeReduced(speciesEcoregionTable2[speciesCode == sp], ecoregionFiles$ecoregionMap,
                        "maxB", "ecoregionInt")
     }))
@@ -567,7 +593,10 @@ createBiomass_coreInputs <- function(sim) {
 
   ## make cohortDataFiles: pixelCohortData (rm unnecessary cols, subset pixels with B>0,
   ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
-  cohortDataFiles <- makeCohortDataFiles(pixelCohortData, columnsForPixelGroups, speciesEcoregion)
+  cohortDataFiles <- makeCohortDataFiles(pixelCohortData, columnsForPixelGroups, speciesEcoregion,
+                                         pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
+                                         pixelGroupAgeClass = P(sim)$pixelGroupAgeClass
+  )
   sim$cohortData <- cohortDataFiles$cohortData
   pixelCohortData <- cohortDataFiles$pixelCohortData
   rm(cohortDataFiles)
