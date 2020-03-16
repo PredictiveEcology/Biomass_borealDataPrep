@@ -492,9 +492,9 @@ createBiomass_coreInputs <- function(sim) {
     uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataNo34to36NoBiomass$ecoregionGroup)),
     sumResponse = totalBiomass,
     .specialData = cohortDataNo34to36NoBiomass,
-    useCloud = FALSE, #useCloud,
+    useCloud = useCloud,
     # useCache = "overwrite",
-    cloudFolderID = NULL, #sim$cloudFolderID,
+    cloudFolderID = sim$cloudFolderID,
     showSimilar = getOption("reproducible.showSimilar", FALSE),
     userTags = c(cacheTags, "modelBiomass", paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
     omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
