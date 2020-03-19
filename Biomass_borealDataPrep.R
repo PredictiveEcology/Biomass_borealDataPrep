@@ -443,8 +443,8 @@ createBiomass_coreInputs <- function(sim) {
       abline(a = 0, b = 1)
       
       coverModel1 <- coverOptimFn(1, pixelCohortData, P(sim)$subsetDataAgeModel, 
-                                 P(sim)$coverPctToBiomassPctModel, 
-                                 returnRsq = FALSE)
+                                  P(sim)$coverPctToBiomassPctModel, 
+                                  returnRsq = FALSE)
       dev()
       plot(predict(coverModel1$modelBiomass1$mod, newdata = coverModel1$pixelCohortData[sam1]), 
            log(coverModel1$pixelCohortData$B/100)[sam1], pch = ".")
@@ -510,7 +510,7 @@ createBiomass_coreInputs <- function(sim) {
                          availableERC_by_Sp = availableCombinations,
                          userTags = c(cacheTags, "newLCCClasses", "stable"),
                          omitArgs = c("userTags"))
-
+  
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
   cohortData34to36 <- pixelCohortData[pixelIndex %in% newLCCClasses$pixelIndex]
@@ -1085,4 +1085,43 @@ prepInputsStandAgeMap <- function(..., ageURL, ageFun, maskWithRTM,
   }
   standAgeMap
   
+}
+
+partitionBiomass <- function(x, pixelCohortData) {
+  if (!"decid" %in% colnames(pixelCohortData)) {
+    pixelCohortData[, decid := speciesCode %in% c("Popu_Tre", "Betu_Pap")]
+  }
+  
+  pixelCohortData[, cover2 := cover * c(1,x)[decid + 1]]
+  pixelCohortData[, cover2 := cover2/sum(cover2), by = "pixelIndex"]
+  pixelCohortData[, B := totalBiomass*cover2]
+  pixelCohortData
+  
+}
+coverOptimFn <- function(x, pixelCohortData, subset, bm, returnRsq = TRUE) { 
+  
+  pixelCohortData <- partitionBiomass(x, pixelCohortData)
+  if (length(subset) > 1) {
+    pixelCohortData2 <- pixelCohortData[subset]
+  } else {
+    pixelCohortData2 <- subsetDT(pixelCohortData, c("initialEcoregionCode", "speciesCode"), 
+                                 subset)
+  }
+  pixelCohortData2 <- pixelCohortData2[!is.infinite(pixelCohortData2$logAge)]
+  pixelCohortData2 <- pixelCohortData2[pixelCohortData2$B > 0]
+  
+  modelBiomass1 <- 
+    statsModel(
+      modelFn = bm,
+      uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(pixelCohortData2$initialEcoregionGroup)),
+      .specialData = pixelCohortData2#,
+    )
+  theAIC <- AIC(modelBiomass1$mod)
+  message(cyan("#########################"))
+  message(cyan(" -- deciduousDiscount:", round(x, 3), "; AIC=", round(theAIC, 3)))
+  out <- lapply(capture.output(as.data.frame(round(modelBiomass1$rsq, 4))), function(x) message(cyan("        ",x)))
+  if (returnRsq)
+    theAIC#unname(modelBiomass1$rsq[,2])
+  else 
+    list(modelBiomass1 = modelBiomass1, pixelCohortData = pixelCohortData)
 }
