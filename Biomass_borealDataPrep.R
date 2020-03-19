@@ -521,33 +521,41 @@ createBiomass_coreInputs <- function(sim) {
   cohortDataNo34to36NoBiomass <- cohortDataNo34to36[eval(rmZeroBiomassQuote),
                                                     .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
   cohortDataNo34to36NoBiomass <- unique(cohortDataNo34to36NoBiomass)
-
+  
   ## make sure ecoregionGroups match
   assert1(cohortData34to36, pixelCohortData, rmZeroBiomassQuote)
-
+  
   ##############################################################
   # Statistical estimation of establishprob, maxB and maxANPP
   ##############################################################
-  cohortDataShort <- cohortDataNo34to36[, list(coverNum = .N,
-                                               coverPres = sum(cover > 0)),
+  cohortDataShort <- cohortDataNo34to36[, list(coverPres = sum(cover > 0)),
                                         by = c("ecoregionGroup", "speciesCode")]
-  cohortDataShortNoCover <- cohortDataShort[coverPres == 0] #
-  cohortDataShort <- cohortDataShort[coverPres > 0] # remove places where there is 0 cover
+  # find coverNum for each known class
+  aa <- table(pixelTable$initialEcoregionCode)
+  dt1 <- data.table(ecoregionGroup = factor(names(aa)), coverNum = as.integer(unname(aa)))
+  allCombos <- expand.grid(ecoregionGroup = dt1$ecoregionGroup, speciesCode = unique(cohortDataShort$speciesCode))
+  setDT(allCombos)
+  dt1 <- dt1[allCombos, on = "ecoregionGroup", nomatch = 0]
+  cohortDataShortNoCover <- cohortDataShort[dt1, on = c("ecoregionGroup", "speciesCode"), nomatch = NA]
+  
+  #cohortDataShortNoCover <- cohortDataShort[coverPres == 0] #
+  cohortDataShort <- cohortDataShortNoCover[coverPres > 0] # remove places where there is 0 cover
+  cohortDataShortNoCover <- cohortDataShortNoCover[is.na(coverPres)][, coverPres := 0]
   # will be added back as establishprob = 0
-  message(blue("Estimating Species Establishment Probability using P(sim)$coverModel, which is\n",
-               magenta(paste0(format(P(sim)$coverModel, appendLF = FALSE), collapse = ""))))
-
+  message(blue("Estimating Species Establishment Probability using P(sim)$coverModel, which is"))
+  message(magenta(paste0(format(P(sim)$coverModel, appendLF = FALSE), collapse = "")))
+  
   # for backwards compatibility -- change from parameter to object
   if (is.null(sim$cloudFolderID))
     if (!is.null(P(sim)$cloudFolderID))
       sim$cloudFolderID <- P(sim)$cloudFolderID
-
+  
   useCloud <- if (!is.null(sim$cloudFolderID)) {
     (getOption("reproducible.useCache", FALSE) && P(sim)$useCloudCacheForStats)
   } else {
     FALSE
   }
-
+  
   # Remove all cases where there is 100% presence in an ecoregionGroup -- causes failures in binomial models
   cdsWh <- cohortDataShort$coverPres == cohortDataShort$coverNum
   cds <- Copy(cohortDataShort)
@@ -569,18 +577,18 @@ createBiomass_coreInputs <- function(sim) {
   if (isTRUE(any(cdsWh))) {
     cds[, pred := fitted(modelCover$mod, response = "response")]
     cohortDataShort <- cds[, -c("coverPres", "coverNum")][cohortDataShort,
-                             on = c('ecoregionGroup', 'speciesCode'), nomatch = NA]
+                                                          on = c('ecoregionGroup', 'speciesCode'), nomatch = NA]
     cohortDataShort[is.na(pred), pred := 1]
     modelCover <- cohortDataShort$pred
   }
-
+  
   ## For biomass
   ### Subsample cases where there are more than 50 points in an ecoregionGroup * speciesCode
   totalBiomass <- sum(cohortDataNo34to36NoBiomass$B, na.rm = TRUE)
   cohortDataNo34to36NoBiomass <- subsetDT(cohortDataNo34to36NoBiomass,
                                           by = c("ecoregionGroup", "speciesCode"),
                                           doSubset = P(sim)$subsetDataBiomassModel)
-
+  
   ### For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
   ### force parameter values to avoid more checks
   # If using mixed effect model, see here for good discussion of
@@ -600,10 +608,10 @@ createBiomass_coreInputs <- function(sim) {
     userTags = c(cacheTags, "modelBiomass", paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
     omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
   )
-
+  
   message(blue("  The rsquared is: "))
   out <- lapply(capture.output(as.data.frame(round(modelBiomass$rsq, 4))), function(x) message(blue(x)))
-
+  
   ########################################################################
   # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
   #   doesn't include combinations with B = 0 because those places can't have the species/ecoregion combo
@@ -617,7 +625,7 @@ createBiomass_coreInputs <- function(sim) {
                                            modelBiomass = modelBiomass,
                                            successionTimestep = P(sim)$successionTimestep,
                                            currentYear = time(sim))
-
+  
   #######################################
   if (!is.na(P(sim)$.plotInitialTime)) {
     uniqueSpeciesNames <- as.character(unique(speciesEcoregion$speciesCode))
@@ -633,16 +641,17 @@ createBiomass_coreInputs <- function(sim) {
     Plot(maxB, legendRange = c(0, max(maxValue(maxB))))
     quickPlot::dev(curDev)
   }
-
+  
   if (ncell(sim$rasterToMatchLarge) > 3e6) .gc()
-
+  
   ########################################################################
   # Create initial communities, i.e., pixelGroups
   ########################################################################
   # Rejoin back the pixels that were 34 and 35
+  set(cohortData34to36, NULL, "initialEcoregionCode", NULL)
   pixelCohortData <- rbindlist(list(cohortData34to36, cohortDataNo34to36),
                                use.names = TRUE, fill = TRUE)
-
+  
   ########################################################################
   # "Downsize" to studyArea after estimating parameters on studyAreaLarge
   ########################################################################
@@ -651,7 +660,7 @@ createBiomass_coreInputs <- function(sim) {
   ##    that are common across the two rasters
   ## 3. Re-do pixel ID numbering so that it matches the final rasterToMatch
   ## Note: if SA and SALarge are the same, no subsetting will take place.
-
+  
   if (!identical(extent(sim$rasterToMatch), extent(sim$rasterToMatchLarge))) {
     message(blue("Subsetting to studyArea"))
     rasterToMatchLarge <- sim$rasterToMatchLarge
@@ -663,27 +672,27 @@ createBiomass_coreInputs <- function(sim) {
                                 filename2 = NULL,
                                 userTags = c(cacheTags, "rasterToMatchLarge"),
                                 omitArgs = c("userTags"))
-
+    
     if (!compareRaster(rasterToMatchLarge, sim$rasterToMatch, orig = TRUE, stopiffalse = FALSE))
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.
            Please debug Biomass_borealDataPrep::createBiomass_coreInputs()")
-
+    
     ## subset pixels that are in studyArea/rasterToMatch only
     pixToKeep <- na.omit(getValues(rasterToMatchLarge))
     pixelCohortData <- pixelCohortData[pixelIndex %in% pixToKeep]
-
+    
     # re-do pixelIndex (it now needs to match rasterToMatch)
     newPixelIndexDT <- data.table(pixelIndex = getValues(rasterToMatchLarge),
                                   newPixelIndex = as.integer(1:ncell(rasterToMatchLarge)))
-
+    
     pixelCohortData <- newPixelIndexDT[pixelCohortData, on = "pixelIndex"]
     pixelCohortData[, pixelIndex := NULL]
     setnames(pixelCohortData, old = "newPixelIndex", new = "pixelIndex")
     rm(rasterToMatchLarge)
   }
-
+  
   if (ncell(sim$rasterToMatch) > 3e6) .gc()
-
+  
   ## subset ecoregionFiles$ecoregionMap to smaller area.
   ecoregionFiles$ecoregionMap <- Cache(postProcess,
                                        x = ecoregionFiles$ecoregionMap,
@@ -692,7 +701,7 @@ createBiomass_coreInputs <- function(sim) {
                                        filename2 = NULL,
                                        userTags = c(cacheTags, "ecoregionMap"),
                                        omitArgs = c("userTags"))
-
+  
   ## make cohortDataFiles: pixelCohortData (rm unnecessary cols, subset pixels with B>0,
   ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
   cohortDataFiles <- makeCohortDataFiles(pixelCohortData, columnsForPixelGroups, speciesEcoregion,
