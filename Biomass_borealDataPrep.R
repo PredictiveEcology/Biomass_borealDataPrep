@@ -135,6 +135,12 @@ defineModule(sim, list(
                               "It will be overlaid with landcover to generate classes for every ecoregion/LCC combination.",
                               "It must have same extent and crs as rasterToMatchLarge if suppplied by user - use reproducible::postProcess.",
                               "If it uses an attribute table, it must contain the field 'ecoregion' to represent raster values")),
+    expectsInput("fireURL", "character",
+                 desc = paste("A url to a fire database, such as the Canadian National Fire Database,",
+                              "that is a zipped shapefile with fire polygons, an attribute (i.e., a column) named 'Year'.",
+                              "If supplied (omitted with NULL or NA), this will be used to 'update' age pixels on standAgeMap",
+                              "with 'time since fire' as derived from this fire polygons map"),
+                 sourceURL = "https://cwfis.cfs.nrcan.gc.ca/downloads/nbac/nbac_1986_to_2018_20191129.zip"),
     expectsInput("rstLCC", "RasterLayer",
                  desc = paste("A land classification map in study area. It must be 'corrected', in the sense that:\n",
                               "1) Every class must not conflict with any other map in this module\n",
@@ -1023,4 +1029,40 @@ Save <- function(sim) {
   }
 
   return(invisible(sim))
+}
+
+
+#' @importFrom sf st_cast st_transform
+#' @importFrom fasterize fasterize
+#' @importFrom raster crs
+prepInputsFireYear <- function(..., rasterToMatch, field) {
+  a <- Cache(prepInputs, ...)
+  gg <- st_cast(a, "MULTIPOLYGON") # collapse them into a single multipolygon
+  d <- st_transform(gg, crs(rasterToMatch))
+  fasterize(d, raster = rasterToMatch, field = field)
+  
+}
+
+prepInputsStandAgeMap <- function(..., ageURL, ageFun, maskWithRTM, 
+                                  method, datatype, filename2,
+                                  fireURL, fireFun,
+                                  rasterToMatch, fireField, startTime) {
+  standAgeMap <- Cache(prepInputs, ..., 
+                       maskWithRTM = maskWithRTM, method = method,
+                       datatype = datatype, filename2 = filename2,
+                       url = ageURL, fun = ageFun, rasterToMatch = rasterToMatch)
+  standAgeMap[] <- asInteger(standAgeMap[])
+  if (!(missing(fireURL) || is.null(fireURL) || is.na(fireURL))) {
+    fireYear <- Cache(prepInputsFireYear, ...,
+                      url = fireURL, 
+                      fun = fireFun, 
+                      rasterToMatch = rasterToMatch,
+                      field = fireField
+    )
+    toChange <- !is.na(fireYear[]) & fireYear[] <= asInteger(startTime)
+    standAgeMap[] <- asInteger(standAgeMap[])
+    standAgeMap[toChange] <- asInteger(startTime) - asInteger(fireYear[][toChange])
+  }
+  standAgeMap
+  
 }
