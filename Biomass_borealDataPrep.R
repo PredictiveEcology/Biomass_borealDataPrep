@@ -222,6 +222,9 @@ defineModule(sim, list(
                   desc = "ecoregion map that has mapcodes match ecoregion table and speciesEcoregion table"),
     createsOutput("pixelGroupMap", "RasterLayer",
                   desc = "initial community map that has mapcodes match initial community table"),
+    createsOutput("pixelFateDT", "data.table",
+                  desc = paste("A small table that keeps track of the pixel removals and cause. This may help diagnose issues",
+                  " related to understanding the creation of cohortData")),
     createsOutput("minRelativeB", "data.frame",
                   desc = "define the cut points to classify stand shadeness"),
     createsOutput("rawBiomassMap", "RasterLayer",
@@ -352,6 +355,8 @@ createBiomass_coreInputs <- function(sim) {
   ## Clean pixels for veg. succession model
   ## remove pixes with no spp data
   pixelsToRm <- is.na(sim$speciesLayers[[1]][])
+  pixelFateDT <- pixelFate(fate = "Total number pixels", runningPixelTotal = ncell(sim$speciesLayers))
+  pixelFateDT <- pixelFate(pixelFateDT, "NAs on sim$speciesLayers", sum(pixelsToRm))
   
   ## remove non-forested if asked by user
   if (P(sim)$omitNonTreedPixels) {
@@ -361,9 +366,15 @@ createBiomass_coreInputs <- function(sim) {
     
     lccPixelsRemoveTF <- !(sim$rstLCC[] %in% P(sim)$forestedLCCClasses)
     pixelsToRm <- lccPixelsRemoveTF | pixelsToRm
+    pixelFateDT <- pixelFate(pixelFateDT, "Non forested pixels (based on LCC classes)", 
+                             sum(lccPixelsRemoveTF) - tail(pixelFateDT$pixelsRemoved, 1))
   }
   
   rstLCCAdj[pixelsToRm] <- NA
+  
+  # The next function will remove the "zero" class on sim$ecoregionRst
+  pixelFateDT <- pixelFate(pixelFateDT, "Removing 0 class in sim$ecoregionRst", 
+                           sum(sim$ecoregionRst[][!pixelsToRm] == 0, na.rm = TRUE))
   
   ecoregionFiles <- Cache(prepEcoregions,
                           ecoregionRst = sim$ecoregionRst,
@@ -410,6 +421,8 @@ createBiomass_coreInputs <- function(sim) {
                            userTags = c(cacheTags, "pixelCohortData"),
                            omitArgs = c("userTags"))
   
+  pixelFateDT <- pixelFate(pixelFateDT, "makeAndCleanInitialCohortData rm cover < minThreshold", 
+                           tail(pixelFateDT$runningPixelTotal,1) - NROW(unique(pixelCohortData$pixelIndex)))
   #######################################################
   # Partition totalBiomass into individual species B, via estimating how %cover and %biomass 
   #   are related
@@ -710,6 +723,8 @@ createBiomass_coreInputs <- function(sim) {
   )
   sim$cohortData <- cohortDataFiles$cohortData
   pixelCohortData <- cohortDataFiles$pixelCohortData
+  pixelFateDT <- pixelFate(pixelFateDT, "removing ecoregionGroups without enough data to est. maxBiomass",
+                           tail(pixelFateDT$runningPixelTotal, 1) - NROW(unique(pixelCohortData$pixelIndex)))
   rm(cohortDataFiles)
 
   ## make a table of available active and inactive (no biomass) ecoregions
@@ -758,6 +773,9 @@ createBiomass_coreInputs <- function(sim) {
   LandR::assertCohortData(sim$cohortData, sim$pixelGroupMap)
 
   message("Done Biomass_borealDataPrep: ", Sys.time())
+  sim$pixelFateDT <- pixelFateDT
+  out <- lapply(capture.output(sim$pixelFateDT), function(x) message(blue(x)))
+  
   return(invisible(sim))
 }
 
@@ -1127,4 +1145,16 @@ coverOptimFn <- function(x, pixelCohortData, subset, bm, returnRsq = TRUE) {
     theAIC#unname(modelBiomass1$rsq[,2])
   else 
     list(modelBiomass1 = modelBiomass1, pixelCohortData = pixelCohortData)
+}
+
+pixelFate <- function(pixelFateDF, fate = NA_character_, pixelsRemoved = 0, 
+                      runningPixelTotal = NA_integer_) {
+  if (missing(pixelFateDF)) 
+    pixelFateDF <- data.table(fate = character(), pixelsRemoved = integer(), runningPixelTotal = integer())
+  if (is.na(runningPixelTotal))
+    runningPixelTotal <- tail(pixelFateDF$runningPixelTotal,1) - pixelsRemoved
+  pixelFateDF <- rbindlist(list(pixelFateDF, data.table(fate = fate, pixelsRemoved = pixelsRemoved,
+                                                        runningPixelTotal = runningPixelTotal)))
+  pixelFateDF
+  
 }
