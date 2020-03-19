@@ -737,6 +737,7 @@ createBiomass_coreInputs <- function(sim) {
   sim$speciesEcoregion <- speciesEcoregion
 
   ## write species layers to disk
+  message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
   sim$speciesLayers <- lapply(seq(numLayers(sim$speciesLayers)), function(x) {
     writeRaster(sim$speciesLayers[[x]],
                 file.path(outputPath(sim), paste0(names(sim$speciesLayers)[x], ".tif")),
@@ -953,11 +954,12 @@ Save <- function(sim) {
 
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
-    sim$standAgeMap <- Cache(prepInputs,
+    sim$standAgeMap <- Cache(prepInputsStandAgeMap,
                              destinationPath = dPath,
-                             url = extractURL("standAgeMap"),
-                             fun = "raster::raster",
-                             studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
+                             ageURL = extractURL("standAgeMap"),
+                             ageFun = "raster::raster",
+                             studyArea = raster::aggregate(sim$studyAreaLarge),
+                             #studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                              rasterToMatch = sim$rasterToMatchLarge,
                              # rasterToMatch = sim$rasterToMatch,
                              maskWithRTM = TRUE,
@@ -965,10 +967,13 @@ Save <- function(sim) {
                              datatype = "INT2U",
                              filename2 = NULL,
                              overwrite = TRUE,
+                             fireURL = extractURL("fireURL"),
+                             fireFun = "sf::st_read", 
+                             fireField = "YEAR",
+                             startTime = start(sim),
                              userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
                              omitArgs = c("destinationPath", "targetFile", "overwrite",
                                           "alsoExtract", "userTags"))
-    sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
   }
 
   ## Species equivalencies table -------------------------------------------
