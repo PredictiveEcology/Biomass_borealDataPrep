@@ -82,6 +82,8 @@ defineModule(sim, list(
                           "include 36 (cities -- if running a historic range of variation project), and 34:35 (burns)",
                           "Since this is about estimating parameters for growth, it doesn't make any sense to have",
                           "unique estimates for transient classes in most cases")),
+    defineParameter("minCoverThreshold", "numeric", 5, 0, 100,
+                    "Cover that is equal to or below this number will be omitted from the dataset"),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by P(sim)$forestedLCCClasses?"),
     defineParameter("pixelGroupAgeClass", "numeric", params(sim)$Biomass_borealDataPrep$successionTimestep, NA, NA,
@@ -391,6 +393,7 @@ createBiomass_coreInputs <- function(sim) {
                            imputeBadAgeModel = P(sim)$imputeBadAgeModel,
                            #pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
                            #pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
+                           minCoverThreshold = P(sim)$minCoverThreshold,
                            doSubset = P(sim)$subsetDataAgeModel,
                            userTags = c(cacheTags, "pixelCohortData"),
                            omitArgs = c("userTags"))
