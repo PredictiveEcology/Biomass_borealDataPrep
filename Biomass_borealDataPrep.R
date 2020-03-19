@@ -724,9 +724,12 @@ createBiomass_coreInputs <- function(sim) {
 
   ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
   ## TODO: use postProcess?
-  sim$speciesLayers <- crop(sim$speciesLayers, sim$rasterToMatch)
-  sim$speciesLayers <- mask(sim$speciesLayers, sim$rasterToMatch)
-
+  if (!compareRaster(sim$speciesLayers, sim$rasterToMatch))
+    sim$speciesLayers <- cropInputs(sim$speciesLayers, sim$rasterToMatch)
+    sim$speciesLayers <- maskInputs(sim$speciesLayers, 
+                                    rasterToMatch = sim$rasterToMatch, 
+                                    maskWithRTM = TRUE)
+  
   ## double check these rasters all match RTM
   compareRaster(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap, sim$rasterToMatch, sim$speciesLayers)
 
