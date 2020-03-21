@@ -576,7 +576,7 @@ createBiomass_coreInputs <- function(sim) {
   modelCover <- Cache(statsModel,
                       modelFn = P(sim)$coverModel,
                       # modelFn = cm,
-                      uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataShort$ecoregionGroup)),
+                      uniqueEcoregionGroup = .sortDotsUnderscoreFirst(as.character(unique(cohortDataShort$ecoregionGroup))),
                       sumResponse = sum(cohortDataShort$coverPres, cohortDataShort$coverNum, na.rm = TRUE),
                       .specialData = cds,
                       useCloud = useCloud,
@@ -611,7 +611,7 @@ createBiomass_coreInputs <- function(sim) {
   modelBiomass <- Cache(
     statsModel,
     modelFn = P(sim)$biomassModel,
-    uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(cohortDataNo34to36NoBiomass$ecoregionGroup)),
+    uniqueEcoregionGroup = .sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36NoBiomass$ecoregionGroup))),
     sumResponse = totalBiomass,
     .specialData = cohortDataNo34to36NoBiomass,
     useCloud = useCloud,
@@ -1138,7 +1138,7 @@ coverOptimFn <- function(x, pixelCohortData, subset, bm, returnRsq = TRUE) {
   modelBiomass1 <-
     statsModel(
       modelFn = bm,
-      uniqueEcoregionGroup = .sortDotsUnderscoreFirst(unique(pixelCohortData2$initialEcoregionGroup)),
+      uniqueEcoregionGroup = .sortDotsUnderscoreFirst(as.character(unique(pixelCohortData2$initialEcoregionGroup))),
       .specialData = pixelCohortData2#,
     )
   theAIC <- AIC(modelBiomass1$mod)
