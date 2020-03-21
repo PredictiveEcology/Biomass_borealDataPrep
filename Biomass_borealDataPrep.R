@@ -778,7 +778,8 @@ createBiomass_coreInputs <- function(sim) {
 
   message("Done Biomass_borealDataPrep: ", Sys.time())
   sim$pixelFateDT <- pixelFateDT
-  out <- lapply(capture.output(sim$pixelFateDT), function(x) message(blue(x)))
+  out <- messageDF(pixelFateDT, 3, "blue")
+  #out <- lapply(capture.output(sim$pixelFateDT), function(x) message(blue(x)))
 
   return(invisible(sim))
 }
@@ -1144,7 +1145,7 @@ coverOptimFn <- function(x, pixelCohortData, subset, bm, returnRsq = TRUE) {
   theAIC <- AIC(modelBiomass1$mod)
   message(cyan("#########################"))
   message(cyan(" -- deciduousDiscount:", round(x, 3), "; AIC=", round(theAIC, 3)))
-  out <- lapply(capture.output(as.data.frame(round(modelBiomass1$rsq, 4))), function(x) message(cyan("        ",x)))
+  messageDF(modelBiomass1$rsq, round = 4, colour = "cyan")
   if (returnRsq)
     theAIC#unname(modelBiomass1$rsq[,2])
   else
