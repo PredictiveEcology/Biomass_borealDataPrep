@@ -21,7 +21,7 @@ defineModule(sim, list(
                   "SpaDES.tools", "reproducible",
                   "achubaty/amc@development",
                   "PredictiveEcology/LandR@development",
-                  "PredictiveEcology/pemisc@development"),
+                  "PredictiveEcology/pemisc@development", "merMethods"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
                     quote(lme4::lmer(B ~ logAge * speciesCode + cover * speciesCode +
