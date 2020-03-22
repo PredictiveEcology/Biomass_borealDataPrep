@@ -721,14 +721,26 @@ createBiomass_coreInputs <- function(sim) {
     if (!is.na(firstFireYear)) {
       maxAgeHighQualityData <- start(sim) - firstFireYear
       youngRows <- pixelCohortData$age <= maxAgeHighQualityData
-      young <- updateYoungBiomasses(pixelCohortData[youngRows == TRUE], 
+      young <- pixelCohortData[youngRows == TRUE]
+      # whYoungBEqZero <- which(young$B == 0)
+      whYoungAgeEqZero <- which(young$age == 0)
+      if (length(whYoungAgeEqZero)) {
+        youngWAgeEqZero <- young[whYoungAgeEqZero]
+        youngNoAgeEqZero <- young[-whYoungAgeEqZero]
+      }
+      young <- Cache(updateYoungBiomasses, youngNoAgeEqZero, 
                                     biomassModel = modelBiomass$mod)
       set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
+      
+      # put the B = 0
+      if (length(whYoungAgeEqZero)) {
+        young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
+      }
       pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE],
                                         young), use.names = TRUE)
     }
   }
-  
+
   ## make cohortDataFiles: pixelCohortData (rm unnecessary cols, subset pixels with B>0,
   ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
   cohortDataFiles <- makeCohortDataFiles(pixelCohortData, columnsForPixelGroups, speciesEcoregion,
@@ -1165,18 +1177,6 @@ coverOptimFn <- function(x, pixelCohortData, subset, bm, returnRsq = TRUE) {
     theAIC#unname(modelBiomass1$rsq[,2])
   else
     list(modelBiomass1 = modelBiomass1, pixelCohortData = pixelCohortData)
-}
-
-pixelFate <- function(pixelFateDF, fate = NA_character_, pixelsRemoved = 0,
-                      runningPixelTotal = NA_integer_) {
-  if (missing(pixelFateDF))
-    pixelFateDF <- data.table(fate = character(), pixelsRemoved = integer(), runningPixelTotal = integer())
-  if (is.na(runningPixelTotal))
-    runningPixelTotal <- tail(pixelFateDF$runningPixelTotal,1) - pixelsRemoved
-  pixelFateDF <- rbindlist(list(pixelFateDF, data.table(fate = fate, pixelsRemoved = pixelsRemoved,
-                                                        runningPixelTotal = runningPixelTotal)))
-  pixelFateDF
-
 }
 
 updateYoungBiomasses <- function(young, biomassModel) {
