@@ -10,16 +10,17 @@ defineModule(sim, list(
   ),
   childModules = character(0),
   version = list(Biomass_borealDataPrep = numeric_version("1.4.0.9000"),
-                 LandR = "0.0.3.9003", SpaDES.core = "1.0.0"),
+                 LandR = "0.0.3.9004", SpaDES.core = "1.0.0",
+                 reproducible = "1.0.0.9006"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
   reqdPkgs = list("crayon", "data.table", "dplyr", "fasterize", "plyr", "raster", "sp", "sf",
-                  "SpaDES.tools", "reproducible (>=1.0.0.9006)",
+                  "SpaDES.tools", "reproducible",
                   "achubaty/amc@development",
-                  "PredictiveEcology/LandR@development (>=0.0.3.9004)",
+                  "PredictiveEcology/LandR@development",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
@@ -728,10 +729,10 @@ createBiomass_coreInputs <- function(sim) {
         youngWAgeEqZero <- young[whYoungAgeEqZero]
         youngNoAgeEqZero <- young[-whYoungAgeEqZero]
       }
-      young <- Cache(updateYoungBiomasses, youngNoAgeEqZero, 
+      young <- Cache(updateYoungBiomasses, youngNoAgeEqZero,
                                     biomassModel = modelBiomass$mod)
       set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
-      
+
       # put the B = 0
       if (length(whYoungAgeEqZero)) {
         young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
@@ -749,13 +750,13 @@ createBiomass_coreInputs <- function(sim) {
                                          minAgeForGrouping = maxAgeHighQualityData,
                                          pixelFateDT = pixelFateDT
   )
-  
+
   sim$cohortData <- cohortDataFiles$cohortData
   pixelCohortData <- cohortDataFiles$pixelCohortData
   pixelFateDT <- cohortDataFiles$pixelFateDT
-  
+
   rm(cohortDataFiles)
-  
+
   ## make a table of available active and inactive (no biomass) ecoregions
   sim$ecoregion <- makeEcoregionDT(pixelCohortData, speciesEcoregion)
   #sim$ecoregion <- ecoregionFiles$ecoregion ## TODO: don't use this one yet (ever?)
