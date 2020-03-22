@@ -733,7 +733,8 @@ createBiomass_coreInputs <- function(sim) {
   ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
   cohortDataFiles <- makeCohortDataFiles(pixelCohortData, columnsForPixelGroups, speciesEcoregion,
                                          pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
-                                         pixelGroupAgeClass = P(sim)$pixelGroupAgeClass
+                                         pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
+                                         minAgeForGrouping = maxAgeHighQualityData
   )
   sim$cohortData <- cohortDataFiles$cohortData
   pixelCohortData <- cohortDataFiles$pixelCohortData
