@@ -715,6 +715,20 @@ createBiomass_coreInputs <- function(sim) {
                                        userTags = c(cacheTags, "ecoregionMap"),
                                        omitArgs = c("userTags"))
 
+  maxAgeHighQualityData <- -1
+  if (length(extractURL("fireURL"))) {
+    firstFireYear = as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", extractURL("fireURL")))
+    if (!is.na(firstFireYear)) {
+      maxAgeHighQualityData <- start(sim) - firstFireYear
+      youngRows <- pixelCohortData$age <= maxAgeHighQualityData
+      young <- updateYoungBiomasses(pixelCohortData[youngRows == TRUE], 
+                                    biomassModel = modelBiomass$mod)
+      set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
+      pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE],
+                                        young), use.names = TRUE)
+    }
+  }
+  
   ## make cohortDataFiles: pixelCohortData (rm unnecessary cols, subset pixels with B>0,
   ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
   cohortDataFiles <- makeCohortDataFiles(pixelCohortData, columnsForPixelGroups, speciesEcoregion,
@@ -1162,4 +1176,19 @@ pixelFate <- function(pixelFateDF, fate = NA_character_, pixelsRemoved = 0,
                                                         runningPixelTotal = runningPixelTotal)))
   pixelFateDF
 
+}
+
+updateYoungBiomasses <- function(young, biomassModel) {
+  pres <- predict(biomassModel, newdata = young, se = TRUE, type = "response")
+  set(young, NULL, "pred", pres$fit)
+  set(young, NULL, "se", pres$se.fit)
+  young[, resid := B - pred]
+  young[, beyond := abs(resid) > 2*se]
+  young[, tooLarge := resid > 2*se & beyond]
+  young[, tooSmall := resid < 2*se & beyond]
+  young[tooLarge == TRUE, newB := pred + 2*se]
+  young[tooSmall == TRUE, newB := pred - 2*se]
+  young[beyond == FALSE, newB := B]
+  young[, B := asInteger(pmax(0, newB))]
+  young[]
 }
