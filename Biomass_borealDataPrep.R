@@ -746,14 +746,16 @@ createBiomass_coreInputs <- function(sim) {
   cohortDataFiles <- makeCohortDataFiles(pixelCohortData, columnsForPixelGroups, speciesEcoregion,
                                          pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
                                          pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
-                                         minAgeForGrouping = maxAgeHighQualityData
+                                         minAgeForGrouping = maxAgeHighQualityData,
+                                         pixelFateDT = pixelFateDT
   )
+  
   sim$cohortData <- cohortDataFiles$cohortData
   pixelCohortData <- cohortDataFiles$pixelCohortData
-  pixelFateDT <- pixelFate(pixelFateDT, "removing ecoregionGroups without enough data to est. maxBiomass",
-                           tail(pixelFateDT$runningPixelTotal, 1) - NROW(unique(pixelCohortData$pixelIndex)))
+  pixelFateDT <- cohortDataFiles$pixelFateDT
+  
   rm(cohortDataFiles)
-
+  
   ## make a table of available active and inactive (no biomass) ecoregions
   sim$ecoregion <- makeEcoregionDT(pixelCohortData, speciesEcoregion)
   #sim$ecoregion <- ecoregionFiles$ecoregion ## TODO: don't use this one yet (ever?)
