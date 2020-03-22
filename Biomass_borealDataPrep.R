@@ -46,7 +46,7 @@ defineModule(sim, list(
 
     # deciduous cover to biomass cover section ################################################
     defineParameter("coverPctToBiomassPctModel", "call",
-                    quote(glm(I(log(B/100)) ~ 0 + logAge * I(log(totalBiomass/100)) * speciesCode * lcc)),
+                    quote(glm(I(log(B/100)) ~ logAge * I(log(totalBiomass/100)) * speciesCode * lcc)),
                     NA, NA,
                     paste("Model to estimate the relationship between % cover and % biomass, referred to as",
                           "deciduousCoverDiscount. It is a number between 0 and 1 that translates %cover,",
