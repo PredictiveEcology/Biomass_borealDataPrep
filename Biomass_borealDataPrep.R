@@ -21,7 +21,7 @@ defineModule(sim, list(
                   "SpaDES.tools", "reproducible",
                   "achubaty/amc@development",
                   "PredictiveEcology/LandR@development",
-                  "PredictiveEcology/pemisc@development", "merMethods"),
+                  "PredictiveEcology/pemisc@development", "merTools"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
                     quote(lme4::lmer(B ~ logAge * speciesCode + cover * speciesCode +
@@ -1189,7 +1189,7 @@ updateYoungBiomasses <- function(young, biomassModel) {
     message(green("  -- Calculating bootstrap estimates around B; will replace B in young data if it is beyond 95% CI"))
     message(green("     This will take a bit"))
     PI.time <- system.time(
-      PI <- predictInterval(merMod = biomassModel, newdata = young2,
+      PI <- merTools::predictInterval(merMod = biomassModel, newdata = young2,
                             level = 0.95, n.sims = 15,
                             stat = "median", type="linear.prediction",
                             include.resid.var = TRUE)
