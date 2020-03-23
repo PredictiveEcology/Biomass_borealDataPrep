@@ -1188,6 +1188,7 @@ updateYoungBiomasses <- function(young, biomassModel) {
     young2 <- unique(young, by = columns)
     message(green("  -- Calculating bootstrap estimates around B; will replace B in young data if it is beyond 95% CI"))
     message(green("     This will take a bit"))
+    reproducible::Require("merTools")
     PI.time <- system.time(
       PI <- merTools::predictInterval(merMod = biomassModel, newdata = young2,
                             level = 0.95, n.sims = 15,
