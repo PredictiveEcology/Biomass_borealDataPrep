@@ -56,7 +56,7 @@ defineModule(sim, list(
                           "be an overesimate of the %biomass of hardwoods. E.g., 30%cover of hardwoods",
                           "might translate to 20% biomass of hardwoods. The reason this discount exists is",
                           "because hardwoods in Canada have a much wider canopy than softwoods.")),
-    defineParameter("fitDecidiousCoverDiscount", "logical",FALSE, NA, NA,
+    defineParameter("fitDeciduousCoverDiscount", "logical",FALSE, NA, NA,
                     paste("If TRUE, this will re-estimate deciduousCoverDiscount. This may be unstable and",
                           "is not recommended currently. If FALSE, will use the current default")),
     defineParameter("deciduousCoverDiscount", "numeric",0.8418911, NA, NA,
@@ -429,7 +429,7 @@ createBiomass_coreInputs <- function(sim) {
   #   are related
   #######################################################
   message(blue("Partitioning totalBiomass per pixel into cohort B as:"))
-  if (isTRUE(P(sim)$fitDecidiousCoverDiscount)) {
+  if (isTRUE(P(sim)$fitDeciduousCoverDiscount)) {
     message(magenta(paste0(format(P(sim)$coverPctToBiomassPctModel, appendLF = FALSE))))
 
     pixelCohortData[, lcc := as.factor(lcc)]
@@ -475,7 +475,7 @@ createBiomass_coreInputs <- function(sim) {
   } else {
     message(magenta(paste0(format(P(sim)$coverPctToBiomassPctModel, appendLF = FALSE))))
     deciduousCoverDiscount <- P(sim)$deciduousCoverDiscount
-    message(blue("using previously estimated decidiousCoverDiscount:", round(deciduousCoverDiscount,3)))
+    message(blue("using previously estimated deciduousCoverDiscount:", round(deciduousCoverDiscount,3)))
   }
   pixelCohortData <- partitionBiomass(x = deciduousCoverDiscount, pixelCohortData)
   set(pixelCohortData, NULL, "B", asInteger(pixelCohortData$B/P(sim)$pixelGroupBiomassClass)*
