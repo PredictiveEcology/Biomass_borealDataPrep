@@ -801,9 +801,12 @@ createBiomass_coreInputs <- function(sim) {
   message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", "),
                "\n  Resulted in", magenta(length(unique(sim$cohortData$pixelGroup))),
                "unique pixelGroup values"))
-  LandR::assertERGs(sim$ecoregionMap, cohortData = sim$cohortData,
-                    speciesEcoregion = sim$speciesEcoregion,
-                    minRelativeB = sim$minRelativeB)
+  assertSpeciesEcoregionCohortDataMatch(sim$cohortData, speciesEcoregion, 
+                                        doAssertion = TRUE)
+  
+  #LandR::assertERGs(sim$ecoregionMap, cohortData = sim$cohortData,
+  #                  speciesEcoregion = sim$speciesEcoregion,
+  #                  minRelativeB = sim$minRelativeB, doAssertion = TRUE)
 
   LandR::assertCohortData(sim$cohortData, sim$pixelGroupMap)
 
