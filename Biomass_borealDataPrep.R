@@ -788,7 +788,6 @@ createBiomass_coreInputs <- function(sim) {
   ## make ecoregionGroup a factor and export speciesEcoregion to sim
   onMatch <- c("ecoregionGroup", "speciesCode")
   toRm <- speciesEcoregion[!sim$cohortData, on = onMatch]
-  browser()
   speciesEcoregion <- speciesEcoregion[!toRm, on = onMatch]
   sim$speciesEcoregion <- speciesEcoregion
 
