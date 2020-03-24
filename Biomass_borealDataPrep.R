@@ -704,9 +704,9 @@ createBiomass_coreInputs <- function(sim) {
     pixelCohortData[, pixelIndex := NULL]
     setnames(pixelCohortData, old = "newPixelIndex", new = "pixelIndex")
     rm(rasterToMatchLarge)
+  
+    if (ncell(sim$rasterToMatch) > 3e6) .gc()
   }
-
-  if (ncell(sim$rasterToMatch) > 3e6) .gc()
 
   ## subset ecoregionFiles$ecoregionMap to smaller area.
   ecoregionFiles$ecoregionMap <- Cache(postProcess,
@@ -788,6 +788,7 @@ createBiomass_coreInputs <- function(sim) {
   ## make ecoregionGroup a factor and export speciesEcoregion to sim
   onMatch <- c("ecoregionGroup", "speciesCode")
   toRm <- speciesEcoregion[!sim$cohortData, on = onMatch]
+  browser()
   speciesEcoregion <- speciesEcoregion[!toRm, on = onMatch]
   sim$speciesEcoregion <- speciesEcoregion
 
