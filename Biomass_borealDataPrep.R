@@ -786,8 +786,9 @@ createBiomass_coreInputs <- function(sim) {
 
   ## rm ecoregions that may not be present in rasterToMatch
   ## make ecoregionGroup a factor and export speciesEcoregion to sim
-  speciesEcoregion <- speciesEcoregion[ecoregionGroup %in% pixelCohortData$ecoregionGroup]
-  speciesEcoregion[, ecoregionGroup := factor(as.character(ecoregionGroup))]
+  onMatch <- c("ecoregionGroup", "speciesCode")
+  toRm <- speciesEcoregion[!sim$cohortData, on = onMatch]
+  speciesEcoregion <- speciesEcoregion[!toRm, on = onMatch]
   sim$speciesEcoregion <- speciesEcoregion
 
   ## write species layers to disk
