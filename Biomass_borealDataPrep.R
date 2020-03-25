@@ -519,6 +519,7 @@ createBiomass_coreInputs <- function(sim) {
   ## version 3: Feb 2020 Eliot's fix that is WRONG - this behaviour is being achieved in convertUnwantedLCC and creates empty tables if done here
   # availableCombinations <- unique(pixelCohortData[!(lcc %in% uwc),
   #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
+
   newLCCClasses <- Cache(convertUnwantedLCC,
                          classesToReplace = P(sim)$LCCClassesToReplaceNN,
                          rstLCC = rstLCCAdj,
@@ -662,7 +663,7 @@ createBiomass_coreInputs <- function(sim) {
   ########################################################################
   # Create initial communities, i.e., pixelGroups
   ########################################################################
-  # Rejoin back the pixels that were 34 and 35
+  # Rejoin back the pixels that were 34:36
   set(cohortData34to36, NULL, "initialEcoregionCode", NULL)
   pixelCohortData <- rbindlist(list(cohortData34to36, cohortDataNo34to36),
                                use.names = TRUE, fill = TRUE)
@@ -770,7 +771,6 @@ createBiomass_coreInputs <- function(sim) {
 
   ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
   ## TODO: use postProcess?
-
   message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
   sim$speciesLayers <- Cache(postProcess, sim$speciesLayers,
                              rasterToMatch = sim$rasterToMatch,
