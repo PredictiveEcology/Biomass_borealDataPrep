@@ -69,6 +69,12 @@ defineModule(sim, list(
                     paste("the name of the field used to distinguish ecoregions, if supplying a polygon.",
                           "The default is 'ECODISTRIC' where available (for legacy reasons), else the row numbers of",
                           "sim$ecoregionLayer. If this field is not numeric, it will be coerced to numeric")),
+    defineParameter("exportModels", "character", "none", NA, NA,
+                    paste("Controls whether models used to estimate maximum B/ANPP ('biomassModel') and species establishment",
+                          "('coverModel') probabilities are exported for posterior analyses or not. This may be important",
+                          "when models fail to converge or hit singularity (but can still be used to make predictions) and",
+                          "the user wants to investigate them further. Can be set to 'none' (no models are exported), 'all'",
+                          "(both are exported), 'biomassModel' or 'coverModel'.")),
     defineParameter("forestedLCCClasses", "numeric", c(1:15, 20, 32, 34:35), 0, 39,
                     paste("The classes in the rstLCC layer that are 'treed' and will therefore be run in Biomass_core.",
                           "Defaults to forested classes in LCC2005 map.")),
@@ -590,6 +596,11 @@ createBiomass_coreInputs <- function(sim) {
                       omitArgs = c("showSimilar", "useCache", ".specialData", "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
   out <- lapply(capture.output(as.data.frame(round(modelCover$rsq, 4))), function(x) message(blue(x)))
+
+  ## export model before overriding happens
+  if (any(P(sim)$exportModels %in% c("all", "coverModel")))
+    sim$modelCover <- modelCover
+
   if (isTRUE(any(cdsWh))) {
     cds[, pred := fitted(modelCover$mod, response = "response")]
     cohortDataShort <- cds[, -c("coverPres", "coverNum")][cohortDataShort,
@@ -627,6 +638,9 @@ createBiomass_coreInputs <- function(sim) {
 
   message(blue("  The rsquared is: "))
   out <- lapply(capture.output(as.data.frame(round(modelBiomass$rsq, 4))), function(x) message(blue(x)))
+
+  if (any(P(sim)$exportModels %in% c("all", "biomassModel")))
+    sim$modelBiomass <- modelBiomass
 
   ########################################################################
   # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
