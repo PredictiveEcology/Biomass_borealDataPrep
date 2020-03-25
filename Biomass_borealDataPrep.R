@@ -533,9 +533,9 @@ createBiomass_coreInputs <- function(sim) {
                             all.y = FALSE, by = "pixelIndex")
   cohortDataNo34to36 <- pixelCohortData[!pixelIndex %in% newLCCClasses$pixelIndex]
   setnames(cohortDataNo34to36, "initialEcoregionCode", "ecoregionGroup")
-  cohortDataNo34to36NoBiomass <- cohortDataNo34to36[eval(rmZeroBiomassQuote),
+  cohortDataNo34to36Biomass <- cohortDataNo34to36[eval(rmZeroBiomassQuote),
                                                     .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
-  cohortDataNo34to36NoBiomass <- unique(cohortDataNo34to36NoBiomass)
+  cohortDataNo34to36Biomass <- unique(cohortDataNo34to36Biomass)
 
   ## make sure ecoregionGroups match
   assert1(cohortData34to36, pixelCohortData, rmZeroBiomassQuote)
@@ -599,8 +599,8 @@ createBiomass_coreInputs <- function(sim) {
 
   ## For biomass
   ### Subsample cases where there are more than 50 points in an ecoregionGroup * speciesCode
-  totalBiomass <- sum(cohortDataNo34to36NoBiomass$B, na.rm = TRUE)
-  cohortDataNo34to36NoBiomass <- subsetDT(cohortDataNo34to36NoBiomass,
+  totalBiomass <- sum(cohortDataNo34to36Biomass$B, na.rm = TRUE)
+  cohortDataNo34to36Biomass <- subsetDT(cohortDataNo34to36Biomass,
                                           by = c("ecoregionGroup", "speciesCode"),
                                           doSubset = P(sim)$subsetDataBiomassModel)
 
@@ -613,9 +613,9 @@ createBiomass_coreInputs <- function(sim) {
   modelBiomass <- Cache(
     statsModel,
     modelFn = P(sim)$biomassModel,
-    uniqueEcoregionGroup = .sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36NoBiomass$ecoregionGroup))),
+    uniqueEcoregionGroup = .sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36Biomass$ecoregionGroup))),
     sumResponse = totalBiomass,
-    .specialData = cohortDataNo34to36NoBiomass,
+    .specialData = cohortDataNo34to36Biomass,
     useCloud = useCloud,
     # useCache = "overwrite",
     cloudFolderID = sim$cloudFolderID,
@@ -632,7 +632,7 @@ createBiomass_coreInputs <- function(sim) {
   #   doesn't include combinations with B = 0 because those places can't have the species/ecoregion combo
   ########################################################################
   message(blue("Create speciesEcoregion using modelCover and modelBiomass to estimate species traits"))
-  speciesEcoregion <- makeSpeciesEcoregion(cohortDataNoBiomass = cohortDataNo34to36NoBiomass,
+  speciesEcoregion <- makeSpeciesEcoregion(cohortDataBiomass = cohortDataNo34to36Biomass,
                                            cohortDataShort = cohortDataShort,
                                            cohortDataShortNoCover = cohortDataShortNoCover,
                                            species = sim$species,
