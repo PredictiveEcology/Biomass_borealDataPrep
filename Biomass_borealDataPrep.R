@@ -226,7 +226,7 @@ defineModule(sim, list(
                   desc = "initial community map that has mapcodes match initial community table"),
     createsOutput("pixelFateDT", "data.table",
                   desc = paste("A small table that keeps track of the pixel removals and cause. This may help diagnose issues",
-                  " related to understanding the creation of cohortData")),
+                               "related to understanding the creation of cohortData")),
     createsOutput("minRelativeB", "data.frame",
                   desc = "define the cut points to classify stand shadeness"),
     createsOutput("rawBiomassMap", "RasterLayer",
@@ -448,8 +448,8 @@ createBiomass_coreInputs <- function(sim) {
     deciduousCoverDiscount <- out$minimum
     if (plot.it) {
       cover2BiomassModel <- coverOptimFn(out$minimum, pixelCohortData, P(sim)$subsetDataAgeModel,
-                                 P(sim)$coverPctToBiomassPctModel,
-                                 returnRsq = FALSE)
+                                         P(sim)$coverPctToBiomassPctModel,
+                                         returnRsq = FALSE)
       sam1 <- sample(NROW(pixelCohortData), 1e5)
       dev()
       par(mfrow = c(1,2))
@@ -458,8 +458,8 @@ createBiomass_coreInputs <- function(sim) {
       abline(a = 0, b = 1)
 
       cover2BiomassModel1 <- coverOptimFn(1, pixelCohortData, P(sim)$subsetDataAgeModel,
-                                  P(sim)$coverPctToBiomassPctModel,
-                                  returnRsq = FALSE)
+                                          P(sim)$coverPctToBiomassPctModel,
+                                          returnRsq = FALSE)
       dev()
       plot(predict(cover2BiomassModel1$modelBiomass1$mod, newdata = cover2BiomassModel1$pixelCohortData[sam1]),
            log(cover2BiomassModel1$pixelCohortData$B/100)[sam1], pch = ".")
@@ -704,7 +704,7 @@ createBiomass_coreInputs <- function(sim) {
     pixelCohortData[, pixelIndex := NULL]
     setnames(pixelCohortData, old = "newPixelIndex", new = "pixelIndex")
     rm(rasterToMatchLarge)
-  
+
     if (ncell(sim$rasterToMatch) > 3e6) .gc()
   }
 
@@ -731,7 +731,7 @@ createBiomass_coreInputs <- function(sim) {
         youngNoAgeEqZero <- young[-whYoungAgeEqZero]
       }
       young <- Cache(updateYoungBiomasses, youngNoAgeEqZero,
-                                    biomassModel = modelBiomass$mod)
+                     biomassModel = modelBiomass$mod)
       set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
 
       # put the B = 0
@@ -802,9 +802,9 @@ createBiomass_coreInputs <- function(sim) {
   message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", "),
                "\n  Resulted in", magenta(length(unique(sim$cohortData$pixelGroup))),
                "unique pixelGroup values"))
-  assertSpeciesEcoregionCohortDataMatch(sim$cohortData, speciesEcoregion, 
+  assertSpeciesEcoregionCohortDataMatch(sim$cohortData, sim$speciesEcoregion,
                                         doAssertion = TRUE)
-  
+
   #LandR::assertERGs(sim$ecoregionMap, cohortData = sim$cohortData,
   #                  speciesEcoregion = sim$speciesEcoregion,
   #                  minRelativeB = sim$minRelativeB, doAssertion = TRUE)
@@ -1196,9 +1196,9 @@ updateYoungBiomasses <- function(young, biomassModel) {
     reproducible::Require("merTools")
     PI.time <- system.time(
       PI <- merTools::predictInterval(merMod = biomassModel, newdata = young2,
-                            level = 0.95, n.sims = 15,
-                            stat = "median", type="linear.prediction",
-                            include.resid.var = TRUE)
+                                      level = 0.95, n.sims = 15,
+                                      stat = "median", type="linear.prediction",
+                                      include.resid.var = TRUE)
     )
     PI <- setDT(PI)
     young2 <- cbind(PI, young2)
