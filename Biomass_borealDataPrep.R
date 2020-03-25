@@ -447,22 +447,22 @@ createBiomass_coreInputs <- function(sim) {
                                 subset = sam, maximum = FALSE))
     deciduousCoverDiscount <- out$minimum
     if (plot.it) {
-      coverModel <- coverOptimFn(out$minimum, pixelCohortData, P(sim)$subsetDataAgeModel,
+      cover2BiomassModel <- coverOptimFn(out$minimum, pixelCohortData, P(sim)$subsetDataAgeModel,
                                  P(sim)$coverPctToBiomassPctModel,
                                  returnRsq = FALSE)
       sam1 <- sample(NROW(pixelCohortData), 1e5)
       dev()
       par(mfrow = c(1,2))
-      plot(predict(coverModel$modelBiomass1$mod, newdata = coverModel$pixelCohortData[sam1]),
-           log(coverModel$pixelCohortData$B/100)[sam1], pch = ".")
+      plot(predict(cover2BiomassModel$modelBiomass1$mod, newdata = cover2BiomassModel$pixelCohortData[sam1]),
+           log(cover2BiomassModel$pixelCohortData$B/100)[sam1], pch = ".")
       abline(a = 0, b = 1)
 
-      coverModel1 <- coverOptimFn(1, pixelCohortData, P(sim)$subsetDataAgeModel,
+      cover2BiomassModel1 <- coverOptimFn(1, pixelCohortData, P(sim)$subsetDataAgeModel,
                                   P(sim)$coverPctToBiomassPctModel,
                                   returnRsq = FALSE)
       dev()
-      plot(predict(coverModel1$modelBiomass1$mod, newdata = coverModel1$pixelCohortData[sam1]),
-           log(coverModel1$pixelCohortData$B/100)[sam1], pch = ".")
+      plot(predict(cover2BiomassModel1$modelBiomass1$mod, newdata = cover2BiomassModel1$pixelCohortData[sam1]),
+           log(cover2BiomassModel1$pixelCohortData$B/100)[sam1], pch = ".")
       abline(a = 0, b = 1)
 
       pcd <- pixelCohortData
