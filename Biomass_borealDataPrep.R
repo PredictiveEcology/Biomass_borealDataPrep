@@ -745,8 +745,11 @@ createBiomass_coreInputs <- function(sim) {
         youngWAgeEqZero <- young[whYoungAgeEqZero]
         youngNoAgeEqZero <- young[-whYoungAgeEqZero]
       }
-      young <- Cache(updateYoungBiomasses, youngNoAgeEqZero,
-                     biomassModel = modelBiomass$mod)
+      young <- Cache(updateYoungBiomasses,
+                     young = youngNoAgeEqZero,
+                     biomassModel = modelBiomass$mod,
+                     userTags = c(cacheTags, "updateYoungBiomasses"),
+                     omitArgs = c("userTags"))
       set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
 
       # put the B = 0
