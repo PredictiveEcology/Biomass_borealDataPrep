@@ -788,12 +788,11 @@ createBiomass_coreInputs <- function(sim) {
   message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
   sim$speciesLayers <- Cache(postProcess, sim$speciesLayers,
                              rasterToMatch = sim$rasterToMatch,
-                             maskWithRTM = TRUE, filename2 = paste0(names(sim$speciesLayers), ".tif"))
-  # if (!compareRaster(sim$speciesLayers, sim$rasterToMatch, stopiffalse = FALSE))
-  #   sim$speciesLayers <- cropInputs(sim$speciesLayers, sim$rasterToMatch)
-  # sim$speciesLayers <- Cache(maskInputs, sim$speciesLayers,
-  #                                 rasterToMatch = sim$rasterToMatch,
-  #                                 maskWithRTM = TRUE)
+                             maskWithRTM = TRUE,
+                             filename2 = paste0(names(sim$speciesLayers), ".tif"),
+                             overwrite = TRUE,
+                             userTags = c(cacheTags, "speciesLayersRTM"),
+                             omitArgs = c("userTags"))
 
   ## double check these rasters all match RTM
   compareRaster(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap, sim$rasterToMatch, sim$speciesLayers)
