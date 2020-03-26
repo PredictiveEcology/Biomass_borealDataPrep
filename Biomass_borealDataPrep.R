@@ -691,7 +691,7 @@ createBiomass_coreInputs <- function(sim) {
   ## 3. Re-do pixel ID numbering so that it matches the final rasterToMatch
   ## Note: if SA and SALarge are the same, no subsetting will take place.
 
-  if (!identical(extent(sim$rasterToMatch), extent(sim$rasterToMatchLarge))) {
+  if (sum(is.na(getValues(sim$rasterToMatch))) != sum(is.na(getValues(sim$rasterToMatchLarge)))) {
     message(blue("Subsetting to studyArea"))
     rasterToMatchLarge <- sim$rasterToMatchLarge
     rasterToMatchLarge <- setValues(rasterToMatchLarge, seq(ncell(rasterToMatchLarge)))
