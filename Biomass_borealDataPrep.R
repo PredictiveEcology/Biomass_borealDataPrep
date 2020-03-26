@@ -1138,7 +1138,6 @@ prepInputsFireYear <- function(..., rasterToMatch, field) {
   gg <- st_cast(a, "MULTIPOLYGON") # collapse them into a single multipolygon
   d <- st_transform(gg, crs(rasterToMatch))
   fasterize(d, raster = rasterToMatch, field = field)
-
 }
 
 prepInputsStandAgeMap <- function(..., ageURL, ageFun, maskWithRTM,
