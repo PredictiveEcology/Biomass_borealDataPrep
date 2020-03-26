@@ -69,6 +69,12 @@ defineModule(sim, list(
                     paste("the name of the field used to distinguish ecoregions, if supplying a polygon.",
                           "The default is 'ECODISTRIC' where available (for legacy reasons), else the row numbers of",
                           "sim$ecoregionLayer. If this field is not numeric, it will be coerced to numeric")),
+    defineParameter("exportModels", "character", "none", NA, NA,
+                    paste("Controls whether models used to estimate maximum B/ANPP ('biomassModel') and species establishment",
+                          "('coverModel') probabilities are exported for posterior analyses or not. This may be important",
+                          "when models fail to converge or hit singularity (but can still be used to make predictions) and",
+                          "the user wants to investigate them further. Can be set to 'none' (no models are exported), 'all'",
+                          "(both are exported), 'biomassModel' or 'coverModel'.")),
     defineParameter("forestedLCCClasses", "numeric", c(1:15, 20, 32, 34:35), 0, 39,
                     paste("The classes in the rstLCC layer that are 'treed' and will therefore be run in Biomass_core.",
                           "Defaults to forested classes in LCC2005 map.")),
@@ -519,6 +525,7 @@ createBiomass_coreInputs <- function(sim) {
   ## version 3: Feb 2020 Eliot's fix that is WRONG - this behaviour is being achieved in convertUnwantedLCC and creates empty tables if done here
   # availableCombinations <- unique(pixelCohortData[!(lcc %in% uwc),
   #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
+
   newLCCClasses <- Cache(convertUnwantedLCC,
                          classesToReplace = P(sim)$LCCClassesToReplaceNN,
                          rstLCC = rstLCCAdj,
@@ -589,6 +596,11 @@ createBiomass_coreInputs <- function(sim) {
                       omitArgs = c("showSimilar", "useCache", ".specialData", "useCloud", "cloudFolderID"))
   message(blue("  The rsquared is: "))
   out <- lapply(capture.output(as.data.frame(round(modelCover$rsq, 4))), function(x) message(blue(x)))
+
+  ## export model before overriding happens
+  if (any(P(sim)$exportModels %in% c("all", "coverModel")))
+    sim$modelCover <- modelCover
+
   if (isTRUE(any(cdsWh))) {
     cds[, pred := fitted(modelCover$mod, response = "response")]
     cohortDataShort <- cds[, -c("coverPres", "coverNum")][cohortDataShort,
@@ -627,6 +639,9 @@ createBiomass_coreInputs <- function(sim) {
   message(blue("  The rsquared is: "))
   out <- lapply(capture.output(as.data.frame(round(modelBiomass$rsq, 4))), function(x) message(blue(x)))
 
+  if (any(P(sim)$exportModels %in% c("all", "biomassModel")))
+    sim$modelBiomass <- modelBiomass
+
   ########################################################################
   # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
   #   doesn't include combinations with B = 0 because those places can't have the species/ecoregion combo
@@ -662,7 +677,7 @@ createBiomass_coreInputs <- function(sim) {
   ########################################################################
   # Create initial communities, i.e., pixelGroups
   ########################################################################
-  # Rejoin back the pixels that were 34 and 35
+  # Rejoin back the pixels that were 34:36
   set(cohortData34to36, NULL, "initialEcoregionCode", NULL)
   pixelCohortData <- rbindlist(list(cohortData34to36, cohortDataNo34to36),
                                use.names = TRUE, fill = TRUE)
@@ -770,7 +785,6 @@ createBiomass_coreInputs <- function(sim) {
 
   ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
   ## TODO: use postProcess?
-
   message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
   sim$speciesLayers <- Cache(postProcess, sim$speciesLayers,
                              rasterToMatch = sim$rasterToMatch,
@@ -790,6 +804,7 @@ createBiomass_coreInputs <- function(sim) {
   toRm <- speciesEcoregion[!sim$cohortData, on = onMatch]
   speciesEcoregion <- speciesEcoregion[!toRm, on = onMatch]
   sim$speciesEcoregion <- speciesEcoregion
+  sim$speciesEcoregion$ecoregionGroup <- factor(as.character(sim$speciesEcoregion$ecoregionGroup))
 
   ## write species layers to disk
   # sim$speciesLayers <- lapply(seq(numLayers(sim$speciesLayers)), function(x) {
@@ -805,7 +820,7 @@ createBiomass_coreInputs <- function(sim) {
   assertSpeciesEcoregionCohortDataMatch(sim$cohortData, sim$speciesEcoregion,
                                         doAssertion = TRUE)
 
-  #LandR::assertERGs(sim$ecoregionMap, cohortData = sim$cohortData,
+  # LandR::assertERGs(sim$ecoregionMap, cohortData = sim$cohortData,
   #                  speciesEcoregion = sim$speciesEcoregion,
   #                  minRelativeB = sim$minRelativeB, doAssertion = TRUE)
 
