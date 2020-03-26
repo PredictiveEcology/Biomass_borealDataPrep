@@ -804,6 +804,7 @@ createBiomass_coreInputs <- function(sim) {
   toRm <- speciesEcoregion[!sim$cohortData, on = onMatch]
   speciesEcoregion <- speciesEcoregion[!toRm, on = onMatch]
   sim$speciesEcoregion <- speciesEcoregion
+  sim$speciesEcoregion$ecoregionGroup <- factor(as.character(sim$speciesEcoregion$ecoregionGroup))
 
   ## write species layers to disk
   # sim$speciesLayers <- lapply(seq(numLayers(sim$speciesLayers)), function(x) {
@@ -819,7 +820,7 @@ createBiomass_coreInputs <- function(sim) {
   assertSpeciesEcoregionCohortDataMatch(sim$cohortData, sim$speciesEcoregion,
                                         doAssertion = TRUE)
 
-  #LandR::assertERGs(sim$ecoregionMap, cohortData = sim$cohortData,
+  # LandR::assertERGs(sim$ecoregionMap, cohortData = sim$cohortData,
   #                  speciesEcoregion = sim$speciesEcoregion,
   #                  minRelativeB = sim$minRelativeB, doAssertion = TRUE)
 
