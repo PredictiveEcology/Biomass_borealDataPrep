@@ -57,10 +57,10 @@ defineModule(sim, list(
                           "be an overesimate of the %biomass of hardwoods. E.g., 30%cover of hardwoods",
                           "might translate to 20% biomass of hardwoods. The reason this discount exists is",
                           "because hardwoods in Canada have a much wider canopy than softwoods.")),
-    defineParameter("deciduousCoverDiscount", "numeric",0.8418911, NA, NA,
+    defineParameter("deciduousCoverDiscount", "numeric", 0.8418911, NA, NA,
                     paste("This was estimated with data from NWT on March 18, 2020 and may or may not be universal.",
                           "Will not be used if P(sim)$fitDeciduousCoverDiscount is TRUE")),
-    defineParameter("fitDeciduousCoverDiscount", "logical",FALSE, NA, NA,
+    defineParameter("fitDeciduousCoverDiscount", "logical", FALSE, NA, NA,
                     paste("If TRUE, this will re-estimate deciduousCoverDiscount. This may be unstable and",
                           "is not recommended currently. If FALSE, will use the current default")),
     ###########################################################################################
