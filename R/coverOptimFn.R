@@ -2,7 +2,7 @@
 #' @importFrom LandR subsetDT asInteger
 #' @importFrom data.table setDT
 
-coverOptimFn <- function(x, pixelCohortData, subset, bm, returnRsq = TRUE) {
+coverOptimFn <- function(x, pixelCohortData, subset, bm, returnAIC = TRUE) {
 
   pixelCohortData <- partitionBiomass(x, pixelCohortData)
   if (length(subset) > 1) {
@@ -24,7 +24,7 @@ coverOptimFn <- function(x, pixelCohortData, subset, bm, returnRsq = TRUE) {
   message(cyan("#########################"))
   message(cyan(" -- deciduousDiscount:", round(x, 3), "; AIC=", round(theAIC, 3)))
   messageDF(modelBiomass1$rsq, round = 4, colour = "cyan")
-  if (returnRsq)
+  if (returnAIC)
     theAIC#unname(modelBiomass1$rsq[,2])
   else
     list(modelBiomass1 = modelBiomass1, pixelCohortData = pixelCohortData)
