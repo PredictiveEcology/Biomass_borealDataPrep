@@ -455,7 +455,7 @@ createBiomass_coreInputs <- function(sim) {
     if (plot.it) {
       cover2BiomassModel <- coverOptimFn(out$minimum, pixelCohortData, P(sim)$subsetDataAgeModel,
                                          P(sim)$coverPctToBiomassPctModel,
-                                         returnRsq = FALSE)
+                                         returnAIC = FALSE)
       sam1 <- sample(NROW(pixelCohortData), 1e5)
       dev()
       par(mfrow = c(1,2))
@@ -465,7 +465,7 @@ createBiomass_coreInputs <- function(sim) {
 
       cover2BiomassModel1 <- coverOptimFn(1, pixelCohortData, P(sim)$subsetDataAgeModel,
                                           P(sim)$coverPctToBiomassPctModel,
-                                          returnRsq = FALSE)
+                                          returnAIC = FALSE)
       dev()
       plot(predict(cover2BiomassModel1$modelBiomass1$mod, newdata = cover2BiomassModel1$pixelCohortData[sam1]),
            log(cover2BiomassModel1$pixelCohortData$B/100)[sam1], pch = ".")
