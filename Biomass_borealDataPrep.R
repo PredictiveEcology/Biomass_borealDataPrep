@@ -451,7 +451,7 @@ createBiomass_coreInputs <- function(sim) {
     system.time(out <- optimize(interval = c(0.1, 1), f = coverOptimFn, bm = P(sim)$coverPctToBiomassPctModel,
                                 pixelCohortData = pixelCohortData,
                                 subset = sam, maximum = FALSE))
-    deciduousCoverDiscount <- out$minimum
+    params(sim)$Biomass_borealDataPrep$deciduousCoverDiscount <- out$minimum
     if (plot.it) {
       cover2BiomassModel <- coverOptimFn(out$minimum, pixelCohortData, P(sim)$subsetDataAgeModel,
                                          P(sim)$coverPctToBiomassPctModel,
@@ -481,10 +481,9 @@ createBiomass_coreInputs <- function(sim) {
 
   } else {
     message(magenta(paste0(format(P(sim)$coverPctToBiomassPctModel, appendLF = FALSE))))
-    deciduousCoverDiscount <- P(sim)$deciduousCoverDiscount
-    message(blue("using previously estimated deciduousCoverDiscount:", round(deciduousCoverDiscount,3)))
+    message(blue("using previously estimated deciduousCoverDiscount:", round(P(sim)$deciduousCoverDiscount, 3)))
   }
-  pixelCohortData <- partitionBiomass(x = deciduousCoverDiscount, pixelCohortData)
+  pixelCohortData <- partitionBiomass(x = P(sim)$deciduousCoverDiscount, pixelCohortData)
   set(pixelCohortData, NULL, "B", asInteger(pixelCohortData$B/P(sim)$pixelGroupBiomassClass)*
         P(sim)$pixelGroupBiomassClass)
   set(pixelCohortData, NULL, c("decid", "cover2"), NULL)
