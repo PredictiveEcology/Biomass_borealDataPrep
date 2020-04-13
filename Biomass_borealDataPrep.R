@@ -540,7 +540,7 @@ createBiomass_coreInputs <- function(sim) {
   cohortDataNo34to36 <- pixelCohortData[!pixelIndex %in% newLCCClasses$pixelIndex]
   setnames(cohortDataNo34to36, "initialEcoregionCode", "ecoregionGroup")
   cohortDataNo34to36Biomass <- cohortDataNo34to36[eval(rmZeroBiomassQuote),
-                                                    .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
+                                                  .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
   cohortDataNo34to36Biomass <- unique(cohortDataNo34to36Biomass)
 
   ## make sure ecoregionGroups match
@@ -612,8 +612,8 @@ createBiomass_coreInputs <- function(sim) {
   ### Subsample cases where there are more than 50 points in an ecoregionGroup * speciesCode
   totalBiomass <- sum(cohortDataNo34to36Biomass$B, na.rm = TRUE)
   cohortDataNo34to36Biomass <- subsetDT(cohortDataNo34to36Biomass,
-                                          by = c("ecoregionGroup", "speciesCode"),
-                                          doSubset = P(sim)$subsetDataBiomassModel)
+                                        by = c("ecoregionGroup", "speciesCode"),
+                                        doSubset = P(sim)$subsetDataBiomassModel)
 
   ### For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
   ### force parameter values to avoid more checks
@@ -734,9 +734,9 @@ createBiomass_coreInputs <- function(sim) {
   maxAgeHighQualityData <- -1
   if (length(extractURL("fireURL"))) {
     firstFireYear <- as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", extractURL("fireURL")))
-      maxAgeHighQualityData <- start(sim) - firstFireYear
-      ## if maxAgeHighQualityData is lower than 0, it means it's prior to the first fire Year
-      ## or not following calendar year
+    maxAgeHighQualityData <- start(sim) - firstFireYear
+    ## if maxAgeHighQualityData is lower than 0, it means it's prior to the first fire Year
+    ## or not following calendar year
     if (!is.na(maxAgeHighQualityData) & maxAgeHighQualityData >= 0) {
       youngRows <- pixelCohortData$age <= maxAgeHighQualityData
       young <- pixelCohortData[youngRows == TRUE]
