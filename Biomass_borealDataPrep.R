@@ -733,9 +733,11 @@ createBiomass_coreInputs <- function(sim) {
 
   maxAgeHighQualityData <- -1
   if (length(extractURL("fireURL"))) {
-    firstFireYear = as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", extractURL("fireURL")))
-    if (!is.na(firstFireYear)) {
+    firstFireYear <- as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", extractURL("fireURL")))
       maxAgeHighQualityData <- start(sim) - firstFireYear
+      ## if maxAgeHighQualityData is lower than 0, it means it's prior to the first fire Year
+      ## or not following calendar year
+    if (!is.na(maxAgeHighQualityData) & maxAgeHighQualityData >= 0) {
       youngRows <- pixelCohortData$age <= maxAgeHighQualityData
       young <- pixelCohortData[youngRows == TRUE]
       # whYoungBEqZero <- which(young$B == 0)
@@ -757,6 +759,9 @@ createBiomass_coreInputs <- function(sim) {
       }
       pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE],
                                         young), use.names = TRUE)
+    } else {
+      ## return maxAgeHighQualityData to -1
+      maxAgeHighQualityData <- -1
     }
   }
 
