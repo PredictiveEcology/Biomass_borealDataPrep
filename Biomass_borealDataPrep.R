@@ -136,7 +136,7 @@ defineModule(sim, list(
                               "It must have same extent and crs as studyAreaLarge if suppplied by user.",
                               "It is superseded by sim$ecoregionRst if that object is supplied by the user"),
                  sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip"),
-    expectsInput('ecoregionRst', "RasterLayer",
+    expectsInput("ecoregionRst", "RasterLayer",
                  desc = paste("A raster that characterizes the unique ecological regions used to",
                               "parameterize the biomass, cover, and species establishment probability models.",
                               "If this object is provided, it will supersede sim$ecoregionLayer.",
