@@ -136,7 +136,7 @@ defineModule(sim, list(
                               "It must have same extent and crs as studyAreaLarge if suppplied by user.",
                               "It is superseded by sim$ecoregionRst if that object is supplied by the user"),
                  sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip"),
-    expectsInput('ecoregionRst', "RasterLayer",
+    expectsInput("ecoregionRst", "RasterLayer",
                  desc = paste("A raster that characterizes the unique ecological regions used to",
                               "parameterize the biomass, cover, and species establishment probability models.",
                               "If this object is provided, it will supersede sim$ecoregionLayer.",
@@ -540,7 +540,7 @@ createBiomass_coreInputs <- function(sim) {
   cohortDataNo34to36 <- pixelCohortData[!pixelIndex %in% newLCCClasses$pixelIndex]
   setnames(cohortDataNo34to36, "initialEcoregionCode", "ecoregionGroup")
   cohortDataNo34to36Biomass <- cohortDataNo34to36[eval(rmZeroBiomassQuote),
-                                                    .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
+                                                  .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
   cohortDataNo34to36Biomass <- unique(cohortDataNo34to36Biomass)
 
   ## make sure ecoregionGroups match
@@ -612,8 +612,8 @@ createBiomass_coreInputs <- function(sim) {
   ### Subsample cases where there are more than 50 points in an ecoregionGroup * speciesCode
   totalBiomass <- sum(cohortDataNo34to36Biomass$B, na.rm = TRUE)
   cohortDataNo34to36Biomass <- subsetDT(cohortDataNo34to36Biomass,
-                                          by = c("ecoregionGroup", "speciesCode"),
-                                          doSubset = P(sim)$subsetDataBiomassModel)
+                                        by = c("ecoregionGroup", "speciesCode"),
+                                        doSubset = P(sim)$subsetDataBiomassModel)
 
   ### For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
   ### force parameter values to avoid more checks
@@ -733,9 +733,11 @@ createBiomass_coreInputs <- function(sim) {
 
   maxAgeHighQualityData <- -1
   if (length(extractURL("fireURL"))) {
-    firstFireYear = as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", extractURL("fireURL")))
-    if (!is.na(firstFireYear)) {
-      maxAgeHighQualityData <- start(sim) - firstFireYear
+    firstFireYear <- as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", extractURL("fireURL")))
+    maxAgeHighQualityData <- start(sim) - firstFireYear
+    ## if maxAgeHighQualityData is lower than 0, it means it's prior to the first fire Year
+    ## or not following calendar year
+    if (!is.na(maxAgeHighQualityData) & maxAgeHighQualityData >= 0) {
       youngRows <- pixelCohortData$age <= maxAgeHighQualityData
       young <- pixelCohortData[youngRows == TRUE]
       # whYoungBEqZero <- which(young$B == 0)
@@ -757,6 +759,9 @@ createBiomass_coreInputs <- function(sim) {
       }
       pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE],
                                         young), use.names = TRUE)
+    } else {
+      ## return maxAgeHighQualityData to -1
+      maxAgeHighQualityData <- -1
     }
   }
 
