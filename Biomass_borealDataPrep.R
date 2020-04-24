@@ -328,7 +328,7 @@ createBiomass_coreInputs <- function(sim) {
             "Please check the species list and traits table")
 
   ### make table of light shade tolerance  #######################
-  sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
+  if (!suppliedElsewhere("sufficientLight", sim))
     sim$sufficientLight <- data.frame(speciesshadetolerance = 0:5,
                                       X0 = 1,
                                       X1 = c(0, 0.5, rep(1, 4)),
