@@ -329,12 +329,13 @@ createBiomass_coreInputs <- function(sim) {
 
   ### make table of light shade tolerance  #######################
   sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
-                                    X0 = 1,
-                                    X1 = c(0.5, rep(1, 4)),
-                                    X2 = c(0, 0.5, rep(1, 3)),
-                                    X3 = c(rep(0, 2), 0.5, rep(1, 2)),
-                                    X4 = c(rep(0, 3), 0.5, 1),
-                                    X5 = c(rep(0, 4), 1))
+    sim$sufficientLight <- data.frame(speciesshadetolerance = 0:5,
+                                      X0 = 1,
+                                      X1 = c(0, 0.5, rep(1, 4)),
+                                      X2 = c(0, 0, 0.5, rep(1, 3)),
+                                      X3 = c(rep(0, 3), 0.5, rep(1, 2)),
+                                      X4 = c(rep(0, 4), 0.5, 1),
+                                      X5 = c(rep(0, 5), 1))
 
   ################################################################
   ## initialEcoregionMap
