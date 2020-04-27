@@ -243,7 +243,11 @@ defineModule(sim, list(
                   desc = paste("Polygon to use as the study area.",
                                "Defaults to  an area in Southwestern Alberta, Canada.")),
     createsOutput("sufficientLight", "data.frame",
-                  desc = "define how the species with different shade tolerance respond to stand shadeness")
+                  desc = paste("define how the species with different shade tolerance respond to stand shadeness.",
+                               "Table values follow LANDIS-II test traits available at: ",
+                               paste0("https://raw.githubusercontent.com/LANDIS-II-Foundation/",
+                               "Extensions-Succession/master/biomass-succession-archive/",
+                               "trunk/tests/v6.0-2.0/biomass-succession_test.txt")))
     # createsOutput("speciesEstablishmentProbMap", "RasterStack",
     #               paste("Species establishment probability as a map, ",
     #                     "by species. This is written to disk to save RAM space")),
@@ -304,12 +308,12 @@ createBiomass_coreInputs <- function(sim) {
   if (P(sim)$speciesUpdateFunction[[1]] != defaultQuote) {
     stop("Make sure that the first entry in speciesUpdateFunction is the default expression")
   }
-
   for (fn in P(sim)$speciesUpdateFunction) {
     if (is(fn, "call")) {
       sim$species <- eval(fn)
     } else {
-      stop("speciesUpdateFunction should be a list of functions.")
+      stop("speciesUpdateFunction should be a list of quoted function expressions e.g.:
+           list(quote(LandR::speciesTableUpdate(...)), quote(speciesTableUpdateCustom(...)))")
     }
   }
 
