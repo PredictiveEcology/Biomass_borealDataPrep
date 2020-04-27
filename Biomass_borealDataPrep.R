@@ -332,14 +332,25 @@ createBiomass_coreInputs <- function(sim) {
             "Please check the species list and traits table")
 
   ### make table of light shade tolerance  #######################
-  if (!suppliedElsewhere("sufficientLight", sim))
-    sim$sufficientLight <- data.frame(speciesshadetolerance = 0:5,
-                                      X0 = 1,
-                                      X1 = c(0, 0.5, rep(1, 4)),
-                                      X2 = c(0, 0, 0.5, rep(1, 3)),
-                                      X3 = c(rep(0, 3), 0.5, rep(1, 2)),
-                                      X4 = c(rep(0, 4), 0.5, 1),
-                                      X5 = c(rep(0, 5), 1))
+  ## D. Cyr's version: seems to exacerbate no. of cohorts in our simulations
+  ## https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/biomass-succession-main-inputs_BSW_Baseline.txt%7E
+  ## a prob of 0.5 over 10yrs virtually always results in the successful establishment of a cohort: 1 - (1 - 0.5)^10 = 0.9990234
+  # sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
+  #                                   X0 = 1,
+  #                                   X1 = c(0.5, rep(1, 4)),
+  #                                   X2 = c(0, 0.5, rep(1, 3)),
+  #                                   X3 = c(rep(0, 2), 0.5, rep(1, 2)),
+  #                                   X4 = c(rep(0, 3), 0.5, 1),
+  #                                   X5 = c(rep(0, 4), 1))
+
+  ## LANDIS-test table (see source in metadata desc.)
+  sim$sufficientLight <- data.frame(speciesshadetolerance = 1:5,
+                                    X0 = c(rep(1, 4), 0),
+                                    X1 = c(0, rep(1, 3), 0),
+                                    X2 = c(0, 0, rep(1, 3)),
+                                    X3 = c(rep(0, 3), rep(1, 2)),
+                                    X4 = c(rep(0, 4), 1),
+                                    X5 = c(rep(0, 4), 1))
 
   ################################################################
   ## initialEcoregionMap
