@@ -459,9 +459,10 @@ createBiomass_coreInputs <- function(sim) {
     pi <- unique(pixelCohortData[sam]$pixelIndex)
     sam <- which(pixelCohortData$pixelIndex %in% pi)
 
-    system.time(out <- optimize(interval = c(0.1, 1), f = coverOptimFn, bm = P(sim)$coverPctToBiomassPctModel,
-                                pixelCohortData = pixelCohortData,
-                                subset = sam, maximum = FALSE))
+    system.time({
+      out <- optimize(interval = c(0.1, 1), f = coverOptimFn, bm = P(sim)$coverPctToBiomassPctModel,
+                      pixelCohortData = pixelCohortData, subset = sam, maximum = FALSE)
+    })
     params(sim)$Biomass_borealDataPrep$deciduousCoverDiscount <- out$minimum
     if (plot.it) {
       cover2BiomassModel <- coverOptimFn(out$minimum, pixelCohortData, P(sim)$subsetDataAgeModel,
@@ -802,7 +803,6 @@ createBiomass_coreInputs <- function(sim) {
   sim$pixelGroupMap <- makePixelGroupMap(pixelCohortData, sim$rasterToMatch)
 
   ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
-  ## TODO: use postProcess?
   message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
   sim$speciesLayers <- Cache(postProcess, sim$speciesLayers,
                              rasterToMatch = sim$rasterToMatch,
@@ -834,8 +834,7 @@ createBiomass_coreInputs <- function(sim) {
   message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", "),
                "\n  Resulted in", magenta(length(unique(sim$cohortData$pixelGroup))),
                "unique pixelGroup values"))
-  assertSpeciesEcoregionCohortDataMatch(sim$cohortData, sim$speciesEcoregion,
-                                        doAssertion = TRUE)
+  assertSpeciesEcoregionCohortDataMatch(sim$cohortData, sim$speciesEcoregion, doAssertion = TRUE)
 
   # LandR::assertERGs(sim$ecoregionMap, cohortData = sim$cohortData,
   #                  speciesEcoregion = sim$speciesEcoregion,
