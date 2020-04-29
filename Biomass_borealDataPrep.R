@@ -21,7 +21,7 @@ defineModule(sim, list(
                   "sp", "sf", "merTools", "SpaDES.tools",
                   "PredictiveEcology/reproducible@messagingOverhaul (>=1.0.0.9010)",
                   "achubaty/amc@development (>=0.1.6.9000)",
-                  "PredictiveEcology/LandR@reworkCohorts (>=0.0.3.9008)",
+                  "PredictiveEcology/LandR@development (>=0.0.4)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
