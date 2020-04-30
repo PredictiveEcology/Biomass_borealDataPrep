@@ -807,7 +807,7 @@ createBiomass_coreInputs <- function(sim) {
   sim$speciesLayers <- Cache(postProcess, sim$speciesLayers,
                              rasterToMatch = sim$rasterToMatch,
                              maskWithRTM = TRUE,
-                             filename2 = paste0(names(sim$speciesLayers), ".tif"),
+                             filename2 = file.path(outputPath(sim), paste0(names(sim$speciesLayers), "_borealDataPrep.tif")),
                              overwrite = TRUE,
                              userTags = c(cacheTags, "speciesLayersRTM"),
                              omitArgs = c("userTags"))
@@ -935,7 +935,8 @@ Save <- function(sim) {
                                useSAcrs = FALSE,     ## never use SA CRS
                                method = "bilinear",
                                datatype = "INT2U",
-                               filename2 = TRUE, overwrite = TRUE,
+                               filename2 = NULL,
+                               overwrite = TRUE,
                                userTags = c(cacheTags, "rawBiomassMap"),
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
   }
@@ -1020,12 +1021,12 @@ Save <- function(sim) {
                         maskWithRTM = TRUE,
                         method = "bilinear",
                         datatype = "INT2U",
-                        filename2 = TRUE, overwrite = TRUE,
+                        filename2 = NULL,
+                        overwrite = TRUE,
                         userTags = c("prepInputsrstLCC_rtm", currentModule(sim)), # use at least 1 unique userTag
                         omitArgs = c("destinationPath", "targetFile", "userTags"))
 
-    if (!identical(projection(sim$rstLCC),
-                   projection(sim$rasterToMatchLarge)))
+    if (!identical(projection(sim$rstLCC), projection(sim$rasterToMatchLarge))) ## TODO: use compareRaster(extent = FALSE, rowcol = FALSE) ?
       projection(sim$rstLCC) <- projection(sim$rasterToMatchLarge) ## Ceres: this shouldn't be necessary anymore
   }
 
@@ -1037,6 +1038,7 @@ Save <- function(sim) {
                                 url = extractURL("ecoregionLayer", sim),
                                 alsoExtract = "similar",
                                 destinationPath = dPath,
+                                filename2 = NULL,
                                 studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                                 overwrite = TRUE,
                                 useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
@@ -1069,7 +1071,6 @@ Save <- function(sim) {
   }
 
   ## Species equivalencies table -------------------------------------------
-
   if (!suppliedElsewhere("sppEquiv", sim)) {
     if (!is.null(sim$sppColorVect))
       message("No 'sppColorVect' provided; using default colour palette: Accent")
@@ -1142,4 +1143,3 @@ Save <- function(sim) {
 
   return(invisible(sim))
 }
-
