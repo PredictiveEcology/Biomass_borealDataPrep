@@ -121,6 +121,8 @@ defineModule(sim, list(
                     "This describes the simulation time at which the first save event should occur"),
     defineParameter(".saveInterval", "numeric", NA, NA, NA,
                     "This describes the simulation time interval between save events"),
+    defineParameter(".studyAreaName", "character", NA, NA, NA,
+                    "Human-readable name for the study area used. If NA, a hash of studyArea will be used."),
     defineParameter(".useCache", "character", c(".inputObjects", "init"), NA, NA,
                     desc = "Internal. Can be names of events or the whole module name; these will be cached by SpaDES")
   ),
@@ -807,7 +809,7 @@ createBiomass_coreInputs <- function(sim) {
   sim$speciesLayers <- Cache(postProcess, sim$speciesLayers,
                              rasterToMatch = sim$rasterToMatch,
                              maskWithRTM = TRUE,
-                             filename2 = file.path(outputPath(sim), paste0(names(sim$speciesLayers), "_borealDataPrep.tif")),
+                             filename2 = .suffix(names(sim$speciesLayers), paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
                              userTags = c(cacheTags, "speciesLayersRTM"),
                              omitArgs = c("userTags"))
@@ -876,6 +878,10 @@ Save <- function(sim) {
   if (!suppliedElsewhere("studyArea", sim)) {
     message("'studyArea' was not provided by user. Using a polygon (6250000 m^2) in southwestern Alberta, Canada")
     sim$studyArea <- randomStudyArea(seed = 1234, size = (250^2)*100)
+  }
+
+  if (is.na(P(sim)$.studyAreaName)) {
+    params(sim)[[currentModule(sim)]][[".studyAreaName"]] <- studyAreaName(sim$studyAreaLarge)
   }
 
   if (!suppliedElsewhere("studyAreaLarge", sim)) {
