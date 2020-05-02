@@ -963,7 +963,7 @@ Save <- function(sim) {
     sim$rasterToMatchLarge <- Cache(
       writeOutputs,
       sim$rasterToMatchLarge,
-      filename2 = .suffix(file.path(cachePath(sim), "rasters", "rasterToMatchLarge.tif"),
+      filename2 = .suffix(file.path(dPath, "rasterToMatchLarge.tif"),
                           paste0("_", P(sim)$.studyAreaName)),
       datatype = "INT2U",
       overwrite = TRUE,
@@ -979,7 +979,7 @@ Save <- function(sim) {
                                maskWithRTM = FALSE,   ## mask with SA
                                method = "bilinear",
                                datatype = "INT2U",
-                               filename2 = .suffix(file.path(cachePath(sim), "rasterToMatch.tif"),
+                               filename2 = .suffix(file.path(dPath, "rasterToMatch.tif"),
                                                    paste0("_", P(sim)$.studyAreaName)),
                                overwrite = TRUE,
                                userTags = c(cacheTags, "rasterToMatch"),
