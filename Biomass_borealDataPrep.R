@@ -941,7 +941,7 @@ Save <- function(sim) {
                                useSAcrs = FALSE,     ## never use SA CRS
                                method = "bilinear",
                                datatype = "INT2U",
-                               filename2 = NULL,
+                               filename2 = .suffix("rawBiomasMap.tif", paste0("_", P(sim)$.studyAreaName)),
                                overwrite = TRUE,
                                userTags = c(cacheTags, "rawBiomassMap"),
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
@@ -960,11 +960,16 @@ Save <- function(sim) {
     RTMvals <- getValues(sim$rasterToMatchLarge)
     sim$rasterToMatchLarge[!is.na(RTMvals)] <- 1
 
-    sim$rasterToMatchLarge <- Cache(writeOutputs, sim$rasterToMatchLarge,
-                                    filename2 = file.path(cachePath(sim), "rasters", "rasterToMatchLarge.tif"),
-                                    datatype = "INT2U", overwrite = TRUE,
-                                    userTags = c(cacheTags, "rasterToMatchLarge"),
-                                    omitArgs = c("userTags"))
+    sim$rasterToMatchLarge <- Cache(
+      writeOutputs,
+      sim$rasterToMatchLarge,
+      filename2 = .suffix(file.path(cachePath(sim), "rasters", "rasterToMatchLarge.tif"),
+                          paste0("_", P(sim)$.studyAreaName)),
+      datatype = "INT2U",
+      overwrite = TRUE,
+      userTags = c(cacheTags, "rasterToMatchLarge"),
+      omitArgs = c("userTags")
+    )
 
     sim$rasterToMatch <- Cache(postProcess,
                                x = sim$rawBiomassMap,
@@ -974,7 +979,8 @@ Save <- function(sim) {
                                maskWithRTM = FALSE,   ## mask with SA
                                method = "bilinear",
                                datatype = "INT2U",
-                               filename2 = file.path(cachePath(sim), "rasterToMatch.tif"),
+                               filename2 = .suffix(file.path(cachePath(sim), "rasterToMatch.tif"),
+                                                   paste0("_", P(sim)$.studyAreaName)),
                                overwrite = TRUE,
                                userTags = c(cacheTags, "rasterToMatch"),
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
@@ -1027,7 +1033,7 @@ Save <- function(sim) {
                         maskWithRTM = TRUE,
                         method = "bilinear",
                         datatype = "INT2U",
-                        filename2 = NULL,
+                        filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName)),
                         overwrite = TRUE,
                         userTags = c("prepInputsrstLCC_rtm", currentModule(sim)), # use at least 1 unique userTag
                         omitArgs = c("destinationPath", "targetFile", "userTags"))
@@ -1065,7 +1071,7 @@ Save <- function(sim) {
                              maskWithRTM = TRUE,
                              method = "bilinear",
                              datatype = "INT2U",
-                             filename2 = NULL,
+                             filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
                              fireURL = extractURL("fireURL"),
                              fireFun = "sf::st_read",
