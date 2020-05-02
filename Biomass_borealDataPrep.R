@@ -826,13 +826,6 @@ createBiomass_coreInputs <- function(sim) {
   sim$speciesEcoregion <- speciesEcoregion
   sim$speciesEcoregion$ecoregionGroup <- factor(as.character(sim$speciesEcoregion$ecoregionGroup))
 
-  ## write species layers to disk
-  # sim$speciesLayers <- lapply(seq(numLayers(sim$speciesLayers)), function(x) {
-  #   writeRaster(sim$speciesLayers[[x]],
-  #               file.path(outputPath(sim), paste0(names(sim$speciesLayers)[x], ".tif")),
-  #               datatype = "INT2U", overwrite = TRUE)
-  # }) %>% raster::stack()
-
   ## do assertions
   message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", "),
                "\n  Resulted in", magenta(length(unique(sim$cohortData$pixelGroup))),
