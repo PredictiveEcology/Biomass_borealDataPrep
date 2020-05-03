@@ -92,6 +92,17 @@ defineModule(sim, list(
                           "unique estimates for transient classes in most cases")),
     defineParameter("minCoverThreshold", "numeric", 5, 0, 100,
                     "Cover that is equal to or below this number will be omitted from the dataset"),
+    defineParameter("minRelativeBFunction", "call", quote(LandR::makeMinRelativeB(pixelCohortData)),
+                    NA, NA,
+                    paste("A quoted function that makes the table of min. relative B determining",
+                          "a stand shade level for each ecoregionGroup. Using the internal object",
+                          "`pixelCohortData` is advisable to access/use the list of ecoregionGroups",
+                          "per pixel. The fucntion must output a data.frame with 6 columns, named 'ecoregionGroup'",
+                          "and 'X1' to 'X5', with one line per ecoregionGroup code ('ecoregionGroup'), and",
+                          "the min. relative biomass for each stand shade level X1-5. The default function uses",
+                          "values from LANDIS-II available at:",
+                          paste0("https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/",
+                                 "biomass-succession-main-inputs_BSW_Baseline.txt%7E."))),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by P(sim)$forestedLCCClasses?"),
     defineParameter("pixelGroupAgeClass", "numeric", params(sim)$Biomass_borealDataPrep$successionTimestep, NA, NA,
@@ -801,9 +812,15 @@ createBiomass_coreInputs <- function(sim) {
   ## make biomassMap, ecoregionMap, minRelativeB, pixelGroupMap (at the scale of rasterToMatch)
   sim$biomassMap <- makeBiomassMap(pixelCohortData, sim$rasterToMatch)
   sim$ecoregionMap <- makeEcoregionMap(ecoregionFiles, pixelCohortData)
-  sim$minRelativeB <- makeMinRelativeB(pixelCohortData)
+
   sim$pixelGroupMap <- makePixelGroupMap(pixelCohortData, sim$rasterToMatch)
 
+  if (is(P(sim)$minRelativeBFunction, "call")) {
+    sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
+  } else {
+    stop("minRelativeBFunction should be a quoted function expression, using `pixelCohortData` e.g.:
+           quote(LandR::makeMinRelativeB(pixelCohortData))")
+  }
   ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
   message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
   sim$speciesLayers <- Cache(postProcess, sim$speciesLayers,
