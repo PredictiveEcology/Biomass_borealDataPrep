@@ -10,8 +10,8 @@ defineModule(sim, list(
   ),
   childModules = character(0),
   version = list(Biomass_borealDataPrep = numeric_version("1.4.0.9000"),
-                 LandR = "0.0.3.9004", SpaDES.core = "1.0.0",
-                 reproducible = "1.0.0.9006"),
+                 LandR = "0.0.4.9002", SpaDES.core = "1.0.0",
+                 reproducible = "1.0.0.9011"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
@@ -92,6 +92,17 @@ defineModule(sim, list(
                           "unique estimates for transient classes in most cases")),
     defineParameter("minCoverThreshold", "numeric", 5, 0, 100,
                     "Cover that is equal to or below this number will be omitted from the dataset"),
+    defineParameter("minRelativeBFunction", "call", quote(LandR::makeMinRelativeB(pixelCohortData)),
+                    NA, NA,
+                    paste("A quoted function that makes the table of min. relative B determining",
+                          "a stand shade level for each ecoregionGroup. Using the internal object",
+                          "`pixelCohortData` is advisable to access/use the list of ecoregionGroups",
+                          "per pixel. The fucntion must output a data.frame with 6 columns, named 'ecoregionGroup'",
+                          "and 'X1' to 'X5', with one line per ecoregionGroup code ('ecoregionGroup'), and",
+                          "the min. relative biomass for each stand shade level X1-5. The default function uses",
+                          "values from LANDIS-II available at:",
+                          paste0("https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/",
+                                 "biomass-succession-main-inputs_BSW_Baseline.txt%7E."))),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by P(sim)$forestedLCCClasses?"),
     defineParameter("pixelGroupAgeClass", "numeric", params(sim)$Biomass_borealDataPrep$successionTimestep, NA, NA,
@@ -121,6 +132,8 @@ defineModule(sim, list(
                     "This describes the simulation time at which the first save event should occur"),
     defineParameter(".saveInterval", "numeric", NA, NA, NA,
                     "This describes the simulation time interval between save events"),
+    defineParameter(".studyAreaName", "character", NA, NA, NA,
+                    "Human-readable name for the study area used. If NA, a hash of studyArea will be used."),
     defineParameter(".useCache", "character", c(".inputObjects", "init"), NA, NA,
                     desc = "Internal. Can be names of events or the whole module name; these will be cached by SpaDES")
   ),
@@ -799,15 +812,22 @@ createBiomass_coreInputs <- function(sim) {
   ## make biomassMap, ecoregionMap, minRelativeB, pixelGroupMap (at the scale of rasterToMatch)
   sim$biomassMap <- makeBiomassMap(pixelCohortData, sim$rasterToMatch)
   sim$ecoregionMap <- makeEcoregionMap(ecoregionFiles, pixelCohortData)
-  sim$minRelativeB <- makeMinRelativeB(pixelCohortData)
+
   sim$pixelGroupMap <- makePixelGroupMap(pixelCohortData, sim$rasterToMatch)
 
+  if (is(P(sim)$minRelativeBFunction, "call")) {
+    sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
+  } else {
+    stop("minRelativeBFunction should be a quoted function expression, using `pixelCohortData` e.g.:
+           quote(LandR::makeMinRelativeB(pixelCohortData))")
+  }
   ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
   message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
   sim$speciesLayers <- Cache(postProcess, sim$speciesLayers,
                              rasterToMatch = sim$rasterToMatch,
                              maskWithRTM = TRUE,
-                             filename2 = paste0(names(sim$speciesLayers), ".tif"),
+                             filename2 = .suffix(file.path(outputPath(sim), names(sim$speciesLayers)),
+                                                  paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
                              userTags = c(cacheTags, "speciesLayersRTM"),
                              omitArgs = c("userTags"))
@@ -822,13 +842,6 @@ createBiomass_coreInputs <- function(sim) {
   speciesEcoregion <- speciesEcoregion[!toRm, on = onMatch]
   sim$speciesEcoregion <- speciesEcoregion
   sim$speciesEcoregion$ecoregionGroup <- factor(as.character(sim$speciesEcoregion$ecoregionGroup))
-
-  ## write species layers to disk
-  # sim$speciesLayers <- lapply(seq(numLayers(sim$speciesLayers)), function(x) {
-  #   writeRaster(sim$speciesLayers[[x]],
-  #               file.path(outputPath(sim), paste0(names(sim$speciesLayers)[x], ".tif")),
-  #               datatype = "INT2U", overwrite = TRUE)
-  # }) %>% raster::stack()
 
   ## do assertions
   message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", "),
@@ -876,6 +889,10 @@ Save <- function(sim) {
   if (!suppliedElsewhere("studyArea", sim)) {
     message("'studyArea' was not provided by user. Using a polygon (6250000 m^2) in southwestern Alberta, Canada")
     sim$studyArea <- randomStudyArea(seed = 1234, size = (250^2)*100)
+  }
+
+  if (is.na(P(sim)$.studyAreaName)) {
+    params(sim)[[currentModule(sim)]][[".studyAreaName"]] <- studyAreaName(sim$studyAreaLarge)
   }
 
   if (!suppliedElsewhere("studyAreaLarge", sim)) {
@@ -935,7 +952,8 @@ Save <- function(sim) {
                                useSAcrs = FALSE,     ## never use SA CRS
                                method = "bilinear",
                                datatype = "INT2U",
-                               filename2 = TRUE, overwrite = TRUE,
+                               filename2 = .suffix("rawBiomasMap.tif", paste0("_", P(sim)$.studyAreaName)),
+                               overwrite = TRUE,
                                userTags = c(cacheTags, "rawBiomassMap"),
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
   }
@@ -953,11 +971,16 @@ Save <- function(sim) {
     RTMvals <- getValues(sim$rasterToMatchLarge)
     sim$rasterToMatchLarge[!is.na(RTMvals)] <- 1
 
-    sim$rasterToMatchLarge <- Cache(writeOutputs, sim$rasterToMatchLarge,
-                                    filename2 = file.path(cachePath(sim), "rasters", "rasterToMatchLarge.tif"),
-                                    datatype = "INT2U", overwrite = TRUE,
-                                    userTags = c(cacheTags, "rasterToMatchLarge"),
-                                    omitArgs = c("userTags"))
+    sim$rasterToMatchLarge <- Cache(
+      writeOutputs,
+      sim$rasterToMatchLarge,
+      filename2 = .suffix(file.path(dPath, "rasterToMatchLarge.tif"),
+                          paste0("_", P(sim)$.studyAreaName)),
+      datatype = "INT2U",
+      overwrite = TRUE,
+      userTags = c(cacheTags, "rasterToMatchLarge"),
+      omitArgs = c("userTags")
+    )
 
     sim$rasterToMatch <- Cache(postProcess,
                                x = sim$rawBiomassMap,
@@ -967,7 +990,8 @@ Save <- function(sim) {
                                maskWithRTM = FALSE,   ## mask with SA
                                method = "bilinear",
                                datatype = "INT2U",
-                               filename2 = file.path(cachePath(sim), "rasterToMatch.tif"),
+                               filename2 = .suffix(file.path(dPath, "rasterToMatch.tif"),
+                                                   paste0("_", P(sim)$.studyAreaName)),
                                overwrite = TRUE,
                                userTags = c(cacheTags, "rasterToMatch"),
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
@@ -1020,12 +1044,12 @@ Save <- function(sim) {
                         maskWithRTM = TRUE,
                         method = "bilinear",
                         datatype = "INT2U",
-                        filename2 = TRUE, overwrite = TRUE,
+                        filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName)),
+                        overwrite = TRUE,
                         userTags = c("prepInputsrstLCC_rtm", currentModule(sim)), # use at least 1 unique userTag
                         omitArgs = c("destinationPath", "targetFile", "userTags"))
 
-    if (!identical(projection(sim$rstLCC),
-                   projection(sim$rasterToMatchLarge)))
+    if (!identical(projection(sim$rstLCC), projection(sim$rasterToMatchLarge))) ## TODO: use compareRaster(extent = FALSE, rowcol = FALSE) ?
       projection(sim$rstLCC) <- projection(sim$rasterToMatchLarge) ## Ceres: this shouldn't be necessary anymore
   }
 
@@ -1037,6 +1061,7 @@ Save <- function(sim) {
                                 url = extractURL("ecoregionLayer", sim),
                                 alsoExtract = "similar",
                                 destinationPath = dPath,
+                                filename2 = NULL,
                                 studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                                 overwrite = TRUE,
                                 useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
@@ -1057,7 +1082,7 @@ Save <- function(sim) {
                              maskWithRTM = TRUE,
                              method = "bilinear",
                              datatype = "INT2U",
-                             filename2 = NULL,
+                             filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
                              fireURL = extractURL("fireURL"),
                              fireFun = "sf::st_read",
@@ -1069,7 +1094,6 @@ Save <- function(sim) {
   }
 
   ## Species equivalencies table -------------------------------------------
-
   if (!suppliedElsewhere("sppEquiv", sim)) {
     if (!is.null(sim$sppColorVect))
       message("No 'sppColorVect' provided; using default colour palette: Accent")
@@ -1142,4 +1166,3 @@ Save <- function(sim) {
 
   return(invisible(sim))
 }
-
