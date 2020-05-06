@@ -10,7 +10,7 @@ defineModule(sim, list(
   ),
   childModules = character(0),
   version = list(Biomass_borealDataPrep = numeric_version("1.4.0.9000"),
-                 LandR = "0.0.4.9002", SpaDES.core = "1.0.0",
+                 LandR = "0.0.4.9003", SpaDES.core = "1.0.0",
                  reproducible = "1.0.0.9011"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
@@ -92,6 +92,17 @@ defineModule(sim, list(
                           "unique estimates for transient classes in most cases")),
     defineParameter("minCoverThreshold", "numeric", 5, 0, 100,
                     "Cover that is equal to or below this number will be omitted from the dataset"),
+    defineParameter("minRelativeBFunction", "call", quote(LandR::makeMinRelativeB(pixelCohortData)),
+                    NA, NA,
+                    paste("A quoted function that makes the table of min. relative B determining",
+                          "a stand shade level for each ecoregionGroup. Using the internal object",
+                          "`pixelCohortData` is advisable to access/use the list of ecoregionGroups",
+                          "per pixel. The fucntion must output a data.frame with 6 columns, named 'ecoregionGroup'",
+                          "and 'X1' to 'X5', with one line per ecoregionGroup code ('ecoregionGroup'), and",
+                          "the min. relative biomass for each stand shade level X1-5. The default function uses",
+                          "values from LANDIS-II available at:",
+                          paste0("https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/",
+                                 "biomass-succession-main-inputs_BSW_Baseline.txt%7E."))),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by P(sim)$forestedLCCClasses?"),
     defineParameter("pixelGroupAgeClass", "numeric", params(sim)$Biomass_borealDataPrep$successionTimestep, NA, NA,
@@ -801,15 +812,22 @@ createBiomass_coreInputs <- function(sim) {
   ## make biomassMap, ecoregionMap, minRelativeB, pixelGroupMap (at the scale of rasterToMatch)
   sim$biomassMap <- makeBiomassMap(pixelCohortData, sim$rasterToMatch)
   sim$ecoregionMap <- makeEcoregionMap(ecoregionFiles, pixelCohortData)
-  sim$minRelativeB <- makeMinRelativeB(pixelCohortData)
+
   sim$pixelGroupMap <- makePixelGroupMap(pixelCohortData, sim$rasterToMatch)
 
+  if (is(P(sim)$minRelativeBFunction, "call")) {
+    sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
+  } else {
+    stop("minRelativeBFunction should be a quoted function expression, using `pixelCohortData` e.g.:
+           quote(LandR::makeMinRelativeB(pixelCohortData))")
+  }
   ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
   message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
   sim$speciesLayers <- Cache(postProcess, sim$speciesLayers,
                              rasterToMatch = sim$rasterToMatch,
                              maskWithRTM = TRUE,
-                             filename2 = .suffix(names(sim$speciesLayers), paste0("_", P(sim)$.studyAreaName)),
+                             filename2 = .suffix(file.path(outputPath(sim), names(sim$speciesLayers)),
+                                                  paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
                              userTags = c(cacheTags, "speciesLayersRTM"),
                              omitArgs = c("userTags"))
@@ -824,13 +842,6 @@ createBiomass_coreInputs <- function(sim) {
   speciesEcoregion <- speciesEcoregion[!toRm, on = onMatch]
   sim$speciesEcoregion <- speciesEcoregion
   sim$speciesEcoregion$ecoregionGroup <- factor(as.character(sim$speciesEcoregion$ecoregionGroup))
-
-  ## write species layers to disk
-  # sim$speciesLayers <- lapply(seq(numLayers(sim$speciesLayers)), function(x) {
-  #   writeRaster(sim$speciesLayers[[x]],
-  #               file.path(outputPath(sim), paste0(names(sim$speciesLayers)[x], ".tif")),
-  #               datatype = "INT2U", overwrite = TRUE)
-  # }) %>% raster::stack()
 
   ## do assertions
   message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", "),
@@ -963,7 +974,7 @@ Save <- function(sim) {
     sim$rasterToMatchLarge <- Cache(
       writeOutputs,
       sim$rasterToMatchLarge,
-      filename2 = .suffix(file.path(cachePath(sim), "rasters", "rasterToMatchLarge.tif"),
+      filename2 = .suffix(file.path(dPath, "rasterToMatchLarge.tif"),
                           paste0("_", P(sim)$.studyAreaName)),
       datatype = "INT2U",
       overwrite = TRUE,
@@ -979,7 +990,7 @@ Save <- function(sim) {
                                maskWithRTM = FALSE,   ## mask with SA
                                method = "bilinear",
                                datatype = "INT2U",
-                               filename2 = .suffix(file.path(cachePath(sim), "rasterToMatch.tif"),
+                               filename2 = .suffix(file.path(dPath, "rasterToMatch.tif"),
                                                    paste0("_", P(sim)$.studyAreaName)),
                                overwrite = TRUE,
                                userTags = c(cacheTags, "rasterToMatch"),
