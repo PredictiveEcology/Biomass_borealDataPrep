@@ -10,7 +10,7 @@ defineModule(sim, list(
   ),
   childModules = character(0),
   version = list(Biomass_borealDataPrep = numeric_version("1.4.0.9000"),
-                 LandR = "0.0.4.9003", SpaDES.core = "1.0.0",
+                 LandR = "0.0.5", SpaDES.core = "1.0.0",
                  reproducible = "1.0.0.9011"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
