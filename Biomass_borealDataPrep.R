@@ -498,8 +498,8 @@ createBiomass_coreInputs <- function(sim) {
 
       pcd <- pixelCohortData
       bb <- pcd[sample(sam)]
-      cc <- bb[,cover3:=cover*c(1,out$minimum)[decid+1]][
-        ,actualX:=cover3/sum(cover3)/(cover/100), by = "pixelIndex"]
+      cc <- bb[, cover3 := cover * c(1, out$minimum)[decid + 1]][
+        , actualX := cover3 / sum(cover3) / (cover / 100), by = "pixelIndex"]
       setkey(cc, pixelIndex)
       mean(cc[speciesCode == "Popu_Tre"]$actualX)
     }
@@ -509,7 +509,7 @@ createBiomass_coreInputs <- function(sim) {
     message(blue("using previously estimated deciduousCoverDiscount:", round(P(sim)$deciduousCoverDiscount, 3)))
   }
   pixelCohortData <- partitionBiomass(x = P(sim)$deciduousCoverDiscount, pixelCohortData)
-  set(pixelCohortData, NULL, "B", asInteger(pixelCohortData$B/P(sim)$pixelGroupBiomassClass)*
+  set(pixelCohortData, NULL, "B", asInteger(pixelCohortData$B/P(sim)$pixelGroupBiomassClass) *
         P(sim)$pixelGroupBiomassClass)
   set(pixelCohortData, NULL, c("decid", "cover2"), NULL)
   set(pixelCohortData, NULL, "cover", asInteger(pixelCohortData$cover))
