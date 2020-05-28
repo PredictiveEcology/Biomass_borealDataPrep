@@ -29,7 +29,7 @@ defineModule(sim, list(
                                        (logAge + cover + speciesCode | ecoregionGroup))),
                     NA, NA,
                     paste("Model and formula for estimating biomass (B) from ecoregionGroup",
-                          "(currently ecoDistrict * LandCoverClass), speciesCode,",
+                          "(currently ecoregionLayer * LandCoverClass), speciesCode,",
                           "logAge (gives a downward curving relationship), and cover.",
                           "Defaults to a LMEM, which can be slow if dealing with very large datasets",
                           "(e.g. 36 000 points take 20min).",
@@ -54,7 +54,7 @@ defineModule(sim, list(
                           "deciduousCoverDiscount. It is a number between 0 and 1 that translates %cover,",
                           "as provided in several databases, to %biomass. It is assumed that all hardwoods",
                           "are equivalent and all softwoods are equivalent and that %cover of hardwoods will",
-                          "be an overesimate of the %biomass of hardwoods. E.g., 30%cover of hardwoods",
+                          "be an overesimate of the %biomass of hardwoods. E.g., 30% cover of hardwoods",
                           "might translate to 20% biomass of hardwoods. The reason this discount exists is",
                           "because hardwoods in Canada have a much wider canopy than softwoods.")),
     defineParameter("deciduousCoverDiscount", "numeric", 0.8418911, NA, NA,
@@ -67,7 +67,7 @@ defineModule(sim, list(
 
     defineParameter("ecoregionLayerField", "character", NULL, NA, NA,
                     paste("the name of the field used to distinguish ecoregions, if supplying a polygon.",
-                          "The default is 'ECODISTRIC' where available (for legacy reasons), else the row numbers of",
+                          "Defaults to NULL and tries to use  'ECODISTRIC' where available (for legacy reasons), or the row numbers of",
                           "sim$ecoregionLayer. If this field is not numeric, it will be coerced to numeric")),
     defineParameter("exportModels", "character", "none", NA, NA,
                     paste("Controls whether models used to estimate maximum B/ANPP ('biomassModel') and species establishment",
@@ -498,8 +498,8 @@ createBiomass_coreInputs <- function(sim) {
 
       pcd <- pixelCohortData
       bb <- pcd[sample(sam)]
-      cc <- bb[,cover3:=cover*c(1,out$minimum)[decid+1]][
-        ,actualX:=cover3/sum(cover3)/(cover/100), by = "pixelIndex"]
+      cc <- bb[, cover3 := cover * c(1, out$minimum)[decid + 1]][
+        , actualX := cover3 / sum(cover3) / (cover / 100), by = "pixelIndex"]
       setkey(cc, pixelIndex)
       mean(cc[speciesCode == "Popu_Tre"]$actualX)
     }
@@ -509,7 +509,7 @@ createBiomass_coreInputs <- function(sim) {
     message(blue("using previously estimated deciduousCoverDiscount:", round(P(sim)$deciduousCoverDiscount, 3)))
   }
   pixelCohortData <- partitionBiomass(x = P(sim)$deciduousCoverDiscount, pixelCohortData)
-  set(pixelCohortData, NULL, "B", asInteger(pixelCohortData$B/P(sim)$pixelGroupBiomassClass)*
+  set(pixelCohortData, NULL, "B", asInteger(pixelCohortData$B/P(sim)$pixelGroupBiomassClass) *
         P(sim)$pixelGroupBiomassClass)
   set(pixelCohortData, NULL, c("decid", "cover2"), NULL)
   set(pixelCohortData, NULL, "cover", asInteger(pixelCohortData$cover))
