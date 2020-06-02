@@ -514,8 +514,8 @@ createBiomass_coreInputs <- function(sim) {
   set(pixelCohortData, NULL, c("decid", "cover2"), NULL)
   set(pixelCohortData, NULL, "cover", asInteger(pixelCohortData$cover))
 
-  ####################################################### replace 34 and 35 and
-  #36 values -- burns and cities -- to a neighbour class *that exists*.
+  #######################################################
+  #replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*.
   # 1. We need
   #to have a spatial estimate of maxBiomass everywhere there is forest; we can't
   #have gaps The pixels that are 34, 35 or 36 are places for which we don't want
