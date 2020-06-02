@@ -563,6 +563,7 @@ createBiomass_coreInputs <- function(sim) {
   cohortData34to36 <- merge(newLCCClasses, cohortData34to36, all.x = TRUE,
                             all.y = FALSE, by = "pixelIndex")
   cohortDataNo34to36 <- pixelCohortData[!pixelIndex %in% newLCCClasses$pixelIndex]
+  ## TODO: ISSUE here - still have 34:36 because they never went in `availableCombinations` - they have no B, but have cover >0
   setnames(cohortDataNo34to36, "initialEcoregionCode", "ecoregionGroup")
   cohortDataNo34to36Biomass <- cohortDataNo34to36[eval(rmZeroBiomassQuote),
                                                   .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
