@@ -10,7 +10,7 @@ defineModule(sim, list(
   ),
   childModules = character(0),
   version = list(Biomass_borealDataPrep = numeric_version("1.4.0.9000"),
-                 LandR = "0.0.5.9001", SpaDES.core = "1.0.0",
+                 LandR = "0.0.5.9002", SpaDES.core = "1.0.0",
                  reproducible = "1.0.0.9011"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
@@ -541,11 +541,13 @@ createBiomass_coreInputs <- function(sim) {
   rmZeroBiomassQuote <- quote(totalBiomass > 0)
   ## version 1: from before March 2019 - Ceres noticed it created issues with fitting modelCover
   ## March 2020: seems to be the preferred behaviour?
-  availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
-                                                  .(speciesCode, initialEcoregionCode, pixelIndex)])
+  ## June 2020: this leads to ignoring pixels with classes to be converted that have cover > 0
+  # availableCombinations <- unique(pixelCohortData[eval(rmZeroBiomassQuote),
+                                                  # .(speciesCode, initialEcoregionCode, pixelIndex)])
   ## version 2: Ceres's fix from March 2019 to solve issues with modelCover fitting (?)
-  # availableCombinations <- unique(pixelCohortData[,
-  #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
+  ## June 2020: Ceres re-activated this so that pixels with B == 0 and cover > 0 could be converted if need be
+  availableCombinations <- unique(pixelCohortData[,
+                                                  .(speciesCode, initialEcoregionCode, pixelIndex)])
   ## version 3: Feb 2020 Eliot's fix that is WRONG - this behaviour is being achieved in convertUnwantedLCC and creates empty tables if done here
   # availableCombinations <- unique(pixelCohortData[!(lcc %in% uwc),
   #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
@@ -563,22 +565,35 @@ createBiomass_coreInputs <- function(sim) {
   cohortData34to36 <- merge(newLCCClasses, cohortData34to36, all.x = TRUE,
                             all.y = FALSE, by = "pixelIndex")
   cohortDataNo34to36 <- pixelCohortData[!pixelIndex %in% newLCCClasses$pixelIndex]
-  ## TODO: ISSUE here - still have 34:36 because they never went in `availableCombinations` - they have no B, but have cover >0
   setnames(cohortDataNo34to36, "initialEcoregionCode", "ecoregionGroup")
   cohortDataNo34to36Biomass <- cohortDataNo34to36[eval(rmZeroBiomassQuote),
                                                   .(B, logAge, speciesCode, ecoregionGroup, lcc, cover)]
   cohortDataNo34to36Biomass <- unique(cohortDataNo34to36Biomass)
 
   ## make sure ecoregionGroups match
-  assert1(cohortData34to36, pixelCohortData, rmZeroBiomassQuote)
+  ## remember to match rmZeroBiomassQuote the rule used to filter `availableCombinations` (NULL if none)
+  assert1(cohortData34to36, pixelCohortData, rmZeroBiomassQuote = NULL,
+          classesToReplace = P(sim)$LCCClassesToReplaceNN)
+  assert2(cohortDataNo34to36, classesToReplace = P(sim)$LCCClassesToReplaceNN)
 
   ##############################################################
   # Statistical estimation of establishprob, maxB and maxANPP
   ##############################################################
   cohortDataShort <- cohortDataNo34to36[, list(coverPres = sum(cover > 0)),
                                         by = c("ecoregionGroup", "speciesCode")]
-  # find coverNum for each known class
-  aa <- table(pixelTable$initialEcoregionCode)
+  ## find coverNum for each known class
+  ## TODO: Ceres: I feel we should be using the converted classes here...
+  ## otherwise  pixelTable is reintroducing the converted classes in cohortDataShortNoCover which is confusing
+  ## even if they end up being removed later by `makeSpeciesEcoregion`
+  ## because they end up with NAs that are converted to 0s
+  # aa <- table(pixelTable$initialEcoregionCode)
+
+  ## add new ecoregions to pixelTable, before calc. table
+  tempDT <- rbind(cohortData34to36[, .(pixelIndex, ecoregionGroup)],
+                  cohortDataNo34to36[, .(pixelIndex, ecoregionGroup)])
+  pixelTable <- tempDT[pixelTable, on = .(pixelIndex)]
+  aa <- table(as.character(pixelTable$ecoregionGroup))   ## as.character avoids counting levels that don't exist anymore
+
   dt1 <- data.table(ecoregionGroup = factor(names(aa)), coverNum = as.integer(unname(aa)))
   allCombos <- expand.grid(ecoregionGroup = dt1$ecoregionGroup, speciesCode = unique(cohortDataShort$speciesCode))
   setDT(allCombos)
@@ -589,6 +604,10 @@ createBiomass_coreInputs <- function(sim) {
   cohortDataShort <- cohortDataShortNoCover[coverPres > 0] # remove places where there is 0 cover
   cohortDataShortNoCover <- cohortDataShortNoCover[is.na(coverPres)][, coverPres := 0]
   # will be added back as establishprob = 0
+
+  assert2(cohortDataShort, classesToReplace = P(sim)$LCCClassesToReplaceNN)
+  assert2(cohortDataShortNoCover, classesToReplace = P(sim)$LCCClassesToReplaceNN)
+
   message(blue("Estimating Species Establishment Probability using P(sim)$coverModel, which is"))
   message(magenta(paste0(format(P(sim)$coverModel, appendLF = FALSE), collapse = "")))
 
@@ -671,6 +690,8 @@ createBiomass_coreInputs <- function(sim) {
   # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
   #   doesn't include combinations with B = 0 because those places can't have the species/ecoregion combo
   ########################################################################
+  ## cohortDataNo34to36Biomass ends up determining which ecoregion combinations end up in
+  ## species ecoregion, thus removing converted/masked classes present cohortDataShortNoCover
   message(blue("Create speciesEcoregion using modelCover and modelBiomass to estimate species traits"))
   speciesEcoregion <- makeSpeciesEcoregion(cohortDataBiomass = cohortDataNo34to36Biomass,
                                            cohortDataShort = cohortDataShort,
@@ -680,6 +701,7 @@ createBiomass_coreInputs <- function(sim) {
                                            modelBiomass = modelBiomass,
                                            successionTimestep = P(sim)$successionTimestep,
                                            currentYear = time(sim))
+  assert2(speciesEcoregion, classesToReplace = P(sim)$LCCClassesToReplaceNN)
 
   #######################################
   if (!is.na(P(sim)$.plotInitialTime)) {
@@ -805,6 +827,8 @@ createBiomass_coreInputs <- function(sim) {
   pixelFateDT <- cohortDataFiles$pixelFateDT
 
   rm(cohortDataFiles)
+  assert2(pixelCohortData, classesToReplace = P(sim)$LCCClassesToReplaceNN)
+  assert2(sim$cohortData, classesToReplace = P(sim)$LCCClassesToReplaceNN)
 
   ## make a table of available active and inactive (no biomass) ecoregions
   sim$ecoregion <- makeEcoregionDT(pixelCohortData, speciesEcoregion)
