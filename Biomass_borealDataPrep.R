@@ -97,7 +97,7 @@ defineModule(sim, list(
                     paste("A quoted function that makes the table of min. relative B determining",
                           "a stand shade level for each ecoregionGroup. Using the internal object",
                           "`pixelCohortData` is advisable to access/use the list of ecoregionGroups",
-                          "per pixel. The fucntion must output a data.frame with 6 columns, named 'ecoregionGroup'",
+                          "per pixel. The function must output a data.frame with 6 columns, named 'ecoregionGroup'",
                           "and 'X1' to 'X5', with one line per ecoregionGroup code ('ecoregionGroup'), and",
                           "the min. relative biomass for each stand shade level X1-5. The default function uses",
                           "values from LANDIS-II available at:",
