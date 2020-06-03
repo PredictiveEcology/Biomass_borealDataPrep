@@ -335,6 +335,8 @@ createBiomass_coreInputs <- function(sim) {
                      resproutage_min = asInteger(resproutage_min),
                      resproutage_max = asInteger(resproutage_max),
                      mortalityshape = asInteger(mortalityshape))]
+  ## ensure factors are used appropriately; asserted in Biomass_core
+  sim$species[, `:=`(postfireregen = as.factor(postfireregen))] ## TODO: hardsoft? speciescode?
 
   if (getOption("LandR.verbose") > 0) {
     message("Adjusting species-level traits, part 2, for LandWeb")
