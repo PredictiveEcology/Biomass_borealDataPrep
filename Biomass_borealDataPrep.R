@@ -454,7 +454,8 @@ createBiomass_coreInputs <- function(sim) {
                            omitArgs = c("userTags"))
 
   pixelFateDT <- pixelFate(pixelFateDT, "makeAndCleanInitialCohortData rm cover < minThreshold",
-                           tail(pixelFateDT$runningPixelTotal,1) - NROW(unique(pixelCohortData$pixelIndex)))
+                           tail(pixelFateDT$runningPixelTotal, 1) -
+                             NROW(unique(pixelCohortData$pixelIndex)))
   #######################################################
   # Partition totalBiomass into individual species B, via estimating how %cover and %biomass
   #   are related
@@ -484,7 +485,8 @@ createBiomass_coreInputs <- function(sim) {
       sam1 <- sample(NROW(pixelCohortData), 1e5)
       dev()
       par(mfrow = c(1,2))
-      plot(predict(cover2BiomassModel$modelBiomass1$mod, newdata = cover2BiomassModel$pixelCohortData[sam1]),
+      plot(predict(cover2BiomassModel$modelBiomass1$mod,
+                   newdata = cover2BiomassModel$pixelCohortData[sam1]),
            log(cover2BiomassModel$pixelCohortData$B/100)[sam1], pch = ".")
       abline(a = 0, b = 1)
 
@@ -492,7 +494,8 @@ createBiomass_coreInputs <- function(sim) {
                                           P(sim)$coverPctToBiomassPctModel,
                                           returnAIC = FALSE)
       dev()
-      plot(predict(cover2BiomassModel1$modelBiomass1$mod, newdata = cover2BiomassModel1$pixelCohortData[sam1]),
+      plot(predict(cover2BiomassModel1$modelBiomass1$mod,
+                   newdata = cover2BiomassModel1$pixelCohortData[sam1]),
            log(cover2BiomassModel1$pixelCohortData$B/100)[sam1], pch = ".")
       abline(a = 0, b = 1)
 
@@ -506,7 +509,8 @@ createBiomass_coreInputs <- function(sim) {
 
   } else {
     message(magenta(paste0(format(P(sim)$coverPctToBiomassPctModel, appendLF = FALSE))))
-    message(blue("using previously estimated deciduousCoverDiscount:", round(P(sim)$deciduousCoverDiscount, 3)))
+    message(blue("using previously estimated deciduousCoverDiscount:",
+                 round(P(sim)$deciduousCoverDiscount, 3)))
   }
   pixelCohortData <- partitionBiomass(x = P(sim)$deciduousCoverDiscount, pixelCohortData)
   set(pixelCohortData, NULL, "B", asInteger(pixelCohortData$B/P(sim)$pixelGroupBiomassClass) *
@@ -546,8 +550,7 @@ createBiomass_coreInputs <- function(sim) {
                                                   # .(speciesCode, initialEcoregionCode, pixelIndex)])
   ## version 2: Ceres's fix from March 2019 to solve issues with modelCover fitting (?)
   ## June 2020: Ceres re-activated this so that pixels with B == 0 and cover > 0 could be converted if need be
-  availableCombinations <- unique(pixelCohortData[,
-                                                  .(speciesCode, initialEcoregionCode, pixelIndex)])
+  availableCombinations <- unique(pixelCohortData[, .(speciesCode, initialEcoregionCode, pixelIndex)])
   ## version 3: Feb 2020 Eliot's fix that is WRONG - this behaviour is being achieved in convertUnwantedLCC and creates empty tables if done here
   # availableCombinations <- unique(pixelCohortData[!(lcc %in% uwc),
   #                                                 .(speciesCode, initialEcoregionCode, pixelIndex)])
