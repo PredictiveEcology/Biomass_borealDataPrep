@@ -298,6 +298,10 @@ createBiomass_coreInputs <- function(sim) {
                    "This is likely due to the module producing 'speciesLayers' being scheduled after Biomass_borealDataPrep.\n",
                    "Please check module order.")))
 
+  if (!all(P(sim)$LCCClassesToReplaceNN %in% P(sim)$forestedLCCClasses)) {
+    stop("All 'LCCClassesToReplaceNN' should be included in 'forestedLCCClasses'.")
+  }
+
   ## check that input rasters all match
   compareRaster(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC,
                 sim$speciesLayers, sim$standAgeMap, orig = TRUE)
