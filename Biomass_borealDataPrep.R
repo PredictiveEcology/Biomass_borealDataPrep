@@ -97,7 +97,7 @@ defineModule(sim, list(
                     paste("A quoted function that makes the table of min. relative B determining",
                           "a stand shade level for each ecoregionGroup. Using the internal object",
                           "`pixelCohortData` is advisable to access/use the list of ecoregionGroups",
-                          "per pixel. The fucntion must output a data.frame with 6 columns, named 'ecoregionGroup'",
+                          "per pixel. The function must output a data.frame with 6 columns, named 'ecoregionGroup'",
                           "and 'X1' to 'X5', with one line per ecoregionGroup code ('ecoregionGroup'), and",
                           "the min. relative biomass for each stand shade level X1-5. The default function uses",
                           "values from LANDIS-II available at:",
@@ -641,18 +641,20 @@ createBiomass_coreInputs <- function(sim) {
   cdsWh <- cohortDataShort$coverPres == cohortDataShort$coverNum
   cds <- Copy(cohortDataShort)
   cds <- cds[!cdsWh]
-  modelCover <- Cache(statsModel,
-                      modelFn = P(sim)$coverModel,
-                      # modelFn = cm,
-                      uniqueEcoregionGroup = .sortDotsUnderscoreFirst(as.character(unique(cohortDataShort$ecoregionGroup))),
-                      sumResponse = sum(cohortDataShort$coverPres, cohortDataShort$coverNum, na.rm = TRUE),
-                      .specialData = cds,
-                      useCloud = useCloud,
-                      cloudFolderID = sim$cloudFolderID,
-                      # useCache = "overwrite",
-                      showSimilar = getOption("reproducible.showSimilar", FALSE),
-                      userTags = c(cacheTags, "modelCover"),
-                      omitArgs = c("showSimilar", "useCache", ".specialData", "useCloud", "cloudFolderID"))
+  modelCover <- Cache(
+    statsModel,
+    modelFn = P(sim)$coverModel,
+    # modelFn = cm,
+    uniqueEcoregionGroup = .sortDotsUnderscoreFirst(as.character(unique(cohortDataShort$ecoregionGroup))),
+    sumResponse = sum(cohortDataShort$coverPres, cohortDataShort$coverNum, na.rm = TRUE),
+    .specialData = cds,
+    useCloud = useCloud,
+    cloudFolderID = sim$cloudFolderID,
+    # useCache = "overwrite",
+    showSimilar = getOption("reproducible.showSimilar", FALSE),
+    userTags = c(cacheTags, "modelCover"),
+    omitArgs = c("showSimilar", "useCache", ".specialData", "useCloud", "cloudFolderID")
+  )
   message(blue("  The rsquared is: "))
   out <- lapply(capture.output(as.data.frame(round(modelCover$rsq, 4))), function(x) message(blue(x)))
 
@@ -684,7 +686,7 @@ createBiomass_coreInputs <- function(sim) {
   modelBiomass <- Cache(
     statsModel,
     modelFn = P(sim)$biomassModel,
-    uniqueEcoregionGroup = .sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36Biomass$ecoregionGroup))),
+    uniqueEcoregionGroups = .sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36Biomass$ecoregionGroup))),
     sumResponse = totalBiomass,
     .specialData = cohortDataNo34to36Biomass,
     useCloud = useCloud,
