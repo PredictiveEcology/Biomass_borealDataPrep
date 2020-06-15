@@ -492,8 +492,7 @@ createBiomass_coreInputs <- function(sim) {
     params(sim)$Biomass_borealDataPrep$deciduousCoverDiscount <- out$minimum
     if (plot.it) {
       cover2BiomassModel <- coverOptimFn(out$minimum, pixelCohortData, P(sim)$subsetDataAgeModel,
-                                         P(sim)$coverPctToBiomassPctModel,
-                                         returnAIC = FALSE)
+                                         P(sim)$coverPctToBiomassPctModel, returnAIC = FALSE)
       sam1 <- sample(NROW(pixelCohortData), 1e5)
       dev()
       par(mfrow = c(1,2))
@@ -518,7 +517,6 @@ createBiomass_coreInputs <- function(sim) {
       setkey(cc, pixelIndex)
       mean(cc[speciesCode == "Popu_Tre"]$actualX)
     }
-
   } else {
     message(magenta(paste0(format(P(sim)$coverPctToBiomassPctModel, appendLF = FALSE))))
     message(blue("using previously estimated deciduousCoverDiscount:",
