@@ -867,7 +867,7 @@ createBiomass_coreInputs <- function(sim) {
                              rasterToMatch = sim$rasterToMatch,
                              maskWithRTM = TRUE,
                              filename2 = .suffix(file.path(outputPath(sim), names(sim$speciesLayers)),
-                                                  paste0("_", P(sim)$.studyAreaName)),
+                                                 paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
                              userTags = c(cacheTags, "speciesLayersRTM"),
                              omitArgs = c("userTags"))
