@@ -770,7 +770,7 @@ createBiomass_coreInputs <- function(sim) {
            Please debug Biomass_borealDataPrep::createBiomass_coreInputs()")
 
     ## subset pixels that are in studyArea/rasterToMatch only
-    pixToKeep <- na.omit(getValues(rasterToMatchLarge))
+    pixToKeep <- which(!is.na(getValues(rasterToMatchLarge)))
     pixelCohortData <- pixelCohortData[pixelIndex %in% pixToKeep]
 
     # re-do pixelIndex (it now needs to match rasterToMatch)
