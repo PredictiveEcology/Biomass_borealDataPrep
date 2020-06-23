@@ -19,7 +19,7 @@ defineModule(sim, list(
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
   reqdPkgs = list("crayon", "data.table", "dplyr", "fasterize", "plyr", "raster",
                   "sp", "sf", "merTools", "SpaDES.tools",
-                  "PredictiveEcology/reproducible@messagingOverhaul (>=1.0.0.9010)",
+                  "PredictiveEcology/reproducible@development (>=1.1.1.9004)",
                   "achubaty/amc@development (>=0.1.6.9000)",
                   "PredictiveEcology/LandR@development (>=0.0.4)",
                   "PredictiveEcology/pemisc@development"),
