@@ -932,7 +932,7 @@ Save <- function(sim) {
   }
 
   if (is.na(P(sim)$.studyAreaName)) {
-    params(sim)[[currentModule(sim)]][[".studyAreaName"]] <- studyAreaName(sim$studyAreaLarge)
+    params(sim)[[currentModule(sim)]][[".studyAreaName"]] <- reproducible::studyAreaName(sim$studyAreaLarge)
   }
 
   if (!suppliedElsewhere("studyAreaLarge", sim)) {
