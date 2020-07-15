@@ -641,7 +641,7 @@ createBiomass_coreInputs <- function(sim) {
   cds <- Copy(cohortDataShort)
   cds <- cds[!cdsWh]
 
-   modelCover <- Cache(
+  modelCover <- Cache(
     statsModel,
     modelFn = P(sim)$coverModel,
     # modelFn = cm,
