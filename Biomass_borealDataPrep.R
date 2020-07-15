@@ -439,6 +439,7 @@ createBiomass_coreInputs <- function(sim) {
   on.exit({
     options(opts)
   }, add = TRUE)
+
   pixelTable <- Cache(makePixelTable,
                       speciesLayers = sim$speciesLayers,
                       species = sim$species,
@@ -639,6 +640,7 @@ createBiomass_coreInputs <- function(sim) {
   cdsWh <- cohortDataShort$coverPres == cohortDataShort$coverNum
   cds <- Copy(cohortDataShort)
   cds <- cds[!cdsWh]
+
   modelCover <- Cache(
     statsModel,
     modelFn = P(sim)$coverModel,
@@ -770,7 +772,7 @@ createBiomass_coreInputs <- function(sim) {
            Please debug Biomass_borealDataPrep::createBiomass_coreInputs()")
 
     ## subset pixels that are in studyArea/rasterToMatch only
-    pixToKeep <- which(!is.na(getValues(rasterToMatchLarge)))
+    pixToKeep <- c(1:ncell(rasterToMatchLarge))[!is.na(getValues(rasterToMatchLarge))]
     pixelCohortData <- pixelCohortData[pixelIndex %in% pixToKeep]
 
     # re-do pixelIndex (it now needs to match rasterToMatch)
@@ -863,14 +865,16 @@ createBiomass_coreInputs <- function(sim) {
   }
   ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
   message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
+
   sim$speciesLayers <- Cache(postProcess, sim$speciesLayers,
                              rasterToMatch = sim$rasterToMatch,
                              maskWithRTM = TRUE,
-                             filename2 = .suffix(file.path(outputPath(sim), names(sim$speciesLayers)),
+                             filename2 = .suffix(file.path(outputPath(sim), 'speciesLayers.grd'),
                                                  paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
                              userTags = c(cacheTags, "speciesLayersRTM"),
-                             omitArgs = c("userTags"))
+                             omitArgs = c("userTags")
+                             )
 
   ## double check these rasters all match RTM
   compareRaster(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap, sim$rasterToMatch, sim$speciesLayers)
@@ -983,19 +987,22 @@ Save <- function(sim) {
   }
 
   if (!suppliedElsewhere("rawBiomassMap", sim) || needRTM) {
-    sim$rawBiomassMap <- Cache(prepInputs,
-                               url = extractURL("rawBiomassMap"),
-                               destinationPath = dPath,
-                               studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                               rasterToMatch = if (!needRTM) sim$rasterToMatchLarge else NULL,
-                               maskWithRTM = if (!needRTM) TRUE else FALSE,
-                               useSAcrs = FALSE,     ## never use SA CRS
-                               method = "bilinear",
-                               datatype = "INT2U",
-                               filename2 = .suffix("rawBiomasMap.tif", paste0("_", P(sim)$.studyAreaName)),
-                               overwrite = TRUE,
-                               userTags = c(cacheTags, "rawBiomassMap"),
-                               omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
+    httr::with_config(config = httr::config(ssl_verifypeer = 0L), { ## TODO: re-enable verify
+      #necessary for KNN
+      sim$rawBiomassMap <- Cache(prepInputs,
+                                 url = extractURL("rawBiomassMap"),
+                                 destinationPath = dPath,
+                                 studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
+                                 rasterToMatch = if (!needRTM) sim$rasterToMatchLarge else NULL,
+                                 maskWithRTM = if (!needRTM) TRUE else FALSE,
+                                 useSAcrs = FALSE,     ## never use SA CRS
+                                 method = "bilinear",
+                                 datatype = "INT2U",
+                                 filename2 = .suffix("rawBiomasMap.tif", paste0("_", P(sim)$.studyAreaName)),
+                                 overwrite = TRUE,
+                                 userTags = c(cacheTags, "rawBiomassMap"),
+                                 omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
+    })
   }
 
   if (needRTM) {
