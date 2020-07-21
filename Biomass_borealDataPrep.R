@@ -1118,28 +1118,29 @@ Save <- function(sim) {
 
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
-    sim$standAgeMap <- Cache(prepInputsStandAgeMap,
-                             destinationPath = dPath,
-                             ageURL = extractURL("standAgeMap"),
-                             ageFun = "raster::raster",
-                             studyArea = raster::aggregate(sim$studyAreaLarge),
-                             #studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                             rasterToMatch = sim$rasterToMatchLarge,
-                             # rasterToMatch = sim$rasterToMatch,
-                             maskWithRTM = TRUE,
-                             method = "bilinear",
-                             datatype = "INT2U",
-                             filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
-                             overwrite = TRUE,
-                             fireURL = extractURL("fireURL"),
-                             fireFun = "sf::st_read",
-                             fireField = "YEAR",
-                             startTime = start(sim),
-                             userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
-                             omitArgs = c("destinationPath", "targetFile", "overwrite",
-                                          "alsoExtract", "userTags"))
+    httr::with_config(config = httr::config(ssl_verifypeer = 0L), {
+      sim$standAgeMap <- Cache(prepInputsStandAgeMap,
+                               destinationPath = dPath,
+                               ageURL = extractURL("standAgeMap"),
+                               ageFun = "raster::raster",
+                               studyArea = raster::aggregate(sim$studyAreaLarge),
+                               #studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
+                               rasterToMatch = sim$rasterToMatchLarge,
+                               # rasterToMatch = sim$rasterToMatch,
+                               maskWithRTM = TRUE,
+                               method = "bilinear",
+                               datatype = "INT2U",
+                               filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
+                               overwrite = TRUE,
+                               fireURL = extractURL("fireURL"),
+                               fireFun = "sf::st_read",
+                               fireField = "YEAR",
+                               startTime = start(sim),
+                               userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
+                               omitArgs = c("destinationPath", "targetFile", "overwrite",
+                                            "alsoExtract", "userTags"))
+    })
   }
-
   ## Species equivalencies table -------------------------------------------
   if (!suppliedElsewhere("sppEquiv", sim)) {
     if (!is.null(sim$sppColorVect))
