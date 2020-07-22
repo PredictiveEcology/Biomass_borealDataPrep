@@ -286,6 +286,7 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
 }
 
 createBiomass_coreInputs <- function(sim) {
+
   # # ! ----- EDIT BELOW ----- ! #
   if (is.null(P(sim)$pixelGroupAgeClass))
     params(sim)[[currentModule(sim)]]$pixelGroupAgeClass <- P(sim)$successionTimestep
@@ -1201,6 +1202,13 @@ Save <- function(sim) {
                                url = extractURL("speciesLayers"),
                                userTags = c(cacheTags, "speciesLayers"),
                                omitArgs = c("userTags"))
+    
+    ## make sure empty pixels inside study area have 0 cover, instead of NAs.
+    ## this can happen when data has NAs instead of 0s and is not merged/overlayed (e.g. CASFRI)
+    tempRas <- sim$rasterToMatchLarge
+    tempRas[!is.na(tempRas[])] <- 0
+    sim$speciesLayers <- cover(sim$speciesLayers, tempRas)
+    rm(tempRas)
   }
 
   # 3. species maps
