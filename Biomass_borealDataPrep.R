@@ -805,22 +805,23 @@ createBiomass_coreInputs <- function(sim) {
     if (!is.na(maxAgeHighQualityData) & maxAgeHighQualityData >= 0) {
       youngRows <- pixelCohortData$age <= maxAgeHighQualityData
       young <- pixelCohortData[youngRows == TRUE]
+      
       # whYoungBEqZero <- which(young$B == 0)
       whYoungAgeEqZero <- which(young$age == 0)
-      if (length(whYoungAgeEqZero)) {
+      if (length(whYoungAgeEqZero) > 0) {
         youngWAgeEqZero <- young[whYoungAgeEqZero]
         youngNoAgeEqZero <- young[-whYoungAgeEqZero]
-      }
-      young <- Cache(updateYoungBiomasses,
-                     young = youngNoAgeEqZero,
-                     biomassModel = modelBiomass$mod,
-                     userTags = c(cacheTags, "updateYoungBiomasses"),
-                     omitArgs = c("userTags"))
-      set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
-
-      # put the B = 0
-      if (length(whYoungAgeEqZero)) {
+        
+        young <- Cache(updateYoungBiomasses,
+                       young = youngNoAgeEqZero,
+                       biomassModel = modelBiomass$mod,
+                       userTags = c(cacheTags, "updateYoungBiomasses"),
+                       omitArgs = c("userTags"))
+        set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
+        
+        # put the B = 0
         young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
+        
       }
       pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE],
                                         young), use.names = TRUE)
