@@ -398,7 +398,7 @@ createBiomass_coreInputs <- function(sim) {
   rstLCCAdj <- sim$rstLCC
 
   ## Clean pixels for veg. succession model
-  ## remove pixes with no spp data
+  ## remove pixels with no species data
   pixelsToRm <- is.na(sim$speciesLayers[[1]][])
   pixelFateDT <- pixelFate(fate = "Total number pixels", runningPixelTotal = ncell(sim$speciesLayers))
   pixelFateDT <- pixelFate(pixelFateDT, "NAs on sim$speciesLayers", sum(pixelsToRm))
@@ -767,24 +767,24 @@ createBiomass_coreInputs <- function(sim) {
                                 filename2 = NULL,
                                 userTags = c(cacheTags, "rasterToMatchLarge"),
                                 omitArgs = c("userTags"))
-    
+
     if (!compareRaster(rasterToMatchLarge, sim$rasterToMatch, orig = TRUE, stopiffalse = FALSE))
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.
            Please debug Biomass_borealDataPrep::createBiomass_coreInputs()")
-    
+
     ## subset pixels that are in studyArea/rasterToMatch only
     pixToKeep <- na.omit(getValues(rasterToMatchLarge)) # these are the old indices of RTML
     pixelCohortData <- pixelCohortData[pixelIndex %in% pixToKeep]
-    
+
     # re-do pixelIndex (it now needs to match rasterToMatch)
     newPixelIndexDT <- na.omit(data.table(pixelIndex = getValues(rasterToMatchLarge),
                                           newPixelIndex = as.integer(1:ncell(rasterToMatch))))
-    
+
     pixelCohortData <- newPixelIndexDT[pixelCohortData, on = "pixelIndex"]
     pixelCohortData[, pixelIndex := NULL]
     setnames(pixelCohortData, old = "newPixelIndex", new = "pixelIndex")
     rm(rasterToMatchLarge)
-    
+
     if (ncell(sim$rasterToMatch) > 3e6) .gc()
   }
 
@@ -806,23 +806,23 @@ createBiomass_coreInputs <- function(sim) {
     if (!is.na(maxAgeHighQualityData) & maxAgeHighQualityData >= 0) {
       youngRows <- pixelCohortData$age <= maxAgeHighQualityData
       young <- pixelCohortData[youngRows == TRUE]
-      
+
       # whYoungBEqZero <- which(young$B == 0)
       whYoungAgeEqZero <- which(young$age == 0)
       if (length(whYoungAgeEqZero) > 0) {
         youngWAgeEqZero <- young[whYoungAgeEqZero]
         youngNoAgeEqZero <- young[-whYoungAgeEqZero]
-        
+
         young <- Cache(updateYoungBiomasses,
                        young = youngNoAgeEqZero,
                        biomassModel = modelBiomass$mod,
                        userTags = c(cacheTags, "updateYoungBiomasses"),
                        omitArgs = c("userTags"))
         set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
-        
+
         # put the B = 0
         young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
-        
+
       }
       pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE],
                                         young), use.names = TRUE)
@@ -1202,7 +1202,7 @@ Save <- function(sim) {
                                url = extractURL("speciesLayers"),
                                userTags = c(cacheTags, "speciesLayers"),
                                omitArgs = c("userTags"))
-    
+
     ## make sure empty pixels inside study area have 0 cover, instead of NAs.
     ## this can happen when data has NAs instead of 0s and is not merged/overlayed (e.g. CASFRI)
     tempRas <- sim$rasterToMatchLarge
