@@ -286,6 +286,7 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
 }
 
 createBiomass_coreInputs <- function(sim) {
+
   # # ! ----- EDIT BELOW ----- ! #
   if (is.null(P(sim)$pixelGroupAgeClass))
     params(sim)[[currentModule(sim)]]$pixelGroupAgeClass <- P(sim)$successionTimestep
@@ -397,7 +398,7 @@ createBiomass_coreInputs <- function(sim) {
   rstLCCAdj <- sim$rstLCC
 
   ## Clean pixels for veg. succession model
-  ## remove pixes with no spp data
+  ## remove pixels with no species data
   pixelsToRm <- is.na(sim$speciesLayers[[1]][])
   pixelFateDT <- pixelFate(fate = "Total number pixels", runningPixelTotal = ncell(sim$speciesLayers))
   pixelFateDT <- pixelFate(pixelFateDT, "NAs on sim$speciesLayers", sum(pixelsToRm))
@@ -812,22 +813,23 @@ createBiomass_coreInputs <- function(sim) {
     if (!is.na(maxAgeHighQualityData) & maxAgeHighQualityData >= 0) {
       youngRows <- pixelCohortData$age <= maxAgeHighQualityData
       young <- pixelCohortData[youngRows == TRUE]
+
       # whYoungBEqZero <- which(young$B == 0)
       whYoungAgeEqZero <- which(young$age == 0)
-      if (length(whYoungAgeEqZero)) {
+      if (length(whYoungAgeEqZero) > 0) {
         youngWAgeEqZero <- young[whYoungAgeEqZero]
         youngNoAgeEqZero <- young[-whYoungAgeEqZero]
-      }
-      young <- Cache(updateYoungBiomasses,
-                     young = youngNoAgeEqZero,
-                     biomassModel = modelBiomass$mod,
-                     userTags = c(cacheTags, "updateYoungBiomasses"),
-                     omitArgs = c("userTags"))
-      set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
 
-      # put the B = 0
-      if (length(whYoungAgeEqZero)) {
+        young <- Cache(updateYoungBiomasses,
+                       young = youngNoAgeEqZero,
+                       biomassModel = modelBiomass$mod,
+                       userTags = c(cacheTags, "updateYoungBiomasses"),
+                       omitArgs = c("userTags"))
+        set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
+
+        # put the B = 0
         young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
+
       }
       pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE], young), use.names = TRUE)
     } else {
@@ -1122,28 +1124,29 @@ Save <- function(sim) {
 
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
-    sim$standAgeMap <- Cache(prepInputsStandAgeMap,
-                             destinationPath = dPath,
-                             ageURL = extractURL("standAgeMap"),
-                             ageFun = "raster::raster",
-                             studyArea = raster::aggregate(sim$studyAreaLarge),
-                             #studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                             rasterToMatch = sim$rasterToMatchLarge,
-                             # rasterToMatch = sim$rasterToMatch,
-                             maskWithRTM = TRUE,
-                             method = "bilinear",
-                             datatype = "INT2U",
-                             filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
-                             overwrite = TRUE,
-                             fireURL = extractURL("fireURL"),
-                             fireFun = "sf::st_read",
-                             fireField = "YEAR",
-                             startTime = start(sim),
-                             userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
-                             omitArgs = c("destinationPath", "targetFile", "overwrite",
-                                          "alsoExtract", "userTags"))
+    httr::with_config(config = httr::config(ssl_verifypeer = 0L), {
+      sim$standAgeMap <- Cache(prepInputsStandAgeMap,
+                               destinationPath = dPath,
+                               ageURL = extractURL("standAgeMap"),
+                               ageFun = "raster::raster",
+                               studyArea = raster::aggregate(sim$studyAreaLarge),
+                               #studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
+                               rasterToMatch = sim$rasterToMatchLarge,
+                               # rasterToMatch = sim$rasterToMatch,
+                               maskWithRTM = TRUE,
+                               method = "bilinear",
+                               datatype = "INT2U",
+                               filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
+                               overwrite = TRUE,
+                               fireURL = extractURL("fireURL"),
+                               fireFun = "sf::st_read",
+                               fireField = "YEAR",
+                               startTime = start(sim),
+                               userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
+                               omitArgs = c("destinationPath", "targetFile", "overwrite",
+                                            "alsoExtract", "userTags"))
+    })
   }
-
   ## Species equivalencies table -------------------------------------------
   if (!suppliedElsewhere("sppEquiv", sim)) {
     if (!is.null(sim$sppColorVect))
@@ -1203,6 +1206,13 @@ Save <- function(sim) {
                                url = extractURL("speciesLayers"),
                                userTags = c(cacheTags, "speciesLayers"),
                                omitArgs = c("userTags"))
+
+    ## make sure empty pixels inside study area have 0 cover, instead of NAs.
+    ## this can happen when data has NAs instead of 0s and is not merged/overlayed (e.g. CASFRI)
+    tempRas <- sim$rasterToMatchLarge
+    tempRas[!is.na(tempRas[])] <- 0
+    sim$speciesLayers <- cover(sim$speciesLayers, tempRas)
+    rm(tempRas)
   }
 
   # 3. species maps
