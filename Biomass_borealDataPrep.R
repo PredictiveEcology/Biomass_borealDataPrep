@@ -452,6 +452,7 @@ createBiomass_coreInputs <- function(sim) {
                       userTags = c(cacheTags, "pixelTable"),
                       omitArgs = c("userTags"))
   options(opts)
+
   #######################################################
   # Make the initial pixelCohortData table
   #######################################################
@@ -469,6 +470,7 @@ createBiomass_coreInputs <- function(sim) {
   pixelFateDT <- pixelFate(pixelFateDT, "makeAndCleanInitialCohortData rm cover < minThreshold",
                            tail(pixelFateDT$runningPixelTotal, 1) -
                              NROW(unique(pixelCohortData$pixelIndex)))
+
   #######################################################
   # Partition totalBiomass into individual species B, via estimating how %cover and %biomass
   #   are related
@@ -720,7 +722,6 @@ createBiomass_coreInputs <- function(sim) {
                                            currentYear = time(sim))
   assert2(speciesEcoregion, classesToReplace = P(sim)$LCCClassesToReplaceNN)
 
-  #######################################
   if (!is.na(P(sim)$.plotInitialTime)) {
     uniqueSpeciesNames <- as.character(unique(speciesEcoregion$speciesCode))
     names(uniqueSpeciesNames) <- uniqueSpeciesNames
@@ -764,25 +765,31 @@ createBiomass_coreInputs <- function(sim) {
                                 rasterToMatch = sim$rasterToMatch,
                                 maskWithRTM = TRUE,
                                 filename2 = NULL,
+                                #useCache = "overwrite",
                                 userTags = c(cacheTags, "rasterToMatchLarge"),
                                 omitArgs = c("userTags"))
 
+    assertthat::assert_that(sum(is.na(getValues(rasterToMatchLarge))) < ncell(rasterToMatchLarge)) ## i.e., not all NA
+
     if (!compareRaster(rasterToMatchLarge, sim$rasterToMatch, orig = TRUE, stopiffalse = FALSE))
-      stop("Downsizing to rasterToMatch after estimating parameters didn't work.
-           Please debug Biomass_borealDataPrep::createBiomass_coreInputs()")
+      stop("Downsizing to rasterToMatch after estimating parameters didn't work.",
+           "Please debug Biomass_borealDataPrep::createBiomass_coreInputs().")
 
     ## subset pixels that are in studyArea/rasterToMatch only
-    pixToKeep <- c(1:ncell(rasterToMatchLarge))[!is.na(getValues(rasterToMatchLarge))]
+    pixToKeep <- na.omit(getValues(rasterToMatchLarge)) # these are the old indices of RTML
     pixelCohortData <- pixelCohortData[pixelIndex %in% pixToKeep]
 
-    # re-do pixelIndex (it now needs to match rasterToMatch)
+    ## re-do pixelIndex (it now needs to match rasterToMatch)
     newPixelIndexDT <- data.table(pixelIndex = getValues(rasterToMatchLarge),
-                                  newPixelIndex = as.integer(1:ncell(rasterToMatchLarge)))
+                                  newPixelIndex = as.integer(1:ncell(rasterToMatchLarge))) %>%
+      na.omit(.)
 
     pixelCohortData <- newPixelIndexDT[pixelCohortData, on = "pixelIndex"]
     pixelCohortData[, pixelIndex := NULL]
     setnames(pixelCohortData, old = "newPixelIndex", new = "pixelIndex")
-    rm(rasterToMatchLarge)
+    rm(pixToKeep, rasterToMatchLarge)
+
+    assertthat::assert_that(NROW(pixelCohortData) > 0)
 
     if (ncell(sim$rasterToMatch) > 3e6) .gc()
   }
@@ -822,8 +829,7 @@ createBiomass_coreInputs <- function(sim) {
       if (length(whYoungAgeEqZero)) {
         young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
       }
-      pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE],
-                                        young), use.names = TRUE)
+      pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE], young), use.names = TRUE)
     } else {
       ## return maxAgeHighQualityData to -1
       maxAgeHighQualityData <- -1
@@ -836,20 +842,19 @@ createBiomass_coreInputs <- function(sim) {
                                          pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
                                          pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
                                          minAgeForGrouping = maxAgeHighQualityData,
-                                         pixelFateDT = pixelFateDT
-  )
+                                         pixelFateDT = pixelFateDT)
 
   sim$cohortData <- cohortDataFiles$cohortData
   pixelCohortData <- cohortDataFiles$pixelCohortData
   pixelFateDT <- cohortDataFiles$pixelFateDT
 
   rm(cohortDataFiles)
+  assertthat::assert_that(NROW(pixelCohortData) > 0)
   assert2(pixelCohortData, classesToReplace = P(sim)$LCCClassesToReplaceNN)
   assert2(sim$cohortData, classesToReplace = P(sim)$LCCClassesToReplaceNN)
 
   ## make a table of available active and inactive (no biomass) ecoregions
   sim$ecoregion <- makeEcoregionDT(pixelCohortData, speciesEcoregion)
-  #sim$ecoregion <- ecoregionFiles$ecoregion ## TODO: don't use this one yet (ever?)
 
   ## make biomassMap, ecoregionMap, minRelativeB, pixelGroupMap (at the scale of rasterToMatch)
   sim$biomassMap <- makeBiomassMap(pixelCohortData, sim$rasterToMatch)
@@ -860,8 +865,8 @@ createBiomass_coreInputs <- function(sim) {
   if (is(P(sim)$minRelativeBFunction, "call")) {
     sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
   } else {
-    stop("minRelativeBFunction should be a quoted function expression, using `pixelCohortData` e.g.:
-           quote(LandR::makeMinRelativeB(pixelCohortData))")
+    stop("minRelativeBFunction should be a quoted function expression, using `pixelCohortData`, e.g.:\n",
+         "    quote(LandR::makeMinRelativeB(pixelCohortData))")
   }
   ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
   message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
@@ -873,8 +878,7 @@ createBiomass_coreInputs <- function(sim) {
                                                  paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
                              userTags = c(cacheTags, "speciesLayersRTM"),
-                             omitArgs = c("userTags")
-                             )
+                             omitArgs = c("userTags"))
 
   ## double check these rasters all match RTM
   compareRaster(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap, sim$rasterToMatch, sim$speciesLayers)
