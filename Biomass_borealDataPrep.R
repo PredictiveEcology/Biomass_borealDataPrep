@@ -287,6 +287,9 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
 
 createBiomass_coreInputs <- function(sim) {
 
+  origDTthreads <- data.table::getDTthreads()
+  data.table::setDTthreads(min(origDTthreads, 3)) # seems to only improve up to 2 threads
+  on.exit(setDTthreads(origDTthreads))
   # # ! ----- EDIT BELOW ----- ! #
   if (is.null(P(sim)$pixelGroupAgeClass))
     params(sim)[[currentModule(sim)]]$pixelGroupAgeClass <- P(sim)$successionTimestep
@@ -440,7 +443,6 @@ createBiomass_coreInputs <- function(sim) {
   on.exit({
     options(opts)
   }, add = TRUE)
-
   pixelTable <- Cache(makePixelTable,
                       speciesLayers = sim$speciesLayers,
                       species = sim$species,
@@ -467,7 +469,6 @@ createBiomass_coreInputs <- function(sim) {
                            doSubset = P(sim)$subsetDataAgeModel,
                            userTags = c(cacheTags, "pixelCohortData"),
                            omitArgs = c("userTags"))
-
   pixelFateDT <- pixelFate(pixelFateDT, "makeAndCleanInitialCohortData rm cover < minThreshold",
                            tail(pixelFateDT$runningPixelTotal, 1) -
                              NROW(unique(pixelCohortData$pixelIndex)))
@@ -699,7 +700,7 @@ createBiomass_coreInputs <- function(sim) {
     userTags = c(cacheTags, "modelBiomass", paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
     omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
   )
-
+  
   message(blue("  The rsquared is: "))
   out <- lapply(capture.output(as.data.frame(round(modelBiomass$rsq, 4))), function(x) message(blue(x)))
 
@@ -794,7 +795,6 @@ createBiomass_coreInputs <- function(sim) {
 
     if (ncell(sim$rasterToMatch) > 3e6) .gc()
   }
-
   ## subset ecoregionFiles$ecoregionMap to smaller area.
   ecoregionFiles$ecoregionMap <- Cache(postProcess,
                                        x = ecoregionFiles$ecoregionMap,
@@ -838,6 +838,14 @@ createBiomass_coreInputs <- function(sim) {
     }
   }
 
+  # Fill in any remaining B values that are still NA -- the previous chunk filled in B for young cohorts only
+  if (anyNA(pixelCohortData$B)) {
+    theNAsBiomass <- is.na(pixelCohortData$B)
+    message(blue(" -- ", sum(theNAsBiomass),"cohort(s) has NA for Biomass: being replaced with model-derived estimates"))
+    set(pixelCohortData, which(theNAsBiomass), "B", 
+        asInteger(predict(modelBiomass$mod, newdata = pixelCohortData[theNAsBiomass])))
+  }
+  
   ## make cohortDataFiles: pixelCohortData (rm unnecessary cols, subset pixels with B>0,
   ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
   cohortDataFiles <- makeCohortDataFiles(pixelCohortData, columnsForPixelGroups, speciesEcoregion,
