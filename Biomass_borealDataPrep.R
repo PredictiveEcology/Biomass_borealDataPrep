@@ -161,7 +161,7 @@ defineModule(sim, list(
                               "that is a zipped shapefile with fire polygons, an attribute (i.e., a column) named 'Year'.",
                               "If supplied (omitted with NULL or NA), this will be used to 'update' age pixels on standAgeMap",
                               "with 'time since fire' as derived from this fire polygons map"),
-                 sourceURL = "https://cwfis.cfs.nrcan.gc.ca/downloads/nbac/nbac_1986_to_2018_20191129.zip"),
+                 sourceURL = "https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip"),
     expectsInput("rstLCC", "RasterLayer",
                  desc = paste("A land classification map in study area. It must be 'corrected', in the sense that:\n",
                               "1) Every class must not conflict with any other map in this module\n",
@@ -700,7 +700,7 @@ createBiomass_coreInputs <- function(sim) {
     userTags = c(cacheTags, "modelBiomass", paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
     omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
   )
-  
+
   message(blue("  The rsquared is: "))
   out <- lapply(capture.output(as.data.frame(round(modelBiomass$rsq, 4))), function(x) message(blue(x)))
 
@@ -842,10 +842,10 @@ createBiomass_coreInputs <- function(sim) {
   if (anyNA(pixelCohortData$B)) {
     theNAsBiomass <- is.na(pixelCohortData$B)
     message(blue(" -- ", sum(theNAsBiomass),"cohort(s) has NA for Biomass: being replaced with model-derived estimates"))
-    set(pixelCohortData, which(theNAsBiomass), "B", 
+    set(pixelCohortData, which(theNAsBiomass), "B",
         asInteger(predict(modelBiomass$mod, newdata = pixelCohortData[theNAsBiomass])))
   }
-  
+
   ## make cohortDataFiles: pixelCohortData (rm unnecessary cols, subset pixels with B>0,
   ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
   cohortDataFiles <- makeCohortDataFiles(pixelCohortData, columnsForPixelGroups, speciesEcoregion,
