@@ -17,7 +17,7 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
-  reqdPkgs = list("crayon", "data.table", "dplyr", "fasterize", "plyr", "raster",
+  reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize", "plyr", "raster",
                   "sp", "sf", "merTools", "SpaDES.tools",
                   "PredictiveEcology/reproducible@development (>=1.1.1.9004)",
                   "achubaty/amc@development (>=0.1.6.9000)",
