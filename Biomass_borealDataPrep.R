@@ -161,7 +161,7 @@ defineModule(sim, list(
                               "that is a zipped shapefile with fire polygons, an attribute (i.e., a column) named 'Year'.",
                               "If supplied (omitted with NULL or NA), this will be used to 'update' age pixels on standAgeMap",
                               "with 'time since fire' as derived from this fire polygons map"),
-                 sourceURL = "https://cwfis.cfs.nrcan.gc.ca/downloads/nbac/nbac_1986_to_2018_20191129.zip"),
+                 sourceURL = "https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip"),
     expectsInput("rstLCC", "RasterLayer",
                  desc = paste("A land classification map in study area. It must be 'corrected', in the sense that:\n",
                               "1) Every class must not conflict with any other map in this module\n",
@@ -286,6 +286,9 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
 }
 
 createBiomass_coreInputs <- function(sim) {
+  origDTthreads <- data.table::getDTthreads()
+  data.table::setDTthreads(min(origDTthreads, 2)) # seems to only improve up to 2 threads
+  on.exit(setDTthreads(origDTthreads))
 
   # # ! ----- EDIT BELOW ----- ! #
   if (is.null(P(sim)$pixelGroupAgeClass))
@@ -440,7 +443,6 @@ createBiomass_coreInputs <- function(sim) {
   on.exit({
     options(opts)
   }, add = TRUE)
-
   pixelTable <- Cache(makePixelTable,
                       speciesLayers = sim$speciesLayers,
                       species = sim$species,
@@ -467,7 +469,6 @@ createBiomass_coreInputs <- function(sim) {
                            doSubset = P(sim)$subsetDataAgeModel,
                            userTags = c(cacheTags, "pixelCohortData"),
                            omitArgs = c("userTags"))
-
   pixelFateDT <- pixelFate(pixelFateDT, "makeAndCleanInitialCohortData rm cover < minThreshold",
                            tail(pixelFateDT$runningPixelTotal, 1) -
                              NROW(unique(pixelCohortData$pixelIndex)))
@@ -794,7 +795,6 @@ createBiomass_coreInputs <- function(sim) {
 
     if (ncell(sim$rasterToMatch) > 3e6) .gc()
   }
-
   ## subset ecoregionFiles$ecoregionMap to smaller area.
   ecoregionFiles$ecoregionMap <- Cache(postProcess,
                                        x = ecoregionFiles$ecoregionMap,
@@ -836,6 +836,14 @@ createBiomass_coreInputs <- function(sim) {
       ## return maxAgeHighQualityData to -1
       maxAgeHighQualityData <- -1
     }
+  }
+
+  # Fill in any remaining B values that are still NA -- the previous chunk filled in B for young cohorts only
+  if (anyNA(pixelCohortData$B)) {
+    theNAsBiomass <- is.na(pixelCohortData$B)
+    message(blue(" -- ", sum(theNAsBiomass),"cohort(s) has NA for Biomass: being replaced with model-derived estimates"))
+    set(pixelCohortData, which(theNAsBiomass), "B",
+        asInteger(predict(modelBiomass$mod, newdata = pixelCohortData[theNAsBiomass])))
   }
 
   ## make cohortDataFiles: pixelCohortData (rm unnecessary cols, subset pixels with B>0,
