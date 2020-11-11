@@ -286,10 +286,10 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
 }
 
 createBiomass_coreInputs <- function(sim) {
-
   origDTthreads <- data.table::getDTthreads()
-  data.table::setDTthreads(min(origDTthreads, 3)) # seems to only improve up to 2 threads
+  data.table::setDTthreads(min(origDTthreads, 2)) # seems to only improve up to 2 threads
   on.exit(setDTthreads(origDTthreads))
+
   # # ! ----- EDIT BELOW ----- ! #
   if (is.null(P(sim)$pixelGroupAgeClass))
     params(sim)[[currentModule(sim)]]$pixelGroupAgeClass <- P(sim)$successionTimestep
