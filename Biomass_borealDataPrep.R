@@ -137,7 +137,7 @@ defineModule(sim, list(
     defineParameter(".useCache", "character", c(".inputObjects", "init"), NA, NA,
                     desc = "Internal. Can be names of events or the whole module name; these will be cached by SpaDES")
   ),
-  inputObjects = bind_rows(
+  inputObjects = bindrows(
     expectsInput("cloudFolderID", "character",
                  "The google drive location where cloudCache will store large statistical objects"),
     expectsInput("columnsForPixelGroups", "character",
@@ -225,7 +225,7 @@ defineModule(sim, list(
                               "with attribute LTHFC describing the fire return interval.",
                               "Defaults to a square shapefile in Southwestern Alberta, Canada."))
   ),
-  outputObjects = bind_rows(
+  outputObjects = bindrows(
     createsOutput("biomassMap", "RasterLayer",
                   desc = paste("total biomass raster layer in study area,",
                                "filtered for pixels covered by cohortData. Units in g/m2")),
