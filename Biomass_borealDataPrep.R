@@ -1093,25 +1093,17 @@ Save <- function(sim) {
 
   ## Land cover raster ------------------------------------------------
   if (!suppliedElsewhere("rstLCC", sim)) {
-    sim$rstLCC <- Cache(prepInputs,
-                        targetFile = lcc2005Filename,
-                        archive = asPath("LandCoverOfCanada2005_V1_4.zip"),
-                        url = extractURL("rstLCC"),
-                        destinationPath = dPath,
-                        studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                        # studyArea = sim$studyArea,
-                        rasterToMatch = sim$rasterToMatchLarge,
-                        # rasterToMatch = sim$rasterToMatch,
-                        maskWithRTM = TRUE,
-                        method = "bilinear",
-                        datatype = "INT2U",
-                        filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName)),
-                        overwrite = TRUE,
-                        userTags = c("prepInputsrstLCC_rtm", currentModule(sim)), # use at least 1 unique userTag
-                        omitArgs = c("destinationPath", "targetFile", "userTags"))
+    sim$rstLCC <- prepInputsLCC(
+      destinationPath = dPath,
+      studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
+      rasterToMatch = sim$rasterToMatchLarge,
+      filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName)),
+      overwrite = TRUE,
+      userTags = c("rstLCC", currentModule(sim), P(sim)$.studyAreaName))
+  }
 
-    if (!identical(projection(sim$rstLCC), projection(sim$rasterToMatchLarge))) ## TODO: use compareRaster(extent = FALSE, rowcol = FALSE) ?
-      projection(sim$rstLCC) <- projection(sim$rasterToMatchLarge) ## Ceres: this shouldn't be necessary anymore
+  if (!compareRaster(sim$rstLCC, sim$rasterToMatchLarge)){
+    sim$rstLCC <- projectRaster(sim$rstLCC, to = sim$rasterToMatchLarge)
   }
 
   ## Ecodistrict ------------------------------------------------
