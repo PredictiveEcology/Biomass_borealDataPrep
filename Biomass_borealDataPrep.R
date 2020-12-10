@@ -634,8 +634,10 @@ createBiomass_coreInputs <- function(sim) {
   cohortDataShortNoCover <- cohortDataShortNoCover[is.na(coverPres)][, coverPres := 0]
   # will be added back as establishprob = 0
 
-  assert2(cohortDataShort, classesToReplace = P(sim)$LCCClassesToReplaceNN)
-  assert2(cohortDataShortNoCover, classesToReplace = P(sim)$LCCClassesToReplaceNN)
+  if (length(P(sim)$LCCClassesToReplaceNN)) {
+    assert2(cohortDataShort, classesToReplace = P(sim)$LCCClassesToReplaceNN)
+    assert2(cohortDataShortNoCover, classesToReplace = P(sim)$LCCClassesToReplaceNN)
+  }
 
   message(blue("Estimating Species Establishment Probability using P(sim)$coverModel, which is"))
   message(magenta(paste0(format(P(sim)$coverModel, appendLF = FALSE), collapse = "")))
@@ -733,7 +735,9 @@ createBiomass_coreInputs <- function(sim) {
                                            modelBiomass = modelBiomass,
                                            successionTimestep = P(sim)$successionTimestep,
                                            currentYear = time(sim))
-  assert2(speciesEcoregion, classesToReplace = P(sim)$LCCClassesToReplaceNN)
+  if (length(P(sim)$LCCClassesToReplaceNN)) {
+    assert2(speciesEcoregion, classesToReplace = P(sim)$LCCClassesToReplaceNN)
+  }
 
   if (!is.na(P(sim)$.plotInitialTime)) {
     uniqueSpeciesNames <- as.character(unique(speciesEcoregion$speciesCode))
@@ -871,9 +875,10 @@ createBiomass_coreInputs <- function(sim) {
 
   rm(cohortDataFiles)
   assertthat::assert_that(NROW(pixelCohortData) > 0)
-  assert2(pixelCohortData, classesToReplace = P(sim)$LCCClassesToReplaceNN)
-  assert2(sim$cohortData, classesToReplace = P(sim)$LCCClassesToReplaceNN)
-
+  if (length(P(sim)$LCCClassesToReplaceNN)) {
+    assert2(pixelCohortData, classesToReplace = P(sim)$LCCClassesToReplaceNN)
+    assert2(sim$cohortData, classesToReplace = P(sim)$LCCClassesToReplaceNN)
+  }
   ## make a table of available active and inactive (no biomass) ecoregions
   sim$ecoregion <- makeEcoregionDT(pixelCohortData, speciesEcoregion)
 
