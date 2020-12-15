@@ -26,7 +26,7 @@ defineModule(sim, list(
   parameters = rbind(
     defineParameter("biomassModel", "call",
                     quote(lme4::lmer(B ~ logAge * speciesCode + cover * speciesCode +
-                                       (logAge + cover + speciesCode | ecoregionGroup))),
+                                       (logAge + cover | ecoregionGroup))),
                     NA, NA,
                     paste("Model and formula for estimating biomass (B) from ecoregionGroup",
                           "(currently ecoregionLayer * LandCoverClass), speciesCode,",
@@ -79,7 +79,7 @@ defineModule(sim, list(
                     paste("The classes in the rstLCC layer that are 'treed' and will therefore be run in Biomass_core.",
                           "Defaults to forested classes in LCC2005 map.")),
     defineParameter("imputeBadAgeModel", "call",
-                    quote(lme4::lmer(age ~ log(totalBiomass) * cover * speciesCode + (log(totalBiomass) * speciesCode | initialEcoregionCode))),
+                    quote(lme4::lmer(age ~ log(totalBiomass) * cover * speciesCode + (log(totalBiomass) | initialEcoregionCode))),
                     NA, NA,
                     paste("Model and formula used for imputing ages that are either missing or do not match well with",
                           "Biomass or Cover. Specifically, if Biomass or Cover is 0, but age is not, then age will be imputed.",
