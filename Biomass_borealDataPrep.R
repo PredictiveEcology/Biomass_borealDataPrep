@@ -10,7 +10,7 @@ defineModule(sim, list(
   ),
   childModules = character(0),
   version = list(Biomass_borealDataPrep = numeric_version("1.4.0.9000"),
-                 LandR = "0.0.8", SpaDES.core = "1.0.0",
+                 LandR = "0.0.10.9001", SpaDES.core = "1.0.0",
                  reproducible = "1.0.0.9011"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
@@ -21,7 +21,7 @@ defineModule(sim, list(
                   "sp", "sf", "merTools", "SpaDES.tools",
                   "PredictiveEcology/reproducible@development (>=1.1.1.9004)",
                   "achubaty/amc@development (>=0.1.6.9000)",
-                  "PredictiveEcology/LandR@development (>=0.0.4)",
+                  "PredictiveEcology/LandR@development (>=0.0.10.9001)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
@@ -1134,21 +1134,14 @@ Save <- function(sim) {
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
     httr::with_config(config = httr::config(ssl_verifypeer = 0L), {
-      sim$standAgeMap <- Cache(prepInputsStandAgeMap,
+      sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
                                destinationPath = dPath,
                                ageURL = extractURL("standAgeMap"),
-                               ageFun = "raster::raster",
                                studyArea = raster::aggregate(sim$studyAreaLarge),
-                               #studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                                rasterToMatch = sim$rasterToMatchLarge,
-                               # rasterToMatch = sim$rasterToMatch,
-                               maskWithRTM = TRUE,
-                               method = "bilinear",
-                               datatype = "INT2U",
                                filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
                                overwrite = TRUE,
                                fireURL = extractURL("fireURL"),
-                               fireFun = "sf::st_read",
                                fireField = "YEAR",
                                startTime = start(sim),
                                userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
