@@ -338,14 +338,6 @@ createBiomass_coreInputs <- function(sim) {
            list(quote(LandR::speciesTableUpdate(...)), quote(speciesTableUpdateCustom(...)))")
     }
   }
-  ## use integers (instead of numerics) where possible; these are asserted in Biomass_core
-  sim$species[, `:=`(seeddistance_eff = asInteger(seeddistance_eff),
-                     seeddistance_max = asInteger(seeddistance_max),
-                     resproutage_min = asInteger(resproutage_min),
-                     resproutage_max = asInteger(resproutage_max),
-                     mortalityshape = asInteger(mortalityshape))]
-  ## ensure factors are used appropriately; asserted in Biomass_core
-  sim$species[, `:=`(postfireregen = as.factor(postfireregen))] ## TODO: hardsoft? speciescode?
 
   if (getOption("LandR.verbose") > 0) {
     message("Adjusting species-level traits, part 2, for LandWeb")
