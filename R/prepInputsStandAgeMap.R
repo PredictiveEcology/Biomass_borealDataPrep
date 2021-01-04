@@ -3,7 +3,6 @@
 #' @importFrom raster crs
 #' @importFrom LandR asInteger
 #' @importFrom reproducible Cache prepInputs
-
 prepInputsStandAgeMap <- function(..., ageURL, ageFun, maskWithRTM,
                                   method, datatype, filename2,
                                   fireURL, fireFun,
