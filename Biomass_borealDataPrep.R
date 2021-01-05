@@ -640,7 +640,7 @@ createBiomass_coreInputs <- function(sim) {
       sim$cloudFolderID <- P(sim)$cloudFolderID
 
   useCloud <- if (!is.null(sim$cloudFolderID)) {
-    (getOption("reproducible.useCache", FALSE) && P(sim)$useCloudCacheForStats)
+    (isTRUE(getOption("reproducible.useCache", FALSE)) && P(sim)$useCloudCacheForStats)
   } else {
     FALSE
   }
