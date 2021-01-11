@@ -10,8 +10,8 @@ defineModule(sim, list(
   ),
   childModules = character(0),
   version = list(Biomass_borealDataPrep = numeric_version("1.4.0.9000"),
-                 LandR = "0.0.10.9001", SpaDES.core = "1.0.0",
-                 reproducible = "1.0.0.9011"),
+                 LandR = "0.0.11.9001", SpaDES.core = "1.0.0",
+                 reproducible = "1.1.1.9004"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
@@ -21,7 +21,7 @@ defineModule(sim, list(
                   "sp", "sf", "merTools", "SpaDES.tools",
                   "PredictiveEcology/reproducible@development (>=1.1.1.9004)",
                   "achubaty/amc@development (>=0.1.6.9000)",
-                  "PredictiveEcology/LandR@development (>=0.0.10.9001)",
+                  "PredictiveEcology/LandR@development (>=0.0.11.9001)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
@@ -496,7 +496,7 @@ createBiomass_coreInputs <- function(sim) {
       par(mfrow = c(1,2))
       plot(predict(cover2BiomassModel$modelBiomass1$mod,
                    newdata = cover2BiomassModel$pixelCohortData[sam1]),
-           log(cover2BiomassModel$pixelCohortData$B/100)[sam1], pch = ".")
+           log(cover2BiomassModel$pixelCohortData$B / 100)[sam1], pch = ".")
       abline(a = 0, b = 1)
 
       cover2BiomassModel1 <- coverOptimFn(1, pixelCohortData, P(sim)$subsetDataAgeModel,
@@ -505,7 +505,7 @@ createBiomass_coreInputs <- function(sim) {
       dev()
       plot(predict(cover2BiomassModel1$modelBiomass1$mod,
                    newdata = cover2BiomassModel1$pixelCohortData[sam1]),
-           log(cover2BiomassModel1$pixelCohortData$B/100)[sam1], pch = ".")
+           log(cover2BiomassModel1$pixelCohortData$B / 100)[sam1], pch = ".")
       abline(a = 0, b = 1)
 
       pcd <- pixelCohortData
