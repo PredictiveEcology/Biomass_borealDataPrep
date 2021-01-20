@@ -115,6 +115,9 @@ defineModule(sim, list(
                           "Default should always come first.")),
     defineParameter("sppEquivCol", "character", "Boreal", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
+    defineParameter("speciesTableAreas", "character", c("BSW", "MC"), NA, NA,
+                    "One or more of the Ecoprovince short forms that are in the `speciesTable` file, e.g., BSC, MC etc. Default
+                        is good for Alberta and maybe other places"),
     defineParameter("subsetDataAgeModel", "numeric", 50, NA, NA,
                     "the number of samples to use when subsampling the biomass data model; if TRUE, uses 50"),
     defineParameter("subsetDataBiomassModel", "numeric", NULL, NA, NA,
@@ -317,10 +320,15 @@ createBiomass_coreInputs <- function(sim) {
   ################################################################
   message(blue("Prepare 'species' table, i.e., species level traits", Sys.time()))
   sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
-                                  speciesLayers = sim$speciesLayers,
-                                  sppEquiv = sim$sppEquiv[get(P(sim)$sppEquivCol) %in%
-                                                            names(sim$speciesLayers)],
-                                  sppEquivCol = P(sim)$sppEquivCol)
+                   sppEquiv = sim$sppEquiv,
+                   areas = P(sim)$speciesTableAreas,
+                   sppEquivCol = P(sim)$sppEquivCol)
+  
+  # sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
+  #                                 # speciesLayers = sim$speciesLayers,
+  #                                 sppEquiv = sim$sppEquiv[get(P(sim)$sppEquivCol) %in%
+  #                                                           names(sim$speciesLayers)],
+  #                                 sppEquivCol = P(sim)$sppEquivCol)
 
   ### override species table values ##############################
   defaultQuote <- quote(LandR::speciesTableUpdate(sim$species, sim$speciesTable,
