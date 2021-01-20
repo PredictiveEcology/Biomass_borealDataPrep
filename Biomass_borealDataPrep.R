@@ -401,7 +401,8 @@ createBiomass_coreInputs <- function(sim) {
 
   ## Clean pixels for veg. succession model
   ## remove pixels with no species data
-  pixelsToRm <- is.na(sim$speciesLayers[[1]][])
+  # pixelsToRm <- rowSums(!is.na(sim$speciesLayers[])) == 0 # keep 
+  pixelsToRm <- is.na(sim$speciesLayers[[1]][]) # seems to be OK because seem to be NA on each layer for a given pixel
   pixelFateDT <- pixelFate(fate = "Total number pixels", runningPixelTotal = ncell(sim$speciesLayers))
   pixelFateDT <- pixelFate(pixelFateDT, "NAs on sim$speciesLayers", sum(pixelsToRm))
 
