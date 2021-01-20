@@ -821,8 +821,17 @@ createBiomass_coreInputs <- function(sim) {
                                        omitArgs = c("userTags"))
 
   maxAgeHighQualityData <- -1
+  
+  # If this module used a fire database to extract better young ages, then we 
+  #   can use those high quality younger ages to help with our biomass estimates
   if (length(extractURL("fireURL"))) {
-    firstFireYear <- as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", extractURL("fireURL")))
+    # fireURL <- "https://cwfis.cfs.nrcan.gc.ca/downloads/nbac/nbac_1986_to_2019_20200921.zip"
+    # This was using the nbac filename to figure out what the earliest year in the
+    #   fire dataset was. Since that is not actually used here, it doesn't really 
+    #   matter what the fire dataset was. Basically, this section is updating 
+    #   young ages that are way outside of their biomass. Can set this to 1986 to just 
+    #   give a cutoff
+    firstFireYear <- 1986 # as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", fireURL))
     maxAgeHighQualityData <- start(sim) - firstFireYear
     ## if maxAgeHighQualityData is lower than 0, it means it's prior to the first fire Year
     ## or not following calendar year
@@ -831,10 +840,10 @@ createBiomass_coreInputs <- function(sim) {
       young <- pixelCohortData[youngRows == TRUE]
 
       # whYoungBEqZero <- which(young$B == 0)
-      whYoungAgeEqZero <- which(young$age == 0)
-      if (length(whYoungAgeEqZero) > 0) {
-        youngWAgeEqZero <- young[whYoungAgeEqZero]
-        youngNoAgeEqZero <- young[-whYoungAgeEqZero]
+      whYoungZeroToMaxHighQuality <- which(young$age > 0)
+      if (length(whYoungZeroToMaxHighQuality) > 0) {
+        youngWAgeEqZero <- young[-whYoungZeroToMaxHighQuality]
+        youngNoAgeEqZero <- young[whYoungZeroToMaxHighQuality]
 
         young <- Cache(updateYoungBiomasses,
                        young = youngNoAgeEqZero,
@@ -843,7 +852,6 @@ createBiomass_coreInputs <- function(sim) {
                        omitArgs = c("userTags"))
         set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
 
-        # put the B = 0
         young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
 
       }
