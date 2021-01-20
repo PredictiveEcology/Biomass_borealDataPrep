@@ -527,7 +527,9 @@ createBiomass_coreInputs <- function(sim) {
     message(blue("using previously estimated deciduousCoverDiscount:",
                  round(P(sim)$deciduousCoverDiscount, 3)))
   }
-  pixelCohortData <- partitionBiomass(x = P(sim)$deciduousCoverDiscount, pixelCohortData)
+  pixelCohortData <- partitionBiomass(x = P(sim)$deciduousCoverDiscount, pixelCohortData,
+                                      decidSp = equivalentName(c("Popu_Tre", "Betu_Pap"), 
+                                                               LandR::sppEquivalencies_CA, P(sim)$sppEquivCol))
   set(pixelCohortData, NULL, "B", asInteger(pixelCohortData$B/P(sim)$pixelGroupBiomassClass) *
         P(sim)$pixelGroupBiomassClass)
   set(pixelCohortData, NULL, c("decid", "cover2"), NULL)
