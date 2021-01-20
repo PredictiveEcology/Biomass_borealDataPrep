@@ -966,10 +966,6 @@ Save <- function(sim) {
     sim$studyArea <- randomStudyArea(seed = 1234, size = (250^2)*100)
   }
 
-  if (is.na(P(sim)$.studyAreaName)) {
-    params(sim)[[currentModule(sim)]][[".studyAreaName"]] <- reproducible::studyAreaName(sim$studyAreaLarge)
-  }
-
   if (!suppliedElsewhere("studyAreaLarge", sim)) {
     message("'studyAreaLarge' was not provided by user. Using the same as 'studyArea'")
     sim <- objectSynonyms(sim, list(c("studyAreaLarge", "studyArea")))
@@ -981,6 +977,12 @@ Save <- function(sim) {
     sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crs(sim$studyArea))
   }
 
+  if (is.na(P(sim)$.studyAreaName)) {
+    params(sim)[[currentModule(sim)]][[".studyAreaName"]] <- reproducible::studyAreaName(sim$studyAreaLarge)
+    message("The .studyAreaName is not supplied; derived name from sim$studyAreaLarge: ", 
+            params(sim)[[currentModule(sim)]][[".studyAreaName"]])
+  }
+  
   ## check whether SA is within SALarge
   ## convert to temp sf objects
   studyArea <- st_as_sf(sim$studyArea)
