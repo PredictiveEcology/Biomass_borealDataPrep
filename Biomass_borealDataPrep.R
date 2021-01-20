@@ -9,9 +9,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("ctb"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = numeric_version("1.4.0.9000"),
-                 LandR = "0.0.11.9001", SpaDES.core = "1.0.0",
-                 reproducible = "1.1.1.9004"),
+  version = list(Biomass_borealDataPrep = "1.5.0"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
@@ -21,7 +19,7 @@ defineModule(sim, list(
                   "sp", "sf", "merTools", "SpaDES.tools",
                   "PredictiveEcology/reproducible@development (>=1.1.1.9004)",
                   "achubaty/amc@development (>=0.1.6.9000)",
-                  "PredictiveEcology/LandR@development (>=0.0.11.9001)",
+                  "PredictiveEcology/LandR@development (>=0.0.11.9004)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
