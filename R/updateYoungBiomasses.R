@@ -37,6 +37,11 @@ updateYoungBiomasses <- function(young, biomassModel) {
     young[tooLarge == TRUE, newB := pred + 2*se]
     young[tooSmall == TRUE, newB := pred - 2*se]
   }
+  if (sum(young$beyond) > 0)
+  message("Within the cohorts aged ",max(young$age)," and younger, ",
+          "there were ", sum(young$beyond), " cohorts whose biomass was way out of line for their ages. ",
+          "Their biomasses have been adjusted down if too high (or up if too low) ",
+          "to their predicted mean +1.96se (or - if too low) based on the fitted biomass model")
   young[beyond == FALSE, newB := B]
   young[, B := asInteger(pmax(0, newB))]
   young[]

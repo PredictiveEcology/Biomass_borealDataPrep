@@ -123,7 +123,7 @@ library(raster)
 
 ## do you want to hand-draw a map or use defaults?
 # - note that large areas will take longer to compute
-handDrawMap <- TRUE
+handDrawMap <- FALSE
 
 if (handDrawMap) {
   dev()
@@ -141,6 +141,8 @@ if (handDrawMap) {
                                           proj4string = crs(canadaMap))
   }
   Plot(studyAreaLarge, addTo = "canadaMap", col = "red")
+} else {
+  studyArea <- randomStudyArea(seed = 1234, size = (250^2)*100)
 }
 
 times <- list(start = 0, end = 10)

@@ -1,0 +1,43 @@
+Package: BiomassBorealDataPrep
+Type: Module
+Title: Biomass_BorealDataPrep
+Description: A data preparation module for parameterizing Biomass_core 
+    from open data sources, within the Boreal forest of Canada
+URL: 
+    https://github.com/PredictiveEcology/Biomass_borealDataPrep
+Date: 2020-10-13
+Version: 1.4.0.9000
+Authors@R: c(
+    person("Eliot J B", "McIntire", email = "eliot.mcintire@canada.ca",
+    role = c("aut", "cre"), comment = c(ORCID = "0000-0002-6914-8316")),
+    person("Alex M", "Chubaty", email = "alex.chubaty@gmail.com",
+    role = c("aut"), comment = c(ORCID = "0000-0001-7146-8135")),
+    person("Her Majesty the Queen in Right of Canada, as represented by the Minister of Natural Resources Canada",
+    role = "cph")
+    )
+Depends:
+    R (>= 3.6)
+Imports:
+    merTools,
+    crayon,
+    data.table,
+    dplyr,
+    fasterize,
+    plyr,
+    raster,
+    sp,
+    sf,
+    SpaDES.tools, 
+    reproducible,
+    amc,
+    LandR,
+    pemisc
+LinkingTo: Rcpp
+Encoding: UTF-8
+Language: en-CA
+License: GPL-3
+VignetteBuilder: knitr, rmarkdown
+BugReports: https://github.com/PredictiveEcology/LandR/issues
+ByteCompile: yes
+LazyData: true
+RoxygenNote: 7.1.1
