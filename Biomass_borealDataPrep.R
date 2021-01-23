@@ -117,7 +117,7 @@ defineModule(sim, list(
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter("speciesTableAreas", "character", c("BSW", "BP", "MC"), NA, NA,
                     paste("One or more of the Ecoprovince short forms that are in the `speciesTable` file,",
-                    "e.g., BSW, MC etc. Default is good for Alberta and maybe other places.")),
+                          "e.g., BSW, MC etc. Default is good for Alberta and maybe other places.")),
     defineParameter("subsetDataAgeModel", "numeric", 50, NA, NA,
                     "the number of samples to use when subsampling the biomass data model; if TRUE, uses 50"),
     defineParameter("subsetDataBiomassModel", "numeric", NULL, NA, NA,
@@ -353,11 +353,12 @@ createBiomass_coreInputs <- function(sim) {
   ## check that all species have trait values.
   missingTraits <- setdiff(names(sim$speciesLayers), sim$species$species)
   if (length(missingTraits) == length(names(sim$speciesLayers))) {
-    stop("No trait values where found for ", paste(missingTraits, collapse = ", "), ".\n",
+    stop("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
          "Please check the species list and traits table")
   } else if (length(missingTraits))
-    warning("No trait values where found for ", paste(missingTraits, collapse = ", "), ".\n",
-            "Please check the species list and traits table")
+    warning("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
+            "Missing traits will result in species removal from simulation.\n
+            Please check the species list and traits table")
 
   ### make table of light shade tolerance  #######################
   ## D. Cyr's version: seems to exacerbate no. of cohorts in our simulations
