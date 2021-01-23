@@ -740,6 +740,9 @@ createBiomass_coreInputs <- function(sim) {
     assert2(speciesEcoregion, classesToReplace = P(sim)$LCCClassesToReplaceNN)
   }
 
+  ## check that all species have maxB/maxANPP - won't stop if they don't
+  assertSppMaxBMaxANPP(speciesEcoregion)
+
   if (!is.na(P(sim)$.plotInitialTime)) {
     uniqueSpeciesNames <- as.character(unique(speciesEcoregion$speciesCode))
     names(uniqueSpeciesNames) <- uniqueSpeciesNames
