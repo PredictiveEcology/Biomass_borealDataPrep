@@ -755,6 +755,7 @@ createBiomass_coreInputs <- function(sim) {
     curDev <- dev.cur()
     quickPlot::dev(6, width = 18, height = 10)
     Plot(maxB, legendRange = c(0, max(maxValue(maxB))))
+    Plot(maxB, legendRange = c(0, max(maxValue(maxB), na.rm = TRUE)))
     quickPlot::dev(curDev)
   }
 
