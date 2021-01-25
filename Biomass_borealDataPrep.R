@@ -356,7 +356,7 @@ createBiomass_coreInputs <- function(sim) {
     stop("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
          "Please check the species list and traits table")
   } else if (length(missingTraits))
-    warning("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
+    stop("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
             "Missing traits will result in species removal from simulation.\n
             Please check the species list and traits table")
 
@@ -740,7 +740,7 @@ createBiomass_coreInputs <- function(sim) {
     assert2(speciesEcoregion, classesToReplace = P(sim)$LCCClassesToReplaceNN)
   }
 
-  ## check that all species have maxB/maxANPP - won't stop if they don't
+  ## check that all species have maxB/maxANPP
   assertSppMaxBMaxANPP(speciesEcoregion)
 
   if (!is.na(P(sim)$.plotInitialTime)) {
