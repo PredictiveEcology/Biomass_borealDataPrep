@@ -9,7 +9,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("ctb"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.0"),
+  version = list(Biomass_borealDataPrep = "1.5.0.9000"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
@@ -19,7 +19,7 @@ defineModule(sim, list(
                   "sp", "sf", "merTools", "SpaDES.tools",
                   "PredictiveEcology/reproducible@development (>=1.1.1.9004)",
                   "achubaty/amc@development (>=0.1.6.9000)",
-                  "PredictiveEcology/LandR@development (>=0.0.11.9005)",
+                  "PredictiveEcology/LandR@development (>=0.0.11.9008)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
@@ -117,7 +117,7 @@ defineModule(sim, list(
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter("speciesTableAreas", "character", c("BSW", "BP", "MC"), NA, NA,
                     paste("One or more of the Ecoprovince short forms that are in the `speciesTable` file,",
-                    "e.g., BSW, MC etc. Default is good for Alberta and maybe other places.")),
+                          "e.g., BSW, MC etc. Default is good for Alberta and maybe other places.")),
     defineParameter("subsetDataAgeModel", "numeric", 50, NA, NA,
                     "the number of samples to use when subsampling the biomass data model; if TRUE, uses 50"),
     defineParameter("subsetDataBiomassModel", "numeric", NULL, NA, NA,
@@ -353,11 +353,12 @@ createBiomass_coreInputs <- function(sim) {
   ## check that all species have trait values.
   missingTraits <- setdiff(names(sim$speciesLayers), sim$species$species)
   if (length(missingTraits) == length(names(sim$speciesLayers))) {
-    stop("No trait values where found for ", paste(missingTraits, collapse = ", "), ".\n",
+    stop("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
          "Please check the species list and traits table")
   } else if (length(missingTraits))
-    warning("No trait values where found for ", paste(missingTraits, collapse = ", "), ".\n",
-            "Please check the species list and traits table")
+    stop("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
+            "Missing traits will result in species removal from simulation.\n
+            Please check the species list and traits table")
 
   ### make table of light shade tolerance  #######################
   ## D. Cyr's version: seems to exacerbate no. of cohorts in our simulations
@@ -739,6 +740,9 @@ createBiomass_coreInputs <- function(sim) {
     assert2(speciesEcoregion, classesToReplace = P(sim)$LCCClassesToReplaceNN)
   }
 
+  ## check that all species have maxB/maxANPP
+  assertSppMaxBMaxANPP(speciesEcoregion)
+
   if (!is.na(P(sim)$.plotInitialTime)) {
     uniqueSpeciesNames <- as.character(unique(speciesEcoregion$speciesCode))
     names(uniqueSpeciesNames) <- uniqueSpeciesNames
@@ -749,8 +753,9 @@ createBiomass_coreInputs <- function(sim) {
                        "maxB", "ecoregionInt")
     }))
     curDev <- dev.cur()
-    quickPlot::dev(6, width = 18, height = 10)
-    Plot(maxB, legendRange = c(0, max(maxValue(maxB))))
+    newDev <- if (!is.null(dev.list())) max(dev.list()) + 1 else 1
+    quickPlot::dev(newDev, width = 18, height = 10)
+    Plot(maxB, legendRange = c(0, max(maxValue(maxB), na.rm = TRUE)))
     quickPlot::dev(curDev)
   }
 
