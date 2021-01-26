@@ -9,7 +9,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("ctb"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = numeric_version("1.4.0.9000")),
+  version = list(Biomass_borealDataPrep = "1.5.0.9000"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
@@ -19,7 +19,7 @@ defineModule(sim, list(
                   "sp", "sf", "merTools", "SpaDES.tools",
                   "PredictiveEcology/reproducible@development (>=1.1.1.9004)",
                   "achubaty/amc@development (>=0.1.6.9000)",
-                  "PredictiveEcology/LandR@development (>=0.0.11.9001)",
+                  "PredictiveEcology/LandR@development (>=0.0.11.9008)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
@@ -115,6 +115,9 @@ defineModule(sim, list(
                           "Default should always come first.")),
     defineParameter("sppEquivCol", "character", "Boreal", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
+    defineParameter("speciesTableAreas", "character", c("BSW", "BP", "MC"), NA, NA,
+                    paste("One or more of the Ecoprovince short forms that are in the `speciesTable` file,",
+                          "e.g., BSW, MC etc. Default is good for Alberta and maybe other places.")),
     defineParameter("subsetDataAgeModel", "numeric", 50, NA, NA,
                     "the number of samples to use when subsampling the biomass data model; if TRUE, uses 50"),
     defineParameter("subsetDataBiomassModel", "numeric", NULL, NA, NA,
@@ -122,7 +125,7 @@ defineModule(sim, list(
     defineParameter("successionTimestep", "numeric", 10, NA, NA, "defines the simulation time step, default is 10 years"),
     defineParameter("useCloudCacheForStats", "logical", TRUE, NA, NA,
                     paste("Some of the statistical models take long (at least 30 minutes, likely longer).",
-                          "If this is TRUE, then it will try to get previous cached runs from googledrive")),
+                          "If this is TRUE, then it will try to get previous cached runs from googledrive.")),
     defineParameter(".plotInitialTime", "numeric", NA, NA, NA,
                     "This describes the simulation time at which the first plot event should occur"),
     defineParameter(".plotInterval", "numeric", NA, NA, NA,
@@ -317,10 +320,15 @@ createBiomass_coreInputs <- function(sim) {
   ################################################################
   message(blue("Prepare 'species' table, i.e., species level traits", Sys.time()))
   sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
-                                  speciesLayers = sim$speciesLayers,
-                                  sppEquiv = sim$sppEquiv[get(P(sim)$sppEquivCol) %in%
-                                                            names(sim$speciesLayers)],
+                                  sppEquiv = sim$sppEquiv,
+                                  areas = P(sim)$speciesTableAreas,
                                   sppEquivCol = P(sim)$sppEquivCol)
+
+  # sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
+  #                                 # speciesLayers = sim$speciesLayers,
+  #                                 sppEquiv = sim$sppEquiv[get(P(sim)$sppEquivCol) %in%
+  #                                                           names(sim$speciesLayers)],
+  #                                 sppEquivCol = P(sim)$sppEquivCol)
 
   ### override species table values ##############################
   defaultQuote <- quote(LandR::speciesTableUpdate(sim$species, sim$speciesTable,
@@ -345,11 +353,12 @@ createBiomass_coreInputs <- function(sim) {
   ## check that all species have trait values.
   missingTraits <- setdiff(names(sim$speciesLayers), sim$species$species)
   if (length(missingTraits) == length(names(sim$speciesLayers))) {
-    stop("No trait values where found for ", paste(missingTraits, collapse = ", "), ".\n",
+    stop("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
          "Please check the species list and traits table")
   } else if (length(missingTraits))
-    warning("No trait values where found for ", paste(missingTraits, collapse = ", "), ".\n",
-            "Please check the species list and traits table")
+    stop("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
+            "Missing traits will result in species removal from simulation.\n
+            Please check the species list and traits table")
 
   ### make table of light shade tolerance  #######################
   ## D. Cyr's version: seems to exacerbate no. of cohorts in our simulations
@@ -393,7 +402,8 @@ createBiomass_coreInputs <- function(sim) {
 
   ## Clean pixels for veg. succession model
   ## remove pixels with no species data
-  pixelsToRm <- is.na(sim$speciesLayers[[1]][])
+  # pixelsToRm <- rowSums(!is.na(sim$speciesLayers[])) == 0 # keep
+  pixelsToRm <- is.na(sim$speciesLayers[[1]][]) # seems to be OK because seem to be NA on each layer for a given pixel
   pixelFateDT <- pixelFate(fate = "Total number pixels", runningPixelTotal = ncell(sim$speciesLayers))
   pixelFateDT <- pixelFate(pixelFateDT, "NAs on sim$speciesLayers", sum(pixelsToRm))
 
@@ -518,6 +528,7 @@ createBiomass_coreInputs <- function(sim) {
     message(blue("using previously estimated deciduousCoverDiscount:",
                  round(P(sim)$deciduousCoverDiscount, 3)))
   }
+
   pixelCohortData <- partitionBiomass(x = P(sim)$deciduousCoverDiscount, pixelCohortData)
   set(pixelCohortData, NULL, "B", asInteger(pixelCohortData$B/P(sim)$pixelGroupBiomassClass) *
         P(sim)$pixelGroupBiomassClass)
@@ -729,6 +740,9 @@ createBiomass_coreInputs <- function(sim) {
     assert2(speciesEcoregion, classesToReplace = P(sim)$LCCClassesToReplaceNN)
   }
 
+  ## check that all species have maxB/maxANPP
+  assertSppMaxBMaxANPP(speciesEcoregion)
+
   if (!is.na(P(sim)$.plotInitialTime)) {
     uniqueSpeciesNames <- as.character(unique(speciesEcoregion$speciesCode))
     names(uniqueSpeciesNames) <- uniqueSpeciesNames
@@ -739,8 +753,9 @@ createBiomass_coreInputs <- function(sim) {
                        "maxB", "ecoregionInt")
     }))
     curDev <- dev.cur()
-    quickPlot::dev(6, width = 18, height = 10)
-    Plot(maxB, legendRange = c(0, max(maxValue(maxB))))
+    newDev <- if (!is.null(dev.list())) max(dev.list()) + 1 else 1
+    quickPlot::dev(newDev, width = 18, height = 10)
+    Plot(maxB, legendRange = c(0, max(maxValue(maxB), na.rm = TRUE)))
     quickPlot::dev(curDev)
   }
 
@@ -810,8 +825,17 @@ createBiomass_coreInputs <- function(sim) {
                                        omitArgs = c("userTags"))
 
   maxAgeHighQualityData <- -1
+
+  # If this module used a fire database to extract better young ages, then we
+  #   can use those high quality younger ages to help with our biomass estimates
   if (length(extractURL("fireURL"))) {
-    firstFireYear <- as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", extractURL("fireURL")))
+    # fireURL <- "https://cwfis.cfs.nrcan.gc.ca/downloads/nbac/nbac_1986_to_2019_20200921.zip"
+    # This was using the nbac filename to figure out what the earliest year in the
+    #   fire dataset was. Since that is not actually used here, it doesn't really
+    #   matter what the fire dataset was. Basically, this section is updating
+    #   young ages that are way outside of their biomass. Can set this to 1986 to just
+    #   give a cutoff
+    firstFireYear <- 1986 # as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", fireURL))
     maxAgeHighQualityData <- start(sim) - firstFireYear
     ## if maxAgeHighQualityData is lower than 0, it means it's prior to the first fire Year
     ## or not following calendar year
@@ -820,10 +844,10 @@ createBiomass_coreInputs <- function(sim) {
       young <- pixelCohortData[youngRows == TRUE]
 
       # whYoungBEqZero <- which(young$B == 0)
-      whYoungAgeEqZero <- which(young$age == 0)
-      if (length(whYoungAgeEqZero) > 0) {
-        youngWAgeEqZero <- young[whYoungAgeEqZero]
-        youngNoAgeEqZero <- young[-whYoungAgeEqZero]
+      whYoungZeroToMaxHighQuality <- which(young$age > 0)
+      if (length(whYoungZeroToMaxHighQuality) > 0) {
+        youngWAgeEqZero <- young[-whYoungZeroToMaxHighQuality]
+        youngNoAgeEqZero <- young[whYoungZeroToMaxHighQuality]
 
         young <- Cache(updateYoungBiomasses,
                        young = youngNoAgeEqZero,
@@ -832,7 +856,6 @@ createBiomass_coreInputs <- function(sim) {
                        omitArgs = c("userTags"))
         set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
 
-        # put the B = 0
         young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
 
       }
@@ -955,10 +978,6 @@ Save <- function(sim) {
     sim$studyArea <- randomStudyArea(seed = 1234, size = (250^2)*100)
   }
 
-  if (is.na(P(sim)$.studyAreaName)) {
-    params(sim)[[currentModule(sim)]][[".studyAreaName"]] <- reproducible::studyAreaName(sim$studyAreaLarge)
-  }
-
   if (!suppliedElsewhere("studyAreaLarge", sim)) {
     message("'studyAreaLarge' was not provided by user. Using the same as 'studyArea'")
     sim <- objectSynonyms(sim, list(c("studyAreaLarge", "studyArea")))
@@ -968,6 +987,12 @@ Save <- function(sim) {
     warning("studyArea and studyAreaLarge have different projections.\n
             studyAreaLarge will be projected to match crs(studyArea)")
     sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crs(sim$studyArea))
+  }
+
+  if (is.na(P(sim)$.studyAreaName)) {
+    params(sim)[[currentModule(sim)]][[".studyAreaName"]] <- reproducible::studyAreaName(sim$studyAreaLarge)
+    message("The .studyAreaName is not supplied; derived name from sim$studyAreaLarge: ",
+            params(sim)[[currentModule(sim)]][[".studyAreaName"]])
   }
 
   ## check whether SA is within SALarge
@@ -1109,7 +1134,7 @@ Save <- function(sim) {
       userTags = c("rstLCC", currentModule(sim), P(sim)$.studyAreaName))
   }
 
-  if (!compareRaster(sim$rstLCC, sim$rasterToMatchLarge)){
+  if (!compareRaster(sim$rstLCC, sim$rasterToMatchLarge)) {
     sim$rstLCC <- projectRaster(sim$rstLCC, to = sim$rasterToMatchLarge)
   }
 
@@ -1217,8 +1242,7 @@ Save <- function(sim) {
 
   # 3. species maps
   if (!suppliedElsewhere("speciesTable", sim)) {
-    sim$speciesTable <- getSpeciesTable(dPath = dPath,
-                                        cacheTags = c(cacheTags, "speciesTable"))
+    sim$speciesTable <- getSpeciesTable(dPath = dPath, cacheTags = c(cacheTags, "speciesTable"))
   }
 
   if (!suppliedElsewhere("columnsForPixelGroups", sim)) {
