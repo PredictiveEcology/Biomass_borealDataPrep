@@ -1043,7 +1043,7 @@ Save <- function(sim) {
                                  useSAcrs = FALSE,     ## never use SA CRS
                                  method = "bilinear",
                                  datatype = "INT2U",
-                                 filename2 = .suffix("rawBiomasMap.tif", paste0("_", P(sim)$.studyAreaName)),
+                                 filename2 = .suffix("rawBiomassMap.tif", paste0("_", P(sim)$.studyAreaName)),
                                  overwrite = TRUE,
                                  userTags = c(cacheTags, "rawBiomassMap"),
                                  omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
