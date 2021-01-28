@@ -787,6 +787,7 @@ createBiomass_coreInputs <- function(sim) {
                                 rasterToMatch = sim$rasterToMatch,
                                 maskWithRTM = TRUE,
                                 filename2 = NULL,
+                                datatype = assessDataType(rasterToMatchLarge),
                                 #useCache = "overwrite",
                                 userTags = c(cacheTags, "rasterToMatchLarge"),
                                 omitArgs = c("userTags"))
