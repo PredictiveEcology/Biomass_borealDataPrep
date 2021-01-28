@@ -1021,7 +1021,7 @@ Save <- function(sim) {
   needRTM <- FALSE
   if (is.null(sim$rasterToMatch) || is.null(sim$rasterToMatchLarge)) {
     if (!suppliedElsewhere("rasterToMatch", sim) ||
-        !suppliedElsewhere("rasterToMatchLarge", sim)) {      ## if one is not provided, re do both (safer?)
+        !suppliedElsewhere("rasterToMatchLarge", sim)) { ## if one is not provided, redo both (safer?)
       needRTM <- TRUE
       message("There is no rasterToMatch/rasterToMatchLarge supplied; will attempt to use rawBiomassMap")
     } else {
