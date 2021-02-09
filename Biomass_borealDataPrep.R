@@ -312,9 +312,6 @@ createBiomass_coreInputs <- function(sim) {
   compareRaster(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC,
                 sim$speciesLayers, sim$standAgeMap, orig = TRUE)
 
-  # sim$standAgeMap <- round(sim$standAgeMap / 20, 0) * 20 # use 20-year bins (#103)
-  sim$standAgeMap[] <- asInteger(sim$standAgeMap[])
-
   ################################################################
   ## species traits inputs
   ################################################################
@@ -444,10 +441,12 @@ createBiomass_coreInputs <- function(sim) {
   on.exit({
     options(opts)
   }, add = TRUE)
+  standAgeMapInt <- raster(sim$standAgeMap)
+  standAgeMapInt[] <- asInteger(sim$standAgeMap[])
   pixelTable <- Cache(makePixelTable,
                       speciesLayers = sim$speciesLayers,
                       species = sim$species,
-                      standAgeMap = sim$standAgeMap,
+                      standAgeMap = standAgeMapInt,
                       ecoregionFiles = ecoregionFiles,
                       biomassMap = sim$rawBiomassMap,
                       rasterToMatch = sim$rasterToMatchLarge,
