@@ -441,12 +441,11 @@ createBiomass_coreInputs <- function(sim) {
   on.exit({
     options(opts)
   }, add = TRUE)
-  standAgeMapInt <- raster(sim$standAgeMap)
-  standAgeMapInt[] <- asInteger(sim$standAgeMap[])
+
   pixelTable <- Cache(makePixelTable,
                       speciesLayers = sim$speciesLayers,
                       species = sim$species,
-                      standAgeMap = standAgeMapInt,
+                      standAgeMap = sim$standAgeMap,
                       ecoregionFiles = ecoregionFiles,
                       biomassMap = sim$rawBiomassMap,
                       rasterToMatch = sim$rasterToMatchLarge,
