@@ -743,11 +743,13 @@ createBiomass_coreInputs <- function(sim) {
       cohortDataNo34to36Biomass2 <- copy(cohortDataNo34to36Biomass)
       cohortDataNo34to36Biomass2[, `:=`(logAge = as.numeric(logAge_sc),
                                         cover = as.numeric(cover_sc))]
+      totalBiomass <- sum(cohortDataNo34to36Biomass2$logB, na.rm = TRUE)
+
       ## retry
       modelBiomass <- Cache(
         statsModel,
         modelFn = P(sim)$biomassModel,
-        uniqueEcoregionGroups = c("rescaled", .sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36Biomass2$ecoregionGroup)))),
+        uniqueEcoregionGroups = c(.sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36Biomass2$ecoregionGroup)))),
         sumResponse = totalBiomass,
         .specialData = cohortDataNo34to36Biomass2,
         useCloud = useCloud,
