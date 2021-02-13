@@ -759,10 +759,10 @@ createBiomass_coreInputs <- function(sim) {
         omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
       )
       modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
+      needRescaleModelB <- TRUE
 
       ## if this is solved then signal that rescaling is needed after
       if (is.null(modMessages)) {
-        needRescaleModelB <- TRUE
         message(blue("P(sim)$biomassModel was successfully re-fit after scaling"))
       }
     }
