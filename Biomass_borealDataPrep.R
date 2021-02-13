@@ -709,6 +709,10 @@ createBiomass_coreInputs <- function(sim) {
   #  shrinkage https://www.tjmahr.com/plotting-partial-pooling-in-mixed-effects-models/
   message(blue("Estimating biomass using P(sim)$biomassModel as:\n"),
           magenta(paste0(format(P(sim)$biomassModel, appendLF = FALSE), collapse = "")))
+
+  if (grepl("logB", as.character(P(sim)$biomassModel)[2]))
+    cohortDataNo34to36Biomass[, logB := log(B + 0.01)]
+
   modelBiomass <- Cache(
     statsModel,
     modelFn = P(sim)$biomassModel,
@@ -773,6 +777,8 @@ createBiomass_coreInputs <- function(sim) {
   if (any(P(sim)$exportModels %in% c("all", "biomassModel")))
     sim$modelBiomass <- modelBiomass
 
+  ## remove logB
+  cohortDataNo34to36Biomass[, logB := NULL]
   ########################################################################
   # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
   #   doesn't include combinations with B = 0 because those places can't have the species/ecoregion combo
