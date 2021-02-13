@@ -19,7 +19,7 @@ defineModule(sim, list(
                   "sp", "sf", "merTools", "SpaDES.tools",
                   "PredictiveEcology/reproducible@development (>=1.1.1.9004)",
                   "achubaty/amc@development (>=0.1.6.9000)",
-                  "PredictiveEcology/LandR@development (>=0.0.11.9008)",
+                  "PredictiveEcology/LandR@modelBiomass (>=0.0.12)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
@@ -74,6 +74,9 @@ defineModule(sim, list(
                           "the user wants to investigate them further. Can be set to 'none' (no models are exported), 'all'",
                           "(both are exported), 'biomassModel' or 'coverModel'. BEWARE: because this is intended for posterior",
                           "model inspection, the models will be exported with data, which may mean very large simList(s)!")),
+    defineParameter("fixModelBiomass", "logical", FALSE, NA, NA,
+                    paste("should modelBiomass be fixed in the case of non-convergence?",
+                          "Only scaling of variables is implemented at this time")),
     defineParameter("forestedLCCClasses", "numeric", c(1:15, 20, 32, 34:35), 0, 39,
                     paste("The classes in the rstLCC layer that are 'treed' and will therefore be run in Biomass_core.",
                           "Defaults to forested classes in LCC2005 map.")),
@@ -720,6 +723,50 @@ createBiomass_coreInputs <- function(sim) {
     omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
   )
 
+  modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
+  needRescaleModelB <- FALSE
+
+  if (P(sim)$fixModelBiomass & !is.null(modMessages)) {
+    ## try rescaling
+    if (any(grepl("Rescale", modMessages))) {
+      message(blue("Trying to rescale variables to refit P(sim)$biomassModel"))
+      ## save this in separate objects for later
+      logAge_sc <- scale(cohortDataNo34to36Biomass$logAge)
+      cover_sc <- scale(cohortDataNo34to36Biomass$cover)
+
+      ## remove attributes with as.numeric
+      cohortDataNo34to36Biomass2 <- copy(cohortDataNo34to36Biomass)
+      cohortDataNo34to36Biomass2[, `:=`(logAge = as.numeric(logAge_sc),
+                                        cover = as.numeric(cover_sc))]
+      ## retry
+      modelBiomass <- Cache(
+        statsModel,
+        modelFn = P(sim)$biomassModel,
+        uniqueEcoregionGroups = c("rescaled", .sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36Biomass2$ecoregionGroup)))),
+        sumResponse = totalBiomass,
+        .specialData = cohortDataNo34to36Biomass2,
+        useCloud = useCloud,
+        # useCache = "overwrite",
+        # useCache = FALSE,
+        cloudFolderID = sim$cloudFolderID,
+        showSimilar = getOption("reproducible.showSimilar", FALSE),
+        userTags = c(cacheTags, "rescaled", "modelBiomass", paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
+        omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
+      )
+      modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
+
+      ## if this is solved then signal that rescaling is needed after
+      if (is.null(modMessages)) {
+        needRescaleModelB <- TRUE
+        message(blue("P(sim)$biomassModel was successfully re-fit after scaling"))
+      }
+    }
+
+    ## other solutions to implement later
+    ## trying different optimizers
+    ## increasing number of iterations for optimizer.
+  }
+
   message(blue("  The rsquared is: "))
   out <- lapply(capture.output(as.data.frame(round(modelBiomass$rsq, 4))), function(x) message(blue(x)))
 
@@ -739,6 +786,8 @@ createBiomass_coreInputs <- function(sim) {
                                            species = sim$species,
                                            modelCover = modelCover,
                                            modelBiomass = modelBiomass,
+                                           needRescaleModelB = needRescaleModelB,
+                                           scaledVarsModelB = list(logAge = logAge_sc, cover = cover_sc),
                                            successionTimestep = P(sim)$successionTimestep,
                                            currentYear = time(sim))
   if (length(P(sim)$LCCClassesToReplaceNN)) {
