@@ -352,10 +352,11 @@ createBiomass_coreInputs <- function(sim) {
   if (length(missingTraits) == length(names(sim$speciesLayers))) {
     stop("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
          "Please check the species list and traits table")
-  } else if (length(missingTraits))
+  } else if (length(missingTraits)) {
     stop("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
             "Missing traits will result in species removal from simulation.\n
             Please check the species list and traits table")
+  }
 
   ### make table of light shade tolerance  #######################
   ## D. Cyr's version: seems to exacerbate no. of cohorts in our simulations
@@ -662,7 +663,7 @@ createBiomass_coreInputs <- function(sim) {
     statsModel,
     modelFn = P(sim)$coverModel,
     # modelFn = cm,
-    uniqueEcoregionGroup = .sortDotsUnderscoreFirst(as.character(unique(cohortDataShort$ecoregionGroup))),
+    uniqueEcoregionGroups = .sortDotsUnderscoreFirst(as.character(unique(cohortDataShort$ecoregionGroup))),
     sumResponse = sum(cohortDataShort$coverPres, cohortDataShort$coverNum, na.rm = TRUE),
     .specialData = cds,
     useCloud = useCloud,
