@@ -663,7 +663,7 @@ createBiomass_coreInputs <- function(sim) {
     statsModel,
     modelFn = P(sim)$coverModel,
     # modelFn = cm,
-    uniqueEcoregionGroup = .sortDotsUnderscoreFirst(as.character(unique(cohortDataShort$ecoregionGroup))),
+    uniqueEcoregionGroups = .sortDotsUnderscoreFirst(as.character(unique(cohortDataShort$ecoregionGroup))),
     sumResponse = sum(cohortDataShort$coverPres, cohortDataShort$coverNum, na.rm = TRUE),
     .specialData = cds,
     useCloud = useCloud,
