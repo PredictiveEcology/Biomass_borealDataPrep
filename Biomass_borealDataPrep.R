@@ -739,7 +739,7 @@ createBiomass_coreInputs <- function(sim) {
   modCallChar <- paste(deparse(P(sim)$biomassModel), collapse = "")
 
   while(length(modMessages) > 0 & fixModelBiomass) {
-    if (any(grepl("Rescale", modMessages))) {
+    if (any(grepl("Rescale", modMessages)) & !needRescaleModelB) {
       message(blue("Trying to rescale variables to refit P(sim)$biomassModel"))
       ## save this in separate objects for later
       logAge_sc <- scale(cohortDataNo34to36Biomass$logAge)
