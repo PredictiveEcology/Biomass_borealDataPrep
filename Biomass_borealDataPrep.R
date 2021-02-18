@@ -733,6 +733,7 @@ createBiomass_coreInputs <- function(sim) {
   fixModelBiomass <- P(sim)$fixModelBiomass
   triedControl <- FALSE
   needRescaleModelB <- FALSE
+  scaledVarsModelB <- NULL
 
   while(length(modMessages) > 0 & fixModelBiomass) {
     cohortDataNo34to36Biomass2 <- copy(cohortDataNo34to36Biomass)
@@ -743,6 +744,7 @@ createBiomass_coreInputs <- function(sim) {
       logAge_sc <- scale(cohortDataNo34to36Biomass$logAge)
       cover_sc <- scale(cohortDataNo34to36Biomass$cover)
 
+      scaledVarsModelB <- list(logAge = logAge_sc, cover = cover_sc)
       ## remove attributes with as.numeric
       ## don't change the original data
       cohortDataNo34to36Biomass2[, `:=`(logAge = as.numeric(logAge_sc),
@@ -807,7 +809,7 @@ createBiomass_coreInputs <- function(sim) {
                                            modelCover = modelCover,
                                            modelBiomass = modelBiomass,
                                            needRescaleModelB = needRescaleModelB,
-                                           scaledVarsModelB = list(logAge = logAge_sc, cover = cover_sc),
+                                           scaledVarsModelB = scaledVarsModelB,
                                            successionTimestep = P(sim)$successionTimestep,
                                            currentYear = time(sim))
   if (length(P(sim)$LCCClassesToReplaceNN)) {
