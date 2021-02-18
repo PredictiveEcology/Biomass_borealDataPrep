@@ -727,11 +727,15 @@ createBiomass_coreInputs <- function(sim) {
     omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
   )
 
+  ## TODO: the following code should be moved to the model function
   modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
+  fixModelBiomass <- P(sim)$fixModelBiomass
+  triedControl <- FALSE
   needRescaleModelB <- FALSE
 
-  if (P(sim)$fixModelBiomass & !is.null(modMessages)) {
-    ## try rescaling
+  while(length(modMessages) > 0 & fixModelBiomass) {
+    cohortDataNo34to36Biomass2 <- copy(cohortDataNo34to36Biomass)
+    modCallChar <- paste(deparse(P(sim)$biomassModel), collapse = "")
     if (any(grepl("Rescale", modMessages))) {
       message(blue("Trying to rescale variables to refit P(sim)$biomassModel"))
       ## save this in separate objects for later
@@ -739,38 +743,45 @@ createBiomass_coreInputs <- function(sim) {
       cover_sc <- scale(cohortDataNo34to36Biomass$cover)
 
       ## remove attributes with as.numeric
-      cohortDataNo34to36Biomass2 <- copy(cohortDataNo34to36Biomass)
+      ## don't change the original data
       cohortDataNo34to36Biomass2[, `:=`(logAge = as.numeric(logAge_sc),
                                         cover = as.numeric(cover_sc))]
-      totalBiomass <- sum(cohortDataNo34to36Biomass2$logB, na.rm = TRUE)
 
-      ## retry
-      modelBiomass <- Cache(
-        statsModel,
-        modelFn = P(sim)$biomassModel,
-        uniqueEcoregionGroups = c(.sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36Biomass2$ecoregionGroup)))),
-        sumResponse = totalBiomass,
-        .specialData = cohortDataNo34to36Biomass2,
-        useCloud = useCloud,
-        # useCache = "overwrite",
-        # useCache = FALSE,
-        cloudFolderID = sim$cloudFolderID,
-        showSimilar = getOption("reproducible.showSimilar", FALSE),
-        userTags = c(cacheTags, "rescaled", "modelBiomass", paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
-        omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
-      )
-      modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
       needRescaleModelB <- TRUE
-
-      ## if this is solved then signal that rescaling is needed after
-      if (is.null(modMessages)) {
-        message(blue("P(sim)$biomassModel was successfully re-fit after scaling"))
+    } else {
+      message(blue("Trying to refit P(sim)$biomassModel with 'bobyqa' optimizer"))
+      ## redo model call with new optimizer
+      modCallChar <- paste(deparse(P(sim)$biomassModel), collapse = "")
+      if (grepl("lme4::lmer", modCallChar)) {
+        modCallChar <-  sub(")$", ", control = lmerControl(optimizer = 'bobyqa'))", modCallChar)
+      } else if (grepl("lme4::glmer", modCallChar)) {
+        modCallChar <-  sub(")$", ", = glmerControl(optimizer = 'bobyqa'))", modCallChar)
+      } else {
+        message(blue("P(sim)$biomassModel does not call 'lme4::lmer' or 'lme4::glmer' explicitly",
+                     "preventing an attempt to use a different optimizer."))
       }
+      triedControl <- TRUE
     }
+    modelBiomass <- Cache(
+      statsModel,
+      modelFn = str2lang(modCallChar),
+      uniqueEcoregionGroups = .sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36Biomass2$ecoregionGroup))),
+      sumResponse = c(totalBiomass, triedControl, needRescaleModelB),
+      .specialData = cohortDataNo34to36Biomass2,
+      useCloud = useCloud,
+      # useCache = "overwrite",
+      # useCache = FALSE,
+      cloudFolderID = sim$cloudFolderID,
+      showSimilar = getOption("reproducible.showSimilar", FALSE),
+      userTags = c(cacheTags, "refit", "modelBiomass", paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
+      omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
+    )
 
-    ## other solutions to implement later
-    ## trying different optimizers
-    ## increasing number of iterations for optimizer.
+    modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
+
+    ## break out of while, even after trying to rescale and fit with bobyqa
+    if (needRescaleModelB & triedControl)
+      fixModelBiomass <- FALSE
   }
 
   message(blue("  The rsquared is: "))
