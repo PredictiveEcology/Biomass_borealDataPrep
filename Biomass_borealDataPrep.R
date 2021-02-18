@@ -125,7 +125,8 @@ defineModule(sim, list(
     defineParameter("subsetDataAgeModel", "numeric", 50, NA, NA,
                     "the number of samples to use when subsampling the biomass data model; if TRUE, uses 50"),
     defineParameter("subsetDataBiomassModel", "numeric", NULL, NA, NA,
-                    "the number of samples to use when subsampling the biomass data model; if TRUE, uses 50"),
+                    paste("the number of samples to use when subsampling the biomass data model;",
+                    "Can be TRUE/FALSE/NULL or numeric; if TRUE, uses 50. If FALSE/NULL no subsetting is done.")),
     defineParameter("successionTimestep", "numeric", 10, NA, NA, "defines the simulation time step, default is 10 years"),
     defineParameter("useCloudCacheForStats", "logical", TRUE, NA, NA,
                     paste("Some of the statistical models take long (at least 30 minutes, likely longer).",
@@ -749,7 +750,6 @@ createBiomass_coreInputs <- function(sim) {
       ## don't change the original data
       cohortDataNo34to36Biomass2[, `:=`(logAge = as.numeric(logAge_sc),
                                         cover = as.numeric(cover_sc))]
-
       needRescaleModelB <- TRUE
     } else {
       message(blue("Trying to refit P(sim)$biomassModel with 'bobyqa' optimizer"))
