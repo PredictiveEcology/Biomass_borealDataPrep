@@ -254,7 +254,7 @@ defineModule(sim, list(
                                "fitted biomass model, as defined by P(sim)$coverModel")),
     createsOutput("modelBiomass", "data.frame",
                   desc = paste("If P(sim)$exportModels is 'all', or 'biomass',",
-                  "fitted biomass model, as defined by P(sim)$biomassModel")),
+                               "fitted biomass model, as defined by P(sim)$biomassModel")),
     createsOutput("rawBiomassMap", "RasterLayer",
                   desc = paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
                                "Service, National Forest Inventory, kNN-derived total aboveground biomass map (in tonnes/ha)",
@@ -364,7 +364,7 @@ createBiomass_coreInputs <- function(sim) {
          "Please check the species list and traits table")
   } else if (length(missingTraits))
     stop("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
-            "Missing traits will result in species removal from simulation.\n
+         "Missing traits will result in species removal from simulation.\n
             Please check the species list and traits table")
 
   ### make table of light shade tolerance  #######################
@@ -1051,7 +1051,7 @@ Save <- function(sim) {
     stop("Please provide a 'studyArea' polygon")
     # message("'studyArea' was not provided by user. Using a polygon (6250000 m^2) in southwestern Alberta, Canada")
     # sim$studyArea <- randomStudyArea(seed = 1234, size = (250^2)*100)  # Jan 2021 we agreed to force user to provide a SA/SAL
-    }
+  }
 
   if (!suppliedElsewhere("studyAreaLarge", sim)) {
     stop("Please provide a 'studyAreaLarge' polygon.
