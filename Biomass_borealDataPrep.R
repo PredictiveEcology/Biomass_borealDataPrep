@@ -710,9 +710,8 @@ createBiomass_coreInputs <- function(sim) {
   message(blue("Estimating biomass using P(sim)$biomassModel as:\n"),
           magenta(paste0(format(P(sim)$biomassModel, appendLF = FALSE), collapse = "")))
 
-  if (grepl("logB", as.character(P(sim)$biomassModel)[2]))
-    cohortDataNo34to36Biomass[, logB := log(B + 0.01)]
-
+  ## NOTE: we are NOT using logB because the relationship between B~age should be hump-shaped
+  ## (or at least capped at high age values). Ideally, we would want a non-linear model
   modelBiomass <- Cache(
     statsModel,
     modelFn = P(sim)$biomassModel,
@@ -781,7 +780,7 @@ createBiomass_coreInputs <- function(sim) {
     sim$modelBiomass <- modelBiomass
 
   ## remove logB
-  cohortDataNo34to36Biomass[, logB := NULL]
+  # cohortDataNo34to36Biomass[, logB := NULL]
   ########################################################################
   # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
   #   doesn't include combinations with B = 0 because those places can't have the species/ecoregion combo
