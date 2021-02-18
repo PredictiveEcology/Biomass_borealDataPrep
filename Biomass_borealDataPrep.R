@@ -734,10 +734,10 @@ createBiomass_coreInputs <- function(sim) {
   triedControl <- FALSE
   needRescaleModelB <- FALSE
   scaledVarsModelB <- NULL
+  cohortDataNo34to36Biomass2 <- copy(cohortDataNo34to36Biomass)
+  modCallChar <- paste(deparse(P(sim)$biomassModel), collapse = "")
 
   while(length(modMessages) > 0 & fixModelBiomass) {
-    cohortDataNo34to36Biomass2 <- copy(cohortDataNo34to36Biomass)
-    modCallChar <- paste(deparse(P(sim)$biomassModel), collapse = "")
     if (any(grepl("Rescale", modMessages))) {
       message(blue("Trying to rescale variables to refit P(sim)$biomassModel"))
       ## save this in separate objects for later
