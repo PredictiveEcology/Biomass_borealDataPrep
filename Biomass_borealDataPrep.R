@@ -119,9 +119,11 @@ defineModule(sim, list(
                     paste("One or more of the Ecoprovince short forms that are in the `speciesTable` file,",
                           "e.g., BSW, MC etc. Default is good for Alberta and maybe other places.")),
     defineParameter("subsetDataAgeModel", "numeric", 50, NA, NA,
-                    "the number of samples to use when subsampling the biomass data model; if TRUE, uses 50"),
+                    paste("the number of samples to use when subsampling the age data model and when fitting DeciduousCoverDiscount;",
+                          "Can be TRUE/FALSE/NULL or numeric; if TRUE, uses 50. If FALSE/NULL no subsetting is done.")),
     defineParameter("subsetDataBiomassModel", "numeric", NULL, NA, NA,
-                    "the number of samples to use when subsampling the biomass data model; if TRUE, uses 50"),
+                    paste("the number of samples to use when subsampling the biomass data model;",
+                          "Can be TRUE/FALSE/NULL or numeric; if TRUE, uses 50. If FALSE/NULL no subsetting is done.")),
     defineParameter("successionTimestep", "numeric", 10, NA, NA, "defines the simulation time step, default is 10 years"),
     defineParameter("useCloudCacheForStats", "logical", TRUE, NA, NA,
                     paste("Some of the statistical models take long (at least 30 minutes, likely longer).",
@@ -354,7 +356,7 @@ createBiomass_coreInputs <- function(sim) {
          "Please check the species list and traits table")
   } else if (length(missingTraits)) {
     stop("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
-            "Missing traits will result in species removal from simulation.\n
+         "Missing traits will result in species removal from simulation.\n
             Please check the species list and traits table")
   }
 
@@ -442,12 +444,11 @@ createBiomass_coreInputs <- function(sim) {
   on.exit({
     options(opts)
   }, add = TRUE)
-  standAgeMapInt <- raster(sim$standAgeMap)
-  standAgeMapInt[] <- asInteger(sim$standAgeMap[])
+
   pixelTable <- Cache(makePixelTable,
                       speciesLayers = sim$speciesLayers,
                       species = sim$species,
-                      standAgeMap = standAgeMapInt,
+                      standAgeMap = sim$standAgeMap,
                       ecoregionFiles = ecoregionFiles,
                       biomassMap = sim$rawBiomassMap,
                       rasterToMatch = sim$rasterToMatchLarge,
@@ -975,13 +976,17 @@ Save <- function(sim) {
 
   ## Study area(s) ------------------------------------------------
   if (!suppliedElsewhere("studyArea", sim)) {
-    message("'studyArea' was not provided by user. Using a polygon (6250000 m^2) in southwestern Alberta, Canada")
-    sim$studyArea <- randomStudyArea(seed = 1234, size = (250^2)*100)
+    stop("Please provide a 'studyArea' polygon")
+    # message("'studyArea' was not provided by user. Using a polygon (6250000 m^2) in southwestern Alberta, Canada")
+    # sim$studyArea <- randomStudyArea(seed = 1234, size = (250^2)*100)  # Jan 2021 we agreed to force user to provide a SA/SAL
   }
 
   if (!suppliedElsewhere("studyAreaLarge", sim)) {
-    message("'studyAreaLarge' was not provided by user. Using the same as 'studyArea'")
-    sim <- objectSynonyms(sim, list(c("studyAreaLarge", "studyArea")))
+    stop("Please provide a 'studyAreaLarge' polygon.
+         If parameterisation is to be done on the same area as 'studyArea'
+         provide the same polygon to 'studyAreaLarge'")
+    # message("'studyAreaLarge' was not provided by user. Using the same as 'studyArea'")
+    # sim <- objectSynonyms(sim, list(c("studyAreaLarge", "studyArea"))) # Jan 2021 we agreed to force user to provide a SA/SAL
   }
 
   if (!compareCRS(sim$studyArea, sim$studyAreaLarge)) {
