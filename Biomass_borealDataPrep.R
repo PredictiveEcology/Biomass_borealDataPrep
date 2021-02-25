@@ -864,12 +864,9 @@ createBiomass_coreInputs <- function(sim) {
 
         young <- Cache(updateYoungBiomasses,
                        young = youngNoAgeEqZero,
-                       biomassModel = modelBiomass$mod, # has an environment -- so always different
-                       extraArgsForCache = list(format(modelBiomass$mod@call),
-                                                modelBiomass$mod@beta,
-                                                modelBiomass$mod@theta),
+                       biomassModel = modelBiomass$mod,
                        userTags = c(cacheTags, "updateYoungBiomasses"),
-                       omitArgs = c("userTags", "biomassModel"))
+                       omitArgs = c("userTags"))
         set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
 
         young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
