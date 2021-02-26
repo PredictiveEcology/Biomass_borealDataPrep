@@ -21,7 +21,7 @@ defineModule(sim, list(
                   "PredictiveEcology/SpaDES.core@development (>=1.0.6.9015)",
                   "PredictiveEcology/reproducible@development (>= 1.2.6.9005)",
                   "achubaty/amc@development (>=0.1.6.9000)",
-                  "PredictiveEcology/LandR@modelBiomass (>=0.0.12.9003)",
+                  "PredictiveEcology/LandR@modelBiomass (>=0.0.12.9004)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
