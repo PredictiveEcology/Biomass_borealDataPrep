@@ -16,7 +16,9 @@ defineModule(sim, list(
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize", "plyr", "raster",
+                  "rasterVis", "ggplot2",
                   "sp", "sf", "merTools", "SpaDES.tools",
+                  "PredictiveEcology/SpaDES.core@development (>=1.0.6.9015)",
                   "PredictiveEcology/reproducible@development (>= 1.2.6.9005)",
                   "achubaty/amc@development (>=0.1.6.9000)",
                   "PredictiveEcology/LandR@modelBiomass (>=0.0.12.9003)",
@@ -132,8 +134,10 @@ defineModule(sim, list(
     defineParameter("useCloudCacheForStats", "logical", TRUE, NA, NA,
                     paste("Some of the statistical models take long (at least 30 minutes, likely longer).",
                           "If this is TRUE, then it will try to get previous cached runs from googledrive.")),
-    defineParameter(".plotInitialTime", "numeric", NA, NA, NA,
-                    "This describes the simulation time at which the first plot event should occur"),
+    defineParameter(".plotInitialTime", "numeric", start(sim), NA, NA,
+                    "This is here for backwards compatibility. Please use .plots"),
+    defineParameter(".plots", "character", NA, NA, NA,
+                    "This describes the type of 'plotting' to do. See ?Plots for possible types. To omit, set to NA"),
     defineParameter(".plotInterval", "numeric", NA, NA, NA,
                     "This describes the simulation time interval between plot events"),
     defineParameter(".saveInitialTime", "numeric", NA, NA, NA,
@@ -290,6 +294,14 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
 
     # schedule future event(s)
     sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_borealDataPrep", "save")
+
+    if (anyPlotting(P(sim)$.plots)) {
+      # override an NA value of `.plotInitialTime` -- not a valid mechanism now
+      whenToPlot <- if (is.na(P(sim)$.plotInitialTime)) start(sim) else P(sim)$.plotInitialTime
+      sim <- scheduleEvent(sim, whenToPlot, "Biomass_borealDataPrep", "plot")
+    }
+  } else if (eventType == "plot") {
+    plottingFn(sim)
   } else if (eventType == "save") {
     sim <- Save(sim)
   } else {
@@ -820,21 +832,21 @@ createBiomass_coreInputs <- function(sim) {
   ## check that all species have maxB/maxANPP
   assertSppMaxBMaxANPP(speciesEcoregion)
 
-  if (!is.na(P(sim)$.plotInitialTime)) {
-    uniqueSpeciesNames <- as.character(unique(speciesEcoregion$speciesCode))
-    names(uniqueSpeciesNames) <- uniqueSpeciesNames
-    speciesEcoregionTable2 <- copy(speciesEcoregion)
-    speciesEcoregionTable2[, ecoregionInt := as.integer(ecoregionGroup)]
-    maxB <- raster::stack(lapply(uniqueSpeciesNames, function(sp) {
-      rasterizeReduced(speciesEcoregionTable2[speciesCode == sp], ecoregionFiles$ecoregionMap,
-                       "maxB", "ecoregionInt")
-    }))
-    curDev <- dev.cur()
-    newDev <- if (!is.null(dev.list())) max(dev.list()) + 1 else 1
-    quickPlot::dev(newDev, width = 18, height = 10)
-    Plot(maxB, legendRange = c(0, max(maxValue(maxB), na.rm = TRUE)))
-    quickPlot::dev(curDev)
-  }
+  # if (!is.na(P(sim)$.plotInitialTime)) {
+  #   uniqueSpeciesNames <- as.character(unique(speciesEcoregion$speciesCode))
+  #   names(uniqueSpeciesNames) <- uniqueSpeciesNames
+  #   speciesEcoregionTable2 <- copy(speciesEcoregion)
+  #   speciesEcoregionTable2[, ecoregionInt := as.integer(ecoregionGroup)]
+  #   maxB <- raster::stack(lapply(uniqueSpeciesNames, function(sp) {
+  #     rasterizeReduced(speciesEcoregionTable2[speciesCode == sp], ecoregionFiles$ecoregionMap,
+  #                      "maxB", "ecoregionInt")
+  #   }))
+  #   curDev <- dev.cur()
+  #   newDev <- if (!is.null(dev.list())) max(dev.list()) + 1 else 1
+  #   quickPlot::dev(newDev, width = 18, height = 10)
+  #   Plot(maxB, legendRange = c(0, max(maxValue(maxB), na.rm = TRUE)))
+  #   quickPlot::dev(curDev)
+  # }
 
   if (ncell(sim$rasterToMatchLarge) > 3e6) .gc()
 
@@ -954,11 +966,11 @@ createBiomass_coreInputs <- function(sim) {
 
   ## make cohortDataFiles: pixelCohortData (rm unnecessary cols, subset pixels with B>0,
   ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
-  cohortDataFiles <- makeCohortDataFiles(pixelCohortData, columnsForPixelGroups, speciesEcoregion,
-                                         pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
-                                         pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
-                                         minAgeForGrouping = maxAgeHighQualityData,
-                                         pixelFateDT = pixelFateDT)
+  cohortDataFiles <- Cache(makeCohortDataFiles, pixelCohortData, columnsForPixelGroups, speciesEcoregion,
+                           pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
+                           pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
+                           minAgeForGrouping = maxAgeHighQualityData,
+                           pixelFateDT = pixelFateDT)
 
   sim$cohortData <- cohortDataFiles$cohortData
   pixelCohortData <- cohortDataFiles$pixelCohortData
@@ -977,6 +989,36 @@ createBiomass_coreInputs <- function(sim) {
   sim$biomassMap <- makeBiomassMap(pixelCohortData, sim$rasterToMatch)
   sim$ecoregionMap <- makeEcoregionMap(ecoregionFiles, pixelCohortData)
 
+  # if (!is.na(P(sim)$.plotInitialTime)) {
+  #   seStacks <- Cache(LandR::speciesEcoregionStack,
+  #                     ecoregionMap = sim$ecoregionMap,
+  #                     speciesEcoregion = sim$speciesEcoregion,
+  #                     columns = c("establishmentprob", "maxB", "maxANPP"),
+  #                     stackFilenames = NULL)
+  #
+  #   sim$ggSpeciesEcoregion <- Map(stk = seStacks, type = names(seStacks),
+  #                                    function(stk, type) {
+  #                                      ggSpeciesEcoregion <-
+  #                                        gplot(stk, maxpixels = 2e6) +
+  #                                        geom_tile(aes(fill = value)) +
+  #                                        facet_wrap(~ variable) +
+  #                                        scale_fill_gradient(low = 'light grey', high = 'blue', na.value = "white") +
+  #                                        theme_bw() +
+  #                                        coord_equal() +
+  #                                        ggtitle(type)
+  #                                    }
+  #   )
+  #   plotList <- lapply(unstack(seStacks$establishprob), plotFunction, studyArea = sim$studyArea)
+  #   ggarrange(plotlist = plotList)
+  #
+  #   Map(gg = sim$ggSpeciesEcoregion, nam = names(sim$ggSpeciesEcoregion),
+  #       function(gg, nam) {
+  #         png(file.path(outputPath(sim), paste(nam, ".png")), width = 1600, height = 1200)
+  #         print(gg)
+  #         dev.off()
+  #       })
+  # }
+  #
   sim$pixelGroupMap <- makePixelGroupMap(pixelCohortData, sim$rasterToMatch)
 
   if (is(P(sim)$minRelativeBFunction, "call")) {
@@ -995,6 +1037,9 @@ createBiomass_coreInputs <- function(sim) {
                                                  paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
                              userTags = c(cacheTags, "speciesLayersRTM"),
+                             quick = "filename2", # don't digest the file content, just filename
+                             # Cache reads file content if it is a file, so it is
+                             #    reading content of filename2, which is an output
                              omitArgs = c("userTags"))
 
   ## double check these rasters all match RTM
@@ -1026,6 +1071,24 @@ createBiomass_coreInputs <- function(sim) {
   #out <- lapply(capture.output(sim$pixelFateDT), function(x) message(blue(x)))
 
   return(invisible(sim))
+}
+
+plottingFn <- function(sim) {
+  # Step 1 make data
+  seStacks <- Cache(LandR:::speciesEcoregionStack,
+                    ecoregionMap = sim$ecoregionMap,
+                    speciesEcoregion = sim$speciesEcoregion,
+                    columns = c("establishprob", "maxB", "maxANPP"),
+                    stackFilenames = NULL)
+
+
+  # Step 2 make plots -- in this case up to 4 plots -- uses .plotInitialTime, .plots
+  Map(stk = seStacks, SEtype = names(seStacks),
+      function(stk, SEtype) {
+        Plots(stk, fn = plotFn_speciesEcoregion, SEtype = SEtype,
+              filename = paste0("speciesEcoregion", "_", time(sim), "_", SEtype))
+      }
+  )
 }
 
 Save <- function(sim) {
@@ -1333,3 +1396,15 @@ Save <- function(sim) {
 
   return(invisible(sim))
 }
+
+
+plotFn_speciesEcoregion <- function(stk, SEtype) {
+        ggSpeciesEcoregion <-
+          gplot(stk, maxpixels = 2e6) +
+          geom_tile(aes(fill = value)) +
+          facet_wrap(~ variable) +
+          scale_fill_gradient(low = 'light grey', high = 'blue', na.value = "white") +
+          theme_bw() +
+          coord_equal() +
+          ggtitle(SEtype)
+      }
