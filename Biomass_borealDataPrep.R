@@ -18,10 +18,10 @@ defineModule(sim, list(
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize", "plyr", "raster",
                   "rasterVis", "ggplot2",
                   "sp", "sf", "merTools", "SpaDES.tools",
-                  "PredictiveEcology/reproducible@development (>=1.2.6.9002)",
+                  "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
                   "PredictiveEcology/SpaDES.core@development (>=1.0.6.9015)",
-                  "achubaty/amc@development (>=0.1.6.9000)",
-                  "PredictiveEcology/LandR@ecoregionPlotting (>=0.0.12.9000)",
+                  # "achubaty/amc@development (>=0.1.6.9000)", # was only .gc which is just `replicate(10, gc())`
+                  "PredictiveEcology/LandR@development (>=0.0.12.9000)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
@@ -772,7 +772,7 @@ createBiomass_coreInputs <- function(sim) {
   #   quickPlot::dev(curDev)
   # }
 
-  if (ncell(sim$rasterToMatchLarge) > 3e6) .gc()
+  if (ncell(sim$rasterToMatchLarge) > 3e6) replicate(10, gc())
 
   ########################################################################
   # Create initial communities, i.e., pixelGroups
@@ -827,7 +827,7 @@ createBiomass_coreInputs <- function(sim) {
 
     assertthat::assert_that(NROW(pixelCohortData) > 0)
 
-    if (ncell(sim$rasterToMatch) > 3e6) .gc()
+    if (ncell(sim$rasterToMatch) > 3e6) replicate(10, gc())
   }
   ## subset ecoregionFiles$ecoregionMap to smaller area.
   ecoregionFiles$ecoregionMap <- Cache(postProcess,
