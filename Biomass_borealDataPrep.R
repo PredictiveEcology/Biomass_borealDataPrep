@@ -21,7 +21,7 @@ defineModule(sim, list(
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
                   "PredictiveEcology/SpaDES.core@development (>=1.0.6.9015)",
                   # "achubaty/amc@development (>=0.1.6.9000)", # was only .gc which is just `replicate(10, gc())`
-                  "PredictiveEcology/LandR@development (>=0.0.12.9000)",
+                  "PredictiveEcology/LandR@development (>=0.0.12.9006)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
@@ -459,7 +459,7 @@ createBiomass_coreInputs <- function(sim) {
 
   pixelTable <- Cache(makePixelTable,
                       speciesLayers = sim$speciesLayers,
-                      species = sim$species,
+                      # species = sim$species,
                       standAgeMap = sim$standAgeMap,
                       ecoregionFiles = ecoregionFiles,
                       biomassMap = sim$rawBiomassMap,
