@@ -20,7 +20,7 @@ defineModule(sim, list(
                   "sp", "sf", "merTools", "SpaDES.tools",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
                   "PredictiveEcology/SpaDES.core@development (>=1.0.6.9015)",
-                  "PredictiveEcology/LandR@modelBiomass (>=0.0.12.9004)",
+                  "PredictiveEcology/LandR@modelBiomass (>=0.0.12.9006)",
                   # "achubaty/amc@development (>=0.1.6.9000)", # was only .gc which is just `replicate(10, gc())`
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
