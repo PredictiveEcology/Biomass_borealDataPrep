@@ -2,8 +2,8 @@
 #' @importFrom data.table setDT set setnames
 #' @importFrom merTools predictInterval
 #' @importFrom LandR asInteger
-
-updateYoungBiomasses <- function(young, biomassModel) {
+#' @param ... For anything, used for Cache. Not used internally here.
+updateYoungBiomasses <- function(young, biomassModel, ...) {
   if (is(biomassModel, "merMod")) {
     columns <- c("ecoregionGroup", "logAge", "speciesCode", "cover")
     young2 <- unique(young, by = columns)
