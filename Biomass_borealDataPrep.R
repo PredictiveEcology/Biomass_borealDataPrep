@@ -19,7 +19,7 @@ defineModule(sim, list(
                   "rasterVis", "ggplot2",
                   "sp", "sf", "merTools", "SpaDES.tools",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "PredictiveEcology/SpaDES.core@development (>=1.0.6.9015)",
+                  "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
                   "PredictiveEcology/LandR@modelBiomass (>=1.0.0)",
                   # "achubaty/amc@development (>=0.1.6.9000)", # was only .gc which is just `replicate(10, gc())`
                   "PredictiveEcology/pemisc@development"),
@@ -144,7 +144,7 @@ defineModule(sim, list(
                     "This describes the simulation time at which the first save event should occur"),
     defineParameter(".saveInterval", "numeric", NA, NA, NA,
                     "This describes the simulation time interval between save events"),
-    defineParameter(".seed", "list", list(), NA, NA,
+    defineParameter(".seed", "list", NULL, NA, NA,
                     paste("Named list of seeds to use for each event (names). E.g., list('init' = 123) will set.seed(123)",
                           "at the start of the init event and unset it at the end. Defaults to NULL, meaning that",
                           "no seeds will be set")),
