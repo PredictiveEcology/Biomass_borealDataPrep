@@ -1114,9 +1114,6 @@ Save <- function(sim) {
   objExists <- !unlist(lapply(objNames, function(x) is.null(sim[[x]])))
   names(objExists) <- objNames
 
-  # Filenames
-  lcc2005Filename <- file.path(dPath, "LCC2005_V1_4a.tif")
-
   ## Study area(s) ------------------------------------------------
   if (!suppliedElsewhere("studyArea", sim)) {
     stop("Please provide a 'studyArea' polygon")
