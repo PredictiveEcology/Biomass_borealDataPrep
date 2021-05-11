@@ -9,9 +9,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, eval = FALSE, results = "hold")
-```
+
 
 [![Gitter](https://badges.gitter.im/PredictiveEcology/LandR_Biomass.svg)](https://gitter.im/PredictiveEcology/LandR_Biomass?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
@@ -96,13 +94,15 @@ All empirically estimated parameters *can* be estimated using data from a larger
 See [SpaDES-modules repository](https://github.com/PredictiveEcology/SpaDES-modules) to see how to download this and other SpaDES modules. Alternatively, it can be forked or cloned from github.com directly.
 # Load libraries
 
-```{r load-libraries}
+
+```r
 library(magrittr) # for %>% pipe
 library(SpaDES)
 ```
 
 # Set up paths
-```{r module_usage}
+
+```r
 moduleName <- "Biomass_borealDataPrep"
 spadesModulesDirectory <- ".." # where the module will be located -- this is correct, if this module
                                # is an Rstudio project, i.e., one up from the project
@@ -121,7 +121,8 @@ paths <- getPaths()
 
 # Choose a study area
 
-```{r get-study-area}
+
+```r
 library(raster)
 # modulePath <- Cache(readline, paste0("Where is the module path? (e.g., ~/module, with no quotes).\n",
 #                                      "Press Enter to accept the path in getPaths()$modulePath: "),
@@ -167,9 +168,9 @@ mySim <- simInit(times = times, #params = parameters,
 This module is about data preparation, so there is no stochastic elements.
 The `spades` call will only cause one event to occur (the `init` event)
 
-```{r run-spades}
-simOut <- spades(mySim, debug = TRUE)
 
+```r
+simOut <- spades(mySim, debug = TRUE)
 ```
 
 # Visualize
@@ -177,7 +178,8 @@ simOut <- spades(mySim, debug = TRUE)
 The `Plot` function will visualize all known .quickPlot type objects, which includes `Raster*` and `SpatialPolygons*` objects.
 After running this module, these are the outputs, which would likely be used as inputs to `Biomass_core`.
 
-```{r visualize}
+
+```r
 dev()
 clearPlot()
 
@@ -195,10 +197,7 @@ One is a study area, which should be provided as a `SpatialPolygonsDataFrame`, a
 This should be inside the boundaries of the boreal forest of Canada. 
 When first running the code in this `.Rmd` file, you will be prompted to draw a polygon if none is provided as an input.
 
-```{r moduleInputs, echo = FALSE}
-df_inputs <- moduleInputs("Biomass_borealDataPrep", "..")
-knitr::kable(df_inputs)
-```
+
 
 ## Creates Inputs
 
@@ -211,17 +210,16 @@ Also, this module gets its Species Traits table from [dcyr/LANDIS-II_IA_generalU
 
 This will show the outputs of this module, which can be used directly as the inputs for Biomass_core:
 
-```{r moduleOutputs, echo = FALSE}
-df_outputs <- moduleOutputs("Biomass_borealDataPrep", "..")
-knitr::kable(df_outputs)
-```
 
-```{r outputs2}
+
+
+```r
 ## species table
 simOut$speciesTable
 ```
 
-```{r outputs3}
+
+```r
 Plot(simOut$biomassMap)
 simOut$studyAreaLarge <- spTransform(simOut$studyAreaLarge, crs(simOut$biomassMap))
 Plot(simOut$studyAreaLarge, addTo = "simOut$biomassMap")
