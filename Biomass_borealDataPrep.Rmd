@@ -23,26 +23,13 @@ This has been partially tested for some parts of the Western Boreal Forest.
 Specifically, it takes the stand biomass, stand age, ecozone, ecoprovince, and ecoregion maps of Canada, as well as species specific biomass maps of Canada (defaulting to the kNN biomass maps) and derives LandR Biomass parameter estimates from these data.
 Species traits are taken from those used by Dominic Cyr for LANDIS-II simulations.
 
-Keeping data preparation outside of the LandR Biomass_core module maintains the modularity of the LandR modules.
+Keeping data preparation outside of the LandR `Biomass_core` module maintains the modularity of the LandR modules.
 
 # Functioning
 
 The module defaults to using kNN species cover maps and a study area in Alberta.
-After downloading all the necessary data (see above), the module proceeds to prepare the necessary objects and parameters for the simulation.
-
-These are:
-* `cohortData` - a `data.table` contaning cohort-level information per pixelGroup (a group of pixels with identical species composition, ecoregion, age structure and biomass)
-* `pixelGroupMap` - a map of the study area with pixelGroup IDs
-* `speciesEcoregion` - a table of species parameters by ecoregion
-* `sufficientLight` - a table of light requirements corresponding to each shade tolerance trait value 1:5) and each shading amount in a pixel (1:5).  
-* `ecoregion` - a table with ecoregions coded as "active" or "inactive
-* `biomassMap` - a map stand biomasses used to initialise the simulation
-* `ecoregionMap` - a map of ecoregion IDs - note that ecoregions are a combination of land cover class and ecodistrict.
-* `minRelativeB` - a parameter defining the cut points to classify stand shadeness
-
-Depending on the objects, some are parametrised using empirical models, others using expert knowledge (`sufficientLight`)
-
-**NOTE:** all raster _inputs_ should be at the scale of `rasterToMatchLarge` and all raster _outputs_ will be at the scale of `rasterToMatch`.
+After downloading all the necessary data, the module proceeds to prepare the necessary objects and parameters for the simulation (see 'Data dependencies' below).
+Depending on the objects, some are parameterized using empirical models, others using expert knowledge (e.g., `sufficientLight`)
 
 ## Filling data gaps
 
@@ -58,7 +45,7 @@ Depending on the objects, some are parametrised using empirical models, others u
 * the user can choose to replace certain land cover classes with others. For example, in a "Natural Range of Variation" project, urban pixels can be changed to forested. Since the currently available simulation modules do not drive land cover change, species-ecoregion traits will be spatially non-varying. This means that initial land cover classes that are "transient", such as "recent burn" are likely not appropriate to have "permanent" traits associated with them. This module offers the ability to estimate the parameters for these pixels *as if they were a neighbouring land cover class*. In these two cases, the module can replace these classes with a neighbouring forest type (probabilistically chosen in proportion to its neighbourhood abundance).
 
 
-## Parametrisation
+## Parameterization
 
 LandR-Biomass, like LANDIS-II Biomass Succession, has species-level traits and species-ecoregion level traits. The difference between these is the the species-ecoregion traits can vary spatially. During the steps here, we estimate these traits by *species* X *land cover class* X *ecodistrict* (Canadian, federal definition). This can mean that there are some species-ecoregion traits that are unique at the pixel level as there may be rare combinations of, say, a land cover type, for a given species, in a given ecodistrict.
 
@@ -117,7 +104,6 @@ setPaths(cachePath = cachePath,
          outputPath = outputPath)
 paths <- getPaths()
 ```
-
 
 # Choose a study area
 
@@ -188,31 +174,42 @@ Plot(simOut)
 
 During the `simInit` call, if the user does not provide alternatives for the expected inputs, the module will download 3 large `.tar` files (~2 GB each) and 1 `.zip` file (~45 MB) from the internet.
 
-# Inputs
+# Data dependencies
+
+**NOTE:** all raster _inputs_ should be at the scale of `rasterToMatchLarge` and all raster _outputs_ will be at the scale of `rasterToMatch`.
+
+## Module parameters
+
+```{r moduleParams, echo = FALSE, eval = TRUE}
+df_params <- SpaDES.core::moduleParams("Biomass_borealDataPrep", "..")
+knitr::kable(df_params)
+```
+
+## Inputs
 
 This module has several input requirements. 
 One is a study area, which should be provided as a `SpatialPolygonsDataFrame`, and named `studyAreaLarge`.
 This should be inside the boundaries of the boreal forest of Canada. 
 When first running the code in this `.Rmd` file, you will be prompted to draw a polygon if none is provided as an input.
 
-```{r moduleInputs, echo = FALSE}
-df_inputs <- moduleInputs("Biomass_borealDataPrep", "..")
+```{r moduleInputs, echo = FALSE, eval = TRUE}
+df_inputs <- SpaDES.core::moduleInputs("Biomass_borealDataPrep", "..")
 knitr::kable(df_inputs)
 ```
 
-## Creates Inputs
+### Creates Inputs
 
 Most of the inputs will be created automatically, if they are not provided by the user. 
 The automatic creation will work in the boreal forest of Canada.
 These are zip files and tar files that are available from various Natural Resources Canada web pages. 
 Also, this module gets its Species Traits table from [dcyr/LANDIS-II_IA_generalUseFiles](https://github.com/dcyr/LANDIS-II_IA_generalUseFiles).
 
-# Outputs
+## Outputs
 
 This will show the outputs of this module, which can be used directly as the inputs for Biomass_core:
 
-```{r moduleOutputs, echo = FALSE}
-df_outputs <- moduleOutputs("Biomass_borealDataPrep", "..")
+```{r moduleOutputs, echo = FALSE, eval = TRUE}
+df_outputs <- SpaDES.core::moduleOutputs("Biomass_borealDataPrep", "..")
 knitr::kable(df_outputs)
 ```
 
