@@ -19,8 +19,8 @@ defineModule(sim, list(
                   "rasterVis", "ggplot2",
                   "sp", "sf", "merTools", "SpaDES.tools",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
                   "PredictiveEcology/LandR@modelBiomass (>=1.0.0)",
+                  "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
                   # "achubaty/amc@development (>=0.1.6.9000)", # was only .gc which is just `replicate(10, gc())`
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
