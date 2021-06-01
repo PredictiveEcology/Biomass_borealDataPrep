@@ -293,6 +293,16 @@ defineModule(sim, list(
 #   - type `init` is required for initialiazation
 
 doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FALSE) {
+
+  ## open a plotting device so that Biomass_core doesn't plot on top of it if it's too small.
+  ## needs to be outside of init, in case init event is cached.
+  if (anyPlotting(P(sim)$.plots) &&
+      P(sim)$.plots == "screen") {
+    dev()
+    clearPlot()
+    mod$plotWindow <- dev.cur()
+  }
+
   if (eventType == "init") {
     sim <- createBiomass_coreInputs(sim)
 
@@ -1078,19 +1088,24 @@ createBiomass_coreInputs <- function(sim) {
 }
 
 plottingFn <- function(sim) {
+  checkPath(file.path(outputPath(sim), "figures"), create = TRUE)
+
   # Step 1 make data
   seStacks <- Cache(LandR:::speciesEcoregionStack,
                     ecoregionMap = sim$ecoregionMap,
                     speciesEcoregion = sim$speciesEcoregion,
-                    columns = c("establishprob", "maxB", "maxANPP"),
-                    stackFilenames = NULL)
+                    columns = c("establishprob", "maxB", "maxANPP"))
 
 
   # Step 2 make plots -- in this case up to 4 plots -- uses .plotInitialTime, .plots
+  if (!is.null(mod$plotWindow)) {
+    dev(mod$plotWindow)
+  }
   Map(stk = seStacks, SEtype = names(seStacks),
       function(stk, SEtype) {
         Plots(stk, fn = plotFn_speciesEcoregion, SEtype = SEtype,
-              filename = paste0("speciesEcoregion", "_", time(sim), "_", SEtype))
+              filename = file.path(outputPath(sim), "figures",
+                                   paste0("speciesEcoregion", "_", time(sim), "_", SEtype)))
       }
   )
 }
