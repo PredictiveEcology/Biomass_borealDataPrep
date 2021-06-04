@@ -75,16 +75,16 @@ defineModule(sim, list(
                           "when models fail to converge or hit singularity (but can still be used to make predictions) and",
                           "the user wants to investigate them further. Can be set to 'none' (no models are exported), 'all'",
                           "(both are exported), 'biomassModel' or 'coverModel'.")),
-    defineParameter("forestedLCCClasses", "numeric", c(1:15, 20, 32, 34:35), 0, 39,
+    defineParameter("forestedLCCClasses", "numeric", c(1:6), 0, NA,
                     paste("The classes in the rstLCC layer that are 'treed' and will therefore be run in Biomass_core.",
-                          "Defaults to forested classes in LCC2005 map.")),
+                          "Defaults to forested classes in LCC2010 map.")),
     defineParameter("imputeBadAgeModel", "call",
                     quote(lme4::lmer(age ~ log(totalBiomass) * cover * speciesCode + (log(totalBiomass) | initialEcoregionCode))),
                     NA, NA,
                     paste("Model and formula used for imputing ages that are either missing or do not match well with",
                           "Biomass or Cover. Specifically, if Biomass or Cover is 0, but age is not, then age will be imputed.",
                           "Similarly, if Age is 0 and either Biomass or Cover is not, then age will be imputed")),
-    defineParameter("LCCClassesToReplaceNN", "numeric", 34:35, NA, NA,
+    defineParameter("LCCClassesToReplaceNN", "numeric", numeric(0), NA, NA,
                     paste("This will replace these classes on the landscape with the closest forest class P(sim)$forestedLCCClasses.",
                           "If the user is using the default 2005 data product for rstLCC, then users may wish to",
                           "include 36 (cities -- if running a historic range of variation project), and 34:35 (burns)",
@@ -183,7 +183,7 @@ defineModule(sim, list(
                               "3) It can have transient pixels, such as 'young fire'. These will be converted to a\n",
                               "    the nearest non-transient class, probabilistically if there is more than 1 nearest\n",
                               "    neighbour class, based on P(sim)$LCCClassesToReplaceNN.\n",
-                              "The default layer used, if not supplied, is Canada national land classification in 2005.",
+                              "The default layer used, if not supplied, is Canada national land classification in 2010.",
                               " The metadata (res, proj, ext, origin) need to match rasterToMatchLarge."),
                  sourceURL = "ftp://ftp.ccrs.nrcan.gc.ca/ad/NLCCLandCover/LandcoverCanada2005_250m/LandCoverOfCanada2005_V1_4.zip"),
     expectsInput("rasterToMatch", "RasterLayer",
@@ -1053,9 +1053,6 @@ Save <- function(sim) {
   objExists <- !unlist(lapply(objNames, function(x) is.null(sim[[x]])))
   names(objExists) <- objNames
 
-  # Filenames
-  lcc2005Filename <- file.path(dPath, "LCC2005_V1_4a.tif")
-
   ## Study area(s) ------------------------------------------------
   if (!suppliedElsewhere("studyArea", sim)) {
     stop("Please provide a 'studyArea' polygon")
@@ -1215,6 +1212,7 @@ Save <- function(sim) {
   if (!suppliedElsewhere("rstLCC", sim)) {
     sim$rstLCC <- prepInputsLCC(
       destinationPath = dPath,
+      year = 2010,
       studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
       rasterToMatch = sim$rasterToMatchLarge,
       filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName)),
