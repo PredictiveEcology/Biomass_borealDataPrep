@@ -356,11 +356,6 @@ createBiomass_coreInputs <- function(sim) {
   #                                 sppEquivCol = P(sim)$sppEquivCol)
 
   ### override species table values ##############################
-  defaultQuote <- quote(LandR::speciesTableUpdate(sim$species, sim$speciesTable,
-                                                  sim$sppEquiv, P(sim)$sppEquivCol))
-  if (P(sim)$speciesUpdateFunction[[1]] != defaultQuote) {
-    stop("Make sure that the first entry in speciesUpdateFunction is the default expression")
-  }
   for (fn in P(sim)$speciesUpdateFunction) {
     if (is(fn, "call")) {
       sim$species <- eval(fn)
