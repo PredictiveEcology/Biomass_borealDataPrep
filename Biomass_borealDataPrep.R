@@ -374,8 +374,8 @@ createBiomass_coreInputs <- function(sim) {
       if (is(fn, "call")) {
         sim$species <- eval(fn)
       } else {
-        stop("speciesUpdateFunction should be a list of one or more quoted function expressions e.g.:
-           list(quote(LandR::speciesTableUpdate(...)), quote(speciesTableUpdateCustom(...)))")
+        stop("speciesUpdateFunction should be a list of one or more quoted function expressions e.g.:\n",
+             "list(quote(LandR::speciesTableUpdate(...)), quote(speciesTableUpdateCustom(...)))")
       }
     }
   }
