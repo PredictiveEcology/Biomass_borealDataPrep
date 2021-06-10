@@ -115,7 +115,7 @@ defineModule(sim, list(
                     NA, NA,
                     paste("Unnamed list of (one or more) quoted functions that updates species table to customize values.",
                           "By default, 'LandR::speciesTableUpdate' is used to change longevity and shade tolerance values,",
-                          "for species in the  Boreal Shield West (BSW), Boreal Plains (BP) and Montane Cordillera (MC)",
+                          "using values appropriate to Boreal Shield West (BSW), Boreal Plains (BP) and Montane Cordillera (MC)",
                           "ecoprovinces (see ?LandR::speciesTableUpdate for details).")),
     defineParameter("sppEquivCol", "character", "Boreal", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
@@ -358,12 +358,14 @@ createBiomass_coreInputs <- function(sim) {
   #                                 sppEquivCol = P(sim)$sppEquivCol)
 
   ### override species table values ##############################
-  for (fn in P(sim)$speciesUpdateFunction) {
-    if (is(fn, "call")) {
-      sim$species <- eval(fn)
-    } else {
-      stop("speciesUpdateFunction should be a list of one or more quoted function expressions e.g.:
+  if (!is.null(P(sim)$speciesUpdateFunction)) {
+    for (fn in P(sim)$speciesUpdateFunction) {
+      if (is(fn, "call")) {
+        sim$species <- eval(fn)
+      } else {
+        stop("speciesUpdateFunction should be a list of one or more quoted function expressions e.g.:
            list(quote(LandR::speciesTableUpdate(...)), quote(speciesTableUpdateCustom(...)))")
+      }
     }
   }
 
