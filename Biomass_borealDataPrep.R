@@ -9,7 +9,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("ctb"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.1"),
+  version = list(Biomass_borealDataPrep = "1.5.2"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
@@ -117,8 +117,10 @@ defineModule(sim, list(
     defineParameter("speciesUpdateFunction", "list",
                     list(quote(LandR::speciesTableUpdate(sim$species, sim$speciesTable, sim$sppEquiv, P(sim)$sppEquivCol))),
                     NA, NA,
-                    paste("Unnamed list of quoted functions that updates species table to customize values.",
-                          "Default should always come first.")),
+                    paste("Unnamed list of (one or more) quoted functions that updates species table to customize values.",
+                          "By default, 'LandR::speciesTableUpdate' is used to change longevity and shade tolerance values,",
+                          "using values appropriate to Boreal Shield West (BSW), Boreal Plains (BP) and Montane Cordillera (MC)",
+                          "ecoprovinces (see ?LandR::speciesTableUpdate for details).")),
     defineParameter("sppEquivCol", "character", "Boreal", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter("speciesTableAreas", "character", c("BSW", "BP", "MC"), NA, NA,
@@ -366,17 +368,14 @@ createBiomass_coreInputs <- function(sim) {
   #                                 sppEquivCol = P(sim)$sppEquivCol)
 
   ### override species table values ##############################
-  defaultQuote <- quote(LandR::speciesTableUpdate(sim$species, sim$speciesTable,
-                                                  sim$sppEquiv, P(sim)$sppEquivCol))
-  if (P(sim)$speciesUpdateFunction[[1]] != defaultQuote) {
-    stop("Make sure that the first entry in speciesUpdateFunction is the default expression")
-  }
-  for (fn in P(sim)$speciesUpdateFunction) {
-    if (is(fn, "call")) {
-      sim$species <- eval(fn)
-    } else {
-      stop("speciesUpdateFunction should be a list of quoted function expressions e.g.:
+  if (!is.null(P(sim)$speciesUpdateFunction)) {
+    for (fn in P(sim)$speciesUpdateFunction) {
+      if (is(fn, "call")) {
+        sim$species <- eval(fn)
+      } else {
+        stop("speciesUpdateFunction should be a list of one or more quoted function expressions e.g.:
            list(quote(LandR::speciesTableUpdate(...)), quote(speciesTableUpdateCustom(...)))")
+      }
     }
   }
 
