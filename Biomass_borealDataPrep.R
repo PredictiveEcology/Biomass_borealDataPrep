@@ -9,7 +9,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("ctb"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.1"),
+  version = list(Biomass_borealDataPrep = "1.5.2"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
@@ -21,7 +21,7 @@ defineModule(sim, list(
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
                   "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
                   # "achubaty/amc@development (>=0.1.6.9000)", # was only .gc which is just `replicate(10, gc())`
-                  "PredictiveEcology/LandR@development (>=0.0.12.9006)",
+                  "PredictiveEcology/LandR@development (>=1.0.2.9000)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
@@ -113,8 +113,11 @@ defineModule(sim, list(
     defineParameter("speciesUpdateFunction", "list",
                     list(quote(LandR::speciesTableUpdate(sim$species, sim$speciesTable, sim$sppEquiv, P(sim)$sppEquivCol))),
                     NA, NA,
-                    paste("Unnamed list of quoted functions that updates species table to customize values.",
-                          "Default should always come first.")),
+                    paste("Unnamed list of (one or more) quoted functions that updates species table to customize values.",
+                          "By default, 'LandR::speciesTableUpdate' is used to change longevity and shade tolerance values,",
+                          "using values appropriate to Boreal Shield West (BSW), Boreal Plains (BP) and Montane Cordillera (MC)",
+                          "ecoprovinces (see ?LandR::speciesTableUpdate for details). Set to NULL if default trait values from",
+                          "'speciesTable' are to be kept instead")),
     defineParameter("sppEquivCol", "character", "Boreal", NA, NA,
                     "The column in sim$specieEquivalency data.table to use as a naming convention"),
     defineParameter("speciesTableAreas", "character", c("BSW", "BP", "MC"), NA, NA,
@@ -356,17 +359,14 @@ createBiomass_coreInputs <- function(sim) {
   #                                 sppEquivCol = P(sim)$sppEquivCol)
 
   ### override species table values ##############################
-  defaultQuote <- quote(LandR::speciesTableUpdate(sim$species, sim$speciesTable,
-                                                  sim$sppEquiv, P(sim)$sppEquivCol))
-  if (P(sim)$speciesUpdateFunction[[1]] != defaultQuote) {
-    stop("Make sure that the first entry in speciesUpdateFunction is the default expression")
-  }
-  for (fn in P(sim)$speciesUpdateFunction) {
-    if (is(fn, "call")) {
-      sim$species <- eval(fn)
-    } else {
-      stop("speciesUpdateFunction should be a list of quoted function expressions e.g.:
-           list(quote(LandR::speciesTableUpdate(...)), quote(speciesTableUpdateCustom(...)))")
+  if (!is.null(P(sim)$speciesUpdateFunction)) {
+    for (fn in P(sim)$speciesUpdateFunction) {
+      if (is(fn, "call")) {
+        sim$species <- eval(fn)
+      } else {
+        stop("speciesUpdateFunction should be a list of one or more quoted function expressions e.g.:\n",
+             "list(quote(LandR::speciesTableUpdate(...)), quote(speciesTableUpdateCustom(...)))")
+      }
     }
   }
 
@@ -1340,12 +1340,12 @@ Save <- function(sim) {
 
 
 plotFn_speciesEcoregion <- function(stk, SEtype) {
-        ggSpeciesEcoregion <-
-          gplot(stk, maxpixels = 2e6) +
-          geom_tile(aes(fill = value)) +
-          facet_wrap(~ variable) +
-          scale_fill_gradient(low = 'light grey', high = 'blue', na.value = "white") +
-          theme_bw() +
-          coord_equal() +
-          ggtitle(SEtype)
-      }
+  ggSpeciesEcoregion <-
+    gplot(stk, maxpixels = 2e6) +
+    geom_tile(aes(fill = value)) +
+    facet_wrap(~ variable) +
+    scale_fill_gradient(low = 'light grey', high = 'blue', na.value = "white") +
+    theme_bw() +
+    coord_equal() +
+    ggtitle(SEtype)
+}
