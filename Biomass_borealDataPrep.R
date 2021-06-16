@@ -188,7 +188,7 @@ defineModule(sim, list(
                               "    neighbour class, based on P(sim)$LCCClassesToReplaceNN.\n",
                               "The default layer used, if not supplied, is Canada national land classification in 2010.",
                               " The metadata (res, proj, ext, origin) need to match rasterToMatchLarge."),
-                 sourceURL = "ftp://ftp.ccrs.nrcan.gc.ca/ad/NLCCLandCover/LandcoverCanada2005_250m/LandCoverOfCanada2005_V1_4.zip"),
+                 sourceURL = NA), ## uses LandR::prepInputsLCC() defaults
     expectsInput("rasterToMatch", "RasterLayer",
                  desc = paste("A raster of the studyArea in the same resolution and projection as rawBiomassMap.",
                               "This is the scale used for all *outputs* for use in the simulation.")),
