@@ -1211,10 +1211,10 @@ Save <- function(sim) {
   ## Land cover raster ------------------------------------------------
   if (!suppliedElsewhere("rstLCC", sim)) {
     sim$rstLCC <- prepInputsLCC(
-      destinationPath = dPath,
       year = 2010,
-      studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
+      studyArea = sim$studyAreaLarge, ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
       rasterToMatch = sim$rasterToMatchLarge,
+      destinationPath = dPath,
       filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName)),
       overwrite = TRUE,
       userTags = c("rstLCC", currentModule(sim), P(sim)$.studyAreaName))
