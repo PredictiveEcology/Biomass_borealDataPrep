@@ -21,7 +21,7 @@ defineModule(sim, list(
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
                   "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
                   # "achubaty/amc@development (>=0.1.6.9000)", # was only .gc which is just `replicate(10, gc())`
-                  "PredictiveEcology/LandR@development (>=1.0.2.9000)",
+                  "PredictiveEcology/LandR@development (>=1.0.4.9023)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
