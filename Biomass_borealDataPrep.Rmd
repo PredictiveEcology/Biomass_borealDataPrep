@@ -1,7 +1,7 @@
 ---
 title: "Biomass_borealDataPrep"
 author: "Yong Luo, Eliot McIntire, Ceres Barros, Alex Chubaty"
-date: "24 September 2019, updated May 2021"
+date: "24 September 2019, updated 26 Jul 2021"
 output:
   html_document:
     keep_md: yes
@@ -17,66 +17,63 @@ knitr::opts_chunk$set(echo = TRUE, eval = FALSE, results = "hold")
 
 # Overview
 
-This module converts open datasets that are available for all of Canada's forests, into the input requirements for LandR Biomass, a forest landscape succession model derived from the Landis-II Biomass Succession Model. 
-This has been partially tested for some parts of the Western Boreal Forest. 
+This module converts open datasets that are available for all of Canada's forests, into the input requirements for LandR Biomass, a forest landscape succession model derived from the Landis-II Biomass Succession Extension model (v3.2; hereafter LBSE). 
+This has been designed and tested for some parts of the Western Boreal Forest. 
 
-Specifically, it takes the stand biomass, stand age, ecozone, ecoprovince, and ecoregion maps of Canada, as well as species specific biomass maps of Canada (defaulting to the kNN biomass maps) and derives LandR Biomass parameter estimates from these data.
-Species traits are taken from those used by Dominic Cyr for LANDIS-II simulations.
+Specifically, it takes the stand biomass, stand age (defaulting to the kNN biomass/age maps), land-cover (Land Cover of Canada map by default) and ecological zonation maps of Canada (ecodistricts by default), as well as species specific % cover maps of Canada (defaulting to the kNN maps) and derives LandR Biomass parameter estimates from these data.
+Species traits are taken from those used by Dominic Cyr for LANDIS-II simulations, with some exceptions (see below).
 
 Keeping data preparation outside of the LandR `Biomass_core` module maintains the modularity of the LandR modules.
 
 # Functioning
 
-The module defaults to using kNN species cover maps and a study area in Alberta.
 After downloading all the necessary data, the module proceeds to prepare the necessary objects and parameters for the simulation (see 'Data dependencies' below).
-Depending on the objects, some are parameterized using empirical models, others using expert knowledge (e.g., `sufficientLight`)
+Depending on the objects, some are parameterized using empirical models, others based on literature (e.g. longevity values for western boreal species taken from Burton & Cumming (1995) - see `?LandR::speciesTableUpdate`), or expert knowledge (e.g., `sufficientLight` values adjusted to reflect western boreal forest succession dynamics)
 
 ## Filling data gaps
 
-* mismatches between stand age, stand biomass and species cover are dealt with by trusting species cover first.
-  If `cover > 0` and `age == 0`, `age` is empirically estimated using a linear mixed effect model:
+* mismatches between stand age, stand biomass and species cover are dealt with by trusting species % cover first.
+  If `cover > 0` and `age == 0`, `age` is empirically estimated using a linear mixed effects model:
 
-    `age ~ B * speciesCode + (1 | initialEcoregionCode) + cover`
+    `age ~ B * species + (1 | initialEcoregionCode) + cover`
 
-  If `cover` and `age == 0` and `biomass > 0`, `biomass` is set to `0`.
+  If `cover == 0`, `age == 0` and `biomass > 0`, `biomass` is set to `0`.
 
-* species `longevity` parameters are taken from published numbers from closest regions and adjusted using expert opinion.
+* species `longevity` parameters are taken from published numbers from closest regions (Burton & Cumming 1995)
 
-* the user can choose to replace certain land cover classes with others. For example, in a "Natural Range of Variation" project, urban pixels can be changed to forested. Since the currently available simulation modules do not drive land cover change, species-ecoregion traits will be spatially non-varying. This means that initial land cover classes that are "transient", such as "recent burn" are likely not appropriate to have "permanent" traits associated with them. This module offers the ability to estimate the parameters for these pixels *as if they were a neighbouring land cover class*. In these two cases, the module can replace these classes with a neighbouring forest type (probabilistically chosen in proportion to its neighbourhood abundance).
+* the user can choose to replace certain land cover classes with others (parameter `LCCClassesToReplaceNN`). For example, in a "Natural Range of Variation" project, urban pixels can be changed to forested. Since the currently available simulation modules do not drive land cover change, species-ecoregion traits will be spatially non-varying. This means that initial land cover classes that are "transient", such as "recent burn" are likely not appropriate to have "permanent" traits associated with them. This module offers the ability to estimate the parameters for these pixels *as if they were a neighbouring land cover class*. In these two cases, the module can replace these classes with a neighbouring forest type (defined by the parameter `forestedLCCClasses` and probabilistically chosen in proportion to its neighbourhood abundance up to a radius of 5 times the pixel resolution).
 
 
 ## Parameterization
 
-LandR-Biomass, like LANDIS-II Biomass Succession, has species-level traits and species-ecoregion level traits. The difference between these is the the species-ecoregion traits can vary spatially. During the steps here, we estimate these traits by *species* X *land cover class* X *ecodistrict* (Canadian, federal definition). This can mean that there are some species-ecoregion traits that are unique at the pixel level as there may be rare combinations of, say, a land cover type, for a given species, in a given ecodistrict.
+LandR-Biomass, like LBSE, has species-level traits (invariant species tratis) and species-ecolocation level traits (spatially varying traits). Ecolocations are defined, by default, as *land cover class* X *ecodistrict* (Canadian, federal definition) combinations, and the traits are estimated by *species* X *ecolocation* combinations. This can mean that there are some species-ecolocation traits that are unique at the pixel level as there may be rare combinations of, say, a land cover type, for a given species, in a given ecodistrict. 
+**Note that `ecolocations` are called `ecoregionGroup`'s across LandR Biomass objects, and species `speciesCode`**. For simplicity, below we refer to these as "ecolocation" and "species", but bear in mind that when passing formulas to the modules LandR object nomenclature will need to be used. 
 
-### Species ecoregion parameters
+### Spatially varying species traits
 
-  - establishment probabilites: species establishment probabilities (or sometimes `SEP` in LANDIS) by ecoregion are empirically estimated using species cover data (converted to presence/absence) and a GLMEM defined as:
-`prob. presence ~ species + (1|ecoregion)`
+* establishment probabilities: species establishment probabilities (or sometimes `SEP` in LANDIS) by ecolocation are empirically estimated using species cover data (converted to presence/absence) using a GLMEM defined as (the equation is a parameter in the module that can be changed by the user):
+  + `prob. presence ~ species + (1|ecolocation)`
 
-  - `maxB` is estimated empirically, using stand age, stand biomass per species, per ecodistrict data and a LMEM defined as:
-`B ~ logAge * speciesCode + cover * speciesCode + (logAge + cover + speciesCode | ecoregionGroup)`
-Because this equation represents a curve whose positive slope is decreasing with age (via `log(age)`), we estimate `maxB` as the expected `B` when `cover = 100` and `logAge = log(longevity)` for a given species in a given `ecoregionGroup` (which is combination of `land cover class` X `ecodistrict`. This equation is a parameter in the module so can be changed by the user.
+* `maxB` is estimated empirically, using stand age, stand biomass per species, per ecolocation data, using an LMEM. Because the following equation represents a curve whose positive slope is decreasing with age (via `log(age)`), we estimate `maxB` as the expected `B` when `cover = 100` and `logAge = log(longevity)` for a given species in a given `ecolocation`. This equation is a parameter in the module that can be changed by the user.
+  + `B ~ logAge * species + cover * species + (logAge + cover + species | ecolocation)`
 
-  - `maxANPP`: is defined as maxB/30 following LANDIS-II. But see below for updates.
-
-### Species parameters
-
-  - `growthcurve` and `mortalityshape` are, at the moment, taken from LANDIS-II parameters. This is changing soon (see "in development" section below)
+* `maxANPP`: is defined as maxB/30 following LANDIS-II. But see below for updates.
 
 All empirically estimated parameters *can* be estimated using data from a larger study area (`studyAreaLarge`) than the one used to run the simulation (`studyArea`), if the user provides such a polygon.
 
-## In development
+### Invariant species traits:
 
-**updating species parameters**
+*  `growthcurve` and `mortalityshape` are by default taken from LANDIS-II parameters. However, they can be estimated from data by using the `Biomass_speciesParameters` module (see below for a brief explanation).
 
+#### Updating species growth/mortality traits `Biomass_speciesParameters`
+Briefly:
 1.	We run ~41,000,000 hypothetical species with full factorial combinations of longevity, ratio of `maxANPP` to `maxBiomass`, `growthcurve`, `mortalityshape`
 
-2.	We take the closest permanent and temporary sample plots in or near the study area and find the hypothetical species in previous step that most closely matches the growth dynamics in the PSPs. This gives us the growthcurve, mortalityshape, and ratio of maximum biomass to maximum ANPP for each species in our study area
+2.	We take the closest permanent and temporary sample plots (PSP) in or near the study area and find the hypothetical species in previous step that most closely matches the growth dynamics in the PSPs. This gives us the `growthcurve`, `mortalityshape`, and ratio of maximum biomass (`maxB`) to maximum ANPP (`maxANPP`) for each species in our study area
 
-3.	We introduce a new parameter, `actualMaxBiomass`. We recognize that `maxB`, as obtained empirically above, cannot be easily reached in simulations because all reasonable values of `growthcurve`, `mortalityshape` and `longevity` prevent the equation from reaching `maxB` (it acts as an asymptote that is never approached). The `actualMaxBiomass` is then obtained by multiplying the empirically estiamted `maxB` by the ratio between the maxBiomass parameter used for the simulations in step 1 (just above) and the maximum simulated biomass actually achieved in the simulations (of point 1).  We use this `actualMaxBiomass` so that the resulting non-linear growth curves will hit the the empirically estimated `maxB`. This adjustment effectively allows the growth equation's "maximum biomass" parameter to actually be the empirically estimated maximum biomass.  
+3.	We introduce a new parameter, `actualMaxBiomass`. We recognize that `maxB`, as obtained empirically above, cannot be easily reached in simulations because all reasonable values of `growthcurve`, `mortalityshape` and `longevity` prevent the equation from reaching `maxB` (it acts as an asymptote that is never approached). The `actualMaxBiomass` is then obtained by multiplying the empirically estimated `maxB` by the ratio between the `maxBiomass` parameter used for the simulations in step 1 and the maximum simulated biomass *actually* achieved in the simulations (of step 1).  We use this `actualMaxBiomass` so that the resulting non-linear growth curves will hit the the empirically estimated `maxB`. This adjustment effectively allows the growth equation's "maximum biomass" parameter to actually be the empirically estimated maximum biomass.  
 
-4.	Species-specific `maxANPP` is estimated by multiplying the empirically estimated maxB (spatial) above and the ratio of the simulated maxANPP parameter (point 1) to the maximum simulated biomass (point 1) at the species level. 
+4.	Species-specific `maxANPP` is estimated by multiplying the empirically estimated `maxB` (spatial) above and the ratio of the simulated `maxANPP` parameter (point 1) to the maximum simulated biomass (step 1) at the species level. 
 
 ## Get the module
 
@@ -134,14 +131,16 @@ if (handDrawMap) {
                                           proj4string = crs(canadaMap))
   }
   Plot(studyAreaLarge, addTo = "canadaMap", col = "red")
+  studyArea <- raster::buffer(studyAreaLarge, buffer = -200) ## make a smaller area within the first
 } else {
-  studyArea <- randomStudyArea(seed = 1234, size = (250^2)*100)
+  studyAreaLarge <- Cache(randomStudyArea, size = 1e8)
+  studyArea <- raster::buffer(studyAreaLarge, buffer = -200)   ## make a smaller area within the first
 }
 
 times <- list(start = 0, end = 10)
 modules <- list("Biomass_borealDataPrep")
-objects <- if (handDrawMap) list("studyAreaLarge" = studyAreaLarge,
-                                 "studyArea" = studyAreaLarge) else list()
+objects <- list("studyAreaLarge" = studyAreaLarge,
+                "studyArea" = studyArea) 
 
 mySim <- simInit(times = times, #params = parameters, 
                  modules = modules, #, "Biomass_core"),
@@ -155,7 +154,6 @@ The `spades` call will only cause one event to occur (the `init` event)
 
 ```{r run-spades}
 simOut <- spades(mySim, debug = TRUE)
-
 ```
 
 # Visualize
@@ -176,7 +174,7 @@ During the `simInit` call, if the user does not provide alternatives for the exp
 
 # Data dependencies
 
-**NOTE:** all raster _inputs_ should be at the scale of `rasterToMatchLarge` and all raster _outputs_ will be at the scale of `rasterToMatch`.
+**NOTE:** all raster _inputs_ should be at the scale of `rasterToMatchLarge`/`studyAreaLarge` and all raster _outputs_ will be at the scale of `rasterToMatch`/`studyArea.`
 
 ## Module parameters
 
@@ -200,9 +198,8 @@ knitr::kable(df_inputs)
 ### Creates Inputs
 
 Most of the inputs will be created automatically, if they are not provided by the user. 
-The automatic creation will work in the boreal forest of Canada.
+The automatic creation will work for western boreal forests of Canada.
 These are zip files and tar files that are available from various Natural Resources Canada web pages. 
-Also, this module gets its Species Traits table from [dcyr/LANDIS-II_IA_generalUseFiles](https://github.com/dcyr/LANDIS-II_IA_generalUseFiles).
 
 ## Outputs
 
