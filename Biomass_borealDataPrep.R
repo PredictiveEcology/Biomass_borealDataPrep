@@ -1120,7 +1120,7 @@ Save <- function(sim) {
   }
 
   if (!suppliedElsewhere("rawBiomassMap", sim) || needRTM) {
-    httr::with_config(config = httr::config(ssl_verifypeer = 0L), { ## TODO: re-enable verify
+    # httr::with_config(config = httr::config(ssl_verifypeer = 0L), { ## TODO: re-enable verify
       #necessary for KNN
       sim$rawBiomassMap <- Cache(prepInputs,
                                  url = extractURL("rawBiomassMap"),
@@ -1135,7 +1135,7 @@ Save <- function(sim) {
                                  overwrite = TRUE,
                                  userTags = c(cacheTags, "rawBiomassMap"),
                                  omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
-    })
+    # })
   }
 
   if (needRTM) {
@@ -1244,7 +1244,7 @@ Save <- function(sim) {
 
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
-    httr::with_config(config = httr::config(ssl_verifypeer = 0L), {
+    # httr::with_config(config = httr::config(ssl_verifypeer = 0L), {
       sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
                                destinationPath = dPath,
                                ageURL = extractURL("standAgeMap"),
@@ -1258,7 +1258,7 @@ Save <- function(sim) {
                                userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
                                omitArgs = c("destinationPath", "targetFile", "overwrite",
                                             "alsoExtract", "userTags"))
-    })
+    # })
   }
   ## Species equivalencies table -------------------------------------------
   if (!suppliedElsewhere("sppEquiv", sim)) {
