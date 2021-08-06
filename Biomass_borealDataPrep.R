@@ -9,7 +9,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("ctb"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.2"),
+  version = list(Biomass_borealDataPrep = "1.5.3"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
@@ -19,9 +19,8 @@ defineModule(sim, list(
                   "rasterVis", "ggplot2",
                   "sp", "sf", "merTools", "SpaDES.tools",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
+                  "PredictiveEcology/LandR@development (>= 1.0.5)",
                   "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
-                  # "achubaty/amc@development (>=0.1.6.9000)", # was only .gc which is just `replicate(10, gc())`
-                  "PredictiveEcology/LandR@development (>=1.0.2.9000)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
@@ -74,7 +73,11 @@ defineModule(sim, list(
                           "('coverModel') probabilities are exported for posterior analyses or not. This may be important",
                           "when models fail to converge or hit singularity (but can still be used to make predictions) and",
                           "the user wants to investigate them further. Can be set to 'none' (no models are exported), 'all'",
-                          "(both are exported), 'biomassModel' or 'coverModel'.")),
+                          "(both are exported), 'biomassModel' or 'coverModel'. BEWARE: because this is intended for posterior",
+                          "model inspection, the models will be exported with data, which may mean very large simList(s)!")),
+    defineParameter("fixModelBiomass", "logical", FALSE, NA, NA,
+                    paste("should modelBiomass be fixed in the case of non-convergence?",
+                          "Only scaling of variables is implemented at this time")),
     defineParameter("forestedLCCClasses", "numeric", c(1:15, 20, 32, 34:35), 0, 39,
                     paste("The classes in the rstLCC layer that are 'treed' and will therefore be run in Biomass_core.",
                           "Defaults to forested classes in LCC2005 map.")),
@@ -191,10 +194,12 @@ defineModule(sim, list(
                  sourceURL = "ftp://ftp.ccrs.nrcan.gc.ca/ad/NLCCLandCover/LandcoverCanada2005_250m/LandCoverOfCanada2005_V1_4.zip"),
     expectsInput("rasterToMatch", "RasterLayer",
                  desc = paste("A raster of the studyArea in the same resolution and projection as rawBiomassMap.",
-                              "This is the scale used for all *outputs* for use in the simulation.")),
+                              "This is the scale used for all *outputs* for use in the simulation.",
+                              "If not supplied will be forced to match the *default* rawBiomassMap.")),
     expectsInput("rasterToMatchLarge", "RasterLayer",
                  desc = paste("A raster of the studyAreaLarge in the same resolution and projection as rawBiomassMap.",
-                              "This is the scale used for all *inputs* for use in the simulation.")),
+                              "This is the scale used for all *inputs* for use in the simulation.",
+                              "If not supplied will be forced to match the *default* rawBiomassMap.")),
     expectsInput("rawBiomassMap", "RasterLayer",
                  desc = paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
                               "Service, National Forest Inventory, kNN-derived total aboveground biomass map",
@@ -258,6 +263,12 @@ defineModule(sim, list(
                                "related to understanding the creation of cohortData")),
     createsOutput("minRelativeB", "data.frame",
                   desc = "define the cut points to classify stand shadeness"),
+    createsOutput("modelCover", "data.frame",
+                  desc = paste("If P(sim)$exportModels is 'all', or 'cover',",
+                               "fitted biomass model, as defined by P(sim)$coverModel")),
+    createsOutput("modelBiomass", "data.frame",
+                  desc = paste("If P(sim)$exportModels is 'all', or 'biomass',",
+                               "fitted biomass model, as defined by P(sim)$biomassModel")),
     createsOutput("rawBiomassMap", "RasterLayer",
                   desc = paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
                                "Service, National Forest Inventory, kNN-derived total aboveground biomass map (in tonnes/ha)",
@@ -728,6 +739,9 @@ createBiomass_coreInputs <- function(sim) {
   #  shrinkage https://www.tjmahr.com/plotting-partial-pooling-in-mixed-effects-models/
   message(blue("Estimating biomass using P(sim)$biomassModel as:\n"),
           magenta(paste0(format(P(sim)$biomassModel, appendLF = FALSE), collapse = "")))
+
+  ## NOTE: we are NOT using logB because the relationship between B~age should be hump-shaped
+  ## (or at least capped at high age values). Ideally, we would want a non-linear model
   modelBiomass <- Cache(
     statsModel,
     modelFn = P(sim)$biomassModel,
@@ -736,11 +750,70 @@ createBiomass_coreInputs <- function(sim) {
     .specialData = cohortDataNo34to36Biomass,
     useCloud = useCloud,
     # useCache = "overwrite",
+    # useCache = FALSE,
     cloudFolderID = sim$cloudFolderID,
     showSimilar = getOption("reproducible.showSimilar", FALSE),
     userTags = c(cacheTags, "modelBiomass", paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
     omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
   )
+
+  ## TODO: the following code should be moved to the model function
+  modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
+  fixModelBiomass <- P(sim)$fixModelBiomass
+  triedControl <- FALSE
+  needRescaleModelB <- FALSE
+  scaledVarsModelB <- NULL
+  cohortDataNo34to36Biomass2 <- copy(cohortDataNo34to36Biomass)
+  modCallChar <- paste(deparse(P(sim)$biomassModel), collapse = "")
+
+  while (length(modMessages) > 0 & fixModelBiomass) {
+    if (any(grepl("Rescale", modMessages)) & !needRescaleModelB) {
+      message(blue("Trying to rescale variables to refit P(sim)$biomassModel"))
+      ## save this in separate objects for later
+      logAge_sc <- scale(cohortDataNo34to36Biomass$logAge)
+      cover_sc <- scale(cohortDataNo34to36Biomass$cover)
+
+      scaledVarsModelB <- list(logAge = logAge_sc, cover = cover_sc)
+      ## remove attributes with as.numeric
+      ## don't change the original data
+      cohortDataNo34to36Biomass2[, `:=`(logAge = as.numeric(logAge_sc),
+                                        cover = as.numeric(cover_sc))]
+      needRescaleModelB <- TRUE
+    } else {
+      message(blue("Trying to refit P(sim)$biomassModel with 'bobyqa' optimizer"))
+      ## redo model call with new optimizer
+      modCallChar <- paste(deparse(P(sim)$biomassModel), collapse = "")
+      if (grepl("lme4::lmer", modCallChar)) {
+        modCallChar <-  sub(")$", ", control = lmerControl(optimizer = 'bobyqa'))", modCallChar)
+      } else if (grepl("lme4::glmer", modCallChar)) {
+        modCallChar <-  sub(")$", ", = glmerControl(optimizer = 'bobyqa'))", modCallChar)
+      } else {
+        message(blue("P(sim)$biomassModel does not call 'lme4::lmer' or 'lme4::glmer' explicitly",
+                     "preventing an attempt to use a different optimizer."))
+      }
+      triedControl <- TRUE
+    }
+    modelBiomass <- Cache(
+      statsModel,
+      modelFn = str2lang(modCallChar),
+      uniqueEcoregionGroups = .sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36Biomass2$ecoregionGroup))),
+      sumResponse = c(totalBiomass, triedControl, needRescaleModelB),
+      .specialData = cohortDataNo34to36Biomass2,
+      useCloud = useCloud,
+      # useCache = "overwrite",
+      # useCache = FALSE,
+      cloudFolderID = sim$cloudFolderID,
+      showSimilar = getOption("reproducible.showSimilar", FALSE),
+      userTags = c(cacheTags, "refit", "modelBiomass", paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
+      omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
+    )
+
+    modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
+
+    ## break out of while, even after trying to rescale and fit with bobyqa
+    if (needRescaleModelB & triedControl)
+      fixModelBiomass <- FALSE
+  }
 
   message(blue("  The rsquared is: "))
   out <- lapply(capture.output(as.data.frame(round(modelBiomass$rsq, 4))), function(x) message(blue(x)))
@@ -748,6 +821,8 @@ createBiomass_coreInputs <- function(sim) {
   if (any(P(sim)$exportModels %in% c("all", "biomassModel")))
     sim$modelBiomass <- modelBiomass
 
+  ## remove logB
+  # cohortDataNo34to36Biomass[, logB := NULL]
   ########################################################################
   # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
   #   doesn't include combinations with B = 0 because those places can't have the species/ecoregion combo
@@ -761,6 +836,8 @@ createBiomass_coreInputs <- function(sim) {
                                            species = sim$species,
                                            modelCover = modelCover,
                                            modelBiomass = modelBiomass,
+                                           needRescaleModelB = needRescaleModelB,
+                                           scaledVarsModelB = scaledVarsModelB,
                                            successionTimestep = P(sim)$successionTimestep,
                                            currentYear = time(sim))
   if (length(P(sim)$LCCClassesToReplaceNN)) {
@@ -1053,9 +1130,6 @@ Save <- function(sim) {
   objExists <- !unlist(lapply(objNames, function(x) is.null(sim[[x]])))
   names(objExists) <- objNames
 
-  # Filenames
-  lcc2005Filename <- file.path(dPath, "LCC2005_V1_4a.tif")
-
   ## Study area(s) ------------------------------------------------
   if (!suppliedElsewhere("studyArea", sim)) {
     stop("Please provide a 'studyArea' polygon")
@@ -1338,16 +1412,4 @@ Save <- function(sim) {
   }
 
   return(invisible(sim))
-}
-
-
-plotFn_speciesEcoregion <- function(stk, SEtype) {
-  ggSpeciesEcoregion <-
-    gplot(stk, maxpixels = 2e6) +
-    geom_tile(aes(fill = value)) +
-    facet_wrap(~ variable) +
-    scale_fill_gradient(low = 'light grey', high = 'blue', na.value = "white") +
-    theme_bw() +
-    coord_equal() +
-    ggtitle(SEtype)
 }
