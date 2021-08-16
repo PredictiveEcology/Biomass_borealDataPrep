@@ -793,6 +793,9 @@ createBiomass_coreInputs <- function(sim) {
       }
       triedControl <- TRUE
     }
+
+    refitTags <- paste(c(if (needRescaleModelB) "rescaled",
+                         if (triedControl) "control"), collapse = "_")
     modelBiomass <- Cache(
       statsModel,
       modelFn = str2lang(modCallChar),
@@ -804,7 +807,8 @@ createBiomass_coreInputs <- function(sim) {
       # useCache = FALSE,
       cloudFolderID = sim$cloudFolderID,
       showSimilar = getOption("reproducible.showSimilar", FALSE),
-      userTags = c(cacheTags, "refit", "modelBiomass", paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
+      userTags = c(cacheTags, "refit", refitTags, "modelBiomass",
+                   paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
       omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
     )
 
