@@ -62,8 +62,6 @@ defineModule(sim, list(
     defineParameter("fitDeciduousCoverDiscount", "logical", FALSE, NA, NA,
                     paste("If TRUE, this will re-estimate deciduousCoverDiscount. This may be unstable and",
                           "is not recommended currently. If FALSE, will use the current default")),
-    ###########################################################################################
-
     defineParameter("ecoregionLayerField", "character", NULL, NA, NA,
                     paste("the name of the field used to distinguish ecoregions, if supplying a polygon.",
                           "Defaults to NULL and tries to use  'ECODISTRIC' where available (for legacy reasons), or the row numbers of",
@@ -77,7 +75,7 @@ defineModule(sim, list(
     defineParameter("fixModelBiomass", "logical", FALSE, NA, NA,
                     paste("should modelBiomass be fixed in the case of non-convergence?",
                           "Only scaling of variables is implemented at this time")),
-    defineParameter("forestedLCCClasses", "numeric", c(1:6), 0, NA,
+    defineParameter("forestedLCCClasses", "numeric", 1:6, 0, NA,
                     paste("The classes in the rstLCC layer that are 'treed' and will therefore be run in Biomass_core.",
                           "Defaults to forested classes in LCC2010 map.")),
     defineParameter("imputeBadAgeModel", "call",
