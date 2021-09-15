@@ -946,13 +946,30 @@ createBiomass_coreInputs <- function(sim) {
 
   # If this module used a fire database to extract better young ages, then we
   #   can use those high quality younger ages to help with our biomass estimates
-  if (length(extractURL("fireURL"))) {
+  if (!(is.null(extractURL("fireURL")) | is.na(extractURL("fireURL")))) {
     # fireURL <- "https://cwfis.cfs.nrcan.gc.ca/downloads/nbac/nbac_1986_to_2019_20200921.zip"
     # This was using the nbac filename to figure out what the earliest year in the
     #   fire dataset was. Since that is not actually used here, it doesn't really
     #   matter what the fire dataset was. Basically, this section is updating
     #   young ages that are way outside of their biomass. Can set this to 1986 to just
     #   give a cutoff
+
+    ## TODO: Ceres: it seems silly to get the fire perimeters twice, but for now this is the only way to know
+    ## where ages were imputed
+    firePerimeters <- Cache(prepInputsFireYear,
+                            destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
+                            studyArea = raster::aggregate(sim$studyArea),
+                            rasterToMatch = sim$rasterToMatch,
+                            overwrite = TRUE,
+                            url = extractURL("fireURL"),
+                            fireField = "YEAR",
+                            fireURL = extractURL("fireURL"),
+                            fun = "sf::st_read",
+                            userTags = c(cacheTags, "firePerimeters"))
+
+    ## TODO: Ceres: 1986 is different from the earliest year (1950) used to impute ages.
+    ## this should be consistent with the earliest year used to impute ages
+
     firstFireYear <- 1986 # as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", fireURL))
     maxAgeHighQualityData <- start(sim) - firstFireYear
     ## if maxAgeHighQualityData is lower than 0, it means it's prior to the first fire Year
@@ -960,6 +977,9 @@ createBiomass_coreInputs <- function(sim) {
     if (!is.na(maxAgeHighQualityData) & maxAgeHighQualityData >= 0) {
       youngRows <- pixelCohortData$age <= maxAgeHighQualityData
       young <- pixelCohortData[youngRows == TRUE]
+
+      pixWFires <- which(!is.na(firePerimeters[young$pixelIndex]))
+      young <- young[pixelIndex %in% pixWFires]
 
       # whYoungBEqZero <- which(young$B == 0)
       whYoungZeroToMaxHighQuality <- which(young$age > 0)
