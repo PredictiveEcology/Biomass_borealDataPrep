@@ -899,35 +899,35 @@ createBiomass_coreInputs <- function(sim) {
     message(blue("Subsetting to studyArea"))
     rasterToMatchLarge <- sim$rasterToMatchLarge
     rasterToMatchLarge <- setValues(rasterToMatchLarge, seq(ncell(rasterToMatchLarge)))
-    rasterToMatchLarge <- Cache(postProcess,
+    rasterToMatchLargeCropped <- Cache(postProcess,
                                 x = rasterToMatchLarge,
                                 rasterToMatch = sim$rasterToMatch,
                                 maskWithRTM = TRUE,
                                 filename2 = NULL,
                                 datatype = assessDataType(rasterToMatchLarge),
                                 #useCache = "overwrite",
-                                userTags = c(cacheTags, "rasterToMatchLarge"),
+                                userTags = c(cacheTags, "rasterToMatchLargeCropped"),
                                 omitArgs = c("userTags"))
 
-    assertthat::assert_that(sum(is.na(getValues(rasterToMatchLarge))) < ncell(rasterToMatchLarge)) ## i.e., not all NA
+    assertthat::assert_that(sum(is.na(getValues(rasterToMatchLargeCropped))) < ncell(rasterToMatchLargeCropped)) ## i.e., not all NA
 
-    if (!compareRaster(rasterToMatchLarge, sim$rasterToMatch, orig = TRUE, stopiffalse = FALSE))
+    if (!compareRaster(rasterToMatchLargeCropped, sim$rasterToMatch, orig = TRUE, stopiffalse = FALSE))
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.",
            "Please debug Biomass_borealDataPrep::createBiomass_coreInputs().")
 
     ## subset pixels that are in studyArea/rasterToMatch only
-    pixToKeep <- na.omit(getValues(rasterToMatchLarge)) # these are the old indices of RTML
+    pixToKeep <- na.omit(getValues(rasterToMatchLargeCropped)) # these are the old indices of RTML
     pixelCohortData <- pixelCohortData[pixelIndex %in% pixToKeep]
 
     ## re-do pixelIndex (it now needs to match rasterToMatch)
-    newPixelIndexDT <- data.table(pixelIndex = getValues(rasterToMatchLarge),
-                                  newPixelIndex = as.integer(1:ncell(rasterToMatchLarge))) %>%
+    newPixelIndexDT <- data.table(pixelIndex = getValues(rasterToMatchLargeCropped),
+                                  newPixelIndex = as.integer(1:ncell(rasterToMatchLargeCropped))) %>%
       na.omit(.)
 
     pixelCohortData <- newPixelIndexDT[pixelCohortData, on = "pixelIndex"]
     pixelCohortData[, pixelIndex := NULL]
     setnames(pixelCohortData, old = "newPixelIndex", new = "pixelIndex")
-    rm(pixToKeep, rasterToMatchLarge)
+    rm(pixToKeep, rasterToMatchLargeCropped)
 
     assertthat::assert_that(NROW(pixelCohortData) > 0)
 
