@@ -520,47 +520,56 @@ createBiomass_coreInputs <- function(sim) {
   if (isTRUE(P(sim)$fitDeciduousCoverDiscount)) {
     message(magenta(paste0(format(P(sim)$coverPctToBiomassPctModel, appendLF = FALSE))))
 
-    pixelCohortData[, lcc := as.factor(lcc)]
+    # pixelCohortData[, lcc := as.factor(lcc)]
+    #
+    # plot.it <- FALSE
+    # sam <- subsetDT(pixelCohortData, by = c("speciesCode", "lcc"),
+    #                 doSubset = P(sim)$subsetDataAgeModel,
+    #                 indices = TRUE)
+    # pi <- unique(pixelCohortData[sam]$pixelIndex)
+    # sam <- which(pixelCohortData$pixelIndex %in% pi)
+    #
+    # system.time({
+    #   out <- optimize(interval = c(0.1, 1), f = coverOptimFn, bm = P(sim)$coverPctToBiomassPctModel,
+    #                   pixelCohortData = pixelCohortData, subset = sam, maximum = FALSE)
+    # })
+    # params(sim)$Biomass_borealDataPrep$deciduousCoverDiscount <- out$minimum
+    #
+    # if (plot.it) {
+    #   cover2BiomassModel <- coverOptimFn(out$minimum, pixelCohortData, P(sim)$subsetDataAgeModel,
+    #                                      P(sim)$coverPctToBiomassPctModel, returnAIC = FALSE)
+    #   sam1 <- sample(NROW(pixelCohortData), 1e5)
+    #   dev()
+    #   par(mfrow = c(1,2))
+    #   plot(predict(cover2BiomassModel$modelBiomass1$mod,
+    #                newdata = cover2BiomassModel$pixelCohortData[sam1]),
+    #        log(cover2BiomassModel$pixelCohortData$B / 100)[sam1], pch = ".")
+    #   abline(a = 0, b = 1)
+    #
+    #   cover2BiomassModel1 <- coverOptimFn(1, pixelCohortData, P(sim)$subsetDataAgeModel,
+    #                                       P(sim)$coverPctToBiomassPctModel,
+    #                                       returnAIC = FALSE)
+    #   dev()
+    #   plot(predict(cover2BiomassModel1$modelBiomass1$mod,
+    #                newdata = cover2BiomassModel1$pixelCohortData[sam1]),
+    #        log(cover2BiomassModel1$pixelCohortData$B / 100)[sam1], pch = ".")
+    #   abline(a = 0, b = 1)
+    #
+    #   pcd <- pixelCohortData
+    #   bb <- pcd[sample(sam)]
+    #   cc <- bb[, cover3 := cover * c(1, out$minimum)[decid + 1]][
+    #     , actualX := cover3 / sum(cover3) / (cover / 100), by = "pixelIndex"]
+    #   setkey(cc, pixelIndex)
+    #   mean(cc[speciesCode == "Popu_Tre"]$actualX)
+    # }
 
-    plot.it <- FALSE
-    sam <- subsetDT(pixelCohortData, by = c("speciesCode", "lcc"),
-                    doSubset = P(sim)$subsetDataAgeModel,
-                    indices = TRUE)
-    pi <- unique(pixelCohortData[sam]$pixelIndex)
-    sam <- which(pixelCohortData$pixelIndex %in% pi)
+    params(sim)$Biomass_borealDataPrep$deciduousCoverDiscount <- Cache(deciduousCoverDiscountFun,
+                                                                       pixelCohortData = pixelCohortData,
+                                                                       coverPctToBiomassPctModel = P(sim)$coverPctToBiomassPctModel,
+                                                                       subsetDataAgeModel = P(sim)$subsetDataAgeModel,
+                                                                       userTags = c(cacheTags, "decidCoverDisc"),
+                                                                       omitArgs = c("userTags"))
 
-    system.time({
-      out <- optimize(interval = c(0.1, 1), f = coverOptimFn, bm = P(sim)$coverPctToBiomassPctModel,
-                      pixelCohortData = pixelCohortData, subset = sam, maximum = FALSE)
-    })
-    params(sim)$Biomass_borealDataPrep$deciduousCoverDiscount <- out$minimum
-    if (plot.it) {
-      cover2BiomassModel <- coverOptimFn(out$minimum, pixelCohortData, P(sim)$subsetDataAgeModel,
-                                         P(sim)$coverPctToBiomassPctModel, returnAIC = FALSE)
-      sam1 <- sample(NROW(pixelCohortData), 1e5)
-      dev()
-      par(mfrow = c(1,2))
-      plot(predict(cover2BiomassModel$modelBiomass1$mod,
-                   newdata = cover2BiomassModel$pixelCohortData[sam1]),
-           log(cover2BiomassModel$pixelCohortData$B / 100)[sam1], pch = ".")
-      abline(a = 0, b = 1)
-
-      cover2BiomassModel1 <- coverOptimFn(1, pixelCohortData, P(sim)$subsetDataAgeModel,
-                                          P(sim)$coverPctToBiomassPctModel,
-                                          returnAIC = FALSE)
-      dev()
-      plot(predict(cover2BiomassModel1$modelBiomass1$mod,
-                   newdata = cover2BiomassModel1$pixelCohortData[sam1]),
-           log(cover2BiomassModel1$pixelCohortData$B / 100)[sam1], pch = ".")
-      abline(a = 0, b = 1)
-
-      pcd <- pixelCohortData
-      bb <- pcd[sample(sam)]
-      cc <- bb[, cover3 := cover * c(1, out$minimum)[decid + 1]][
-        , actualX := cover3 / sum(cover3) / (cover / 100), by = "pixelIndex"]
-      setkey(cc, pixelIndex)
-      mean(cc[speciesCode == "Popu_Tre"]$actualX)
-    }
   } else {
     message(magenta(paste0(format(P(sim)$coverPctToBiomassPctModel, appendLF = FALSE))))
     message(blue("using previously estimated deciduousCoverDiscount:",
