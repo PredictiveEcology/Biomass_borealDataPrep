@@ -77,7 +77,9 @@ Briefly:
 
 ## Get the module
 
-See [SpaDES-modules repository](https://github.com/PredictiveEcology/SpaDES-modules) to see how to download this and other SpaDES modules. Alternatively, it can be forked or cloned from github.com directly.
+See [SpaDES-modules repository](https://github.com/PredictiveEcology/SpaDES-modules) to see how to download this and other SpaDES modules.
+Alternatively, it can be forked or cloned from github.com directly.
+
 # Load libraries
 
 ```{r load-libraries}
