@@ -911,14 +911,14 @@ createBiomass_coreInputs <- function(sim) {
     rasterToMatchLarge <- sim$rasterToMatchLarge
     rasterToMatchLarge <- setValues(rasterToMatchLarge, seq(ncell(rasterToMatchLarge)))
     rasterToMatchLargeCropped <- Cache(postProcess,
-                                x = rasterToMatchLarge,
-                                rasterToMatch = sim$rasterToMatch,
-                                maskWithRTM = TRUE,
-                                filename2 = NULL,
-                                datatype = assessDataType(rasterToMatchLarge),
-                                #useCache = "overwrite",
-                                userTags = c(cacheTags, "rasterToMatchLargeCropped"),
-                                omitArgs = c("userTags"))
+                                       x = rasterToMatchLarge,
+                                       rasterToMatch = sim$rasterToMatch,
+                                       maskWithRTM = TRUE,
+                                       filename2 = NULL,
+                                       datatype = assessDataType(rasterToMatchLarge),
+                                       #useCache = "overwrite",
+                                       userTags = c(cacheTags, "rasterToMatchLargeCropped"),
+                                       omitArgs = c("userTags"))
 
     assertthat::assert_that(sum(is.na(getValues(rasterToMatchLargeCropped))) < ncell(rasterToMatchLargeCropped)) ## i.e., not all NA
 
@@ -938,12 +938,13 @@ createBiomass_coreInputs <- function(sim) {
     pixelCohortData <- newPixelIndexDT[pixelCohortData, on = "pixelIndex"]
     pixelCohortData[, pixelIndex := NULL]
     setnames(pixelCohortData, old = "newPixelIndex", new = "pixelIndex")
-    rm(pixToKeep, rasterToMatchLargeCropped)
 
     assertthat::assert_that(NROW(pixelCohortData) > 0)
 
     ## now convert imputedPixID to RTM
     sim$imputedPixID <- newPixelIndexDT[pixelIndex %in% sim$imputedPixID, newPixelIndex]
+
+    rm(pixToKeep, rasterToMatchLargeCropped, newPixelIndexDT)
     if (ncell(sim$rasterToMatch) > 3e6) replicate(10, gc())
   }
   ## subset ecoregionFiles$ecoregionMap to smaller area.
