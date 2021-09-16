@@ -257,6 +257,11 @@ defineModule(sim, list(
                   desc = "ecoregion look up table"),
     createsOutput("ecoregionMap", "RasterLayer",
                   desc = "ecoregion map that has mapcodes match ecoregion table and speciesEcoregion table"),
+    createsOutput("imputedPixID", "integer",
+                  desc = paste("A vector of pixel IDs - matching rasterMatch IDs - that suffered data imputation.",
+                               "Data imputation may be in age (to match last fire event post 1950s, or 0 cover), biomass (to match",
+                               "fire-related imputed ages, correct for missing values or for 0 age/cover), land cover (to convert",
+                               "non-forested classes into to nearest forested class)")),
     createsOutput("pixelGroupMap", "RasterLayer",
                   desc = "initial community map that has mapcodes match initial community table"),
     createsOutput("pixelFateDT", "data.table",
@@ -500,15 +505,17 @@ createBiomass_coreInputs <- function(sim) {
   # Make the initial pixelCohortData table
   #######################################################
   coverColNames <- paste0("cover.", sim$species$species)
-  pixelCohortData <- Cache(makeAndCleanInitialCohortData, pixelTable,
-                           sppColumns = coverColNames,
-                           imputeBadAgeModel = P(sim)$imputeBadAgeModel,
-                           #pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
-                           #pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
-                           minCoverThreshold = P(sim)$minCoverThreshold,
-                           doSubset = P(sim)$subsetDataAgeModel,
-                           userTags = c(cacheTags, "pixelCohortData"),
-                           omitArgs = c("userTags"))
+  out <- Cache(makeAndCleanInitialCohortData, pixelTable,
+               sppColumns = coverColNames,
+               imputeBadAgeModel = P(sim)$imputeBadAgeModel,
+               #pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
+               #pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
+               minCoverThreshold = P(sim)$minCoverThreshold,
+               doSubset = P(sim)$subsetDataAgeModel,
+               userTags = c(cacheTags, "pixelCohortData"),
+               omitArgs = c("userTags"))
+  pixelCohortData <- out$cohortData
+  sim$imputedPixID <- unique(c(sim$imputedPixID, out$imputedPixID))
   pixelFateDT <- pixelFate(pixelFateDT, "makeAndCleanInitialCohortData rm cover < minThreshold",
                            tail(pixelFateDT$runningPixelTotal, 1) -
                              NROW(unique(pixelCohortData$pixelIndex)))
@@ -630,6 +637,7 @@ createBiomass_coreInputs <- function(sim) {
     newLCCClasses <- data.table(pixelIndex = numeric(), ecoregionGroup = numeric())
   }
 
+  sim$imputedPixID <- unique(c(sim$imputedPixID, newLCCClasses$pixelIndex))
   ## split pixelCohortData into 2 parts -- one with the former 34:36 pixels, one without
   #    The one without 34:36 can be used for statistical estimation, but not the one with
   cohortData34to36 <- pixelCohortData[pixelIndex %in% newLCCClasses$pixelIndex]
@@ -932,6 +940,8 @@ createBiomass_coreInputs <- function(sim) {
 
     assertthat::assert_that(NROW(pixelCohortData) > 0)
 
+    ## now convert imputedPixID to RTM
+    sim$imputedPixID <- newPixelIndexDT[pixelIndex %in% sim$imputedPixID, newPixelIndex]
     if (ncell(sim$rasterToMatch) > 3e6) replicate(10, gc())
   }
   ## subset ecoregionFiles$ecoregionMap to smaller area.
@@ -999,6 +1009,8 @@ createBiomass_coreInputs <- function(sim) {
 
       }
       pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE], young), use.names = TRUE)
+
+      sim$imputedPixID <- unique(c(sim$imputedPixID, young$pixelIndex))
     } else {
       ## return maxAgeHighQualityData to -1
       maxAgeHighQualityData <- -1
@@ -1011,6 +1023,7 @@ createBiomass_coreInputs <- function(sim) {
     message(blue(" -- ", sum(theNAsBiomass),"cohort(s) has NA for Biomass: being replaced with model-derived estimates"))
     set(pixelCohortData, which(theNAsBiomass), "B",
         asInteger(predict(modelBiomass$mod, newdata = pixelCohortData[theNAsBiomass])))
+    sim$imputedPixID <- unique(c(sim$imputedPixID, pixelCohortData[theNAsBiomass, pixelIndex]))
   }
 
   ## make cohortDataFiles: pixelCohortData (rm unnecessary cols, subset pixels with B>0,
@@ -1031,6 +1044,7 @@ createBiomass_coreInputs <- function(sim) {
     assert2(pixelCohortData, classesToReplace = P(sim)$LCCClassesToReplaceNN)
     assert2(sim$cohortData, classesToReplace = P(sim)$LCCClassesToReplaceNN)
   }
+
   ## make a table of available active and inactive (no biomass) ecoregions
   sim$ecoregion <- makeEcoregionDT(pixelCohortData, speciesEcoregion)
 
@@ -1353,19 +1367,21 @@ Save <- function(sim) {
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
     # httr::with_config(config = httr::config(ssl_verifypeer = 0L), {
-    sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
-                             destinationPath = dPath,
-                             ageURL = extractURL("standAgeMap"),
-                             studyArea = raster::aggregate(sim$studyAreaLarge),
-                             rasterToMatch = sim$rasterToMatchLarge,
-                             filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
-                             overwrite = TRUE,
+    out <- Cache(LandR::prepInputsStandAgeMap,
+                 destinationPath = dPath,
+                 ageURL = extractURL("standAgeMap"),
+                 studyArea = raster::aggregate(sim$studyAreaLarge),
+                 rasterToMatch = sim$rasterToMatchLarge,
+                 filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
+                 overwrite = TRUE,
                  fireURL = P(sim)$fireURL,
-                             fireField = "YEAR",
-                             startTime = start(sim),
-                             userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
-                             omitArgs = c("destinationPath", "targetFile", "overwrite",
-                                          "alsoExtract", "userTags"))
+                 fireField = "YEAR",
+                 startTime = start(sim),
+                 userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
+                 omitArgs = c("destinationPath", "targetFile", "overwrite",
+                              "alsoExtract", "userTags"))
+    sim$standAgeMap <- out$standAgeMap
+    sim$imputedPixID <- out$imputedPixID
     # })
   }
   ## Species equivalencies table -------------------------------------------
