@@ -120,6 +120,8 @@ defineModule(sim, list(
                     "When assigning pixelGroup membership, this defines the resolution of ages that will be considered 'the same pixelGroup', e.g., if it is 10, then 6 and 14 will be the same"),
     defineParameter("pixelGroupBiomassClass", "numeric", 100, NA, NA,
                     "When assigning pixelGroup membership, this defines the resolution of biomass that will be considered 'the same pixelGroup', e.g., if it is 100, then 5160 and 5240 will be the same"),
+    defineParameter("rmImputedPix", "logical", FALSE, NA, NA,
+                    "Should sim$imputedPixID be removed from the simulation?"),
     defineParameter("speciesUpdateFunction", "list",
                     list(quote(LandR::speciesTableUpdate(sim$species, sim$speciesTable, sim$sppEquiv, P(sim)$sppEquivCol))),
                     NA, NA,
@@ -1028,10 +1030,15 @@ createBiomass_coreInputs <- function(sim) {
 
   ## make cohortDataFiles: pixelCohortData (rm unnecessary cols, subset pixels with B>0,
   ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
-  cohortDataFiles <- Cache(makeCohortDataFiles, pixelCohortData, columnsForPixelGroups, speciesEcoregion,
+  cohortDataFiles <- Cache(makeCohortDataFiles,
+                           pixelCohortData = pixelCohortData,
+                           columnsForPixelGroups = sim$columnsForPixelGroups,
+                           speciesEcoregion = speciesEcoregion,
                            pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
                            pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
                            minAgeForGrouping = maxAgeHighQualityData,
+                           rmImputedPix = P(sim)$rmImputedPix,
+                           imputedPixID = sim$imputedPixID,
                            pixelFateDT = pixelFateDT)
 
   sim$cohortData <- cohortDataFiles$cohortData
