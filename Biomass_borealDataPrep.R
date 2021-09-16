@@ -19,7 +19,7 @@ defineModule(sim, list(
                   "rasterVis", "ggplot2",
                   "sp", "sf", "merTools", "SpaDES.tools",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.5)",
+                  "CeresBarros/LandR@ageBimputationFixes (>= 1.0.6)",
                   "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
