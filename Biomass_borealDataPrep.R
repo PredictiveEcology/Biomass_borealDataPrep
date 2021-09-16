@@ -75,6 +75,13 @@ defineModule(sim, list(
                           "the user wants to investigate them further. Can be set to 'none' (no models are exported), 'all'",
                           "(both are exported), 'biomassModel' or 'coverModel'. BEWARE: because this is intended for posterior",
                           "model inspection, the models will be exported with data, which may mean very large simList(s)!")),
+    defineParameter("fireURL", "character", "https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip",
+                    desc = paste("A url to a fire database, such as the Canadian National Fire Database,",
+                                 "that is a zipped shapefile with fire polygons, an attribute (i.e., a column) named 'Year'.",
+                                 "If supplied (omitted with NULL or NA), this will be used to 'update' age pixels on standAgeMap",
+                                 "with 'time since fire' as derived from this fire polygons map. Biomass is also updated in these pixels,",
+                                 "when the last fire is more recent than 1986. If NULL or NAm, no age and biomass imputation will be done",
+                                 "in these pixels.")),
     defineParameter("fixModelBiomass", "logical", FALSE, NA, NA,
                     paste("should modelBiomass be fixed in the case of non-convergence?",
                           "Only scaling of variables is implemented at this time")),
@@ -174,12 +181,6 @@ defineModule(sim, list(
                               "It will be overlaid with landcover to generate classes for every ecoregion/LCC combination.",
                               "It must have same extent and crs as rasterToMatchLarge if suppplied by user - use reproducible::postProcess.",
                               "If it uses an attribute table, it must contain the field 'ecoregion' to represent raster values")),
-    expectsInput("fireURL", "character",
-                 desc = paste("A url to a fire database, such as the Canadian National Fire Database,",
-                              "that is a zipped shapefile with fire polygons, an attribute (i.e., a column) named 'Year'.",
-                              "If supplied (omitted with NULL or NA), this will be used to 'update' age pixels on standAgeMap",
-                              "with 'time since fire' as derived from this fire polygons map"),
-                 sourceURL = "https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip"),
     expectsInput("rstLCC", "RasterLayer",
                  desc = paste("A land classification map in study area. It must be 'corrected', in the sense that:\n",
                               "1) Every class must not conflict with any other map in this module\n",
@@ -946,7 +947,7 @@ createBiomass_coreInputs <- function(sim) {
 
   # If this module used a fire database to extract better young ages, then we
   #   can use those high quality younger ages to help with our biomass estimates
-  if (!(is.null(extractURL("fireURL")) | is.na(extractURL("fireURL")))) {
+  if (!(is.null(P(sim)$fireURL) | is.na(P(sim)$fireURL))) {
     # fireURL <- "https://cwfis.cfs.nrcan.gc.ca/downloads/nbac/nbac_1986_to_2019_20200921.zip"
     # This was using the nbac filename to figure out what the earliest year in the
     #   fire dataset was. Since that is not actually used here, it doesn't really
@@ -961,9 +962,9 @@ createBiomass_coreInputs <- function(sim) {
                             studyArea = raster::aggregate(sim$studyArea),
                             rasterToMatch = sim$rasterToMatch,
                             overwrite = TRUE,
-                            url = extractURL("fireURL"),
+                            url = P(sim)$fireURL,
                             fireField = "YEAR",
-                            fireURL = extractURL("fireURL"),
+                            fireURL = P(sim)$fireURL,
                             fun = "sf::st_read",
                             userTags = c(cacheTags, "firePerimeters"))
 
@@ -1359,7 +1360,7 @@ Save <- function(sim) {
                              rasterToMatch = sim$rasterToMatchLarge,
                              filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
-                             fireURL = extractURL("fireURL"),
+                 fireURL = P(sim)$fireURL,
                              fireField = "YEAR",
                              startTime = start(sim),
                              userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
