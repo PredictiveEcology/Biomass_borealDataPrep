@@ -1464,28 +1464,16 @@ Save <- function(sim) {
   ## Species raster layers -------------------------------------------
   if (!suppliedElsewhere("speciesLayers", sim)) {
     #opts <- options(reproducible.useCache = "overwrite")
-    if (P(sim)$dataYear == 2001) {
-      speciesURL <- extractURL("speciesLayers")
-    } else {
-      if (P(sim)$dataYear == 2011) {
-        speciesURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
-                             "canada-forests-attributes_attributs-forests-canada/2011-attributes_attributs-2011/")
-      } else {
-        stop("'P(sim)$dataYear' must be 2001 OR 2011")
-      }
-    }
-
-    sim$speciesLayers <- Cache(loadkNNSpeciesLayers,
-                               dPath = dPath,
+    sim$speciesLayers <- Cache(prepSpeciesLayers_KNN,
+                               destinationPath = dPath, # this is generic files (preProcess)
+                               outputPath = dPath,
+                               studyArea = sim$studyAreaLarge,
+                               studyAreaName = P(sim)$.studyAreaName,
                                rasterToMatch = sim$rasterToMatchLarge,
-                               # rasterToMatch = sim$rasterToMatch,
-                               studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                                sppEquiv = sim$sppEquiv,
-                               knnNamesCol = "KNN",
-                               sppNameVector = sim$sppNameVector,
                                sppEquivCol = P(sim)$sppEquivCol,
                                thresh = 10,
-                               url = speciesURL,
+                               year = P(sim)$dataYear,
                                userTags = c(cacheTags, "speciesLayers"),
                                omitArgs = c("userTags"))
 
