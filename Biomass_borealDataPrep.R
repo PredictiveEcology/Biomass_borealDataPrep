@@ -62,7 +62,7 @@ defineModule(sim, list(
                     paste("If TRUE, this will re-estimate deciduousCoverDiscount. This may be unstable and",
                           "is not recommended currently. If FALSE, will use the current default")),
     ## -------------------------------------------------------------------------------------------
-    defineParameter("dataYear", "numeric", 2001, 2001, 2011,
+    defineParameter("dataYear", "numeric", 2001, NA, NA,
                     paste("Used to override the default 'sourceURL' of KNN datasets (species cover, stand biomass",
                           "and stand age), which point to 2001 data, to fetch KNN data for another year. Currently,",
                           "the only other possible year is 2011.")),
