@@ -44,8 +44,7 @@ defineModule(sim, list(
                     paste("Model and formula used for estimating cover from ecoregion and speciesCode",
                           "and potentially others. Defaults to a GLMEM if there are > 1 grouping levels.",
                           "A custom model call can also be provided, as long as the 'data' argument is NOT included")),
-
-    # deciduous cover to biomass cover section ################################################
+    ## deciduous cover to biomass cover section ------------------------------------------------
     defineParameter("coverPctToBiomassPctModel", "call",
                     quote(glm(I(log(B/100)) ~ logAge * I(log(totalBiomass/100)) * speciesCode * lcc)),
                     NA, NA,
@@ -62,6 +61,7 @@ defineModule(sim, list(
     defineParameter("fitDeciduousCoverDiscount", "logical", FALSE, NA, NA,
                     paste("If TRUE, this will re-estimate deciduousCoverDiscount. This may be unstable and",
                           "is not recommended currently. If FALSE, will use the current default")),
+    ## -------------------------------------------------------------------------------------------
     defineParameter("dataYear", "numeric", 2001, 2001, 2011,
                     paste("Used to override the default 'sourceURL' of KNN datasets (species cover, stand biomass",
                           "and stand age), which point to 2001 data, to fetch KNN data for another year. Currently,",
