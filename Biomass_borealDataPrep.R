@@ -394,6 +394,9 @@ createBiomass_coreInputs <- function(sim) {
             Please check the species list and traits table")
   }
 
+  ## filter table in case sppEquiv has more species tahn those being modelled
+  sim$species <- sim$species[species %in% names(sim$speciesLayers)]
+
   ### make table of light shade tolerance  #######################
   ## D. Cyr's version: seems to exacerbate no. of cohorts in our simulations
   ## https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/biomass-succession-main-inputs_BSW_Baseline.txt%7E
