@@ -1377,21 +1377,21 @@ Save <- function(sim) {
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
     # httr::with_config(config = httr::config(ssl_verifypeer = 0L), {
-    out <- Cache(LandR::prepInputsStandAgeMap,
-                 destinationPath = dPath,
-                 ageURL = extractURL("standAgeMap"),
-                 studyArea = raster::aggregate(sim$studyAreaLarge),
-                 rasterToMatch = sim$rasterToMatchLarge,
-                 filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
-                 overwrite = TRUE,
-                 fireURL = P(sim)$fireURL,
-                 fireField = "YEAR",
-                 startTime = start(sim),
-                 userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
-                 omitArgs = c("destinationPath", "targetFile", "overwrite",
-                              "alsoExtract", "userTags"))
-    sim$standAgeMap <- out$standAgeMap
-    sim$imputedPixID <- out$imputedPixID
+    sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
+                             destinationPath = dPath,
+                             ageURL = extractURL("standAgeMap"),
+                             studyArea = raster::aggregate(sim$studyAreaLarge),
+                             rasterToMatch = sim$rasterToMatchLarge,
+                             filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
+                             overwrite = TRUE,
+                             fireURL = P(sim)$fireURL,
+                             fireField = "YEAR",
+                             startTime = start(sim),
+                             userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
+                             omitArgs = c("destinationPath", "targetFile", "overwrite",
+                                          "alsoExtract", "userTags"))
+    LandR::assertStandAgeMapAttr(sim$standAgeMap)
+    sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
     # })
   }
   ## Species equivalencies table -------------------------------------------
