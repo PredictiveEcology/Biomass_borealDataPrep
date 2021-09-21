@@ -512,17 +512,18 @@ createBiomass_coreInputs <- function(sim) {
   # Make the initial pixelCohortData table
   #######################################################
   coverColNames <- paste0("cover.", sim$species$species)
-  out <- Cache(makeAndCleanInitialCohortData, pixelTable,
-               sppColumns = coverColNames,
-               imputeBadAgeModel = P(sim)$imputeBadAgeModel,
-               #pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
-               #pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
-               minCoverThreshold = P(sim)$minCoverThreshold,
-               doSubset = P(sim)$subsetDataAgeModel,
-               userTags = c(cacheTags, "pixelCohortData"),
-               omitArgs = c("userTags"))
-  pixelCohortData <- out$cohortData
-  sim$imputedPixID <- unique(c(sim$imputedPixID, out$imputedPixID))
+  pixelCohortData <- Cache(makeAndCleanInitialCohortData, pixelTable,
+                           sppColumns = coverColNames,
+                           imputeBadAgeModel = P(sim)$imputeBadAgeModel,
+                           #pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
+                           #pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
+                           minCoverThreshold = P(sim)$minCoverThreshold,
+                           doSubset = P(sim)$subsetDataAgeModel,
+                           userTags = c(cacheTags, "pixelCohortData"),
+                           omitArgs = c("userTags"))
+  assertCohortDataAttr(pixelCohortData)
+
+  sim$imputedPixID <- unique(c(sim$imputedPixID, attr(pixelCohortData, "imputedPixID")))
   pixelFateDT <- pixelFate(pixelFateDT, "makeAndCleanInitialCohortData rm cover < minThreshold",
                            tail(pixelFateDT$runningPixelTotal, 1) -
                              NROW(unique(pixelCohortData$pixelIndex)))
@@ -1403,22 +1404,21 @@ Save <- function(sim) {
         stop("'P(sim)$dataYear' must be 2001 OR 2011")
       }
     }
-
-    out <- Cache(LandR::prepInputsStandAgeMap,
-                 destinationPath = dPath,
-                 ageURL = ageURL,
-                 studyArea = raster::aggregate(sim$studyAreaLarge),
-                 rasterToMatch = sim$rasterToMatchLarge,
-                 filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
-                 overwrite = TRUE,
-                 fireURL = P(sim)$fireURL,
-                 fireField = "YEAR",
-                 startTime = start(sim),
-                 userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
-                 omitArgs = c("destinationPath", "targetFile", "overwrite",
-                              "alsoExtract", "userTags"))
-    sim$standAgeMap <- out$standAgeMap
-    sim$imputedPixID <- out$imputedPixID
+    sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
+                             destinationPath = dPath,
+                             ageURL = extractURL("standAgeMap"),
+                             studyArea = raster::aggregate(sim$studyAreaLarge),
+                             rasterToMatch = sim$rasterToMatchLarge,
+                             filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
+                             overwrite = TRUE,
+                             fireURL = P(sim)$fireURL,
+                             fireField = "YEAR",
+                             startTime = start(sim),
+                             userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
+                             omitArgs = c("destinationPath", "targetFile", "overwrite",
+                                          "alsoExtract", "userTags"))
+    LandR::assertStandAgeMapAttr(sim$standAgeMap)
+    sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
     # })
   }
   ## Species equivalencies table -------------------------------------------
