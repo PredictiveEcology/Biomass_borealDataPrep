@@ -508,17 +508,18 @@ createBiomass_coreInputs <- function(sim) {
   # Make the initial pixelCohortData table
   #######################################################
   coverColNames <- paste0("cover.", sim$species$species)
-  out <- Cache(makeAndCleanInitialCohortData, pixelTable,
-               sppColumns = coverColNames,
-               imputeBadAgeModel = P(sim)$imputeBadAgeModel,
-               #pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
-               #pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
-               minCoverThreshold = P(sim)$minCoverThreshold,
-               doSubset = P(sim)$subsetDataAgeModel,
-               userTags = c(cacheTags, "pixelCohortData"),
-               omitArgs = c("userTags"))
-  pixelCohortData <- out$cohortData
-  sim$imputedPixID <- unique(c(sim$imputedPixID, out$imputedPixID))
+  pixelCohortData <- Cache(makeAndCleanInitialCohortData, pixelTable,
+                           sppColumns = coverColNames,
+                           imputeBadAgeModel = P(sim)$imputeBadAgeModel,
+                           #pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
+                           #pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
+                           minCoverThreshold = P(sim)$minCoverThreshold,
+                           doSubset = P(sim)$subsetDataAgeModel,
+                           userTags = c(cacheTags, "pixelCohortData"),
+                           omitArgs = c("userTags"))
+  assertCohortDataAttr(pixelCohortData)
+
+  sim$imputedPixID <- unique(c(sim$imputedPixID, attr(pixelCohortData, "imputedPixID")))
   pixelFateDT <- pixelFate(pixelFateDT, "makeAndCleanInitialCohortData rm cover < minThreshold",
                            tail(pixelFateDT$runningPixelTotal, 1) -
                              NROW(unique(pixelCohortData$pixelIndex)))
