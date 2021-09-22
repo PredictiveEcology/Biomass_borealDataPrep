@@ -1406,7 +1406,7 @@ Save <- function(sim) {
     }
     sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
                              destinationPath = dPath,
-                             ageURL = extractURL("standAgeMap"),
+                             ageURL = ageURL,
                              studyArea = raster::aggregate(sim$studyAreaLarge),
                              rasterToMatch = sim$rasterToMatchLarge,
                              filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
