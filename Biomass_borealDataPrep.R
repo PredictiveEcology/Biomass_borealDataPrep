@@ -999,8 +999,7 @@ createBiomass_coreInputs <- function(sim) {
       youngRows <- pixelCohortData$age <= maxAgeHighQualityData
       young <- pixelCohortData[youngRows == TRUE]
 
-      pixWFires <- which(!is.na(firePerimeters[young$pixelIndex]))
-      young <- young[pixelIndex %in% pixWFires]
+      young <- young[which(!is.na(firePerimeters[young$pixelIndex]))]
 
       # whYoungBEqZero <- which(young$B == 0)
       whYoungZeroToMaxHighQuality <- which(young$age > 0)
@@ -1016,7 +1015,6 @@ createBiomass_coreInputs <- function(sim) {
         set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
 
         young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
-
       }
       pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE], young), use.names = TRUE)
 
