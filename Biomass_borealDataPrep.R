@@ -9,7 +9,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("ctb"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.3"),
+  version = list(Biomass_borealDataPrep = "1.5.3.9000"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
@@ -19,7 +19,7 @@ defineModule(sim, list(
                   "rasterVis", "ggplot2",
                   "sp", "sf", "merTools", "SpaDES.tools",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "CeresBarros/LandR@ageBimputationFixes (>= 1.0.6)",
+                  "PredictiveEcology/LandR@development (>= 1.0.6)",
                   "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
@@ -44,8 +44,7 @@ defineModule(sim, list(
                     paste("Model and formula used for estimating cover from ecoregion and speciesCode",
                           "and potentially others. Defaults to a GLMEM if there are > 1 grouping levels.",
                           "A custom model call can also be provided, as long as the 'data' argument is NOT included")),
-
-    # deciduous cover to biomass cover section ################################################
+    ## deciduous cover to biomass cover section ------------------------------------------------
     defineParameter("coverPctToBiomassPctModel", "call",
                     quote(glm(I(log(B/100)) ~ logAge * I(log(totalBiomass/100)) * speciesCode * lcc)),
                     NA, NA,
@@ -62,6 +61,11 @@ defineModule(sim, list(
     defineParameter("fitDeciduousCoverDiscount", "logical", FALSE, NA, NA,
                     paste("If TRUE, this will re-estimate deciduousCoverDiscount. This may be unstable and",
                           "is not recommended currently. If FALSE, will use the current default")),
+    ## -------------------------------------------------------------------------------------------
+    defineParameter("dataYear", "numeric", 2001, NA, NA,
+                    paste("Used to override the default 'sourceURL' of KNN datasets (species cover, stand biomass",
+                          "and stand age), which point to 2001 data, to fetch KNN data for another year. Currently,",
+                          "the only other possible year is 2011.")),
     defineParameter("ecoregionLayerField", "character", NULL, NA, NA,
                     paste("the name of the field used to distinguish ecoregions, if supplying a polygon.",
                           "Defaults to NULL and tries to use  'ECODISTRIC' where available (for legacy reasons), or the row numbers of",
@@ -204,8 +208,9 @@ defineModule(sim, list(
     expectsInput("rawBiomassMap", "RasterLayer",
                  desc = paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
                               "Service, National Forest Inventory, kNN-derived total aboveground biomass map",
-                              "from 2001 (in tonnes/ha). If necessary, biomass values are rescaled to match changes in resolution.",
-                              "See https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990",
+                              "from 2001 (in tonnes/ha), unless 'dataYear' != 2001. If necessary, biomass values",
+                              "are rescaled to match changes in resolution. See",
+                              "https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990",
                               "for metadata."),
                  sourceURL = paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
                                     "canada-forests-attributes_attributs-forests-canada/",
@@ -232,8 +237,8 @@ defineModule(sim, list(
     expectsInput("standAgeMap", "RasterLayer",
                  desc =  paste("stand age map in study area.",
                                "Defaults to the Canadian Forestry Service, National Forest Inventory,",
-                               "kNN-derived biomass map from 2001 -",
-                               "see https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata"),
+                               "kNN-derived biomass map from 2001, unless 'dataYear' != 2001.",
+                               "See https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata"),
                  sourceURL = paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
                                     "canada-forests-attributes_attributs-forests-canada/",
                                     "2001-attributes_attributs-2001/",
@@ -1254,8 +1259,19 @@ Save <- function(sim) {
   if (!suppliedElsewhere("rawBiomassMap", sim) || needRTM) {
     # httr::with_config(config = httr::config(ssl_verifypeer = 0L), { ## TODO: re-enable verify
     #necessary for KNN
+    if (P(sim)$dataYear == 2001) {
+      biomassURL <- extractURL("rawBiomassMap")
+    } else {
+      if (P(sim)$dataYear == 2011) {
+        biomassURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
+                             "canada-forests-attributes_attributs-forests-canada/2011-attributes_attributs-2011/",
+                             "NFI_MODIS250m_2011_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif")
+      } else {
+        stop("'P(sim)$dataYear' must be 2001 OR 2011")
+      }
+    }
     sim$rawBiomassMap <- Cache(prepInputs,
-                               url = extractURL("rawBiomassMap"),
+                               url = biomassURL,
                                destinationPath = dPath,
                                studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                                rasterToMatch = if (!needRTM) sim$rasterToMatchLarge else NULL,
@@ -1378,9 +1394,20 @@ Save <- function(sim) {
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
     # httr::with_config(config = httr::config(ssl_verifypeer = 0L), {
+    if (P(sim)$dataYear == 2001) {
+      ageURL <- extractURL("standAgeMap")
+    } else {
+      if (P(sim)$dataYear == 2011) {
+        ageURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
+                         "canada-forests-attributes_attributs-forests-canada/2011-attributes_attributs-2011/",
+                         "NFI_MODIS250m_2011_kNN_Structure_Stand_Age_v1.tif")
+      } else {
+        stop("'P(sim)$dataYear' must be 2001 OR 2011")
+      }
+    }
     sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
                              destinationPath = dPath,
-                             ageURL = extractURL("standAgeMap"),
+                             ageURL = ageURL,
                              studyArea = raster::aggregate(sim$studyAreaLarge),
                              rasterToMatch = sim$rasterToMatchLarge,
                              filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
@@ -1441,17 +1468,16 @@ Save <- function(sim) {
   ## Species raster layers -------------------------------------------
   if (!suppliedElsewhere("speciesLayers", sim)) {
     #opts <- options(reproducible.useCache = "overwrite")
-    sim$speciesLayers <- Cache(loadkNNSpeciesLayers,
-                               dPath = dPath,
+    sim$speciesLayers <- Cache(prepSpeciesLayers_KNN,
+                               destinationPath = dPath, # this is generic files (preProcess)
+                               outputPath = dPath,
+                               studyArea = sim$studyAreaLarge,
+                               studyAreaName = P(sim)$.studyAreaName,
                                rasterToMatch = sim$rasterToMatchLarge,
-                               # rasterToMatch = sim$rasterToMatch,
-                               studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                                sppEquiv = sim$sppEquiv,
-                               knnNamesCol = "KNN",
-                               sppNameVector = sim$sppNameVector,
                                sppEquivCol = P(sim)$sppEquivCol,
                                thresh = 10,
-                               url = extractURL("speciesLayers"),
+                               year = P(sim)$dataYear,
                                userTags = c(cacheTags, "speciesLayers"),
                                omitArgs = c("userTags"))
 
