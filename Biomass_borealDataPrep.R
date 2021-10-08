@@ -15,9 +15,8 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
-  reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize", "plyr", "raster",
-                  "rasterVis", "ggplot2",
-                  "sp", "sf", "merTools", "SpaDES.tools",
+  reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2", "merTools",
+                  "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
                   "PredictiveEcology/LandR@development (>= 1.0.6)",
                   "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
@@ -1331,7 +1330,7 @@ Save <- function(sim) {
   ## if using custom raster resolution, need to allocate biomass proportionally to each pixel
   ## if no rawBiomassMap/RTM/RTMLarge were suppliedElsewhere, the "original" pixel size respects
   ## whatever resolution comes with the rawBiomassMap data
-  simPixelSize <- unique(asInteger(res(sim$rasterToMatchLarge)))
+  simPixelSize <- unique(asInteger(raster::res(sim$rasterToMatchLarge)))
   origPixelSize <- 250L # unique(res(sim$rawBiomassMap)) ## TODO: figure out a good way to not hardcode this
 
   if (simPixelSize != origPixelSize) { ## make sure we are comparing integers, else else %!=%
