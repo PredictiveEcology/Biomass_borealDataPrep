@@ -15,9 +15,8 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
-  reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize", "plyr", "raster",
-                  "rasterVis", "ggplot2",
-                  "sp", "sf", "merTools", "SpaDES.tools",
+  reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2", "merTools",
+                  "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
                   "PredictiveEcology/LandR@development (>= 1.0.6)",
                   "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
@@ -177,7 +176,7 @@ defineModule(sim, list(
                               "It will be overlaid with landcover to generate classes for every ecoregion/LCC combination.",
                               "It must have same extent and crs as studyAreaLarge if suppplied by user.",
                               "It is superseded by sim$ecoregionRst if that object is supplied by the user"),
-                 sourceURL = "http://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip"),
+                 sourceURL = "https://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip"),
     expectsInput("ecoregionRst", "RasterLayer",
                  desc = paste("A raster that characterizes the unique ecological regions used to",
                               "parameterize the biomass, cover, and species establishment probability models.",
@@ -435,17 +434,17 @@ createBiomass_coreInputs <- function(sim) {
   ################################################################
   ## initialEcoregionMap
   ################################################################
-  if (!compareCRS(crs(sim$studyArea), crs(sim$rasterToMatch))) {
+  if (!compareCRS(raster::crs(sim$studyArea), raster::crs(sim$rasterToMatch))) {
     warning(paste0("studyArea and rasterToMatch projections differ.\n",
                    "studyArea will be projected to match rasterToMatch"))
-    sim$studyArea <- spTransform(sim$studyArea, crs(sim$rasterToMatch))
+    sim$studyArea <- spTransform(sim$studyArea, raster::crs(sim$rasterToMatch))
     sim$studyArea <- fixErrors(sim$studyArea)
   }
 
-  if (!compareCRS(crs(sim$studyAreaLarge), crs(sim$rasterToMatchLarge))) {
+  if (!compareCRS(raster::crs(sim$studyAreaLarge), raster::crs(sim$rasterToMatchLarge))) {
     warning(paste0("studyAreaLarge and rasterToMatchLarge projections differ.\n",
                    "studyAreaLarge will be projected to match rasterToMatchLarge"))
-    sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crs(sim$rasterToMatchLarge))
+    sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, raster::crs(sim$rasterToMatchLarge))
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
 
@@ -999,8 +998,7 @@ createBiomass_coreInputs <- function(sim) {
       youngRows <- pixelCohortData$age <= maxAgeHighQualityData
       young <- pixelCohortData[youngRows == TRUE]
 
-      pixWFires <- which(!is.na(firePerimeters[young$pixelIndex]))
-      young <- young[pixelIndex %in% pixWFires]
+      young <- young[which(!is.na(firePerimeters[young$pixelIndex]))]
 
       # whYoungBEqZero <- which(young$B == 0)
       whYoungZeroToMaxHighQuality <- which(young$age > 0)
@@ -1016,7 +1014,6 @@ createBiomass_coreInputs <- function(sim) {
         set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
 
         young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
-
       }
       pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE], young), use.names = TRUE)
 
@@ -1210,8 +1207,8 @@ Save <- function(sim) {
 
   if (!compareCRS(sim$studyArea, sim$studyAreaLarge)) {
     warning("studyArea and studyAreaLarge have different projections.\n
-            studyAreaLarge will be projected to match crs(studyArea)")
-    sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crs(sim$studyArea))
+            studyAreaLarge will be projected to match raster::crs(studyArea)")
+    sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, raster::crs(sim$studyArea))
   }
 
   if (is.na(P(sim)$.studyAreaName)) {
@@ -1333,7 +1330,7 @@ Save <- function(sim) {
   ## if using custom raster resolution, need to allocate biomass proportionally to each pixel
   ## if no rawBiomassMap/RTM/RTMLarge were suppliedElsewhere, the "original" pixel size respects
   ## whatever resolution comes with the rawBiomassMap data
-  simPixelSize <- unique(asInteger(res(sim$rasterToMatchLarge)))
+  simPixelSize <- unique(asInteger(raster::res(sim$rasterToMatchLarge)))
   origPixelSize <- 250L # unique(res(sim$rawBiomassMap)) ## TODO: figure out a good way to not hardcode this
 
   if (simPixelSize != origPixelSize) { ## make sure we are comparing integers, else else %!=%
@@ -1348,14 +1345,14 @@ Save <- function(sim) {
   if (!compareCRS(sim$studyArea, sim$rasterToMatch)) {
     warning(paste0("studyArea and rasterToMatch projections differ.\n",
                    "studyArea will be projected to match rasterToMatch"))
-    sim$studyArea <- spTransform(sim$studyArea, crs(sim$rasterToMatch))
+    sim$studyArea <- spTransform(sim$studyArea, raster::crs(sim$rasterToMatch))
     sim$studyArea <- fixErrors(sim$studyArea)
   }
 
   if (!compareCRS(sim$studyAreaLarge, sim$rasterToMatchLarge)) {
     warning(paste0("studyAreaLarge and rasterToMatchLarge projections differ.\n",
                    "studyAreaLarge will be projected to match rasterToMatchLarge"))
-    sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, crs(sim$rasterToMatchLarge))
+    sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, raster::crs(sim$rasterToMatchLarge))
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
 
