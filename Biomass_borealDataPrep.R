@@ -18,7 +18,7 @@ defineModule(sim, list(
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2", "merTools",
                   "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.6)",
+                  "PredictiveEcology/LandR@development (>= 1.0.6.9004)",
                   "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
@@ -392,7 +392,7 @@ createBiomass_coreInputs <- function(sim) {
   }
 
   if (getOption("LandR.verbose") > 0) {
-    message("Adjusting species-level traits, part 2, for LandWeb")
+    message("Adjusting species-level traits, part 2")
     print(sim$species)
   }
 
