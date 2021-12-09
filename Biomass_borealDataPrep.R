@@ -9,7 +9,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("ctb"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.3.9001"),
+  version = list(Biomass_borealDataPrep = "1.5.4"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
@@ -1224,13 +1224,11 @@ Save <- function(sim) {
 
   #this is necessary if studyArea and studyAreaLarge are multipolygon objects
   if (nrow(studyArea) > 1) {
-    studyArea <- st_union(studyArea) %>%
-      st_as_sf(.)
+    studyArea <- st_buffer(studyArea, 0) %>% st_union()
   }
 
   if (nrow(studyAreaLarge) > 1) {
-    studyAreaLarge <- st_union(studyArea) %>%
-      st_as_sf(.)
+    studyAreaLarge <- st_buffer(studyAreaLarge, 0) %>% st_union()
   }
 
   if (length(st_within(studyArea, studyAreaLarge))[[1]] == 0)
