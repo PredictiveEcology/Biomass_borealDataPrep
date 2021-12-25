@@ -272,7 +272,7 @@ defineModule(sim, list(
                   desc = paste("A small table that keeps track of the pixel removals and cause. This may help diagnose issues",
                                "related to understanding the creation of cohortData")),
     createsOutput("minRelativeB", "data.frame",
-                  desc = "define the cut points to classify stand shadeness"),
+                  desc = "DESCRIPTION_NEEDED"), ## TODO
     createsOutput("modelCover", "data.frame",
                   desc = paste("If P(sim)$exportModels is 'all', or 'cover',",
                                "fitted biomass model, as defined by P(sim)$coverModel")),
