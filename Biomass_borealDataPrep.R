@@ -9,16 +9,16 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("ctb"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.3.9000"),
+  version = list(Biomass_borealDataPrep = "1.5.4"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2", "merTools",
-                  "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools",
+                  "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.6)",
+                  "PredictiveEcology/LandR@development (>= 1.0.7)",
                   "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
@@ -392,7 +392,7 @@ createBiomass_coreInputs <- function(sim) {
   }
 
   if (getOption("LandR.verbose") > 0) {
-    message("Adjusting species-level traits, part 2, for LandWeb")
+    message("Adjusting species-level traits, part 2")
     print(sim$species)
   }
 
@@ -1224,13 +1224,11 @@ Save <- function(sim) {
 
   #this is necessary if studyArea and studyAreaLarge are multipolygon objects
   if (nrow(studyArea) > 1) {
-    studyArea <- st_union(studyArea) %>%
-      st_as_sf(.)
+    studyArea <- st_buffer(studyArea, 0) %>% st_union()
   }
 
   if (nrow(studyAreaLarge) > 1) {
-    studyAreaLarge <- st_union(studyArea) %>%
-      st_as_sf(.)
+    studyAreaLarge <- st_buffer(studyAreaLarge, 0) %>% st_union()
   }
 
   if (length(st_within(studyArea, studyAreaLarge))[[1]] == 0)
@@ -1482,7 +1480,13 @@ Save <- function(sim) {
     ## this can happen when data has NAs instead of 0s and is not merged/overlayed (e.g. CASFRI)
     tempRas <- sim$rasterToMatchLarge
     tempRas[!is.na(tempRas[])] <- 0
-    sim$speciesLayers <- cover(sim$speciesLayers, tempRas)
+    namesLayers <- names(sim$speciesLayers)
+    message("...making sure empty pixels inside study area have 0 cover, instead of NAs ...")
+    # Changed to terra Nov 17 by Eliot --> this was many minutes with raster::cover --> 3 seconds with terra
+    speciesLayers <- terra::cover(terra::rast(sim$speciesLayers), terra::rast(tempRas))
+    sim$speciesLayers <- raster::stack(speciesLayers)
+    names(sim$speciesLayers) <- namesLayers
+    message("   ...done")
     rm(tempRas)
   }
 
