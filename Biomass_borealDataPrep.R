@@ -983,7 +983,6 @@ createBiomass_coreInputs <- function(sim) {
                             overwrite = TRUE,
                             url = P(sim)$fireURL,
                             fireField = "YEAR",
-                            fireURL = P(sim)$fireURL,
                             fun = "sf::st_read",
                             userTags = c(cacheTags, "firePerimeters"))
 
