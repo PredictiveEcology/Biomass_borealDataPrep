@@ -1,7 +1,11 @@
 ---
 title: "Biomass_borealDataPrep"
-author: "Yong Luo, Eliot McIntire, Ceres Barros, Alex Chubaty"
-date: "24 September 2019, updated 26 Jul 2021"
+author:
+  - Yong Luo
+  - Eliot McIntire
+  - Ceres Barros
+  - Alex Chubaty
+date: "24 Sep 2019, updated 21 Dec 2021"
 output:
   html_document:
     keep_md: yes
@@ -41,13 +45,20 @@ Depending on the objects, some are parameterized using empirical models, others 
 
 * species `longevity` parameters are taken from published numbers from closest regions (Burton & Cumming 1995)
 
-* the user can choose to replace certain land cover classes with others (parameter `LCCClassesToReplaceNN`). For example, in a "Natural Range of Variation" project, urban pixels can be changed to forested. Since the currently available simulation modules do not drive land cover change, species-ecoregion traits will be spatially non-varying. This means that initial land cover classes that are "transient", such as "recent burn" are likely not appropriate to have "permanent" traits associated with them. This module offers the ability to estimate the parameters for these pixels *as if they were a neighbouring land cover class*. In these two cases, the module can replace these classes with a neighbouring forest type (defined by the parameter `forestedLCCClasses` and probabilistically chosen in proportion to its neighbourhood abundance up to a radius of 5 times the pixel resolution).
-
+* the user can choose to replace certain land cover classes with others (parameter `LCCClassesToReplaceNN`).
+  For example, in a "Natural Range of Variation" project, urban pixels can be changed to forested.
+  Since the currently available simulation modules do not drive land cover change, species-ecoregion traits will be spatially non-varying.
+  This means that initial land cover classes that are "transient", such as "recent burn" are likely not appropriate to have "permanent" traits associated with them.
+  This module offers the ability to estimate the parameters for these pixels *as if they were a neighbouring land cover class*.
+  In these two cases, the module can replace these classes with a neighbouring forest type (defined by the parameter `forestedLCCClasses` and probabilistically chosen in proportion to its neighbourhood abundance up to a radius of 5 times the pixel resolution).
 
 ## Parameterization
 
-LandR-Biomass, like LBSE, has species-level traits (invariant species tratis) and species-ecolocation level traits (spatially varying traits). Ecolocations are defined, by default, as *land cover class* X *ecodistrict* (Canadian, federal definition) combinations, and the traits are estimated by *species* X *ecolocation* combinations. This can mean that there are some species-ecolocation traits that are unique at the pixel level as there may be rare combinations of, say, a land cover type, for a given species, in a given ecodistrict. 
-**Note that `ecolocations` are called `ecoregionGroup`'s across LandR Biomass objects, and species `speciesCode`**. For simplicity, below we refer to these as "ecolocation" and "species", but bear in mind that when passing formulas to the modules LandR object nomenclature will need to be used. 
+LandR-Biomass, like LBSE, has species-level traits (invariant species tratis) and species-ecolocation level traits (spatially varying traits).
+Ecolocations are defined, by default, as *land cover class* X *ecodistrict* (Canadian, federal definition) combinations, and the traits are estimated by *species* X *ecolocation* combinations.
+This can mean that there are some species-ecolocation traits that are unique at the pixel level as there may be rare combinations of, say, a land cover type, for a given species, in a given ecodistrict. 
+**Note that `ecolocations` are called `ecoregionGroup`'s across LandR Biomass objects, and species `speciesCode`**.
+For simplicity, below we refer to these as "ecolocation" and "species", but bear in mind that when passing formulas to the modules LandR object nomenclature will need to be used. 
 
 ### Spatially varying species traits
 
