@@ -503,8 +503,8 @@ Plot(simOut)</code></pre>
 <p><strong>NOTE:</strong> all raster <em>inputs</em> should be at the scale of <code>rasterToMatchLarge</code>/<code>studyAreaLarge</code> and all raster <em>outputs</em> will be at the scale of <code>rasterToMatch</code>/<code>studyArea.</code></p>
 <div id="module-parameters" class="section level2">
 <h2>Module parameters</h2>
-<pre><code>## Warning: multiple methods tables found for &#39;direction&#39;</code></pre>
-<pre><code>## Warning: multiple methods tables found for &#39;gridDistance&#39;</code></pre>
+<pre><code>## Warning in register(): Can&#39;t find generic `scale_type` in package ggplot2 to
+## register S3 method.</code></pre>
 <pre><code>## defineParameter: &#39;speciesUpdateFunction&#39; is not of specified type &#39;list&#39;.</code></pre>
 <pre><code>## defineParameter: &#39;pixelGroupAgeClass&#39; is not of specified type &#39;numeric&#39;.</code></pre>
 <pre><code>## defineParameter: &#39;speciesUpdateFunction&#39; is not of specified type &#39;list&#39;.</code></pre>
@@ -746,61 +746,13 @@ Plot(simOut)</code></pre>
 <tr class="odd">
 <td align="left">ecoregionLayer</td>
 <td align="left">SpatialPolygonsDataFrame</td>
-<td align="left">A SpatialPolygonsDataFrame that characterizes the unique ecological regions used to parameterize the biomass, cover, and species establishment probability models. It will be overlaid with landcover to generate classes for every ecoregion/LCC combination. It must have same extent and crs as studyAreaLarge if suppplied by user. It is superseded by sim<span class="math inline">\(ecoregionRst if that object is supplied by the user |https://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip | |ecoregionRst |RasterLayer |A raster that characterizes the unique ecological regions used to parameterize the biomass, cover, and species establishment probability models. If this object is provided, it will supersede sim\)</span>ecoregionLayer. It will be overlaid with landcover to generate classes for every ecoregion/LCC combination. It must have same extent and crs as rasterToMatchLarge if suppplied by user - use reproducible::postProcess. If it uses an attribute table, it must contain the field ‘ecoregion’ to represent raster values</td>
-<td align="left">NA</td>
+<td align="left">A SpatialPolygonsDataFrame that characterizes the unique ecological regions used to parameterize the biomass, cover, and species establishment probability models. It will be overlaid with landcover to generate classes for every ecoregion/LCC combination. It must have same extent and crs as studyAreaLarge if supplied by user. It is superseded by <code>sim$ecoregionRst</code> if that object is supplied by the user</td>
+<td align="left"><a href="https://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip" class="uri">https://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip</a></td>
 </tr>
 <tr class="even">
-<td align="left">rstLCC</td>
+<td align="left">ecoregionRst</td>
 <td align="left">RasterLayer</td>
-<td align="left">A land classification map in study area. It must be ‘corrected’, in the sense that: 1) Every class must not conflict with any other map in this module (e.g., speciesLayers should not have data in LCC classes that are non-treed); 2) It can have treed and non-treed classes. The non-treed will be removed within this module if P(sim)<span class="math inline">\(omitNonTreedPixels is TRUE; 3) It can have transient pixels, such as &#39;young fire&#39;. These will be converted to a the nearest non-transient class, probabilistically if there is more than 1 nearest neighbour class, based on P(sim)\)</span>LCCClassesToReplaceNN. The default layer used, if not supplied, is Canada national land classification in 2010. The metadata (res, proj, ext, origin) need to match rasterToMatchLarge.</td>
-<td align="left">NA</td>
-</tr>
-<tr class="odd">
-<td align="left">rasterToMatch</td>
-<td align="left">RasterLayer</td>
-<td align="left">A raster of the studyArea in the same resolution and projection as rawBiomassMap. This is the scale used for all outputs for use in the simulation. If not supplied will be forced to match the default rawBiomassMap.</td>
-<td align="left">NA</td>
-</tr>
-<tr class="even">
-<td align="left">rasterToMatchLarge</td>
-<td align="left">RasterLayer</td>
-<td align="left">A raster of the studyAreaLarge in the same resolution and projection as rawBiomassMap. This is the scale used for all inputs for use in the simulation. If not supplied will be forced to match the default rawBiomassMap.</td>
-<td align="left">NA</td>
-</tr>
-<tr class="odd">
-<td align="left">rawBiomassMap</td>
-<td align="left">RasterLayer</td>
-<td align="left">total biomass raster layer in study area. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived total aboveground biomass map from 2001 (in tonnes/ha), unless ‘dataYear’ != 2001. If necessary, biomass values are rescaled to match changes in resolution. See <a href="https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990" class="uri">https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990</a> for metadata.</td>
-<td align="left"><a href="http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/canada-forests-attributes_attributs-forests-canada/2001-attributes_attributs-2001/NFI_MODIS250m_2001_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif" class="uri">http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/canada-forests-attributes_attributs-forests-canada/2001-attributes_attributs-2001/NFI_MODIS250m_2001_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif</a></td>
-</tr>
-<tr class="even">
-<td align="left">speciesLayers</td>
-<td align="left">RasterStack</td>
-<td align="left">cover percentage raster layers by species in Canada species map. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived species cover maps from 2001 using a cover threshold of 10 - see <a href="https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990" class="uri">https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990</a> for metadata</td>
-<td align="left"><a href="http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/canada-forests-attributes_attributs-forests-canada/2001-attributes_attributs-2001/" class="uri">http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/canada-forests-attributes_attributs-forests-canada/2001-attributes_attributs-2001/</a></td>
-</tr>
-<tr class="odd">
-<td align="left">speciesTable</td>
-<td align="left">data.table</td>
-<td align="left">species attributes table, default is from Dominic Cyr and Yan Boulanger’s project</td>
-<td align="left"><a href="https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv" class="uri">https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv</a></td>
-</tr>
-<tr class="even">
-<td align="left">sppColorVect</td>
-<td align="left">character</td>
-<td align="left">named character vector of hex colour codes corresponding to each species</td>
-<td align="left">NA</td>
-</tr>
-<tr class="odd">
-<td align="left">sppEquiv</td>
-<td align="left">data.table</td>
-<td align="left">table of species equivalencies. See LandR::sppEquivalencies_CA.</td>
-<td align="left">NA</td>
-</tr>
-<tr class="even">
-<td align="left">sppNameVector</td>
-<td align="left">character</td>
-<td align="left">an optional vector of species names to be pulled from sppEquiv. If not provided, then species will be taken from the entire P(sim)$sppEquivCol in sppEquiv. See LandR::sppEquivalencies_CA.</td>
+<td align="left">A raster that characterizes the unique ecological regions used to parameterize the biomass, cover, and species establishment probability models. If this object is provided, it will supersede sim<span class="math inline">\(ecoregionLayer. It will be overlaid with landcover to generate classes for every ecoregion/LCC combination. It must have same extent and crs as `rasterToMatchLarge` if supplied by user - use `reproducible::postProcess`. If it uses an attribute table, it must contain the field &#39;ecoregion&#39; to represent raster values |NA | |rstLCC |RasterLayer |A land classification map in study area. It must be &#39;corrected&#39;, in the sense that: 1) Every class must not conflict with any other map in this module (e.g., speciesLayers should not have data in LCC classes that are non-treed); 2) It can have treed and non-treed classes. The non-treed will be removed within this module if P(sim)\)</span>omitNonTreedPixels is TRUE; 3) It can have transient pixels, such as ‘young fire’. These will be converted to a the nearest non-transient class, probabilistically if there is more than 1 nearest neighbour class, based on P(sim)<span class="math inline">\(LCCClassesToReplaceNN. The default layer used, if not supplied, is Canada national land classification in 2010. The metadata (res, proj, ext, origin) need to match rasterToMatchLarge. |NA | |rasterToMatch |RasterLayer |A raster of the studyArea in the same resolution and projection as rawBiomassMap. This is the scale used for all outputs for use in the simulation. If not supplied will be forced to match the default rawBiomassMap. |NA | |rasterToMatchLarge |RasterLayer |A raster of the studyAreaLarge in the same resolution and projection as rawBiomassMap. This is the scale used for all inputs for use in the simulation. If not supplied will be forced to match the default rawBiomassMap. |NA | |rawBiomassMap |RasterLayer |total biomass raster layer in study area. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived total aboveground biomass map from 2001 (in tonnes/ha), unless &#39;dataYear&#39; != 2001. If necessary, biomass values are rescaled to match changes in resolution. See https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata. |http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/canada-forests-attributes_attributs-forests-canada/2001-attributes_attributs-2001/NFI_MODIS250m_2001_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif | |speciesLayers |RasterStack |cover percentage raster layers by species in Canada species map. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived species cover maps from 2001 using a cover threshold of 10 - see https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata |http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/canada-forests-attributes_attributs-forests-canada/2001-attributes_attributs-2001/ | |speciesTable |data.table |species attributes table, default is from Dominic Cyr and Yan Boulanger&#39;s project |https://raw.githubusercontent.com/dcyr/LANDIS-II_IA_generalUseFiles/master/speciesTraits.csv | |sppColorVect |character |named character vector of hex colour codes corresponding to each species |NA | |sppEquiv |data.table |table of species equivalencies. See LandR::sppEquivalencies_CA. |NA | |sppNameVector |character |an optional vector of species names to be pulled from sppEquiv. If not provided, then species will be taken from the entire P(sim)\)</span>sppEquivCol in sppEquiv. See LandR::sppEquivalencies_CA.</td>
 <td align="left">NA</td>
 </tr>
 <tr class="odd">
