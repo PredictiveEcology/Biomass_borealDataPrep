@@ -786,6 +786,8 @@ createBiomass_coreInputs <- function(sim) {
 
     fixModelBiomass <- P(sim)$fixModelBiomass
     timePriorToFit <- Sys.time()
+    cohortDataNo34to36BiomassSubset2 <- copy(cohortDataNo34to36BiomassSubset)
+
     for (tryBiomassModel in 1:3) { # try thrice -- default, then once to rescale, once to refit
       modelBiomass <- Cache(
         statsModel,
@@ -809,8 +811,7 @@ createBiomass_coreInputs <- function(sim) {
       needRescaleModelB <- FALSE
       scaledVarsModelB <- NULL
       needRedo <- (length(modMessages) > 0 & fixModelBiomass)
-      if (needRedo) {
-        cohortDataNo34to36BiomassSubset2 <- copy(cohortDataNo34to36BiomassSubset)
+      if (needRedo && !triedControl && !needRescaleModelB) {
         modCallChar <- paste(deparse(P(sim)$biomassModel), collapse = "")
         if (any(grepl("Rescale", modMessages)) & !needRescaleModelB) {
           message(blue("Trying to rescale variables to refit P(sim)$biomassModel"))
@@ -824,6 +825,7 @@ createBiomass_coreInputs <- function(sim) {
           cohortDataNo34to36BiomassSubset2[, `:=`(logAge = as.numeric(logAge_sc),
                                                   cover = as.numeric(cover_sc))]
           needRescaleModelB <- TRUE
+          ueg <- .sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36BiomassSubset2$ecoregionGroup)))
         } else {
           message(blue("Trying to refit P(sim)$biomassModel with 'bobyqa' optimizer"))
           ## redo model call with new optimizer
@@ -838,7 +840,6 @@ createBiomass_coreInputs <- function(sim) {
           }
           triedControl <- TRUE
         }
-        ueg <- .sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36BiomassSubset2$ecoregionGroup)))
         userTagsToClear <- c("statsModel", modelBiomassTags[1:3])
         suppressMessages(clearCache(userTags = userTagsToClear, #after = timePriorToFit,
                    ask = FALSE))
@@ -854,6 +855,8 @@ createBiomass_coreInputs <- function(sim) {
         if (needRescaleModelB & triedControl)
           fixModelBiomass <- FALSE
       } else {
+        if (triedControl && needRescaleModelB)
+          stop("Biomass model did not converge and automated attempts to fix also failed. This will need more attention")
         break
       }
     } # End of tryBiomassModel
