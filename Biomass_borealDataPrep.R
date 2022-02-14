@@ -1324,20 +1324,6 @@ Save <- function(sim) {
     sim$rasterToMatch[!is.na(RTMvals)] <- 1
   }
 
-  ## if using custom raster resolution, need to allocate biomass proportionally to each pixel
-  ## if no rawBiomassMap/RTM/RTMLarge were suppliedElsewhere, the "original" pixel size respects
-  ## whatever resolution comes with the rawBiomassMap data
-  simPixelSize <- unique(asInteger(raster::res(sim$rasterToMatchLarge)))
-  origPixelSize <- 250L # unique(res(sim$rawBiomassMap)) ## TODO: figure out a good way to not hardcode this
-
-  if (simPixelSize != origPixelSize) { ## make sure we are comparing integers, else else %!=%
-    rescaleFactor <- (origPixelSize / simPixelSize)^2
-    sim$rawBiomassMap <- sim$rawBiomassMap / rescaleFactor
-  }
-
-  # if (ncell(sim$rasterToMatch) < 1e4)
-  # stop("sim$rasterToMatch is too small, it should have more than 10,000 pixels")
-
   ## TODO: KEEP THIS HERE OR ONLY INIT?
   if (!compareCRS(sim$studyArea, sim$rasterToMatch)) {
     warning(paste0("studyArea and rasterToMatch projections differ.\n",
