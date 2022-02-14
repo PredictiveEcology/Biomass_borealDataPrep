@@ -755,95 +755,116 @@ createBiomass_coreInputs <- function(sim) {
   ## For biomass
   ### Subsample cases where there are more than 50 points in an ecoregionGroup * speciesCode
   totalBiomass <- sum(cohortDataNo34to36Biomass$B, na.rm = TRUE)
-  cohortDataNo34to36Biomass <- subsetDT(cohortDataNo34to36Biomass,
-                                        by = c("ecoregionGroup", "speciesCode"),
-                                        doSubset = P(sim)$subsetDataBiomassModel)
 
-  ### For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
-  ### force parameter values to avoid more checks
-  # If using mixed effect model, see here for good discussion of
-  #  shrinkage https://www.tjmahr.com/plotting-partial-pooling-in-mixed-effects-models/
-  message(blue("Estimating biomass using P(sim)$biomassModel as:\n"),
-          magenta(paste0(format(P(sim)$biomassModel, appendLF = FALSE), collapse = "")))
+  # There are several reasons why the modelBiomass can fail;
+  #   1) inappropriate sub-sample
+  #   2) fit algorithm
+  # Run 2 nested loops to do both of these things
+  modelBiomassTags <- c(cacheTags, "modelBiomass",
+                        paste0("subsetSize:", P(sim)$subsetDataBiomassModel))
+  maxDataSubsetTries <- 3
+  for (tryBiomassDataSubset in 1:maxDataSubsetTries) { # try 3 attempts of subsetting
+    cohortDataNo34to36BiomassSubset <- subsetDT(cohortDataNo34to36Biomass,
+                                          by = c("ecoregionGroup", "speciesCode"),
+                                          doSubset = P(sim)$subsetDataBiomassModel)
 
-  ## NOTE: we are NOT using logB because the relationship between B~age should be hump-shaped
-  ## (or at least capped at high age values). Ideally, we would want a non-linear model
-  modelBiomass <- Cache(
-    statsModel,
-    modelFn = P(sim)$biomassModel,
-    uniqueEcoregionGroups = .sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36Biomass$ecoregionGroup))),
-    sumResponse = totalBiomass,
-    .specialData = cohortDataNo34to36Biomass,
-    useCloud = useCloud,
-    # useCache = "overwrite",
-    # useCache = FALSE,
-    cloudFolderID = sim$cloudFolderID,
-    showSimilar = getOption("reproducible.showSimilar", FALSE),
-    userTags = c(cacheTags, "modelBiomass", paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
-    omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
-  )
+    ### For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
+    ### force parameter values to avoid more checks
+    # If using mixed effect model, see here for good discussion of
+    #  shrinkage https://www.tjmahr.com/plotting-partial-pooling-in-mixed-effects-models/
+    message(blue("Estimating biomass using P(sim)$biomassModel as:\n"),
+            magenta(paste0(format(P(sim)$biomassModel, appendLF = FALSE), collapse = "")))
 
-  ## TODO: the following code should be moved to the model function
-  modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
-  fixModelBiomass <- P(sim)$fixModelBiomass
-  triedControl <- FALSE
-  needRescaleModelB <- FALSE
-  scaledVarsModelB <- NULL
-  cohortDataNo34to36Biomass2 <- copy(cohortDataNo34to36Biomass)
-  modCallChar <- paste(deparse(P(sim)$biomassModel), collapse = "")
+    ## NOTE: we are NOT using logB because the relationship between B~age should be hump-shaped
+    ## (or at least capped at high age values). Ideally, we would want a non-linear model
 
-  while (length(modMessages) > 0 & fixModelBiomass) {
-    if (any(grepl("Rescale", modMessages)) & !needRescaleModelB) {
-      message(blue("Trying to rescale variables to refit P(sim)$biomassModel"))
-      ## save this in separate objects for later
-      logAge_sc <- scale(cohortDataNo34to36Biomass$logAge)
-      cover_sc <- scale(cohortDataNo34to36Biomass$cover)
+    # Default values of args to modelBiomass -- prior to any attempts to fix
+    ueg <- .sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36BiomassSubset$ecoregionGroup)))
+    specDat <- cohortDataNo34to36BiomassSubset
+    modelFn <- P(sim)$biomassModel
+    sumResponse <- c(totalBiomass)
 
-      scaledVarsModelB <- list(logAge = logAge_sc, cover = cover_sc)
-      ## remove attributes with as.numeric
-      ## don't change the original data
-      cohortDataNo34to36Biomass2[, `:=`(logAge = as.numeric(logAge_sc),
-                                        cover = as.numeric(cover_sc))]
-      needRescaleModelB <- TRUE
-    } else {
-      message(blue("Trying to refit P(sim)$biomassModel with 'bobyqa' optimizer"))
-      ## redo model call with new optimizer
-      modCallChar <- paste(deparse(P(sim)$biomassModel), collapse = "")
-      if (grepl("lme4::lmer", modCallChar)) {
-        modCallChar <-  sub(")$", ", control = lmerControl(optimizer = 'bobyqa'))", modCallChar)
-      } else if (grepl("lme4::glmer", modCallChar)) {
-        modCallChar <-  sub(")$", ", = glmerControl(optimizer = 'bobyqa'))", modCallChar)
+    fixModelBiomass <- P(sim)$fixModelBiomass
+    timePriorToFit <- Sys.time()
+    cohortDataNo34to36BiomassSubset2 <- copy(cohortDataNo34to36BiomassSubset)
+
+    for (tryBiomassModel in 1:3) { # try thrice -- default, then once to rescale, once to refit
+      modelBiomass <- Cache(
+        statsModel,
+        modelFn = modelFn,
+        uniqueEcoregionGroups = ueg,
+        .cacheExtra = sumResponse, # only digest on this (formerly used sumResponse arg; now .cacheExtra is in Cache)
+        .specialData = specDat,
+        useCloud = useCloud,
+        # useCache = "overwrite",
+        # useCache = FALSE,
+        cloudFolderID = sim$cloudFolderID,
+        # showSimilar = getOption("reproducible.showSimilar", FALSE),
+        userTags = c(modelBiomassTags,
+                     paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
+        omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
+      )
+
+      ## TODO: the following code should be moved to the model function
+      modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
+      triedControl <- FALSE
+      needRescaleModelB <- FALSE
+      scaledVarsModelB <- NULL
+      needRedo <- (length(modMessages) > 0 & fixModelBiomass)
+      if (needRedo && !triedControl && !needRescaleModelB) {
+        modCallChar <- paste(deparse(P(sim)$biomassModel), collapse = "")
+        if (any(grepl("Rescale", modMessages)) & !needRescaleModelB) {
+          message(blue("Trying to rescale variables to refit P(sim)$biomassModel"))
+          ## save this in separate objects for later
+          logAge_sc <- scale(cohortDataNo34to36BiomassSubset$logAge)
+          cover_sc <- scale(cohortDataNo34to36BiomassSubset$cover)
+
+          scaledVarsModelB <- list(logAge = logAge_sc, cover = cover_sc)
+          ## remove attributes with as.numeric
+          ## don't change the original data
+          cohortDataNo34to36BiomassSubset2[, `:=`(logAge = as.numeric(logAge_sc),
+                                                  cover = as.numeric(cover_sc))]
+          needRescaleModelB <- TRUE
+          ueg <- .sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36BiomassSubset2$ecoregionGroup)))
+        } else {
+          message(blue("Trying to refit P(sim)$biomassModel with 'bobyqa' optimizer"))
+          ## redo model call with new optimizer
+          modCallChar <- paste(deparse(P(sim)$biomassModel), collapse = "")
+          if (grepl("lme4::lmer", modCallChar)) {
+            modCallChar <-  sub(")$", ", control = lmerControl(optimizer = 'bobyqa'))", modCallChar)
+          } else if (grepl("lme4::glmer", modCallChar)) {
+            modCallChar <-  sub(")$", ", = glmerControl(optimizer = 'bobyqa'))", modCallChar)
+          } else {
+            message(blue("P(sim)$biomassModel does not call 'lme4::lmer' or 'lme4::glmer' explicitly",
+                         "preventing an attempt to use a different optimizer."))
+          }
+          triedControl <- TRUE
+        }
+        userTagsToClear <- c("statsModel", modelBiomassTags[1:3])
+        suppressMessages(clearCache(userTags = userTagsToClear, #after = timePriorToFit,
+                   ask = FALSE))
+        specDat <- cohortDataNo34to36BiomassSubset2
+        modelBiomassTags <- c("refit", "modelBiomass",
+                              paste(c(if (needRescaleModelB) "rescaled",
+                                      if (triedControl) "control"), collapse = "_"))
+        modelFn <- str2lang(modCallChar)
+        sumResponse <- c(totalBiomass, triedControl, needRescaleModelB)
+        modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
+
+        ## break out of while, even after trying to rescale and fit with bobyqa
+        if (needRescaleModelB & triedControl)
+          fixModelBiomass <- FALSE
       } else {
-        message(blue("P(sim)$biomassModel does not call 'lme4::lmer' or 'lme4::glmer' explicitly",
-                     "preventing an attempt to use a different optimizer."))
+        if (triedControl && needRescaleModelB)
+          stop("Biomass model did not converge and automated attempts to fix also failed. This will need more attention")
+        break
       }
-      triedControl <- TRUE
-    }
-
-    refitTags <- paste(c(if (needRescaleModelB) "rescaled",
-                         if (triedControl) "control"), collapse = "_")
-    modelBiomass <- Cache(
-      statsModel,
-      modelFn = str2lang(modCallChar),
-      uniqueEcoregionGroups = .sortDotsUnderscoreFirst(as.character(unique(cohortDataNo34to36Biomass2$ecoregionGroup))),
-      sumResponse = c(totalBiomass, triedControl, needRescaleModelB),
-      .specialData = cohortDataNo34to36Biomass2,
-      useCloud = useCloud,
-      # useCache = "overwrite",
-      # useCache = FALSE,
-      cloudFolderID = sim$cloudFolderID,
-      showSimilar = getOption("reproducible.showSimilar", FALSE),
-      userTags = c(cacheTags, "refit", refitTags, "modelBiomass",
-                   paste0("subsetSize:", P(sim)$subsetDataBiomassModel)),
-      omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
-    )
-
-    modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
-
-    ## break out of while, even after trying to rescale and fit with bobyqa
-    if (needRescaleModelB & triedControl)
-      fixModelBiomass <- FALSE
-  }
+    } # End of tryBiomassModel
+    if (!needRedo)
+      break
+  } # End of tryBiomassData
+  if (isTRUE(tryBiomassDataSubset == maxDataSubsetTries) && isTRUE(needRedo))
+    stop("The biomass model did not converge with ", ," attempts of data subsetting and changing lme algorithm")
 
   message(blue("  The rsquared is: "))
   out <- lapply(capture.output(as.data.frame(round(modelBiomass$rsq, 4))), function(x) message(blue(x)))
@@ -852,15 +873,15 @@ createBiomass_coreInputs <- function(sim) {
     sim$modelBiomass <- modelBiomass
 
   ## remove logB
-  # cohortDataNo34to36Biomass[, logB := NULL]
+  # cohortDataNo34to36BiomassSubset[, logB := NULL]
   ########################################################################
   # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
   #   doesn't include combinations with B = 0 because those places can't have the species/ecoregion combo
   ########################################################################
-  ## cohortDataNo34to36Biomass ends up determining which ecoregion combinations end up in
+  ## cohortDataNo34to36BiomassSubset ends up determining which ecoregion combinations end up in
   ## species ecoregion, thus removing converted/masked classes present cohortDataShortNoCover
   message(blue("Create speciesEcoregion using modelCover and modelBiomass to estimate species traits"))
-  speciesEcoregion <- makeSpeciesEcoregion(cohortDataBiomass = cohortDataNo34to36Biomass,
+  speciesEcoregion <- makeSpeciesEcoregion(cohortDataBiomass = cohortDataNo34to36BiomassSubset,
                                            cohortDataShort = cohortDataShort,
                                            cohortDataShortNoCover = cohortDataShortNoCover,
                                            species = sim$species,
