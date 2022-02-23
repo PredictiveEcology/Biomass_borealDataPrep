@@ -856,7 +856,7 @@ createBiomass_coreInputs <- function(sim) {
           fixModelBiomass <- FALSE
       } else {
         if (triedControl && needRescaleModelB)
-          stop("Biomass model did not converge and automated attempts to fix also failed. This will need more attention")
+          stop("Biomass model did not converge and automated attempts to fix also failed. This will need more attention.")
         break
       }
     } # End of tryBiomassModel
@@ -864,7 +864,7 @@ createBiomass_coreInputs <- function(sim) {
       break
   } # End of tryBiomassData
   if (isTRUE(tryBiomassDataSubset == maxDataSubsetTries) && isTRUE(needRedo))
-    stop("The biomass model did not converge with ", ," attempts of data subsetting and changing lme algorithm")
+    stop("The biomass model did not converge with ", maxDataSubsetTries," attempts of data subsetting and changing lme algorithm")
 
   message(blue("  The rsquared is: "))
   out <- lapply(capture.output(as.data.frame(round(modelBiomass$rsq, 4))), function(x) message(blue(x)))
