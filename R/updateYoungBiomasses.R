@@ -31,7 +31,7 @@ updateYoungBiomasses <- function(young, modelBiomass, ...) {
     columns <- c("ecoregionGroup", "logAge", "speciesCode", "cover")
     young2 <- unique(young, by = columns)
     message(green("  -- Calculating bootstrap estimates around B; will replace B in young data if it is beyond 95% CI"))
-    message(green("     This will take a bit"))
+    message(green("     This will take some time."))
     PI.time <- system.time({
       PI <- predictInterval(merMod = modelBiomass$mod, newdata = young2,
                             level = 0.95, n.sims = 15,
