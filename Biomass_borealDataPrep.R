@@ -18,7 +18,7 @@ defineModule(sim, list(
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2", "merTools",
                   "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.7)",
+                  "PredictiveEcology/LandR@development (>= 1.0.7.9006)",
                   "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
@@ -352,9 +352,11 @@ createBiomass_coreInputs <- function(sim) {
 
   message(blue("Starting to createBiomass_coreInputs in Biomass_borealDataPrep: ", Sys.time()))
   if (is.null(sim$speciesLayers))
-    stop(red(paste("'speciesLayers' are missing in Biomass_borealDataPrep init event.\n",
-                   "This is likely due to the module producing 'speciesLayers' being scheduled after Biomass_borealDataPrep.\n",
-                   "Please check module order.")))
+    stop(red(paste(
+      "'speciesLayers' are missing in Biomass_borealDataPrep init event.\n",
+      "This is likely due to the module producing 'speciesLayers' being scheduled after Biomass_borealDataPrep.\n",
+      "Please check module order."
+    )))
 
   if (!all(P(sim)$LCCClassesToReplaceNN %in% P(sim)$forestedLCCClasses)) {
     stop("All 'LCCClassesToReplaceNN' should be included in 'forestedLCCClasses'.")
@@ -762,11 +764,11 @@ createBiomass_coreInputs <- function(sim) {
   # Run 2 nested loops to do both of these things
   modelBiomassTags <- c(cacheTags, "modelBiomass",
                         paste0("subsetSize:", P(sim)$subsetDataBiomassModel))
-  maxDataSubsetTries <- 3
+  maxDataSubsetTries <- 3 ## TODO: make this a param!
   for (tryBiomassDataSubset in 1:maxDataSubsetTries) { # try 3 attempts of subsetting
     cohortDataNo34to36BiomassSubset <- subsetDT(cohortDataNo34to36Biomass,
-                                          by = c("ecoregionGroup", "speciesCode"),
-                                          doSubset = P(sim)$subsetDataBiomassModel)
+                                                by = c("ecoregionGroup", "speciesCode"),
+                                                doSubset = P(sim)$subsetDataBiomassModel)
 
     ### For Cache -- doesn't need to cache all columns in the data.table -- only the ones in the model
     ### force parameter values to avoid more checks
@@ -788,6 +790,9 @@ createBiomass_coreInputs <- function(sim) {
     timePriorToFit <- Sys.time()
     cohortDataNo34to36BiomassSubset2 <- copy(cohortDataNo34to36BiomassSubset)
 
+    tryControl <- FALSE
+    needRescaleModelB <- FALSE
+    scaledVarsModelB <- NULL
     for (tryBiomassModel in 1:3) { # try thrice -- default, then once to rescale, once to refit
       modelBiomass <- Cache(
         statsModel,
@@ -807,11 +812,8 @@ createBiomass_coreInputs <- function(sim) {
 
       ## TODO: the following code should be moved to the model function
       modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
-      triedControl <- FALSE
-      needRescaleModelB <- FALSE
-      scaledVarsModelB <- NULL
       needRedo <- (length(modMessages) > 0 & fixModelBiomass)
-      if (needRedo && !triedControl && !needRescaleModelB) {
+      if (needRedo && (!tryControl || !needRescaleModelB)) {
         modCallChar <- paste(deparse(P(sim)$biomassModel), collapse = "")
         if (any(grepl("Rescale", modMessages)) & !needRescaleModelB) {
           message(blue("Trying to rescale variables to refit P(sim)$biomassModel"))
@@ -838,33 +840,38 @@ createBiomass_coreInputs <- function(sim) {
             message(blue("P(sim)$biomassModel does not call 'lme4::lmer' or 'lme4::glmer' explicitly",
                          "preventing an attempt to use a different optimizer."))
           }
-          triedControl <- TRUE
+          tryControl <- TRUE
         }
         userTagsToClear <- c("statsModel", modelBiomassTags[1:3])
         suppressMessages(clearCache(userTags = userTagsToClear, #after = timePriorToFit,
-                   ask = FALSE))
+                                    ask = FALSE))
         specDat <- cohortDataNo34to36BiomassSubset2
         modelBiomassTags <- c("refit", "modelBiomass",
                               paste(c(if (needRescaleModelB) "rescaled",
-                                      if (triedControl) "control"), collapse = "_"))
+                                      if (tryControl) "control"), collapse = "_"))
         modelFn <- str2lang(modCallChar)
-        sumResponse <- c(totalBiomass, triedControl, needRescaleModelB)
-        modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
+        sumResponse <- c(totalBiomass, tryControl, needRescaleModelB)
 
         ## break out of while, even after trying to rescale and fit with bobyqa
-        if (needRescaleModelB & triedControl)
+        if (needRescaleModelB & tryControl)
           fixModelBiomass <- FALSE
       } else {
-        if (triedControl && needRescaleModelB)
-          stop("Biomass model did not converge and automated attempts to fix also failed. This will need more attention.")
+        if (tryControl && needRescaleModelB)
+          warning("Biomass model did not converge and automated attempts to fix also failed. This will need more attention.")
         break
       }
     } # End of tryBiomassModel
     if (!needRedo)
       break
   } # End of tryBiomassData
-  if (isTRUE(tryBiomassDataSubset == maxDataSubsetTries) && isTRUE(needRedo))
-    stop("The biomass model did not converge with ", maxDataSubsetTries," attempts of data subsetting and changing lme algorithm")
+
+  if (!is.null(scaledVarsModelB)) {
+    modelBiomass$scaledVarsModelB <- scaledVarsModelB
+  }
+
+  if (isTRUE(tryBiomassDataSubset == maxDataSubsetTries) && isTRUE(needRedo)) {
+    warning("The biomass model did not converge with ", tryBiomassDataSubset," attempts of data subsetting and changing lme algorithm")
+  }
 
   message(blue("  The rsquared is: "))
   out <- lapply(capture.output(as.data.frame(round(modelBiomass$rsq, 4))), function(x) message(blue(x)))
@@ -887,8 +894,6 @@ createBiomass_coreInputs <- function(sim) {
                                            species = sim$species,
                                            modelCover = modelCover,
                                            modelBiomass = modelBiomass,
-                                           needRescaleModelB = needRescaleModelB,
-                                           scaledVarsModelB = scaledVarsModelB,
                                            successionTimestep = P(sim)$successionTimestep,
                                            currentYear = time(sim))
   if (length(P(sim)$LCCClassesToReplaceNN)) {
@@ -1014,6 +1019,7 @@ createBiomass_coreInputs <- function(sim) {
     maxAgeHighQualityData <- start(sim) - firstFireYear
     ## if maxAgeHighQualityData is lower than 0, it means it's prior to the first fire Year
     ## or not following calendar year
+
     if (!is.na(maxAgeHighQualityData) & maxAgeHighQualityData >= 0) {
       youngRows <- pixelCohortData$age <= maxAgeHighQualityData
       young <- pixelCohortData[youngRows == TRUE]
@@ -1028,7 +1034,7 @@ createBiomass_coreInputs <- function(sim) {
 
         young <- Cache(updateYoungBiomasses,
                        young = youngNoAgeEqZero,
-                       biomassModel = modelBiomass$mod,
+                       modelBiomass = modelBiomass,
                        userTags = c(cacheTags, "updateYoungBiomasses"),
                        omitArgs = c("userTags"))
         set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
@@ -1043,6 +1049,11 @@ createBiomass_coreInputs <- function(sim) {
       maxAgeHighQualityData <- -1
     }
   }
+#browser()
+  ## TODO: what is a reasonable upper bound or other assertion??
+  maxRawB <- maxValue(sim$rawBiomassMap) * 100 ## match units in cohortData (t/ha ==> g/m^2)
+  assertthat::assert_that(all(inRange(young$B, 0, maxRawB / 2)))
+  assertthat::assert_that(all(inRange(pixelCohortData$B, 0, maxRawB)))
 
   # Fill in any remaining B values that are still NA -- the previous chunk filled in B for young cohorts only
   if (anyNA(pixelCohortData$B)) {
