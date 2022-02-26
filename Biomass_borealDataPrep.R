@@ -1342,8 +1342,8 @@ Save <- function(sim) {
       omitArgs = c("userTags")
     )
 
-    sim$rasterToMatch <- Cache(postProcess,
-                               x = sim$rawBiomassMap,
+    sim$rasterToMatch <- Cache(postProcessTerra,
+                               from = sim$rawBiomassMap,
                                studyArea = sim$studyArea,
                                # rasterToMatch = sim$rasterToMatchLarge,   ## Ceres: this messes up the extent. if we are doing this it means BOTH RTMs come from biomassMap, so no need for RTMLarge here.
                                useSAcrs = FALSE,
@@ -1353,9 +1353,10 @@ Save <- function(sim) {
                                filename2 = .suffix(file.path(dPath, "rasterToMatch.tif"),
                                                    paste0("_", P(sim)$.studyAreaName)),
                                overwrite = TRUE,
-                               useCache = "overwrite",
+                               # useCache = "overwrite",
                                userTags = c(cacheTags, "rasterToMatch"),
-                               omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
+                               omitArgs = c("destinationPath", "targetFile", "userTags", "stable", "filename2",
+                                            "overwrite"))
 
     ## covert to 'mask'
     RTMvals <- getValues(sim$rasterToMatch)
