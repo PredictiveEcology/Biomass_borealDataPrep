@@ -1011,56 +1011,62 @@ createBiomass_coreInputs <- function(sim) {
       # fireURL <- "https://cwfis.cfs.nrcan.gc.ca/downloads/nbac/nbac_1986_to_2019_20200921.zip"
       # This was using the nbac filename to figure out what the earliest year in the
       #   fire dataset was. Since that is not actually used here, it doesn't really
-    #   matter what the fire dataset was. Basically, this section is updating
-    #   young ages that are way outside of their biomass. Can set this to 1986 to just
-    #   give a cutoff
+      #   matter what the fire dataset was. Basically, this section is updating
+      #   young ages that are way outside of their biomass. Can set this to 1986 to just
+      #   give a cutoff
 
-    ## TODO: Ceres: it seems silly to get the fire perimeters twice, but for now this is the only way to know
-    ## where ages were imputed
-    firePerimeters <- Cache(prepInputsFireYear,
-                            destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
-                            studyArea = raster::aggregate(sim$studyArea),
-                            rasterToMatch = sim$rasterToMatch,
-                            overwrite = TRUE,
-                            url = P(sim)$fireURL,
-                            fireField = "YEAR",
-                            fun = "sf::st_read",
-                            userTags = c(cacheTags, "firePerimeters"))
+      ## TODO: Ceres: it seems silly to get the fire perimeters twice, but for now this is the only way to know
+      ## where ages were imputed
+      firePerimeters <- Cache(prepInputsFireYear,
+                              destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
+                              studyArea = raster::aggregate(sim$studyArea),
+                              rasterToMatch = sim$rasterToMatch,
+                              overwrite = TRUE,
+                              url = P(sim)$fireURL,
+                              fireField = "YEAR",
+                              fun = "sf::st_read",
+                              userTags = c(cacheTags, "firePerimeters"))
 
-    ## TODO: Ceres: 1986 is different from the earliest year (1950) used to impute ages.
-    ## this should be consistent with the earliest year used to impute ages
+      ## TODO: Ceres: 1986 is different from the earliest year (1950) used to impute ages.
+      ## this should be consistent with the earliest year used to impute ages
 
-    firstFireYear <- 1986 # as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", fireURL))
-    maxAgeHighQualityData <- start(sim) - firstFireYear
-    ## if maxAgeHighQualityData is lower than 0, it means it's prior to the first fire Year
-    ## or not following calendar year
+      firstFireYear <- minValue(firePerimeters) # 1986 # as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", fireURL))
+      whichFiresTooOld <- which(firePerimeters[] < firstFireYear)
+      if (length(whichFiresTooOld)) {
+        message("There were fires in the database older than ", firstFireYear, ";",
+                " The data from these are not being used because firstFireYear = 1986")
+        firePerimeters[whichFiresTooOld] <- NA
+      }
+      maxAgeHighQualityData <- start(sim) - firstFireYear
+      ## if maxAgeHighQualityData is lower than 0, it means it's prior to the first fire Year
+      ## or not following calendar year
 
-    if (!is.na(maxAgeHighQualityData) & maxAgeHighQualityData >= 0) {
+      if (!is.na(maxAgeHighQualityData) & maxAgeHighQualityData >= 0) {
         # identify young in the pixelCohortData
-      youngRows <- pixelCohortData$age <= maxAgeHighQualityData
-      young <- pixelCohortData[youngRows == TRUE]
+        youngRows <- pixelCohortData$age <= maxAgeHighQualityData
+        young <- pixelCohortData[youngRows == TRUE]
 
         youngRows2 <- !is.na(firePerimeters[young$pixelIndex])
         young <- young[youngRows2]
 
-      # whYoungBEqZero <- which(young$B == 0)
-      whYoungZeroToMaxHighQuality <- which(young$age > 0)
-      if (length(whYoungZeroToMaxHighQuality) > 0) {
-        youngWAgeEqZero <- young[-whYoungZeroToMaxHighQuality]
-        youngNoAgeEqZero <- young[whYoungZeroToMaxHighQuality]
+        # whYoungBEqZero <- which(young$B == 0)
+        whYoungZeroToMaxHighQuality <- which(young$age > 0)
+        if (length(whYoungZeroToMaxHighQuality) > 0) {
+          youngWAgeEqZero <- young[-whYoungZeroToMaxHighQuality]
+          youngNoAgeEqZero <- young[whYoungZeroToMaxHighQuality]
 
-        message("Running 'spinup' on pixels that are within fire polygons and whose age < ", maxAgeHighQualityData)
-        young <- Cache(spinUpPartial,
-                       youngNoAgeEqZero, speciesEcoregion, maxAgeHighQualityData,
-                       sim$minRelativeB, sim$species, sim$sppColorsVect, paths(sim),
-                       currentModule(sim), modules(sim))
+          message("Running 'spinup' on pixels that are within fire polygons and whose age < ", maxAgeHighQualityData)
+          young <- Cache(spinUpPartial,
+                         youngNoAgeEqZero, speciesEcoregion, maxAgeHighQualityData,
+                         sim$minRelativeB, sim$species, sim$sppColorsVect, paths(sim),
+                         currentModule(sim), modules(sim))
 
-        # young <- Cache(updateYoungBiomasses,
-        #                young = youngNoAgeEqZero,
-        #                modelBiomass = modelBiomass,
-        #                userTags = c(cacheTags, "updateYoungBiomasses"),
-        #                omitArgs = c("userTags"))
-        set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
+          # young <- Cache(updateYoungBiomasses,
+          #                young = youngNoAgeEqZero,
+          #                modelBiomass = modelBiomass,
+          #                userTags = c(cacheTags, "updateYoungBiomasses"),
+          #                omitArgs = c("userTags"))
+          set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
 
           young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
         }
