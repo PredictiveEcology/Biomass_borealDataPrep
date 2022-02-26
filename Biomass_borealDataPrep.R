@@ -1066,7 +1066,10 @@ createBiomass_coreInputs <- function(sim) {
           #                modelBiomass = modelBiomass,
           #                userTags = c(cacheTags, "updateYoungBiomasses"),
           #                omitArgs = c("userTags"))
-          set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
+
+          if (length(setdiff(colnames(young), colnames(pixelCohortData))) > 0) {
+            set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
+          }
 
           young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
         }

@@ -102,7 +102,6 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
                           # rasterToMatch, speciesLayers,
                           minRelativeB, species, sppColorsVect, paths,
                           currentModule, modules) {
-
   rng <- range(pixelCohortData$age)
   if (rng[1] <= 0) stop("This spinup is only tested with age > 0")
   if (rng[2] > maxAge) stop("This spinup is only tested with age <= maxAge")
@@ -163,7 +162,9 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
 
   curModPath <- file.path(paths$modulePath, currentModule)
   submodule <- "Biomass_coreSubModule"
-  paths$outputPath <- file.path(curModPath, submodule, "outputs")
+  paths$outputPath <- file.path(curModPath, submodule, "outputs", rndstr()) ## avoid race conditions
+  on.exit(unlink(paths$outputPath, recursive = TRUE), add = TRUE)
+
   if (is.null(modules$Biomass_core)) { # if Biomass_core doesn't exist in modulePath, then download it
     paths$modulePath <- file.path(curModPath, submodule, "module")
     moduleNameAndBranch <- c("Biomass_core@development (>= 1.3.9)")
@@ -174,25 +175,29 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
                                     saveTime = unique(seq(times$start, times$end, by = 1)),
                                     eventPriority = 1, fun = "qs::qsave",
                                     stringsAsFactors = FALSE))
-  suppressMessages(ss <- simInit(paths = paths, outputs = outputs, times = times))
+  suppressMessages({
+    ss <- simInit(paths = paths, outputs = outputs, times = times)
+  })
   outputs <- outputs(ss)
-  mySimOut <- simInitAndSpades(# .cacheExtra = list(knownDigest, paths$outputPath),
-                    # omitArgs = c("objects", "params", "debug", "paths"),
-                    times = times, params = parameters, modules = modules, # quick = "paths",
-                    paths = paths,
-                    objects = objectsForYoungSim, outputs = outputs,
-                    debug = 1)#, outputObjects = "pixelGroupMap")
+  mySimOut <- simInitAndSpades(
+    # .cacheExtra = list(knownDigest, paths$outputPath),
+    # omitArgs = c("objects", "params", "debug", "paths"),
+    times = times, params = parameters, modules = modules, # quick = "paths",
+    paths = paths,
+    objects = objectsForYoungSim, outputs = outputs,
+    # outputObjects = "pixelGroupMap",
+    debug = 1
+  )
   cds <- ReadExperimentFiles(outputs)
   cd1 <- cds[cd[, -"B"], on = c("pixelGroup", "speciesCode", "age"), nomatch = NA]
   set(cd1, NULL, c("pixelGroup"), NULL)
   setcolorder(cd1, neworder = colnames(pixelCohortData))
-  unlink(outputs$file)
+
   return(cd1[])
 }
 
-
 pixelGroupMapGenerate <- function(cohortData) {
-  pixelGroupMap <- raster(res = c(1,1))
+  pixelGroupMap <- raster(res = c(1, 1))
   nrow(pixelGroupMap) <- round(sqrt(max(cohortData$pixelGroup)), 0)
   ncol(pixelGroupMap) <- round(sqrt(max(cohortData$pixelGroup)), 0) + 1
   vals <- c(1:max(cohortData$pixelGroup), rep(NA, times = ncell(pixelGroupMap) - max(cohortData$pixelGroup)))
@@ -200,9 +205,7 @@ pixelGroupMapGenerate <- function(cohortData) {
   pixelGroupMap
 }
 
-
 ReadExperimentFiles <- function(outputs) {
-
   outputs <- as.data.table(outputs)[objectName == "cohortData"]
   fEs <- .fileExtensions()
   cdsList <- by(outputs, outputs[, "saveTime"], function(x) {
