@@ -1058,14 +1058,16 @@ createBiomass_coreInputs <- function(sim) {
       pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE], young), use.names = TRUE)
 
       sim$imputedPixID <- unique(c(sim$imputedPixID, young$pixelIndex))
-      assertthat::assert_that(all(inRange(young$B, 0, maxRawB / 3))) # /4 is too strong -- 25 years is a lot of time
+      # Don't assert for now (Feb 25, 2022 Eliot)
+      # assertthat::assert_that(all(inRange(young$B, 0, maxRawB / 3))) # /4 is too strong -- 25 years is a lot of time
     } else {
       ## return maxAgeHighQualityData to -1
       maxAgeHighQualityData <- -1
     }
   }
 
-  assertthat::assert_that(all(inRange(pixelCohortData$B, 0, maxRawB))) # should they all be below the initial biomass map?
+  # Don't assert for now (Feb 25, 2022 Eliot)
+  # assertthat::assert_that(all(inRange(pixelCohortData$B, 0, maxRawB))) # should they all be below the initial biomass map?
 
   # Fill in any remaining B values that are still NA -- the previous chunk filled in B for young cohorts only
   if (anyNA(pixelCohortData$B)) {
