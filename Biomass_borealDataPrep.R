@@ -81,7 +81,7 @@ defineModule(sim, list(
                                  "that is a zipped shapefile with fire polygons, an attribute (i.e., a column) named 'Year'.",
                                  "If supplied (omitted with NULL or NA), this will be used to 'update' age pixels on standAgeMap",
                                  "with 'time since fire' as derived from this fire polygons map. Biomass is also updated in these pixels,",
-                                 "when the last fire is more recent than 1986. If NULL or NAm, no age and biomass imputation will be done",
+                                 "when the last fire is more recent than 1986. If NULL or NA, no age and biomass imputation will be done",
                                  "in these pixels.")),
     defineParameter("fixModelBiomass", "logical", FALSE, NA, NA,
                     paste("should modelBiomass be fixed in the case of non-convergence?",
@@ -988,7 +988,15 @@ createBiomass_coreInputs <- function(sim) {
                                        userTags = c(cacheTags, "ecoregionMap"),
                                        omitArgs = c("userTags"))
 
+  if (is(P(sim)$minRelativeBFunction, "call")) {
+    sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
+  } else {
+    stop("minRelativeBFunction should be a quoted function expression, using `pixelCohortData`, e.g.:\n",
+         "    quote(LandR::makeMinRelativeB(pixelCohortData))")
+  }
+
   maxAgeHighQualityData <- -1
+  maxRawB <- maxValue(sim$rawBiomassMap) * 100 ## match units in cohortData (t/ha ==> g/m^2)
 
   # If this module used a fire database to extract better young ages, then we
   #   can use those high quality younger ages to help with our biomass estimates
@@ -1032,11 +1040,17 @@ createBiomass_coreInputs <- function(sim) {
         youngWAgeEqZero <- young[-whYoungZeroToMaxHighQuality]
         youngNoAgeEqZero <- young[whYoungZeroToMaxHighQuality]
 
-        young <- Cache(updateYoungBiomasses,
-                       young = youngNoAgeEqZero,
-                       modelBiomass = modelBiomass,
-                       userTags = c(cacheTags, "updateYoungBiomasses"),
-                       omitArgs = c("userTags"))
+        message("Running 'spinup' on pixels that are within fire polygons and whose age < ", maxAgeHighQualityData)
+        young <- Cache(spinUpPartial,
+                       youngNoAgeEqZero, speciesEcoregion, maxAgeHighQualityData,
+                       sim$minRelativeB, sim$species, sim$sppColorsVect, paths(sim),
+                       currentModule(sim), modules(sim))
+
+        # young <- Cache(updateYoungBiomasses,
+        #                young = youngNoAgeEqZero,
+        #                modelBiomass = modelBiomass,
+        #                userTags = c(cacheTags, "updateYoungBiomasses"),
+        #                omitArgs = c("userTags"))
         set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
 
         young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
@@ -1044,16 +1058,14 @@ createBiomass_coreInputs <- function(sim) {
       pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE], young), use.names = TRUE)
 
       sim$imputedPixID <- unique(c(sim$imputedPixID, young$pixelIndex))
+      assertthat::assert_that(all(inRange(young$B, 0, maxRawB / 3))) # /4 is too strong -- 25 years is a lot of time
     } else {
       ## return maxAgeHighQualityData to -1
       maxAgeHighQualityData <- -1
     }
   }
-#browser()
-  ## TODO: what is a reasonable upper bound or other assertion??
-  maxRawB <- maxValue(sim$rawBiomassMap) * 100 ## match units in cohortData (t/ha ==> g/m^2)
-  assertthat::assert_that(all(inRange(young$B, 0, maxRawB / 4)))
-  assertthat::assert_that(all(inRange(pixelCohortData$B, 0, maxRawB)))
+
+  assertthat::assert_that(all(inRange(pixelCohortData$B, 0, maxRawB))) # should they all be below the initial biomass map?
 
   # Fill in any remaining B values that are still NA -- the previous chunk filled in B for young cohorts only
   if (anyNA(pixelCohortData$B)) {
@@ -1127,12 +1139,6 @@ createBiomass_coreInputs <- function(sim) {
   #
   sim$pixelGroupMap <- makePixelGroupMap(pixelCohortData, sim$rasterToMatch)
 
-  if (is(P(sim)$minRelativeBFunction, "call")) {
-    sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
-  } else {
-    stop("minRelativeBFunction should be a quoted function expression, using `pixelCohortData`, e.g.:\n",
-         "    quote(LandR::makeMinRelativeB(pixelCohortData))")
-  }
   ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
   message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
 
