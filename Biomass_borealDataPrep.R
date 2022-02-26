@@ -1036,10 +1036,12 @@ createBiomass_coreInputs <- function(sim) {
     ## or not following calendar year
 
     if (!is.na(maxAgeHighQualityData) & maxAgeHighQualityData >= 0) {
+        # identify young in the pixelCohortData
       youngRows <- pixelCohortData$age <= maxAgeHighQualityData
       young <- pixelCohortData[youngRows == TRUE]
 
-      young <- young[which(!is.na(firePerimeters[young$pixelIndex]))]
+        youngRows2 <- !is.na(firePerimeters[young$pixelIndex])
+        young <- young[youngRows2]
 
       # whYoungBEqZero <- which(young$B == 0)
       whYoungZeroToMaxHighQuality <- which(young$age > 0)
@@ -1060,12 +1062,16 @@ createBiomass_coreInputs <- function(sim) {
         #                omitArgs = c("userTags"))
         set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
 
-        young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
-      }
-      pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE], young), use.names = TRUE)
+          young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
+        }
+
+        lengthUniquePixelIndices <- length(unique(pixelCohortData$pixelIndex))
+        pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE],
+                                          pixelCohortData[which(youngRows == TRUE)[!youngRows2]],
+                                          young), use.names = TRUE)
         assertthat::assert_that(lengthUniquePixelIndices == length(unique(pixelCohortData$pixelIndex)))
 
-      sim$imputedPixID <- unique(c(sim$imputedPixID, young$pixelIndex))
+        sim$imputedPixID <- unique(c(sim$imputedPixID, young$pixelIndex))
         assertthat::assert_that(
           all(inRange(young$B, 0, 1.5 * maxRawB / min(sim$species$longevity/maxAgeHighQualityData)))) # /4 is too strong -- 25 years is a lot of time
       } else {
