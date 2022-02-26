@@ -81,7 +81,7 @@ defineModule(sim, list(
                                  "that is a zipped shapefile with fire polygons, an attribute (i.e., a column) named 'Year'.",
                                  "If supplied (omitted with NULL or NA), this will be used to 'update' age pixels on standAgeMap",
                                  "with 'time since fire' as derived from this fire polygons map. Biomass is also updated in these pixels,",
-                                 "when the last fire is more recent than 1986. If NULL or NAm, no age and biomass imputation will be done",
+                                 "when the last fire is more recent than 1986. If NULL or NA, no age and biomass imputation will be done",
                                  "in these pixels.")),
     defineParameter("fixModelBiomass", "logical", FALSE, NA, NA,
                     paste("should modelBiomass be fixed in the case of non-convergence?",
@@ -117,6 +117,9 @@ defineModule(sim, list(
                                  "biomass-succession-main-inputs_BSW_Baseline.txt%7E."))),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by P(sim)$forestedLCCClasses?"),
+    defineParameter("overrideBiomassInFires", "logical", TRUE, NA, NA,
+                    paste("should B values be re-estimated using Biomass_core for pixels within the fire perimeters ",
+                          "of the fire database located at P(sim)$fireURL, based on their time since fire age?")),
     defineParameter("pixelGroupAgeClass", "numeric", params(sim)$Biomass_borealDataPrep$successionTimestep, NA, NA,
                     "When assigning pixelGroup membership, this defines the resolution of ages that will be considered 'the same pixelGroup', e.g., if it is 10, then 6 and 14 will be the same"),
     defineParameter("pixelGroupBiomassClass", "numeric", 100, NA, NA,
@@ -988,72 +991,103 @@ createBiomass_coreInputs <- function(sim) {
                                        userTags = c(cacheTags, "ecoregionMap"),
                                        omitArgs = c("userTags"))
 
+  if (is(P(sim)$minRelativeBFunction, "call")) {
+    sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
+  } else {
+    stop("minRelativeBFunction should be a quoted function expression, using `pixelCohortData`, e.g.:\n",
+         "    quote(LandR::makeMinRelativeB(pixelCohortData))")
+  }
+
   maxAgeHighQualityData <- -1
+  maxRawB <- maxValue(sim$rawBiomassMap) * 100 ## match units in cohortData (t/ha ==> g/m^2)
 
   # If this module used a fire database to extract better young ages, then we
   #   can use those high quality younger ages to help with our biomass estimates
-  if (!(is.null(P(sim)$fireURL) | is.na(P(sim)$fireURL))) {
-    # fireURL <- "https://cwfis.cfs.nrcan.gc.ca/downloads/nbac/nbac_1986_to_2019_20200921.zip"
-    # This was using the nbac filename to figure out what the earliest year in the
-    #   fire dataset was. Since that is not actually used here, it doesn't really
-    #   matter what the fire dataset was. Basically, this section is updating
-    #   young ages that are way outside of their biomass. Can set this to 1986 to just
-    #   give a cutoff
+  if (isTRUE(P(sim)$overrideBiomassInFires)) {
+    if (!(is.null(P(sim)$fireURL) | is.na(P(sim)$fireURL))) {
+      message("Using P(sim)$fireURL to download fire database; this is being used to override ",
+              "B values that originally came from rawBiomassMap, but only within the fire perimeters.",
+              "To skip this step, set parameter fireURL to NA")
+      # fireURL <- "https://cwfis.cfs.nrcan.gc.ca/downloads/nbac/nbac_1986_to_2019_20200921.zip"
+      # This was using the nbac filename to figure out what the earliest year in the
+      #   fire dataset was. Since that is not actually used here, it doesn't really
+      #   matter what the fire dataset was. Basically, this section is updating
+      #   young ages that are way outside of their biomass. Can set this to 1986 to just
+      #   give a cutoff
 
-    ## TODO: Ceres: it seems silly to get the fire perimeters twice, but for now this is the only way to know
-    ## where ages were imputed
-    firePerimeters <- Cache(prepInputsFireYear,
-                            destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
-                            studyArea = raster::aggregate(sim$studyArea),
-                            rasterToMatch = sim$rasterToMatch,
-                            overwrite = TRUE,
-                            url = P(sim)$fireURL,
-                            fireField = "YEAR",
-                            fun = "sf::st_read",
-                            userTags = c(cacheTags, "firePerimeters"))
+      ## TODO: Ceres: it seems silly to get the fire perimeters twice, but for now this is the only way to know
+      ## where ages were imputed
+      firePerimeters <- Cache(prepInputsFireYear,
+                              destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
+                              studyArea = raster::aggregate(sim$studyArea),
+                              rasterToMatch = sim$rasterToMatch,
+                              overwrite = TRUE,
+                              url = P(sim)$fireURL,
+                              fireField = "YEAR",
+                              fun = "sf::st_read",
+                              userTags = c(cacheTags, "firePerimeters"))
 
-    ## TODO: Ceres: 1986 is different from the earliest year (1950) used to impute ages.
-    ## this should be consistent with the earliest year used to impute ages
+      ## TODO: Ceres: 1986 is different from the earliest year (1950) used to impute ages.
+      ## this should be consistent with the earliest year used to impute ages
 
-    firstFireYear <- 1986 # as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", fireURL))
-    maxAgeHighQualityData <- start(sim) - firstFireYear
-    ## if maxAgeHighQualityData is lower than 0, it means it's prior to the first fire Year
-    ## or not following calendar year
-
-    if (!is.na(maxAgeHighQualityData) & maxAgeHighQualityData >= 0) {
-      youngRows <- pixelCohortData$age <= maxAgeHighQualityData
-      young <- pixelCohortData[youngRows == TRUE]
-
-      young <- young[which(!is.na(firePerimeters[young$pixelIndex]))]
-
-      # whYoungBEqZero <- which(young$B == 0)
-      whYoungZeroToMaxHighQuality <- which(young$age > 0)
-      if (length(whYoungZeroToMaxHighQuality) > 0) {
-        youngWAgeEqZero <- young[-whYoungZeroToMaxHighQuality]
-        youngNoAgeEqZero <- young[whYoungZeroToMaxHighQuality]
-
-        young <- Cache(updateYoungBiomasses,
-                       young = youngNoAgeEqZero,
-                       modelBiomass = modelBiomass,
-                       userTags = c(cacheTags, "updateYoungBiomasses"),
-                       omitArgs = c("userTags"))
-        set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
-
-        young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
+      firstFireYear <- minValue(firePerimeters) # 1986 # as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", fireURL))
+      whichFiresTooOld <- which(firePerimeters[] < firstFireYear)
+      if (length(whichFiresTooOld)) {
+        message("There were fires in the database older than ", firstFireYear, ";",
+                " The data from these are not being used because firstFireYear = 1986")
+        firePerimeters[whichFiresTooOld] <- NA
       }
-      pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE], young), use.names = TRUE)
+      maxAgeHighQualityData <- start(sim) - firstFireYear
+      ## if maxAgeHighQualityData is lower than 0, it means it's prior to the first fire Year
+      ## or not following calendar year
 
-      sim$imputedPixID <- unique(c(sim$imputedPixID, young$pixelIndex))
-    } else {
-      ## return maxAgeHighQualityData to -1
-      maxAgeHighQualityData <- -1
+      if (!is.na(maxAgeHighQualityData) & maxAgeHighQualityData >= 0) {
+        # identify young in the pixelCohortData
+        youngRows <- pixelCohortData$age <= maxAgeHighQualityData
+        young <- pixelCohortData[youngRows == TRUE]
+
+        youngRows2 <- !is.na(firePerimeters[young$pixelIndex])
+        young <- young[youngRows2]
+
+        # whYoungBEqZero <- which(young$B == 0)
+        whYoungZeroToMaxHighQuality <- which(young$age > 0)
+        if (length(whYoungZeroToMaxHighQuality) > 0) {
+          youngWAgeEqZero <- young[-whYoungZeroToMaxHighQuality]
+          youngNoAgeEqZero <- young[whYoungZeroToMaxHighQuality]
+
+          message("Running 'spinup' on pixels that are within fire polygons and whose age < ", maxAgeHighQualityData)
+          young <- Cache(spinUpPartial,
+                         youngNoAgeEqZero, speciesEcoregion, maxAgeHighQualityData,
+                         sim$minRelativeB, sim$species, sim$sppColorsVect, paths(sim),
+                         currentModule(sim), modules(sim))
+
+          # young <- Cache(updateYoungBiomasses,
+          #                young = youngNoAgeEqZero,
+          #                modelBiomass = modelBiomass,
+          #                userTags = c(cacheTags, "updateYoungBiomasses"),
+          #                omitArgs = c("userTags"))
+          set(young, NULL, setdiff(colnames(young), colnames(pixelCohortData)), NULL)
+
+          young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
+        }
+
+        lengthUniquePixelIndices <- length(unique(pixelCohortData$pixelIndex))
+        pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE],
+                                          pixelCohortData[which(youngRows == TRUE)[!youngRows2]],
+                                          young), use.names = TRUE)
+        assertthat::assert_that(lengthUniquePixelIndices == length(unique(pixelCohortData$pixelIndex)))
+
+        sim$imputedPixID <- unique(c(sim$imputedPixID, young$pixelIndex))
+        assertthat::assert_that(
+          all(inRange(young$B, 0, 1.5 * maxRawB / min(sim$species$longevity/maxAgeHighQualityData)))) # /4 is too strong -- 25 years is a lot of time
+      } else {
+        ## return maxAgeHighQualityData to -1
+        maxAgeHighQualityData <- -1
+      }
     }
   }
-#browser()
-  ## TODO: what is a reasonable upper bound or other assertion??
-  maxRawB <- maxValue(sim$rawBiomassMap) * 100 ## match units in cohortData (t/ha ==> g/m^2)
-  assertthat::assert_that(all(inRange(young$B, 0, maxRawB / 4)))
-  assertthat::assert_that(all(inRange(pixelCohortData$B, 0, maxRawB)))
+
+  assertthat::assert_that(all(inRange(pixelCohortData$B, 0, maxRawB))) # should they all be below the initial biomass map?
 
   # Fill in any remaining B values that are still NA -- the previous chunk filled in B for young cohorts only
   if (anyNA(pixelCohortData$B)) {
@@ -1127,12 +1161,6 @@ createBiomass_coreInputs <- function(sim) {
   #
   sim$pixelGroupMap <- makePixelGroupMap(pixelCohortData, sim$rasterToMatch)
 
-  if (is(P(sim)$minRelativeBFunction, "call")) {
-    sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
-  } else {
-    stop("minRelativeBFunction should be a quoted function expression, using `pixelCohortData`, e.g.:\n",
-         "    quote(LandR::makeMinRelativeB(pixelCohortData))")
-  }
   ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
   message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
 
@@ -1336,8 +1364,8 @@ Save <- function(sim) {
       omitArgs = c("userTags")
     )
 
-    sim$rasterToMatch <- Cache(postProcess,
-                               x = sim$rawBiomassMap,
+    sim$rasterToMatch <- Cache(postProcessTerra,
+                               from = sim$rawBiomassMap,
                                studyArea = sim$studyArea,
                                # rasterToMatch = sim$rasterToMatchLarge,   ## Ceres: this messes up the extent. if we are doing this it means BOTH RTMs come from biomassMap, so no need for RTMLarge here.
                                useSAcrs = FALSE,
@@ -1347,9 +1375,10 @@ Save <- function(sim) {
                                filename2 = .suffix(file.path(dPath, "rasterToMatch.tif"),
                                                    paste0("_", P(sim)$.studyAreaName)),
                                overwrite = TRUE,
-                               useCache = "overwrite",
+                               # useCache = "overwrite",
                                userTags = c(cacheTags, "rasterToMatch"),
-                               omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
+                               omitArgs = c("destinationPath", "targetFile", "userTags", "stable", "filename2",
+                                            "overwrite"))
 
     ## covert to 'mask'
     RTMvals <- getValues(sim$rasterToMatch)
@@ -1373,14 +1402,15 @@ Save <- function(sim) {
 
   ## Land cover raster ------------------------------------------------
   if (!suppliedElsewhere("rstLCC", sim)) {
-    sim$rstLCC <- prepInputsLCC(
+    sim$rstLCC <- Cache(prepInputsLCC,
       year = 2010,
       studyArea = sim$studyAreaLarge, ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
       rasterToMatch = sim$rasterToMatchLarge,
       destinationPath = dPath,
       filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName)),
       overwrite = TRUE,
-      userTags = c("rstLCC", currentModule(sim), P(sim)$.studyAreaName))
+      userTags = c("rstLCC", currentModule(sim), P(sim)$.studyAreaName),
+      omitArgs = c("destinationPath", "userTags", "filename2", "overwrite"))
   }
 
   if (!compareRaster(sim$rstLCC, sim$rasterToMatchLarge)) {
