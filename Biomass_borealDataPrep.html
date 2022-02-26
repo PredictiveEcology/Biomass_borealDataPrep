@@ -557,7 +557,7 @@ Plot(simOut)</code></pre>
 <td align="left"></td>
 <td align="left">NA</td>
 <td align="left">NA</td>
-<td align="left">the name of the field used to distinguish ecoregions, if supplying a polygon. Defaults to NULL and tries to use ‘ECODISTRIC’ where available (for legacy reasons), or the row numbers of sim<span class="math inline">\(ecoregionLayer. If this field is not numeric, it will be coerced to numeric | |exportModels |character |none |NA |NA |Controls whether models used to estimate maximum B/ANPP (&#39;biomassModel&#39;) and species establishment (&#39;coverModel&#39;) probabilities are exported for posterior analyses or not. This may be important when models fail to converge or hit singularity (but can still be used to make predictions) and the user wants to investigate them further. Can be set to &#39;none&#39; (no models are exported), &#39;all&#39; (both are exported), &#39;biomassModel&#39; or &#39;coverModel&#39;. BEWARE: because this is intended for posterior model inspection, the models will be exported with data, which may mean very large simList(s)! | |fireURL |character |https://.... |NA |NA |A url to a fire database, such as the Canadian National Fire Database, that is a zipped shapefile with fire polygons, an attribute (i.e., a column) named &#39;Year&#39;. If supplied (omitted with NULL or NA), this will be used to &#39;update&#39; age pixels on standAgeMap with &#39;time since fire&#39; as derived from this fire polygons map. Biomass is also updated in these pixels, when the last fire is more recent than 1986. If NULL or NAm, no age and biomass imputation will be done in these pixels. | |fixModelBiomass |logical |FALSE |NA |NA |should modelBiomass be fixed in the case of non-convergence? Only scaling of variables is implemented at this time | |forestedLCCClasses |numeric |1, 2, 3,.... |0 |NA |The classes in the rstLCC layer that are &#39;treed&#39; and will therefore be run in Biomass_core. Defaults to forested classes in LCC2010 map. | |imputeBadAgeModel |call |lme4::lm.... |NA |NA |Model and formula used for imputing ages that are either missing or do not match well with Biomass or Cover. Specifically, if Biomass or Cover is 0, but age is not, then age will be imputed. Similarly, if Age is 0 and either Biomass or Cover is not, then age will be imputed | |LCCClassesToReplaceNN |numeric | |NA |NA |This will replace these classes on the landscape with the closest forest class P(sim)\)</span>forestedLCCClasses. If the user is using the default 2005 data product for rstLCC, then users may wish to include 36 (cities – if running a historic range of variation project), and 34:35 (burns) Since this is about estimating parameters for growth, it doesn’t make any sense to have unique estimates for transient classes in most cases. If no classes are to be replaced, pass ‘LCCClassesToReplaceNN’ = numeric(0) when supplying parameters.</td>
+<td align="left">the name of the field used to distinguish ecoregions, if supplying a polygon. Defaults to NULL and tries to use ‘ECODISTRIC’ where available (for legacy reasons), or the row numbers of sim<span class="math inline">\(ecoregionLayer. If this field is not numeric, it will be coerced to numeric | |exportModels |character |none |NA |NA |Controls whether models used to estimate maximum B/ANPP (&#39;biomassModel&#39;) and species establishment (&#39;coverModel&#39;) probabilities are exported for posterior analyses or not. This may be important when models fail to converge or hit singularity (but can still be used to make predictions) and the user wants to investigate them further. Can be set to &#39;none&#39; (no models are exported), &#39;all&#39; (both are exported), &#39;biomassModel&#39; or &#39;coverModel&#39;. BEWARE: because this is intended for posterior model inspection, the models will be exported with data, which may mean very large simList(s)! | |fireURL |character |https://.... |NA |NA |A url to a fire database, such as the Canadian National Fire Database, that is a zipped shapefile with fire polygons, an attribute (i.e., a column) named &#39;Year&#39;. If supplied (omitted with NULL or NA), this will be used to &#39;update&#39; age pixels on standAgeMap with &#39;time since fire&#39; as derived from this fire polygons map. Biomass is also updated in these pixels, when the last fire is more recent than 1986. If NULL or NA, no age and biomass imputation will be done in these pixels. | |fixModelBiomass |logical |FALSE |NA |NA |should modelBiomass be fixed in the case of non-convergence? Only scaling of variables is implemented at this time | |forestedLCCClasses |numeric |1, 2, 3,.... |0 |NA |The classes in the rstLCC layer that are &#39;treed&#39; and will therefore be run in Biomass_core. Defaults to forested classes in LCC2010 map. | |imputeBadAgeModel |call |lme4::lm.... |NA |NA |Model and formula used for imputing ages that are either missing or do not match well with Biomass or Cover. Specifically, if Biomass or Cover is 0, but age is not, then age will be imputed. Similarly, if Age is 0 and either Biomass or Cover is not, then age will be imputed | |LCCClassesToReplaceNN |numeric | |NA |NA |This will replace these classes on the landscape with the closest forest class P(sim)\)</span>forestedLCCClasses. If the user is using the default 2005 data product for rstLCC, then users may wish to include 36 (cities – if running a historic range of variation project), and 34:35 (burns) Since this is about estimating parameters for growth, it doesn’t make any sense to have unique estimates for transient classes in most cases. If no classes are to be replaced, pass ‘LCCClassesToReplaceNN’ = numeric(0) when supplying parameters.</td>
 </tr>
 <tr class="odd">
 <td align="left">minCoverThreshold</td>
@@ -581,25 +581,33 @@ Plot(simOut)</code></pre>
 <td align="left">TRUE</td>
 <td align="left">FALSE</td>
 <td align="left">TRUE</td>
-<td align="left">Should this module use only treed pixels, as identified by P(sim)<span class="math inline">\(forestedLCCClasses? | |pixelGroupAgeClass |numeric |params(s.... |NA |NA |When assigning pixelGroup membership, this defines the resolution of ages that will be considered &#39;the same pixelGroup&#39;, e.g., if it is 10, then 6 and 14 will be the same | |pixelGroupBiomassClass |numeric |100 |NA |NA |When assigning pixelGroup membership, this defines the resolution of biomass that will be considered &#39;the same pixelGroup&#39;, e.g., if it is 100, then 5160 and 5240 will be the same | |rmImputedPix |logical |FALSE |NA |NA |Should sim\)</span>imputedPixID be removed from the simulation?</td>
+<td align="left">Should this module use only treed pixels, as identified by P(sim)<span class="math inline">\(forestedLCCClasses? | |overrideBiomassInFires |logical |TRUE |NA |NA |should B values be re-estimated using Biomass_core for pixels within the fire perimeters of the fire database located at P(sim)\)</span>fireURL, based on their time since fire age?</td>
 </tr>
 <tr class="even">
-<td align="left">speciesUpdateFunction</td>
-<td align="left">list</td>
-<td align="left">LandR::s….</td>
+<td align="left">pixelGroupAgeClass</td>
+<td align="left">numeric</td>
+<td align="left">params(s….</td>
 <td align="left">NA</td>
 <td align="left">NA</td>
-<td align="left">Unnamed list of (one or more) quoted functions that updates species table to customize values. By default, ‘LandR::speciesTableUpdate’ is used to change longevity and shade tolerance values, using values appropriate to Boreal Shield West (BSW), Boreal Plains (BP) and Montane Cordillera (MC) ecoprovinces (see ?LandR::speciesTableUpdate for details). Set to NULL if default trait values from ‘speciesTable’ are to be kept instead</td>
+<td align="left">When assigning pixelGroup membership, this defines the resolution of ages that will be considered ‘the same pixelGroup’, e.g., if it is 10, then 6 and 14 will be the same</td>
 </tr>
 <tr class="odd">
-<td align="left">sppEquivCol</td>
-<td align="left">character</td>
-<td align="left">Boreal</td>
+<td align="left">pixelGroupBiomassClass</td>
+<td align="left">numeric</td>
+<td align="left">100</td>
 <td align="left">NA</td>
 <td align="left">NA</td>
-<td align="left">The column in sim$specieEquivalency data.table to use as a naming convention</td>
+<td align="left">When assigning pixelGroup membership, this defines the resolution of biomass that will be considered ‘the same pixelGroup’, e.g., if it is 100, then 5160 and 5240 will be the same</td>
 </tr>
 <tr class="even">
+<td align="left">rmImputedPix</td>
+<td align="left">logical</td>
+<td align="left">FALSE</td>
+<td align="left">NA</td>
+<td align="left">NA</td>
+<td align="left">Should sim<span class="math inline">\(imputedPixID be removed from the simulation? | |speciesUpdateFunction |list |LandR::s.... |NA |NA |Unnamed list of (one or more) quoted functions that updates species table to customize values. By default, &#39;LandR::speciesTableUpdate&#39; is used to change longevity and shade tolerance values, using values appropriate to Boreal Shield West (BSW), Boreal Plains (BP) and Montane Cordillera (MC) ecoprovinces (see ?LandR::speciesTableUpdate for details). Set to NULL if default trait values from &#39;speciesTable&#39; are to be kept instead | |sppEquivCol |character |Boreal |NA |NA |The column in sim\)</span>specieEquivalency data.table to use as a naming convention</td>
+</tr>
+<tr class="odd">
 <td align="left">speciesTableAreas</td>
 <td align="left">character</td>
 <td align="left">BSW, BP, MC</td>
@@ -607,7 +615,7 @@ Plot(simOut)</code></pre>
 <td align="left">NA</td>
 <td align="left">One or more of the Ecoprovince short forms that are in the <code>speciesTable</code> file, e.g., BSW, MC etc. Default is good for Alberta and maybe other places.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">subsetDataAgeModel</td>
 <td align="left">numeric</td>
 <td align="left">50</td>
@@ -615,7 +623,7 @@ Plot(simOut)</code></pre>
 <td align="left">NA</td>
 <td align="left">the number of samples to use when subsampling the age data model and when fitting DeciduousCoverDiscount; Can be TRUE/FALSE/NULL or numeric; if TRUE, uses 50. If FALSE/NULL no subsetting is done.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">subsetDataBiomassModel</td>
 <td align="left">numeric</td>
 <td align="left"></td>
@@ -623,7 +631,7 @@ Plot(simOut)</code></pre>
 <td align="left">NA</td>
 <td align="left">the number of samples to use when subsampling the biomass data model; Can be TRUE/FALSE/NULL or numeric; if TRUE, uses 50. If FALSE/NULL no subsetting is done.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">successionTimestep</td>
 <td align="left">numeric</td>
 <td align="left">10</td>
@@ -631,7 +639,7 @@ Plot(simOut)</code></pre>
 <td align="left">NA</td>
 <td align="left">defines the simulation time step, default is 10 years</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">useCloudCacheForStats</td>
 <td align="left">logical</td>
 <td align="left">TRUE</td>
@@ -639,7 +647,7 @@ Plot(simOut)</code></pre>
 <td align="left">NA</td>
 <td align="left">Some of the statistical models take long (at least 30 minutes, likely longer). If this is TRUE, then it will try to get previous cached runs from googledrive.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">.plotInitialTime</td>
 <td align="left">numeric</td>
 <td align="left">start(sim)</td>
@@ -647,7 +655,7 @@ Plot(simOut)</code></pre>
 <td align="left">NA</td>
 <td align="left">This is here for backwards compatibility. Please use .plots</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">.plots</td>
 <td align="left">character</td>
 <td align="left">NA</td>
@@ -655,7 +663,7 @@ Plot(simOut)</code></pre>
 <td align="left">NA</td>
 <td align="left">This describes the type of ‘plotting’ to do. See ?Plots for possible types. To omit, set to NA</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">.plotInterval</td>
 <td align="left">numeric</td>
 <td align="left">NA</td>
@@ -663,7 +671,7 @@ Plot(simOut)</code></pre>
 <td align="left">NA</td>
 <td align="left">This describes the simulation time interval between plot events</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">.saveInitialTime</td>
 <td align="left">numeric</td>
 <td align="left">NA</td>
@@ -671,7 +679,7 @@ Plot(simOut)</code></pre>
 <td align="left">NA</td>
 <td align="left">This describes the simulation time at which the first save event should occur</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">.saveInterval</td>
 <td align="left">numeric</td>
 <td align="left">NA</td>
@@ -679,7 +687,7 @@ Plot(simOut)</code></pre>
 <td align="left">NA</td>
 <td align="left">This describes the simulation time interval between save events</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">.seed</td>
 <td align="left">list</td>
 <td align="left"></td>
@@ -687,7 +695,7 @@ Plot(simOut)</code></pre>
 <td align="left">NA</td>
 <td align="left">Named list of seeds to use for each event (names). E.g., list(‘init’ = 123) will set.seed(123) at the start of the init event and unset it at the end. Defaults to NULL, meaning that no seeds will be set</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">.studyAreaName</td>
 <td align="left">character</td>
 <td align="left">NA</td>
@@ -695,7 +703,7 @@ Plot(simOut)</code></pre>
 <td align="left">NA</td>
 <td align="left">Human-readable name for the study area used. If NA, a hash of studyArea will be used.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">.useCache</td>
 <td align="left">character</td>
 <td align="left">.inputOb….</td>
