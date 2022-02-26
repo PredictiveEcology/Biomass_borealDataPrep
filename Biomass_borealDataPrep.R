@@ -117,6 +117,9 @@ defineModule(sim, list(
                                  "biomass-succession-main-inputs_BSW_Baseline.txt%7E."))),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by P(sim)$forestedLCCClasses?"),
+    defineParameter("overrideBiomassInFires", "logical", TRUE, NA, NA,
+                    paste("should B values be re-estimated using Biomass_core for pixels within the fire perimeters ",
+                          "of the fire database located at P(sim)$fireURL, based on their time since fire age?")),
     defineParameter("pixelGroupAgeClass", "numeric", params(sim)$Biomass_borealDataPrep$successionTimestep, NA, NA,
                     "When assigning pixelGroup membership, this defines the resolution of ages that will be considered 'the same pixelGroup', e.g., if it is 10, then 6 and 14 will be the same"),
     defineParameter("pixelGroupBiomassClass", "numeric", 100, NA, NA,
@@ -1000,10 +1003,14 @@ createBiomass_coreInputs <- function(sim) {
 
   # If this module used a fire database to extract better young ages, then we
   #   can use those high quality younger ages to help with our biomass estimates
-  if (!(is.null(P(sim)$fireURL) | is.na(P(sim)$fireURL))) {
-    # fireURL <- "https://cwfis.cfs.nrcan.gc.ca/downloads/nbac/nbac_1986_to_2019_20200921.zip"
-    # This was using the nbac filename to figure out what the earliest year in the
-    #   fire dataset was. Since that is not actually used here, it doesn't really
+  if (isTRUE(P(sim)$overrideBiomassInFires)) {
+    if (!(is.null(P(sim)$fireURL) | is.na(P(sim)$fireURL))) {
+      message("Using P(sim)$fireURL to download fire database; this is being used to override ",
+              "B values that originally came from rawBiomassMap, but only within the fire perimeters.",
+              "To skip this step, set parameter fireURL to NA")
+      # fireURL <- "https://cwfis.cfs.nrcan.gc.ca/downloads/nbac/nbac_1986_to_2019_20200921.zip"
+      # This was using the nbac filename to figure out what the earliest year in the
+      #   fire dataset was. Since that is not actually used here, it doesn't really
     #   matter what the fire dataset was. Basically, this section is updating
     #   young ages that are way outside of their biomass. Can set this to 1986 to just
     #   give a cutoff
@@ -1056,18 +1063,19 @@ createBiomass_coreInputs <- function(sim) {
         young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
       }
       pixelCohortData <- rbindlist(list(pixelCohortData[youngRows == FALSE], young), use.names = TRUE)
+        assertthat::assert_that(lengthUniquePixelIndices == length(unique(pixelCohortData$pixelIndex)))
 
       sim$imputedPixID <- unique(c(sim$imputedPixID, young$pixelIndex))
-      # Don't assert for now (Feb 25, 2022 Eliot)
-      # assertthat::assert_that(all(inRange(young$B, 0, maxRawB / 3))) # /4 is too strong -- 25 years is a lot of time
-    } else {
-      ## return maxAgeHighQualityData to -1
-      maxAgeHighQualityData <- -1
+        assertthat::assert_that(
+          all(inRange(young$B, 0, 1.5 * maxRawB / min(sim$species$longevity/maxAgeHighQualityData)))) # /4 is too strong -- 25 years is a lot of time
+      } else {
+        ## return maxAgeHighQualityData to -1
+        maxAgeHighQualityData <- -1
+      }
     }
   }
 
-  # Don't assert for now (Feb 25, 2022 Eliot)
-  # assertthat::assert_that(all(inRange(pixelCohortData$B, 0, maxRawB))) # should they all be below the initial biomass map?
+  assertthat::assert_that(all(inRange(pixelCohortData$B, 0, maxRawB))) # should they all be below the initial biomass map?
 
   # Fill in any remaining B values that are still NA -- the previous chunk filled in B for young cohorts only
   if (anyNA(pixelCohortData$B)) {
