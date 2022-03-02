@@ -1393,14 +1393,16 @@ Save <- function(sim) {
   if (!compareCRS(sim$studyArea, sim$rasterToMatch)) {
     warning(paste0("studyArea and rasterToMatch projections differ.\n",
                    "studyArea will be projected to match rasterToMatch"))
-    sim$studyArea <- spTransform(sim$studyArea, raster::crs(sim$rasterToMatch))
+    sim$studyArea <- projectInputs(sim$studyArea, raster::crs(sim$rasterToMatch))
+    # sim$studyArea <- spTransform(sim$studyArea, raster::crs(sim$rasterToMatch)) # This didn't work when sim$studyArea is sf
     sim$studyArea <- fixErrors(sim$studyArea)
   }
 
   if (!compareCRS(sim$studyAreaLarge, sim$rasterToMatchLarge)) {
     warning(paste0("studyAreaLarge and rasterToMatchLarge projections differ.\n",
                    "studyAreaLarge will be projected to match rasterToMatchLarge"))
-    sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, raster::crs(sim$rasterToMatchLarge))
+    sim$studyAreaLarge <- projectInputs(sim$studyAreaLarge, raster::crs(sim$rasterToMatchLarge))
+    # sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, raster::crs(sim$rasterToMatchLarge)) # This didn't work when sim$studyArea is sf
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
 
