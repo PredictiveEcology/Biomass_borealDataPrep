@@ -142,7 +142,7 @@ defineModule(sim, list(
     defineParameter("subsetDataAgeModel", "numeric", 50, NA, NA,
                     paste("the number of samples to use when subsampling the age data model and when fitting DeciduousCoverDiscount;",
                           "Can be TRUE/FALSE/NULL or numeric; if TRUE, uses 50. If FALSE/NULL no subsetting is done.")),
-    defineParameter("subsetDataBiomassModel", "numeric", NULL, NA, NA,
+    defineParameter("subsetDataBiomassModel", "numeric", 50, NA, NA,
                     paste("the number of samples to use when subsampling the biomass data model;",
                           "Can be TRUE/FALSE/NULL or numeric; if TRUE, uses 50. If FALSE/NULL no subsetting is done.")),
     defineParameter("successionTimestep", "numeric", 10, NA, NA, "defines the simulation time step, default is 10 years"),
