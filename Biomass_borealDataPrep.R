@@ -1017,6 +1017,8 @@ createBiomass_coreInputs <- function(sim) {
 
       ## TODO: Ceres: it seems silly to get the fire perimeters twice, but for now this is the only way to know
       ## where ages were imputed
+      opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+      on.exit(options(opt), add = TRUE)
       firePerimeters <- Cache(prepInputsFireYear,
                               destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
                               studyArea = raster::aggregate(sim$studyArea),
@@ -1026,6 +1028,8 @@ createBiomass_coreInputs <- function(sim) {
                               fireField = "YEAR",
                               fun = "sf::st_read",
                               userTags = c(cacheTags, "firePerimeters"))
+      options(opt)
+
 
       ## TODO: Ceres: 1986 is different from the earliest year (1950) used to impute ages.
       ## this should be consistent with the earliest year used to impute ages
@@ -1118,6 +1122,15 @@ createBiomass_coreInputs <- function(sim) {
   sim$cohortData <- cohortDataFiles$cohortData
   pixelCohortData <- cohortDataFiles$pixelCohortData
   pixelFateDT <- cohortDataFiles$pixelFateDT
+
+  # Need to rerun this because we may have lost an Ecoregion_Group in the spinup
+  if (is(P(sim)$minRelativeBFunction, "call")) {
+    sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
+  } else {
+    stop("minRelativeBFunction should be a quoted function expression, using `pixelCohortData`, e.g.:\n",
+         "    quote(LandR::makeMinRelativeB(pixelCohortData))")
+  }
+
 
   rm(cohortDataFiles)
   assertthat::assert_that(NROW(pixelCohortData) > 0)
@@ -1225,6 +1238,7 @@ plottingFn <- function(sim) {
   if (!is.null(mod$plotWindow)) {
     dev(mod$plotWindow)
   }
+  browser()
   Map(stk = seStacks, SEtype = names(seStacks),
       function(stk, SEtype) {
         Plots(stk, fn = plotFn_speciesEcoregion, SEtype = SEtype,
