@@ -18,7 +18,7 @@ defineModule(sim, list(
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2", "merTools",
                   "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.7.9006)",
+                  "PredictiveEcology/LandR@development (>= 1.0.7.9008)",
                   "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
@@ -1451,6 +1451,8 @@ Save <- function(sim) {
         stop("'P(sim)$dataYear' must be 2001 OR 2011")
       }
     }
+    opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+    on.exit(options(opt), add = TRUE)
     sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
                              destinationPath = dPath,
                              ageURL = ageURL,
@@ -1464,6 +1466,7 @@ Save <- function(sim) {
                              userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
                              omitArgs = c("destinationPath", "targetFile", "overwrite",
                                           "alsoExtract", "userTags"))
+    options(opt)
     LandR::assertStandAgeMapAttr(sim$standAgeMap)
     sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
     # })
