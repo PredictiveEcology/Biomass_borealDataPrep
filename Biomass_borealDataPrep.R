@@ -1238,7 +1238,6 @@ plottingFn <- function(sim) {
   if (!is.null(mod$plotWindow)) {
     dev(mod$plotWindow)
   }
-  browser()
   Map(stk = seStacks, SEtype = names(seStacks),
       function(stk, SEtype) {
         Plots(stk, fn = plotFn_speciesEcoregion, SEtype = SEtype,
@@ -1314,12 +1313,15 @@ Save <- function(sim) {
   rm(studyArea, studyAreaLarge)
 
   ## Raster(s) to match ------------------------------------------------
-  needRTM <- FALSE
+  needRTML <- needRTM <- FALSE
   if (is.null(sim$rasterToMatch) || is.null(sim$rasterToMatchLarge)) {
-    if (!suppliedElsewhere("rasterToMatch", sim) ||
-        !suppliedElsewhere("rasterToMatchLarge", sim)) { ## if one is not provided, redo both (safer?)
+    if (!suppliedElsewhere("rasterToMatch", sim)) {
       needRTM <- TRUE
-      message("There is no rasterToMatch/rasterToMatchLarge supplied; will attempt to use rawBiomassMap")
+      message("There is no rasterToMatch supplied; will attempt to use rawBiomassMap")
+    }
+    if (!suppliedElsewhere("rasterToMatchLarge", sim)) { ## Eliot changed this -- case where RTM was supplied, this broke that --> NOT TRUE --> if one is not provided, redo both (safer?)
+      needRTML <- TRUE
+      message("There is no rasterToMatchLarge supplied; will use rasterToMatch")
     } else {
       stop("rasterToMatch/rasterToMatchLarge is going to be supplied, but ", currentModule(sim), " requires it ",
            "as part of its .inputObjects. Please make it accessible to ", currentModule(sim),
@@ -1346,7 +1348,7 @@ Save <- function(sim) {
                                url = biomassURL,
                                destinationPath = dPath,
                                studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                               rasterToMatch = if (!needRTM) sim$rasterToMatchLarge else NULL,
+                               rasterToMatch = if (!needRTM) sim$rasterToMatch else if (!needRTML) sim$rasterToMatchLarge else NULL,
                                maskWithRTM = if (!needRTM) TRUE else FALSE,
                                useSAcrs = FALSE,     ## never use SA CRS
                                method = "bilinear",
@@ -1358,16 +1360,29 @@ Save <- function(sim) {
     # })
   }
 
-  if (needRTM) {
+  if (needRTM || needRTML) {
     ## if we need rasterToMatch/rasterToMatchLarge, that means a) we don't have it, but b) we will have rawBiomassMap
     ## even if one of the rasterToMatch is present re-do both.
 
-    if (is.null(sim$rasterToMatch) != is.null(sim$rasterToMatchLarge))
-      warning(paste0("One of rasterToMatch/rasterToMatchLarge is missing. Both will be created \n",
+    if (needRTM && needRTML)
+      warning(paste0("Both of rasterToMatch/rasterToMatchLarge is missing. Both will be created \n",
                      "from rawBiomassMap and studyArea/studyAreaLarge.\n
                      If this is wrong, provide both rasters"))
 
-    sim$rasterToMatchLarge <- sim$rawBiomassMap
+    if (needRTML && !needRTM) {
+      sim$rasterToMatchLarge <- sim$rasterToMatch
+    } else if (needRTML && needRTM) {
+      sim$rasterToMatchLarge <- sim$rawBiomassMap
+    }
+
+    if (!anyNA(sim$rasterToMatchLarge[])) {
+      whZeros <- sim$rasterToMatchLarge[] == 0
+      if (sum(whZeros) > 0) {# means there are zeros instead of NAs for RTML --> change
+        sim$rasterToMatchLarge[whZeros] <- NA
+        message("There were no NAs on the rasterToMatchLarge, but there were zeros; converting these zeros to NA")
+      }
+    }
+
     RTMvals <- getValues(sim$rasterToMatchLarge)
     sim$rasterToMatchLarge[!is.na(RTMvals)] <- 1
 
@@ -1381,24 +1396,32 @@ Save <- function(sim) {
       userTags = c(cacheTags, "rasterToMatchLarge"),
       omitArgs = c("userTags")
     )
-
-    sim$rasterToMatch <- Cache(postProcessTerra,
-                               from = sim$rawBiomassMap,
-                               studyArea = sim$studyArea,
-                               # rasterToMatch = sim$rasterToMatchLarge,   ## Ceres: this messes up the extent. if we are doing this it means BOTH RTMs come from biomassMap, so no need for RTMLarge here.
-                               useSAcrs = FALSE,
-                               # maskWithRTM = FALSE,   ## mask with SA
-                               method = "bilinear",
-                               datatype = "INT2U",
-                               filename2 = .suffix(file.path(dPath, "rasterToMatch.tif"),
-                                                   paste0("_", P(sim)$.studyAreaName)),
-                               overwrite = TRUE,
-                               # useCache = "overwrite",
-                               userTags = c(cacheTags, "rasterToMatch"),
-                               omitArgs = c("destinationPath", "targetFile", "userTags", "stable", "filename2",
-                                            "overwrite"))
-
+    if (needRTM) {
+      sim$rasterToMatch <- Cache(postProcessTerra,
+                                 from = sim$rasterToMatchLarge,
+                                 studyArea = sim$studyArea,
+                                 # rasterToMatch = sim$rasterToMatchLarge,   ## Ceres: this messes up the extent. if we are doing this it means BOTH RTMs come from biomassMap, so no need for RTMLarge here.
+                                 useSAcrs = FALSE,
+                                 # maskWithRTM = FALSE,   ## mask with SA
+                                 method = "bilinear",
+                                 datatype = "INT2U",
+                                 filename2 = .suffix(file.path(dPath, "rasterToMatch.tif"),
+                                                     paste0("_", P(sim)$.studyAreaName)),
+                                 overwrite = TRUE,
+                                 # useCache = "overwrite",
+                                 userTags = c(cacheTags, "rasterToMatch"),
+                                 omitArgs = c("destinationPath", "targetFile", "userTags", "stable", "filename2",
+                                              "overwrite"))
+    }
     ## covert to 'mask'
+    if (!anyNA(sim$rasterToMatch[])) {
+      whZeros <- sim$rasterToMatch[] == 0
+      if (sum(whZeros) > 0) {# means there are zeros instead of NAs for RTML --> change
+        sim$rasterToMatch[whZeros] <- NA
+        message("There were no NAs on the RTM, but there were zeros; converting these zeros to NA")
+      }
+    }
+
     RTMvals <- getValues(sim$rasterToMatch)
     sim$rasterToMatch[!is.na(RTMvals)] <- 1
   }
