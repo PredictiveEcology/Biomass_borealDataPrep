@@ -172,7 +172,8 @@ defineModule(sim, list(
     expectsInput("cloudFolderID", "character",
                  "The google drive location where cloudCache will store large statistical objects"),
     expectsInput("columnsForPixelGroups", "character",
-                 "The names of the columns in cohortData that define unique pixelGroups. Default is c('ecoregionGroup', 'speciesCode', 'age', 'B') "),
+                 "The names of the columns in cohortData that define unique pixelGroups.
+                 Default is c('ecoregionGroup', 'speciesCode', 'age', 'B') "),
     expectsInput("ecoregionLayer", "SpatialPolygonsDataFrame",
                  desc = paste("A SpatialPolygonsDataFrame that characterizes the unique ecological regions used to",
                               "parameterize the biomass, cover, and species establishment probability models.",
@@ -1110,7 +1111,7 @@ createBiomass_coreInputs <- function(sim) {
   ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
   cohortDataFiles <- Cache(makeCohortDataFiles,
                            pixelCohortData = pixelCohortData,
-                           columnsForPixelGroups = sim$columnsForPixelGroups,
+                           columnsForPixelGroups = sim$columnsForPixelGroups, # Par$cohortDefinitionCols
                            speciesEcoregion = speciesEcoregion,
                            pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
                            pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
