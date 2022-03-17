@@ -382,6 +382,10 @@ createBiomass_coreInputs <- function(sim) {
   ## species traits inputs
   ################################################################
   message(blue("Prepare 'species' table, i.e., species level traits", Sys.time()))
+
+  ## TODO: this won't work if the user is not supplyng a `speciesTable` that looks like the default.
+  ## maybe `species` sould be the input and the mandotory number of columns smaller so that this step can be moved to
+  ## .inputObjects
   sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
                                   sppEquiv = sim$sppEquiv,
                                   areas = P(sim)$speciesTableAreas,
@@ -1012,7 +1016,7 @@ createBiomass_coreInputs <- function(sim) {
 
   # If this module used a fire database to extract better young ages, then we
   #   can use those high quality younger ages to help with our biomass estimates
-  if (isTRUE(P(sim)$overrideBiomassInFires)) {
+  if (isTRUE(P(sim)$overrideBiomassInFires)) {  ## TODO: why is this what turns on/off  fire age imputation in fire pixels? and why two nested ifs that basically do the same?
     if (!(is.null(P(sim)$fireURL) | is.na(P(sim)$fireURL))) {
       message("Using P(sim)$fireURL to download fire database; this is being used to override ",
               "B values that originally came from rawBiomassMap, but only within the fire perimeters.",
@@ -1026,6 +1030,7 @@ createBiomass_coreInputs <- function(sim) {
 
       ## TODO: Ceres: it seems silly to get the fire perimeters twice, but for now this is the only way to know
       ## where ages were imputed
+      ## TODO: maybe we should fix the stand age inside fire perimeters before fittin biomassModel?
       firePerimeters <- Cache(prepInputsFireYear,
                               destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
                               studyArea = raster::aggregate(sim$studyArea),
@@ -1095,7 +1100,7 @@ createBiomass_coreInputs <- function(sim) {
         ) # /4 is too strong -- 25 years is a lot of time
       } else {
         ## return maxAgeHighQualityData to -1
-        maxAgeHighQualityData <- -1
+        maxAgeHighQualityData <- -1   ## TODO: why? where is this used?
       }
     }
   }
