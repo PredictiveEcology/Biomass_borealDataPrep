@@ -38,7 +38,7 @@ if (!file.exists("citations/ecology-letters.csl")) {
 }
 
 if (!require(dplyr)) {
-  install.packages("dplyr")
+  install.packages("dplyr", dependencies = TRUE)
   library(dplyr)
 }
 ```
@@ -104,7 +104,7 @@ area used to simulate forest dynamics *Biomass_core*) and `studyAreaLarge` (a
 potentially larger study area used to derive parameter values -- e.g., species
 traits). All other input objects and parameters have internal defaults (see
 Tables \@ref(tab:moduleInputs2-Biomass-borealDataPrep) and
-\@ref(tab:moduleParams2-Biomass-borealDataPrep).
+\@ref(tab:moduleParams2-Biomass-borealDataPrep)).
 
 ```{r moduleInputs-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, message = FALSE}
 df_inputs <- SpaDES.core::moduleInputs("Biomass_borealDataPrep", "..")[, c(1, 3)]  ## name + desc only
@@ -127,13 +127,13 @@ this module only runs once (in one "time step").
 
 -   Module initiation (`init` event): after downloading all the necessary data
     (during the `.inputObjects` event), the module prepares the necessary
-    objects and parameters for the simulation (see 'Data dependencies' below).
-    Depending on the objects, some are parameterized using empirical models,
+    objects and parameters for the simulation (see [Detailed description]).
+    Depending on the objects, some are parametrised using empirical models,
     others based on literature (e.g., longevity values for western boreal
-    species taken from Burton & Cumming (1995) -- see
-    `?LandR::speciesTableUpdate`), or expert knowledge (e.g., `sufficientLight`
-    values adjusted to reflect western boreal forest succession dynamics).
-    prepares all inputs and parameters necessary to run *Biomass_core*
+    species taken from @burton1995 -- see `?LandR::speciesTableUpdate`), or
+    expert knowledge (e.g., `sufficientLight` values adjusted to reflect western
+    boreal forest succession dynamics). prepares all inputs and parameters
+    necessary to run *Biomass_core.*
 -   Plotting event: plots the estimated spatially-varying trait values.
 -   Saving event: saves any objects passed to `spades(..., outputs)`
 
@@ -169,18 +169,18 @@ Select *Biomass_borealDataPrep* from the drop-down menu to see linkages.
 *Biomass_borealDataPrep* prepares all inputs necessary to run a realistic
 simulation of forest dynamics in western Canada boreal forests using
 *Biomass_core*. Part of this process involves cleaning up the input data and
-imputing missing data in some cases, which are presented thoroughly in
-<!-- section -->.
+imputing missing data in some cases, which are presented thoroughly in [Data
+acquisition and treatment].
 
 After the cleaning and formatting the raw input data, the module prepares:
 
 1.  **invariant species traits** -- spatio-temporally constant traits that
     mostly influence population dynamics (e.g., growth, mortality, dispersal)
-    and responses to fire, and including include the **probabilities of
-    germination** for a given species tolerance and site shade combination
-    (`suffiencientLight` table) which link species shade tolerance values
-    (`shadetolerance`) with site shade (determined by `minRelativeB`) to
-    simulate germination success in any given pixel;
+    and responses to fire, and include the probabilities of germination for a
+    given species tolerance and site shade combination (the `suffiencientLight`
+    table) which link species shade tolerance values (`shadetolerance`) with
+    site shade (determined by `minRelativeB`) to simulate germination success in
+    any given pixel;
 
 2.  **spatially-varying species traits** -- traits that vary by ecolocation, a
     spatial grouping of biophysically similar pixels. These are maximum biomass
@@ -199,7 +199,8 @@ that captures sub-regional variation, and the Land Cover of Canada 2010 map, a
 raster-based database that distinguishes several forest and non-forest
 land-cover types. As *Biomass_core* only simulates trees,
 *Biomass_borealDataPrep* prepares all inputs and estimates parameters in pixels
-within forested land-cover classes (see <!-- section -->).
+within forested land-cover classes (see [Defining simulation pixels and
+ecolocations]).
 
 **Note that ecolocations are called `ecoregionGroup`'s across LandR modules**.
 
@@ -213,22 +214,24 @@ species biomass, this calibration step contributes to the calibration of `maxB`
 and `maxANPP` trait values, whose estimation is also based on species biomass.
 *Biomass_borealDataPrep* then estimates `maxB`, `maxANPP` and `SEP` from species
 biomasses per pixel using linear mixed effects models (LMEMs) by default (see
-<!-- section -->).
+[Maximum biomass and maximum aboveground net primary productivity] and [Species
+establishment probability]).
 
 Invariant species traits, the probabilities of germination for a given shade
-tolerance and site shade and biomass thrsholds defining site shade levels
-(`minRelativeB`) were obtained from a combination of published literature (e.g.,
-longevity values followed Burton & Cumming, 1995) and values used in LANDIS-II
-applications in Canada's boreal forests. Default `minRelativeB` values are kept
-constant across all ecolocations due to the lack of data needed to derive
-ecolocation-specific values (see <!-- section -->). They are also adjusted by
-lowering the values of higher shade classes to reflect lower shade levels
-observed in Western Canadian forests with respect to their Eastern counterparts
-at similar density levels (Messier et al., 1998), which are likely driven by
-higher moisture limitation in the west (Hogg et al., 2008; Peng et al., 2011).
+tolerance and site shade and biomass thresholds defining site shade levels
+(`minRelativeB`) were obtained from a combination of published literature [e.g.,
+longevity values followed @burton1995] and values used in LANDIS-II applications
+in Canada's boreal forests. Default `minRelativeB` values are kept constant
+across all ecolocations due to the lack of data needed to derive
+ecolocation-specific values (see [Minimum relative biomass]). They are also
+adjusted by lowering the values of higher shade classes to reflect lower shade
+levels observed in Western Canadian forests with respect to their Eastern
+counterparts at similar density levels [@MessierEtAl1998], which are likely
+driven by higher moisture limitation in the west [@HoggEtAl2008, @PengEtAl2011].
 This adjustment can be by-passed by either supplying a `minRelativeB` table, or
 an alternative function call to `P(sim)$minRelativeBFunction` (which by default
-is `LandR::makeMinRelativeB`; see <!-- section --> for further detail).
+is `LandR::makeMinRelativeB`; see [Minimum relative biomass] for further
+detail).
 
 After parameter estimation, *Biomass_borealDataPrep* performs data-based
 landscape initialisation, by creating tree species cohorts in forested pixels
@@ -289,17 +292,17 @@ geospatial geometries; 2. all layers these are correctly re-projected to
 10% are excluded.
 
 By default it uses species % cover rasters derived from the MODIS satellite
-imagery from 2001, obtained from the Canadian National Forest Inventory (NFI;
-Beaudoin et al., 2017) -- hereafter 'kNN species data'.
+imagery from 2001, obtained from the Canadian National Forest Inventory [NFI;
+@BeaudoinEtAl2017] -- hereafter 'kNN species data'.
 
 #### Initial species age and biomass per pixel
 
 Stand age and stand aboveground biomass (hereafter 'stand biomass') are used to
 derive parameters and define initial species age and biomass across the
 landscape. They are also derived from MODIS satellite imagery from 2001 prepared
-by the NFI (Beaudoin et al., 2017), by default. *Biomass_borealDataPrep*
-downloads these data and performs a number of data harmonization operations to
-deal with data inconsistencies.
+by the NFI [@BeaudoinEtAl2017], by default. *Biomass_borealDataPrep* downloads
+these data and performs a number of data harmonization operations to deal with
+data inconsistencies.
 
 It first searches for mismatches between stand age (`standAge`), stand biomass
 (`standB`) and total stand cover (`standCover`), assuming that cover is the most
@@ -332,7 +335,8 @@ df_params[df_params$paramName == "imputeBadAgeModel", "default"]
 ```
 
 Cohort biomass is then adjusted to reflect the different cover to biomass
-relationship of conifer and broadleaf species (see <!-- section -->).
+relationship of conifer and broadleaf species (see [Adjustment of species
+biomass]).
 
 Finally, *Biomass_borealDataPrep* can use fire perimeters to correct stand ages.
 For this, it downloads the latest fire perimeter data from the [Canadian
@@ -369,7 +373,7 @@ using published literature. Others (key growth and mortality traits) are
 estimated using statistical models.
 
 The LANDIS-II species trait table contains species trait values for each
-Canadian Ecozone (NRCan, 2013), which are by default filtered to the Boreal
+Canadian Ecozone [@NRCan2013], which are by default filtered to the Boreal
 Shield West (BSW), Boreal Plains (BP) and Montane Cordillera Canadian Ecozones
 (via `P(sim)$speciesTableAreas`). Most trait values do not vary across these
 ecozones, but when they do, took the minimum value is used.
@@ -377,14 +381,14 @@ ecozones, but when they do, took the minimum value is used.
 The function `LandR::speciesTableUpdate` is used by default to do further
 adjustments to trait values in this table (if this is not intended, a custom
 function call or `NULL` can be passed to `P(sim)$speciesUpdateFunction`): -
-Longevity values are adjusted to match the values from Burton and Cumming
-(1995), which match BSP, BP and MC ecozones. These adjustments result in higher
-longevity for most species; - Shade tolerance values are lowered for *Abies
-balsamifera*, *Abies lasiocarpa*, *Picea engelmanii*, *Picea glauca*, *Picea
-mariana*, *Tsuga heterophylla* and *Tsuga mertensiana* to better **relative**
-shade tolerance levels in Western Canada. Because these are realtive shade
-tolerances, the user should **always** check these values with respect to their
-own study areas and species pool.
+Longevity values are adjusted to match the values from @burton1995, which match
+BSP, BP and MC ecozones. These adjustments result in higher longevity for most
+species; - Shade tolerance values are lowered for *Abies balsamifera*, *Abies
+lasiocarpa*, *Picea engelmanii*, *Picea glauca*, *Picea mariana*, *Tsuga
+heterophylla* and *Tsuga mertensiana* to better **relative** shade tolerance
+levels in Western Canada. Because these are relative shade tolerances, the user
+should **always** check these values with respect to their own study areas and
+species pool.
 
 The user can also pass more than one function call to
 `P(sim)$speciesUpdateFunction` if they want to make other adjustments in
@@ -413,7 +417,7 @@ However, the user can chose to re-estimate it by setting
 `P(sim)$fitDeciduousCoverDiscount == TRUE`. In this case, by default
 *Biomass_borealDataPrep* will fit the the following model:
 
-```{r imputeBadAgeModel, echo = FALSE, eval = TRUE, message = FALSE}
+```{r coverPctToBiomassPctModel, echo = FALSE, eval = TRUE, message = FALSE}
 df_params[df_params$paramName == "coverPctToBiomassPctModel", "default"]
 ```
 
@@ -434,7 +438,7 @@ species ages and biomass.
 to species age and cover, while accounting for variation among ecolocations
 (`ecoregionGroup` below):
 
-```{r imputeBadAgeModel, echo = FALSE, eval = TRUE, message = FALSE}
+```{r biomassModel, echo = FALSE, eval = TRUE, message = FALSE}
 df_params[df_params$paramName == "biomassModel", "default"]
 ```
 
@@ -484,7 +488,7 @@ Initial runs revealed excessive recruitment of moderately shade intolerant
 species even as stand biomass increased, so values for shade levels X4 and X5
 are adjusted downwards (X4: 0.8 to 0.75; X5: 0.90 to 0.85) to reflect higher
 competition for resources (e.g. higher water limitation) in Western Canadian
-forests with regards to Eastern Canadian forests (Messier et al., 1998).
+forests with regards to Eastern Canadian forests [@MessierEtAl1998].
 
 The minimum biomass threshold of a shade level of `X0` is `0` `standB`.
 
@@ -495,7 +499,7 @@ probability of observing a given species in each ecolocation. For this,
 *Biomass_borealDataPrep* models the relationship between probability of
 occurrence of a species (π) using the following model by default:
 
-```{r imputeBadAgeModel, echo = FALSE, eval = TRUE, message = FALSE}
+```{r coverModel, echo = FALSE, eval = TRUE, message = FALSE}
 df_params[df_params$paramName == "coverModel", "default"]
 ```
 
@@ -516,7 +520,8 @@ If using *Biomass_borealDataPrep* and *Biomass_speciesParameters*, the later
 module calibrates several species traits that are first prepared by
 *Biomass_borealDataPrep*: - `growthcurve`, `mortalityshape` -- which initially
 come from publicly available LANDIS-II tables - `maxBiomass`, `maxANPP` -- which
-are estimated statistically (see <!-- section -->)
+are estimated statistically (see [Maximum biomass and maximum aboveground net
+primary productivity])
 
 Briefly, *Biomass_speciesParameters*:
 
@@ -549,7 +554,7 @@ Briefly, *Biomass_speciesParameters*:
 
 In cases were there is not sufficient PSP data to perform the above steps,
 `maxB` and `maxANPP` are left as estimated by *Biomass_borealDataPrep* (see
-<!-- section -->).
+[Maximum biomass and maximum aboveground net primary productivity]).
 
 ### Initialization, inputs and parameters
 
@@ -609,7 +614,7 @@ attention:
         "resproutage_min", "resproutage_max", "postfireregen", "leaflongevity",
         "wooddecayrate", "mortalityshape", "growthcurve", "leafLignin",
         "hardsoft". The columns names can be different but not their order. See
-        Scheller and Mladenof (2015) for details about these columns.
+        @scheller2015 for details about these columns.
 
 #### Parameters
 
@@ -733,6 +738,6 @@ This module can be run stand-alone, but it won't do much more than prepare
 inputs for `Biomass_core`. Hence, we provide a usage example of this module and
 a few others in [this
 repository](https://github.com/CeresBarros/LandRBiomass_publication) and in
-Barros et al. (in review).
+@barros.
 
 ## References
