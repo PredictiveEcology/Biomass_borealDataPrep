@@ -6,6 +6,8 @@
 
 ## module cache files
 cache/
+_cache/
+_files/
 
 ## OAuth tokens
 .httr-oauth
@@ -15,4 +17,5 @@ cache/
 Thumbs.db
 
  ## !! Module data should be gitignored in the respective module's data dir !!
+
 Biomass_coreSubModule
