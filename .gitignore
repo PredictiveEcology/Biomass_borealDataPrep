@@ -6,8 +6,13 @@
 
 ## module cache files
 cache/
+
+## html cache/files
 *_cache/
 *_files/
+
+## these are downloaded automatically, no point in caching
+figures/*Badge.png
 
 ## OAuth tokens
 .httr-oauth
