@@ -249,8 +249,8 @@ the user chooses to parametrise and run the simulations in the same area. If not
 identical, `studyArea` must be fully within `studyAreaLarge`. If
 `studyAreaLarge` and `studyArea` are in Canada, the module is able to
 automatically estimate and prepare all input parameters and objects for
-*Biomass_core*, as the default raw data are FAIR data (*sensu* Wilkinson et al.
-2016) at the national-scale.
+*Biomass_core*, as the default raw data are FAIR data [*sensu*
+@WilkinsonEtAl2016] at the national-scale.
 
 If no other inputs are supplied, *Biomass_borealDataPrep* will create raster
 versions of rasterize `studyAreaLarge` and `studyArea` (`rasterToMatchLarge` and
