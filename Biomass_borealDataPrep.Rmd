@@ -55,7 +55,8 @@ download.file(url = "https://img.shields.io/badge/Get%20help-Report%20issues-%3C
 ```
 
 [![made-with-Markdown](figures/markdownBadge.png)](http://commonmark.org)
-[![Generic badge](figures/genericBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
+[![Generic
+badge](figures/genericBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
 <!-- if knitting to pdf remember to add the pandoc_args: ["--extract-media", "."] option to yml in order to get the badge images -->
 
@@ -139,11 +140,10 @@ this module only runs once (in one "time step").
     (during the `.inputObjects` event), the module prepares the necessary
     objects and parameters for the simulation (see [Detailed description]).
     Depending on the objects, some are parametrised using empirical models,
-    others based on literature (e.g., longevity values for western boreal
-    species taken from @burton1995 -- see `?LandR::speciesTableUpdate`), or
-    expert knowledge (e.g., `sufficientLight` values adjusted to reflect western
-    boreal forest succession dynamics). prepares all inputs and parameters
-    necessary to run *Biomass_core.*
+    others based on literature [e.g., longevity values for western boreal
+    species taken from @burton1995], or expert knowledge (e.g.,
+    `sufficientLight` values adjusted to reflect western boreal forest
+    succession dynamics) -- -- see `?LandR::speciesTableUpdate`.
 -   Plotting event: plots the estimated spatially-varying trait values.
 -   Saving event: saves any objects passed to `spades(..., outputs)`
 
@@ -237,7 +237,7 @@ ecolocation-specific values (see [Minimum relative biomass]). They are also
 adjusted by lowering the values of higher shade classes to reflect lower shade
 levels observed in Western Canadian forests with respect to their Eastern
 counterparts at similar density levels [@MessierEtAl1998], which are likely
-driven by higher moisture limitation in the west [@HoggEtAl2008, @PengEtAl2011].
+driven by higher moisture limitation in the west [@HoggEtAl2008; @PengEtAl2011].
 This adjustment can be by-passed by either supplying a `minRelativeB` table, or
 an alternative function call to `P(sim)$minRelativeBFunction` (which by default
 is `LandR::makeMinRelativeB`; see [Minimum relative biomass] for further
@@ -302,8 +302,8 @@ geospatial geometries; 2. all layers these are correctly re-projected to
 10% are excluded.
 
 By default it uses species % cover rasters derived from the MODIS satellite
-imagery from 2001, obtained from the Canadian National Forest Inventory [NFI;
-@BeaudoinEtAl2017] -- hereafter 'kNN species data'.
+imagery from 2001, obtained from the Canadian National Forest Inventory
+[@BeaudoinEtAl2017] -- hereafter 'kNN species data'.
 
 #### Initial species age and biomass per pixel
 
