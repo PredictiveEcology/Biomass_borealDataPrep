@@ -497,13 +497,13 @@ The minimum biomass threshold of a shade level of `X0` is `0` `standB`.
 Species establishment probability (`SEP`) is estimated by modelling the
 probability of observing a given species in each ecolocation. For this,
 *Biomass_borealDataPrep* models the relationship between probability of
-occurrence of a species (π) using the following model by default:
+occurrence of a species ($\pi$) using the following model by default:
 
 ```{r coverModel, echo = FALSE, eval = TRUE, message = FALSE}
 df_params[df_params$paramName == "coverModel", "default"]
 ```
 
-whereby the probability of occurrence of a species (π) -- calculated as the
+whereby the probability of occurrence of a species ($\pi$) -- calculated as the
 number of pixels with % cover \> 0 divided by the total number of pixels, by
 species within each ecolocation -- is modelled per species and ecolocation
 (`ecoregionGroup` above) following a binomial distribution (with a logit link).
