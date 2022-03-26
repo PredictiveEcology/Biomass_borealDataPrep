@@ -1077,7 +1077,9 @@ createBiomass_coreInputs <- function(sim) {
           young <- Cache(spinUpPartial,
                          youngNoAgeEqZero, speciesEcoregion, maxAgeHighQualityData,
                          sim$minRelativeB, sim$species, sim$sppColorsVect, paths(sim),
-                         currentModule(sim), modules(sim))
+                         currentModule(sim), modules(sim),
+                         userTags = c(cacheTags, "spinUpYoungBiomasses"),
+                         omitArgs = c("userTags"))
 
           # young <- Cache(updateYoungBiomasses,
           #                young = youngNoAgeEqZero,
