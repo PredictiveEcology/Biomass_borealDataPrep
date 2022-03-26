@@ -329,25 +329,29 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
     mod$plotWindow <- dev.cur()
   }
 
-  if (eventType == "init") {
-    sim <- createBiomass_coreInputs(sim)
+  switch(
+    eventType,
+    init = {
+      sim <- createBiomass_coreInputs(sim)
 
-    # schedule future event(s)
-    sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_borealDataPrep", "save")
+      # schedule future event(s)
+      sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_borealDataPrep", "save")
 
-    if (anyPlotting(P(sim)$.plots)) {
-      # override an NA value of `.plotInitialTime` -- not a valid mechanism now
-      whenToPlot <- if (is.na(P(sim)$.plotInitialTime)) start(sim) else P(sim)$.plotInitialTime
-      sim <- scheduleEvent(sim, whenToPlot, "Biomass_borealDataPrep", "plot")
-    }
-  } else if (eventType == "plot") {
-    plottingFn(sim)
-  } else if (eventType == "save") {
-    sim <- Save(sim)
-  } else {
+      if (anyPlotting(P(sim)$.plots)) {
+        # override an NA value of `.plotInitialTime` -- not a valid mechanism now
+        whenToPlot <- if (is.na(P(sim)$.plotInitialTime)) start(sim) else P(sim)$.plotInitialTime
+        sim <- scheduleEvent(sim, whenToPlot, "Biomass_borealDataPrep", "plot")
+      }
+    },
+    plot = {
+      plottingFn(sim)
+    },
+    save = {
+      sim <- Save(sim)
+    },
     warning(paste("Undefined event type: '", current(sim)[1, "eventType", with = FALSE],
                   "' in module '", current(sim)[1, "moduleName", with = FALSE], "'", sep = ""))
-  }
+  )
   return(invisible(sim))
 }
 
