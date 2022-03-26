@@ -24,7 +24,9 @@ always_allow_html: true
 
 <!-- the following are text references used in captions for LaTeX compatibility -->
 
-(ref:Biomass-borealDataPrep) *Biomass_borealDataPrep* (ref:percent) %
+(ref:Biomass-borealDataPrep) *Biomass_borealDataPrep*
+
+(ref:percent) %
 
 ```{r setup-Biomass-borealDataPrep, include=FALSE}
 ## set cache.rebuild = TRUE whenever there are changes to the module code/metadata

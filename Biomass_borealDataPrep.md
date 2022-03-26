@@ -24,7 +24,9 @@ always_allow_html: true
 
 <!-- the following are text references used in captions for LaTeX compatibility -->
 
-(ref:Biomass-borealDataPrep) *Biomass_borealDataPrep* (ref:percent) %
+(ref:Biomass-borealDataPrep) *Biomass_borealDataPrep*
+
+(ref:percent) %
 
 
 
