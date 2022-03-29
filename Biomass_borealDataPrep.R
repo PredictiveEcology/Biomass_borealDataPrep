@@ -1035,6 +1035,8 @@ createBiomass_coreInputs <- function(sim) {
       ## TODO: Ceres: it seems silly to get the fire perimeters twice, but for now this is the only way to know
       ## where ages were imputed
       ## TODO: maybe we should fix the stand age inside fire perimeters before fittin biomassModel?
+      opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+      on.exit(options(opt), add = TRUE)
       firePerimeters <- Cache(prepInputsFireYear,
                               destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
                               studyArea = raster::aggregate(sim$studyArea),
@@ -1044,6 +1046,8 @@ createBiomass_coreInputs <- function(sim) {
                               fireField = "YEAR",
                               fun = "sf::st_read",
                               userTags = c(cacheTags, "firePerimeters"))
+      options(opt)
+
 
       ## TODO: Ceres: 1986 is different from the earliest year (1950) used to impute ages.
       ## this should be consistent with the earliest year used to impute ages
