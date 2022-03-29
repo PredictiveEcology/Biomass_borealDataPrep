@@ -19,7 +19,7 @@ defineModule(sim, list(
                   "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
                   "PredictiveEcology/LandR@development (>= 1.0.7.9008)",
-                  "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
+                  "PredictiveEcology/SpaDES.core@development (>=1.0.10.9005)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
@@ -1035,6 +1035,8 @@ createBiomass_coreInputs <- function(sim) {
       ## TODO: Ceres: it seems silly to get the fire perimeters twice, but for now this is the only way to know
       ## where ages were imputed
       ## TODO: maybe we should fix the stand age inside fire perimeters before fittin biomassModel?
+      opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+      on.exit(options(opt), add = TRUE)
       firePerimeters <- Cache(prepInputsFireYear,
                               destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
                               studyArea = raster::aggregate(sim$studyArea),
@@ -1044,6 +1046,8 @@ createBiomass_coreInputs <- function(sim) {
                               fireField = "YEAR",
                               fun = "sf::st_read",
                               userTags = c(cacheTags, "firePerimeters"))
+      options(opt)
+
 
       ## TODO: Ceres: 1986 is different from the earliest year (1950) used to impute ages.
       ## this should be consistent with the earliest year used to impute ages
@@ -1138,6 +1142,15 @@ createBiomass_coreInputs <- function(sim) {
   sim$cohortData <- cohortDataFiles$cohortData
   pixelCohortData <- cohortDataFiles$pixelCohortData
   pixelFateDT <- cohortDataFiles$pixelFateDT
+
+  # Need to rerun this because we may have lost an Ecoregion_Group in the spinup
+  if (is(P(sim)$minRelativeBFunction, "call")) {
+    sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
+  } else {
+    stop("minRelativeBFunction should be a quoted function expression, using `pixelCohortData`, e.g.:\n",
+         "    quote(LandR::makeMinRelativeB(pixelCohortData))")
+  }
+
 
   rm(cohortDataFiles)
   assertthat::assert_that(NROW(pixelCohortData) > 0)
