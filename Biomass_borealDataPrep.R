@@ -1143,6 +1143,15 @@ createBiomass_coreInputs <- function(sim) {
   pixelCohortData <- cohortDataFiles$pixelCohortData
   pixelFateDT <- cohortDataFiles$pixelFateDT
 
+  # Need to rerun this because we may have lost an Ecoregion_Group in the spinup
+  if (is(P(sim)$minRelativeBFunction, "call")) {
+    sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
+  } else {
+    stop("minRelativeBFunction should be a quoted function expression, using `pixelCohortData`, e.g.:\n",
+         "    quote(LandR::makeMinRelativeB(pixelCohortData))")
+  }
+
+
   rm(cohortDataFiles)
   assertthat::assert_that(NROW(pixelCohortData) > 0)
   if (length(P(sim)$LCCClassesToReplaceNN)) {
