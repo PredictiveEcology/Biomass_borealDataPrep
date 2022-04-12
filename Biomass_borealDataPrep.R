@@ -18,7 +18,7 @@ defineModule(sim, list(
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2", "merTools",
                   "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.7.9008)",
+                  "PredictiveEcology/LandR@development (>= 1.0.7.9015)",
                   "PredictiveEcology/SpaDES.core@development (>=1.0.10.9005)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
@@ -243,8 +243,9 @@ defineModule(sim, list(
     expectsInput("sppEquiv", "data.table",
                  desc = "table of species equivalencies. See `?LandR::sppEquivalencies_CA`."),
     expectsInput("sppNameVector", "character",
-                 desc = paste("an optional vector of species names to be pulled from `sppEquiv`. If not provided,",
-                              "then species will be taken from the entire `P(sim)$sppEquivCol` in `sppEquiv`.",
+                 desc = paste("an optional vector of species names to be pulled from `sppEquiv`. Species names must match",
+                              "`P(sim)$sppEquivCol` column in `sppEquiv`. If not provided, then species will be taken from",
+                              "the entire `P(sim)$sppEquivCol` column in `sppEquiv`.",
                               "See `LandR::sppEquivalencies_CA`.")),
     expectsInput("standAgeMap", "RasterLayer",
                  desc =  paste("stand age map in study area.",
@@ -1530,46 +1531,23 @@ Save <- function(sim) {
     sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
     # })
   }
-  ## Species equivalencies table -------------------------------------------
-  if (is.null(sim$sppEquiv)) {
-    data("sppEquivalencies_CA", package = "LandR", envir = environment())
-    sim$sppEquiv <- as.data.table(sppEquivalencies_CA)
-  }
-  if (!is.null(sim$sppNameVector)) {
-    if (!exists("sppEquivalencies_CA", inherits = FALSE))
-      message("Both sppEquiv and sppNameVector are supplied; subsetting sppEquiv with species in sppNameVector")
-    speciesNameConvention <- LandR::equivalentNameColumn(sim$sppNameVector, LandR::sppEquivalencies_CA)
-    sim$sppEquiv <- sim$sppEquiv[sim$sppEquiv[[speciesNameConvention]] %in% sim$sppNameVector,]
-  }
 
-  ## By default, Abies_las is renamed to Abies_sp
-  sim$sppEquiv[KNN == "Abie_Las", LandR := "Abie_sp"] # TODO: This should be removed as a hard coded thing
+  ## Species equivalencies table and associated columns ----------------------------
+  ## make sppEquiv table and associated columns, vectors
+  ## do not use suppliedElsewhere here as we need the tables to exist (or not)
+  ## already (rather than potentially being supplied by a downstream module)
+  ## the function checks whether the tables exist internally.
+  ## check parameter consistency across modules
+  paramCheckOtherMods(sim, "sppEquivCol", ifSetButDifferent = "error")
+  paramCheckOtherMods(sim, "vegLeadingProportion", ifSetButDifferent = "error")
 
-  ## check spp column to use
-  # if (P(sim)$sppEquivCol == "Boreal") {
-  #   message(paste("There is no 'sppEquiv' table supplied;",
-  #                 "will attempt to use species listed under 'Boreal'",
-  #                 "in the 'LandR::sppEquivalencies_CA' table"))
-  # } else {
-  if (any(grepl(P(sim)$sppEquivCol, names(sim$sppEquiv)))) {
-    message(paste("Using species listed under", P(sim)$sppEquivCol,
-                  "column in the 'sim$sppEquiv' table"))
-  } else {
-    stop("'P(sim)$sppEquivCol' is not a column in 'sim$sppEquiv'.",
-         "Please provide conforming 'sppEquivCol', 'sppEquiv' and 'sppColorVect'")
-  }
-  #}
-
-  ## remove empty lines/NAs
-  sim$sppEquiv <- sim$sppEquiv[!"", on = P(sim)$sppEquivCol]
-  sim$sppEquiv <- na.omit(sim$sppEquiv, P(sim)$sppEquivCol)
-
-  if (is.null(sim$sppColorVect)) {
-    ## add default colors for species used in model
-    sim$sppColorVect <- sppColors(sim$sppEquiv, P(sim)$sppEquivCol,
-                                  newVals = "Mixed", palette = "Accent")
-    message("No 'sppColorVect' provided; using default colour palette: Accent")
-  }
+  sppOuts <- sppHarmonize(sim$sppEquiv, sim$sppNameVector, P(sim)$sppEquivCol,
+                          sim$sppColorVect, P(sim)$vegLeadingProportion)
+  ## the following may, or may not change inputs
+  sim$sppEquiv <- sppOuts$sppEquiv
+  sim$sppNameVector <- sppOuts$sppNameVector
+  P(sim)$sppEquivCol <- sppOuts$sppEquivCol
+  sim$sppColorVect <- sppOuts$sppColorVect
 
   ## Species raster layers -------------------------------------------
   if (!suppliedElsewhere("speciesLayers", sim)) {
