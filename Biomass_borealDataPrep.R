@@ -18,8 +18,8 @@ defineModule(sim, list(
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2", "merTools",
                   "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.7.9008)",
-                  "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
+                  "PredictiveEcology/LandR@development (>= 1.0.7.9015)",
+                  "PredictiveEcology/SpaDES.core@development (>=1.0.10.9005)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
@@ -243,8 +243,9 @@ defineModule(sim, list(
     expectsInput("sppEquiv", "data.table",
                  desc = "table of species equivalencies. See `?LandR::sppEquivalencies_CA`."),
     expectsInput("sppNameVector", "character",
-                 desc = paste("an optional vector of species names to be pulled from `sppEquiv`. If not provided,",
-                              "then species will be taken from the entire `P(sim)$sppEquivCol` in `sppEquiv`.",
+                 desc = paste("an optional vector of species names to be pulled from `sppEquiv`. Species names must match",
+                              "`P(sim)$sppEquivCol` column in `sppEquiv`. If not provided, then species will be taken from",
+                              "the entire `P(sim)$sppEquivCol` column in `sppEquiv`.",
                               "See `LandR::sppEquivalencies_CA`.")),
     expectsInput("standAgeMap", "RasterLayer",
                  desc =  paste("stand age map in study area.",
@@ -1035,6 +1036,8 @@ createBiomass_coreInputs <- function(sim) {
       ## TODO: Ceres: it seems silly to get the fire perimeters twice, but for now this is the only way to know
       ## where ages were imputed
       ## TODO: maybe we should fix the stand age inside fire perimeters before fittin biomassModel?
+      opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+      on.exit(options(opt), add = TRUE)
       firePerimeters <- Cache(prepInputsFireYear,
                               destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
                               studyArea = raster::aggregate(sim$studyArea),
@@ -1044,6 +1047,8 @@ createBiomass_coreInputs <- function(sim) {
                               fireField = "YEAR",
                               fun = "sf::st_read",
                               userTags = c(cacheTags, "firePerimeters"))
+      options(opt)
+
 
       ## TODO: Ceres: 1986 is different from the earliest year (1950) used to impute ages.
       ## this should be consistent with the earliest year used to impute ages
@@ -1126,7 +1131,7 @@ createBiomass_coreInputs <- function(sim) {
   ## generate pixelGroups, add ecoregionGroup and totalBiomass) and cohortData
   cohortDataFiles <- Cache(makeCohortDataFiles,
                            pixelCohortData = pixelCohortData,
-                           columnsForPixelGroups = sim$columnsForPixelGroups,
+                           columnsForPixelGroups = sim$columnsForPixelGroups, # Par$cohortDefinitionCols
                            speciesEcoregion = speciesEcoregion,
                            pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
                            pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
@@ -1138,6 +1143,15 @@ createBiomass_coreInputs <- function(sim) {
   sim$cohortData <- cohortDataFiles$cohortData
   pixelCohortData <- cohortDataFiles$pixelCohortData
   pixelFateDT <- cohortDataFiles$pixelFateDT
+
+  # Need to rerun this because we may have lost an Ecoregion_Group in the spinup
+  if (is(P(sim)$minRelativeBFunction, "call")) {
+    sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
+  } else {
+    stop("minRelativeBFunction should be a quoted function expression, using `pixelCohortData`, e.g.:\n",
+         "    quote(LandR::makeMinRelativeB(pixelCohortData))")
+  }
+
 
   rm(cohortDataFiles)
   assertthat::assert_that(NROW(pixelCohortData) > 0)
@@ -1320,12 +1334,15 @@ Save <- function(sim) {
   rm(studyArea, studyAreaLarge)
 
   ## Raster(s) to match ------------------------------------------------
-  needRTM <- FALSE
+  needRTML <- needRTM <- FALSE
   if (is.null(sim$rasterToMatch) || is.null(sim$rasterToMatchLarge)) {
-    if (!suppliedElsewhere("rasterToMatch", sim) ||
-        !suppliedElsewhere("rasterToMatchLarge", sim)) { ## if one is not provided, redo both (safer?)
+    if (!suppliedElsewhere("rasterToMatch", sim)) {
       needRTM <- TRUE
-      message("There is no rasterToMatch/rasterToMatchLarge supplied; will attempt to use rawBiomassMap")
+      message("There is no rasterToMatch supplied; will attempt to use rawBiomassMap")
+    }
+    if (!suppliedElsewhere("rasterToMatchLarge", sim)) { ## Eliot changed this -- case where RTM was supplied, this broke that --> NOT TRUE --> if one is not provided, redo both (safer?)
+      needRTML <- TRUE
+      message("There is no rasterToMatchLarge supplied; will use rasterToMatch")
     } else {
       stop("rasterToMatch/rasterToMatchLarge is going to be supplied, but ", currentModule(sim), " requires it ",
            "as part of its .inputObjects. Please make it accessible to ", currentModule(sim),
@@ -1352,7 +1369,7 @@ Save <- function(sim) {
                                url = biomassURL,
                                destinationPath = dPath,
                                studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                               rasterToMatch = if (!needRTM) sim$rasterToMatchLarge else NULL,
+                               rasterToMatch = if (!needRTM) sim$rasterToMatch else if (!needRTML) sim$rasterToMatchLarge else NULL,
                                maskWithRTM = if (!needRTM) TRUE else FALSE,
                                useSAcrs = FALSE,     ## never use SA CRS
                                method = "bilinear",
@@ -1364,16 +1381,29 @@ Save <- function(sim) {
     # })
   }
 
-  if (needRTM) {
+  if (needRTM || needRTML) {
     ## if we need rasterToMatch/rasterToMatchLarge, that means a) we don't have it, but b) we will have rawBiomassMap
     ## even if one of the rasterToMatch is present re-do both.
 
-    if (is.null(sim$rasterToMatch) != is.null(sim$rasterToMatchLarge))
-      warning(paste0("One of rasterToMatch/rasterToMatchLarge is missing. Both will be created \n",
+    if (needRTM && needRTML)
+      warning(paste0("Both of rasterToMatch/rasterToMatchLarge is missing. Both will be created \n",
                      "from rawBiomassMap and studyArea/studyAreaLarge.\n
                      If this is wrong, provide both rasters"))
 
-    sim$rasterToMatchLarge <- sim$rawBiomassMap
+    if (needRTML && !needRTM) {
+      sim$rasterToMatchLarge <- sim$rasterToMatch
+    } else if (needRTML && needRTM) {
+      sim$rasterToMatchLarge <- sim$rawBiomassMap
+    }
+
+    if (!anyNA(sim$rasterToMatchLarge[])) {
+      whZeros <- sim$rasterToMatchLarge[] == 0
+      if (sum(whZeros) > 0) {# means there are zeros instead of NAs for RTML --> change
+        sim$rasterToMatchLarge[whZeros] <- NA
+        message("There were no NAs on the rasterToMatchLarge, but there were zeros; converting these zeros to NA")
+      }
+    }
+
     RTMvals <- getValues(sim$rasterToMatchLarge)
     sim$rasterToMatchLarge[!is.na(RTMvals)] <- 1
 
@@ -1387,24 +1417,32 @@ Save <- function(sim) {
       userTags = c(cacheTags, "rasterToMatchLarge"),
       omitArgs = c("userTags")
     )
-
-    sim$rasterToMatch <- Cache(postProcessTerra,
-                               from = sim$rawBiomassMap,
-                               studyArea = sim$studyArea,
-                               # rasterToMatch = sim$rasterToMatchLarge,   ## Ceres: this messes up the extent. if we are doing this it means BOTH RTMs come from biomassMap, so no need for RTMLarge here.
-                               useSAcrs = FALSE,
-                               # maskWithRTM = FALSE,   ## mask with SA
-                               method = "bilinear",
-                               datatype = "INT2U",
-                               filename2 = .suffix(file.path(dPath, "rasterToMatch.tif"),
-                                                   paste0("_", P(sim)$.studyAreaName)),
-                               overwrite = TRUE,
-                               # useCache = "overwrite",
-                               userTags = c(cacheTags, "rasterToMatch"),
-                               omitArgs = c("destinationPath", "targetFile", "userTags", "stable", "filename2",
-                                            "overwrite"))
-
+    if (needRTM) {
+      sim$rasterToMatch <- Cache(postProcessTerra,
+                                 from = sim$rasterToMatchLarge,
+                                 studyArea = sim$studyArea,
+                                 # rasterToMatch = sim$rasterToMatchLarge,   ## Ceres: this messes up the extent. if we are doing this it means BOTH RTMs come from biomassMap, so no need for RTMLarge here.
+                                 useSAcrs = FALSE,
+                                 # maskWithRTM = FALSE,   ## mask with SA
+                                 method = "bilinear",
+                                 datatype = "INT2U",
+                                 filename2 = .suffix(file.path(dPath, "rasterToMatch.tif"),
+                                                     paste0("_", P(sim)$.studyAreaName)),
+                                 overwrite = TRUE,
+                                 # useCache = "overwrite",
+                                 userTags = c(cacheTags, "rasterToMatch"),
+                                 omitArgs = c("destinationPath", "targetFile", "userTags", "stable", "filename2",
+                                              "overwrite"))
+    }
     ## covert to 'mask'
+    if (!anyNA(sim$rasterToMatch[])) {
+      whZeros <- sim$rasterToMatch[] == 0
+      if (sum(whZeros) > 0) {# means there are zeros instead of NAs for RTML --> change
+        sim$rasterToMatch[whZeros] <- NA
+        message("There were no NAs on the RTM, but there were zeros; converting these zeros to NA")
+      }
+    }
+
     RTMvals <- getValues(sim$rasterToMatch)
     sim$rasterToMatch[!is.na(RTMvals)] <- 1
   }
@@ -1413,14 +1451,16 @@ Save <- function(sim) {
   if (!compareCRS(sim$studyArea, sim$rasterToMatch)) {
     warning(paste0("studyArea and rasterToMatch projections differ.\n",
                    "studyArea will be projected to match rasterToMatch"))
-    sim$studyArea <- spTransform(sim$studyArea, raster::crs(sim$rasterToMatch))
+    sim$studyArea <- projectInputs(sim$studyArea, raster::crs(sim$rasterToMatch))
+    # sim$studyArea <- spTransform(sim$studyArea, raster::crs(sim$rasterToMatch)) # This didn't work when sim$studyArea is sf
     sim$studyArea <- fixErrors(sim$studyArea)
   }
 
   if (!compareCRS(sim$studyAreaLarge, sim$rasterToMatchLarge)) {
     warning(paste0("studyAreaLarge and rasterToMatchLarge projections differ.\n",
                    "studyAreaLarge will be projected to match rasterToMatchLarge"))
-    sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, raster::crs(sim$rasterToMatchLarge))
+    sim$studyAreaLarge <- projectInputs(sim$studyAreaLarge, raster::crs(sim$rasterToMatchLarge))
+    # sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, raster::crs(sim$rasterToMatchLarge)) # This didn't work when sim$studyArea is sf
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
 
@@ -1491,48 +1531,23 @@ Save <- function(sim) {
     sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
     # })
   }
-  ## Species equivalencies table -------------------------------------------
-  if (!suppliedElsewhere("sppEquiv", sim)) {
-    if (!is.null(sim$sppColorVect))
-      message("No 'sppColorVect' provided; using default colour palette: Accent")
 
-    data("sppEquivalencies_CA", package = "LandR", envir = environment())
-    sim$sppEquiv <- as.data.table(sppEquivalencies_CA)
-    ## By default, Abies_las is renamed to Abies_sp
-    sim$sppEquiv[KNN == "Abie_Las", LandR := "Abie_sp"]
+  ## Species equivalencies table and associated columns ----------------------------
+  ## make sppEquiv table and associated columns, vectors
+  ## do not use suppliedElsewhere here as we need the tables to exist (or not)
+  ## already (rather than potentially being supplied by a downstream module)
+  ## the function checks whether the tables exist internally.
+  ## check parameter consistency across modules
+  paramCheckOtherMods(sim, "sppEquivCol", ifSetButDifferent = "error")
+  paramCheckOtherMods(sim, "vegLeadingProportion", ifSetButDifferent = "error")
 
-    ## check spp column to use
-    if (P(sim)$sppEquivCol == "Boreal") {
-      message(paste("There is no 'sppEquiv' table supplied;",
-                    "will attempt to use species listed under 'Boreal'",
-                    "in the 'LandR::sppEquivalencies_CA' table"))
-    } else {
-      if (grepl(P(sim)$sppEquivCol, names(sim$sppEquiv))) {
-        message(paste("There is no 'sppEquiv' table supplied,",
-                      "will attempt to use species listed under", P(sim)$sppEquivCol,
-                      "in the 'LandR::sppEquivalencies_CA' table"))
-      } else {
-        stop("You changed 'sppEquivCol' without providing 'sppEquiv',",
-             "and the column name can't be found in the default table ('LandR::sppEquivalencies_CA').",
-             "Please provide conforming 'sppEquivCol', 'sppEquiv' and 'sppColorVect'")
-      }
-    }
-
-    ## remove empty lines/NAs
-    sim$sppEquiv <- sim$sppEquiv[!"", on = P(sim)$sppEquivCol]
-    sim$sppEquiv <- na.omit(sim$sppEquiv, P(sim)$sppEquivCol)
-
-    ## add default colors for species used in model
-    sim$sppColorVect <- sppColors(sim$sppEquiv, P(sim)$sppEquivCol,
-                                  newVals = "Mixed", palette = "Accent")
-  } else {
-    if (is.null(sim$sppColorVect)) {
-      ## add default colors for species used in model
-      sim$sppColorVect <- sppColors(sim$sppEquiv, P(sim)$sppEquivCol,
-                                    newVals = "Mixed", palette = "Accent")
-      message("No 'sppColorVect' provided; using default colour palette: Accent")
-    }
-  }
+  sppOuts <- sppHarmonize(sim$sppEquiv, sim$sppNameVector, P(sim)$sppEquivCol,
+                          sim$sppColorVect, P(sim)$vegLeadingProportion)
+  ## the following may, or may not change inputs
+  sim$sppEquiv <- sppOuts$sppEquiv
+  sim$sppNameVector <- sppOuts$sppNameVector
+  P(sim)$sppEquivCol <- sppOuts$sppEquivCol
+  sim$sppColorVect <- sppOuts$sppColorVect
 
   ## Species raster layers -------------------------------------------
   if (!suppliedElsewhere("speciesLayers", sim)) {
