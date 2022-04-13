@@ -18,7 +18,7 @@ defineModule(sim, list(
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2", "merTools",
                   "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.7.9015)",
+                  "PredictiveEcology/LandR@development (>= 1.0.7.9017)",
                   "PredictiveEcology/SpaDES.core@development (>=1.0.10.9005)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
@@ -90,13 +90,6 @@ defineModule(sim, list(
                           "the user wants to investigate them further. Can be set to 'none' (no models are exported), 'all'",
                           "(both are exported), 'biomassModel' or 'coverModel'. BEWARE: because this is intended for posterior",
                           "model inspection, the models will be exported with data, which may mean very large simList(s)!")),
-    defineParameter("fireURL", "character", "https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip",
-                    desc = paste("A URL to a fire database, such as the Canadian National Fire Database,",
-                                 "that is a zipped shapefile with fire polygons, an attribute (i.e., a column) named 'Year'.",
-                                 "If supplied (omitted with `NULL` or `NA`), this will be used to 'update' age pixels on `standAgeMap`",
-                                 "with 'time since fire' as derived from this fire polygons map. Biomass is also updated in these pixels,",
-                                 "when the last fire is more recent than 1986. If `NULL` or `NA`, no age and biomass imputation will be done",
-                                 "in these pixels.")),
     defineParameter("forestedLCCClasses", "numeric", 1:6, 0, NA,
                     paste("The classes in the `rstLCC` layer that are 'treed' and will therefore be run in Biomass_core.",
                           "Defaults to forested classes in LCC2010 map.")),
@@ -128,6 +121,8 @@ defineModule(sim, list(
                                  "biomass-succession-main-inputs_BSW_Baseline.txt%7E."))),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by `P(sim)$forestedLCCClasses`?"),
+    defineParameter("overrideAgeInFires", "logical", TRUE, NA, NA,
+                    paste("should stand age values inside fire perimeters be replaced with number of years since last fire?")),
     defineParameter("overrideBiomassInFires", "logical", TRUE, NA, NA,
                     paste("should B values be re-estimated using *Biomass_core* for pixels within the fire perimeters",
                           "obtained from `P(sim)$fireURL`, based on their time since fire age?")),
@@ -199,6 +194,15 @@ defineModule(sim, list(
                               "It will be overlaid with landcover to generate classes for every ecoregion/LCC combination.",
                               "It must have same extent and crs as `rasterToMatchLarge` if supplied by user - use `reproducible::postProcess`.",
                               "If it uses an attribute table, it must contain the field 'ecoregion' to represent raster values")),
+    expectsInput("firePerimeters", "RasterLayer",
+                 desc = paste("Fire perimeters raster, with fire year information used to 'update' stand",
+                              "age using time since last fire as the imputed value. Only used if",
+                              "`P(sim)$overrideAgeInFires = TRUE`. Biomass will also be updated in these pixels",
+                              "if `P(sim)$overrideBiomassInFires = TRUE` and the last fire was later than 1985.",
+                              "Defaults to using fire perimeters in the Canadian National Fire Database, downloaded",
+                              "as a zipped shapefile with fire polygons, an attribute (i.e., a column) named 'YEAR',",
+                              "which is used to rasterize to the study area."),
+                 sourceURL = "https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip"),
     expectsInput("rstLCC", "RasterLayer",
                  desc = paste("A land classification map in study area. It must be 'corrected', in the sense that:\n",
                               "1) Every class must not conflict with any other map in this module\n",
@@ -1024,32 +1028,15 @@ createBiomass_coreInputs <- function(sim) {
       #   young ages that are way outside of their biomass. Can set this to 1986 to just
       #   give a cutoff
 
-      ## TODO: Ceres: it seems silly to get the fire perimeters twice, but for now this is the only way to know
-      ## where ages were imputed
-      ## TODO: maybe we should fix the stand age inside fire perimeters before fittin biomassModel?
-      opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
-      on.exit(options(opt), add = TRUE)
-      firePerimeters <- Cache(prepInputsFireYear,
-                              destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
-                              studyArea = raster::aggregate(sim$studyArea),
-                              rasterToMatch = sim$rasterToMatch,
-                              overwrite = TRUE,
-                              url = P(sim)$fireURL,
-                              fireField = "YEAR",
-                              fun = "sf::st_read",
-                              userTags = c(cacheTags, "firePerimeters"))
-      options(opt)
+      firstFireYear <- min(sim$firePerimeters[], na.rm = TRUE) # 1986 # as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", fireURL))
+      ## this is not necessary when using min(),
+      ## but will be kept in case we use something else in the future
+      whichFiresTooOld <- which(sim$firePerimeters[] < firstFireYear)
 
-
-      ## TODO: Ceres: 1986 is different from the earliest year (1950) used to impute ages.
-      ## this should be consistent with the earliest year used to impute ages
-
-      firstFireYear <- minValue(firePerimeters) # 1986 # as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", fireURL))
-      whichFiresTooOld <- which(firePerimeters[] < firstFireYear)
       if (length(whichFiresTooOld)) {
         message("There were fires in the database older than ", firstFireYear, ";",
                 " The data from these are not being used because firstFireYear = 1986")
-        firePerimeters[whichFiresTooOld] <- NA
+        sim$firePerimeters[whichFiresTooOld] <- NA
       }
       maxAgeHighQualityData <- start(sim) - firstFireYear
       ## if maxAgeHighQualityData is lower than 0, it means it's prior to the first fire Year
@@ -1060,7 +1047,7 @@ createBiomass_coreInputs <- function(sim) {
         youngRows <- pixelCohortData$age <= maxAgeHighQualityData
         young <- pixelCohortData[youngRows == TRUE]
 
-        youngRows2 <- !is.na(firePerimeters[young$pixelIndex])
+        youngRows2 <- !is.na(sim$firePerimeters[young$pixelIndex])
         young <- young[youngRows2]
 
         # whYoungBEqZero <- which(young$B == 0)
@@ -1487,6 +1474,23 @@ Save <- function(sim) {
                                 userTags = c("prepInputsEcoDistrict_SA", currentModule(sim), cacheTags))
   }
 
+  if (P(sim)$overrideAgeInFires) {
+    if (!suppliedElsewhere("firePerimeters", sim)) {
+      opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+      on.exit(options(opt), add = TRUE)
+      sim$firePerimeters <- Cache(prepInputsFireYear,
+                                  destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
+                                  studyArea = raster::aggregate(sim$studyArea),
+                                  rasterToMatch = sim$rasterToMatchLarge,
+                                  overwrite = TRUE,
+                                  url = extractURL("firePerimeters"),
+                                  fireField = "YEAR",
+                                  fun = "sf::st_read",
+                                  userTags = c(cacheTags, "firePerimeters"))
+      options(opt)
+    }
+  }
+
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
     # httr::with_config(config = httr::config(ssl_verifypeer = 0L), {
@@ -1510,8 +1514,8 @@ Save <- function(sim) {
                              rasterToMatch = sim$rasterToMatchLarge,
                              filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
-                             fireURL = P(sim)$fireURL,
-                             fireField = "YEAR",
+                             firePerimeters = if (P(sim)$overrideAgeInFires) sim$firePerimeters else NULL,
+                             fireURL = if (P(sim)$overrideAgeInFires) extractURL("firePerimeters") else NULL,
                              startTime = start(sim),
                              userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
                              omitArgs = c("destinationPath", "targetFile", "overwrite",
