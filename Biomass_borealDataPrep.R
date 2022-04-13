@@ -1531,6 +1531,10 @@ Save <- function(sim) {
     LandR::assertStandAgeMapAttr(sim$standAgeMap)
     sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
     # })
+  } else {
+    if (P(sim)$overrideAgeInFires) {
+      sim$standAgeMap <- replaceAgeInFires(sim$standAgeMap, sim$firePerimeters, start(sim))
+    }
   }
 
   ## Species equivalencies table and associated columns ----------------------------
