@@ -388,9 +388,6 @@ createBiomass_coreInputs <- function(sim) {
   ################################################################
   message(blue("Prepare 'species' table, i.e., species level traits", Sys.time()))
 
-  ## TODO: this won't work if the user is not supplyng a `speciesTable` that looks like the default.
-  ## maybe `species` sould be the input and the mandotory number of columns smaller so that this step can be moved to
-  ## .inputObjects
   sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
                                   sppEquiv = sim$sppEquiv,
                                   areas = P(sim)$speciesTableAreas,
@@ -699,12 +696,6 @@ createBiomass_coreInputs <- function(sim) {
   cohortDataShort <- cohortDataNo34to36[, list(coverPres = sum(cover > 0)),
                                         by = c("ecoregionGroup", "speciesCode")]
   ## find coverNum for each known class
-  ## TODO: Ceres: I feel we should be using the converted classes here...
-  ## otherwise  pixelTable is reintroducing the converted classes in cohortDataShortNoCover which is confusing
-  ## even if they end up being removed later by `makeSpeciesEcoregion`
-  ## because they end up with NAs that are converted to 0s
-  # aa <- table(pixelTable$initialEcoregionCode)
-
   ## add new ecoregions to pixelTable, before calc. table
   tempDT <- rbind(cohortData34to36[, .(pixelIndex, ecoregionGroup)],
                   cohortDataNo34to36[, .(pixelIndex, ecoregionGroup)])
@@ -831,7 +822,6 @@ createBiomass_coreInputs <- function(sim) {
         omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
       )
 
-      ## TODO: the following code should be moved to the model function
       modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
       needRedo <- (length(modMessages) > 0 & fixModelBiomass)
       if (needRedo && (!tryControl || !needRescaleModelB)) {
@@ -1447,7 +1437,6 @@ Save <- function(sim) {
     sim$rasterToMatch[!is.na(RTMvals)] <- 1
   }
 
-  ## TODO: KEEP THIS HERE OR ONLY INIT?
   if (!compareCRS(sim$studyArea, sim$rasterToMatch)) {
     warning(paste0("studyArea and rasterToMatch projections differ.\n",
                    "studyArea will be projected to match rasterToMatch"))
