@@ -1033,14 +1033,15 @@ createBiomass_coreInputs <- function(sim) {
 
       if (length(whichFiresTooOld)) {
         message("There were fires in the database older than ", firstFireYear, ";",
-                " The data from these are not being used because firstFireYear = 1986")
+                " The data from these will not be used because firstFireYear = ", firstFireYear)
         sim$firePerimeters[whichFiresTooOld] <- NA
       }
+
       maxAgeHighQualityData <- start(sim) - firstFireYear
       ## if maxAgeHighQualityData is lower than 0, it means it's prior to the first fire Year
       ## or not following calendar year
 
-      if (!is.na(maxAgeHighQualityData) & maxAgeHighQualityData >= 0) {
+      if (isTRUE(maxAgeHighQualityData >= 0)) {
         # identify young in the pixelCohortData
         youngRows <- pixelCohortData$age <= maxAgeHighQualityData
         young <- pixelCohortData[youngRows == TRUE]
@@ -1050,6 +1051,7 @@ createBiomass_coreInputs <- function(sim) {
 
         # whYoungBEqZero <- which(young$B == 0)
         whYoungZeroToMaxHighQuality <- which(young$age > 0)
+
         if (length(whYoungZeroToMaxHighQuality) > 0) {
           youngWAgeEqZero <- young[-whYoungZeroToMaxHighQuality]
           youngNoAgeEqZero <- young[whYoungZeroToMaxHighQuality]
@@ -1062,6 +1064,8 @@ createBiomass_coreInputs <- function(sim) {
                          userTags = c(cacheTags, "spinUpYoungBiomasses"),
                          omitArgs = c("userTags"))
 
+          ## method using modelBiomass
+          ## -- deprecated, as it overestimates B for young ages at the moment
           # young <- Cache(updateYoungBiomasses,
           #                young = youngNoAgeEqZero,
           #                modelBiomass = modelBiomass,
@@ -1073,6 +1077,8 @@ createBiomass_coreInputs <- function(sim) {
           }
 
           young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
+        } else {
+          message(blue("No pixels found with ages needing age replacement with last fire year"))
         }
 
         lengthUniquePixelIndices <- length(unique(pixelCohortData$pixelIndex))
@@ -1087,7 +1093,9 @@ createBiomass_coreInputs <- function(sim) {
         ) # /4 is too strong -- 25 years is a lot of time
       } else {
         ## return maxAgeHighQualityData to -1
-        maxAgeHighQualityData <- -1   ## TODO: why? where is this used?
+        message(blue("Simulation start year is lower than oldest fire."))
+        message(blue("B values will NOT be re-estimated inside fire perimeters"))
+        maxAgeHighQualityData <- -1
       }
     }
   }
@@ -1505,7 +1513,8 @@ Save <- function(sim) {
     }
     opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
     on.exit(options(opt), add = TRUE)
-    sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
+
+    sim$standAgeMap <- Cache(prepInputsStandAgeMap,
                              destinationPath = dPath,
                              ageURL = ageURL,
                              studyArea = raster::aggregate(sim$studyAreaLarge),
