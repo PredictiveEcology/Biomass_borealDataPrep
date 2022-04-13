@@ -157,6 +157,8 @@ defineModule(sim, list(
     defineParameter("useCloudCacheForStats", "logical", TRUE, NA, NA,
                     paste("Some of the statistical models take long (at least 30 minutes, likely longer).",
                           "If this is `TRUE`, then it will try to get previous cached runs from googledrive.")),
+    defineParameter("vegLeadingProportion", "numeric", 0.8, 0, 1,
+                    desc = "a number that defines whether a species is leading for a given pixel"),
     defineParameter(".plotInitialTime", "numeric", start(sim), NA, NA,
                     "This is here for backwards compatibility. Please use `.plots`"),
     defineParameter(".plots", "character", NA, NA, NA,
