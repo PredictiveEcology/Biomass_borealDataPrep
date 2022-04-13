@@ -393,12 +393,6 @@ createBiomass_coreInputs <- function(sim) {
                                   areas = P(sim)$speciesTableAreas,
                                   sppEquivCol = P(sim)$sppEquivCol)
 
-  # sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
-  #                                 # speciesLayers = sim$speciesLayers,
-  #                                 sppEquiv = sim$sppEquiv[get(P(sim)$sppEquivCol) %in%
-  #                                                           names(sim$speciesLayers)],
-  #                                 sppEquivCol = P(sim)$sppEquivCol)
-
   ### override species table values ##############################
   if (!is.null(P(sim)$speciesUpdateFunction)) {
     for (fn in P(sim)$speciesUpdateFunction) {
