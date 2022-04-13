@@ -125,7 +125,8 @@ defineModule(sim, list(
                     paste("should stand age values inside fire perimeters be replaced with number of years since last fire?")),
     defineParameter("overrideBiomassInFires", "logical", TRUE, NA, NA,
                     paste("should B values be re-estimated using *Biomass_core* for pixels within the fire perimeters",
-                          "obtained from `P(sim)$fireURL`, based on their time since fire age?")),
+                          "for which age was replaced with time since last fire? Ignored if `P(sim)$overrideAgeInFires = FALSE`. ",
+                          "See `firePerimeters` input object and `P(sim)$overrideAgeInFires` for further detail.")),
     defineParameter("pixelGroupAgeClass", "numeric", params(sim)$Biomass_borealDataPrep$successionTimestep, NA, NA,
                     paste("When assigning `pixelGroup` membership, this defines the resolution of ages that will be considered",
                           "'the same pixelGroup', e.g., if it is 10, then 6 and 14 will be the same")),
@@ -1016,17 +1017,14 @@ createBiomass_coreInputs <- function(sim) {
 
   # If this module used a fire database to extract better young ages, then we
   #   can use those high quality younger ages to help with our biomass estimates
-  if (isTRUE(P(sim)$overrideBiomassInFires)) {  ## TODO: why is this what turns on/off  fire age imputation in fire pixels? and why two nested ifs that basically do the same?
-    if (!(is.null(P(sim)$fireURL) | is.na(P(sim)$fireURL))) {
-      message("Using P(sim)$fireURL to download fire database; this is being used to override ",
-              "B values that originally came from rawBiomassMap, but only within the fire perimeters.",
-              "To skip this step, set parameter fireURL to NA")
-      # fireURL <- "https://cwfis.cfs.nrcan.gc.ca/downloads/nbac/nbac_1986_to_2019_20200921.zip"
-      # This was using the nbac filename to figure out what the earliest year in the
-      #   fire dataset was. Since that is not actually used here, it doesn't really
-      #   matter what the fire dataset was. Basically, this section is updating
-      #   young ages that are way outside of their biomass. Can set this to 1986 to just
-      #   give a cutoff
+  if (isTRUE(P(sim)$overrideBiomassInFires)) {
+    if (isFALSE(P(sim)$overrideAgeInFires)) {
+      message(blue("'P(sim)$overrideBiomassInFires' is TRUE but 'P(sim)$overrideAgeInFires' if FALSE."))
+      message(blue("B values will NOT be re-estimated inside fire perimeters."))
+    } else {
+      message(blue("Overriding B values (originally from 'rawBiomassMap') within the fire perimeters",
+                   "defined in 'firePerimeters'."))
+      message(blue("To skip this step, set 'P(sim)$overrideBiomassInFires' to FALSE."))
 
       firstFireYear <- min(sim$firePerimeters[], na.rm = TRUE) # 1986 # as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", fireURL))
       ## this is not necessary when using min(),
