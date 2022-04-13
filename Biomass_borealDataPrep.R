@@ -54,6 +54,9 @@ defineModule(sim, list(
                           "and the model re-fit with the original data, scaled variables and/or a different optimizer",
                           "if `fixModelBiomass = TRUE`. Model refiting with original data, rescaled variables and/or a new",
                           "optimizer occurs up to three times for each data subset, regardless of this parameter's value.")),
+    defineParameter("subsetDataBiomassModel", "numeric", NULL, NA, NA,
+                    paste("the number of samples to use when subsampling the biomass data model (`biomassModel`);",
+                          "Can be `TRUE`/`FALSE`/`NULL` or numeric; if `TRUE`, uses 50. If `FALSE`/`NULL` no subsetting is done.")),
     ## deciduous cover to biomass cover section ------------------------------------------------
     defineParameter("coverPctToBiomassPctModel", "call",
                     quote(glm(I(log(B/100)) ~ logAge * I(log(totalBiomass/100)) * speciesCode * lcc)),
@@ -774,8 +777,8 @@ createBiomass_coreInputs <- function(sim) {
   # Run 2 nested loops to do both of these things
   modelBiomassTags <- c(cacheTags, "modelBiomass",
                         paste0("subsetSize:", P(sim)$subsetDataBiomassModel))
-  maxDataSubsetTries <- 3 ## TODO: make this a param!
-  for (tryBiomassDataSubset in 1:maxDataSubsetTries) { # try 3 attempts of subsetting
+  maxDataSubsetTries <- P(sim)$subsetDataAttempts
+  for (tryBiomassDataSubset in 1:maxDataSubsetTries) {
     cohortDataNo34to36BiomassSubset <- subsetDT(cohortDataNo34to36Biomass,
                                                 by = c("ecoregionGroup", "speciesCode"),
                                                 doSubset = P(sim)$subsetDataBiomassModel)
