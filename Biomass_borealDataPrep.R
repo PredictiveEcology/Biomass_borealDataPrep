@@ -1532,6 +1532,24 @@ Save <- function(sim) {
     # })
   }
 
+  LandR::assertStandAgeMapAttr(sim$standAgeMap)
+  sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
+
+  if (!compareRaster(sim$standAgeMap, sim$rasterToMatchLarge, stopiffalse = FALSE)) {
+    ## note that extents may never align if the resolution and projection do not allow for it
+    ## this is not working, need to use projectRaster
+    # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+    # on.exit(options(opt), add = TRUE)
+    # sim$standAgeMap <- Cache(postProcess,
+    #                          sim$standAgeMap,
+    #                          to = sim$rasterToMatchLarge,
+    #                          overwrite = TRUE)
+    # options(opts)
+
+    sim$standAgeMap <- projectRaster(sim$standAgeMap, sim$rasterToMatchLarge)
+    attr(sim$standAgeMap, "imputedPixID") <- sim$imputedPixID
+  }
+
   ## Species equivalencies table and associated columns ----------------------------
   ## make sppEquiv table and associated columns, vectors
   ## do not use suppliedElsewhere here as we need the tables to exist (or not)
