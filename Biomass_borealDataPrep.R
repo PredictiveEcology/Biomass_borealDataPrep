@@ -1351,7 +1351,7 @@ Save <- function(sim) {
     }
   }
 
-  if (!suppliedElsewhere("rawBiomassMap", sim) || needRTM) {
+  if (!suppliedElsewhere("rawBiomassMap", sim)) {
     # httr::with_config(config = httr::config(ssl_verifypeer = 0L), { ## TODO: re-enable verify
     #necessary for KNN
     if (P(sim)$dataYear == 2001) {
