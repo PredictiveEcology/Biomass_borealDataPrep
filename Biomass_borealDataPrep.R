@@ -15,10 +15,10 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
-  reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2", "merTools",
+  reqdPkgs = list("assertthat", "crayon", "data.table", "fasterize",  "ggplot2", "merTools",
                   "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.7.9015)",
+                  "PredictiveEcology/LandR@development (>= 1.0.7.9018)",
                   "PredictiveEcology/SpaDES.core@development (>=1.0.10.9005)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
@@ -1554,6 +1554,8 @@ Save <- function(sim) {
   ## Species raster layers -------------------------------------------
   if (!suppliedElsewhere("speciesLayers", sim)) {
     #opts <- options(reproducible.useCache = "overwrite")
+    opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+    on.exit(options(opt), add = TRUE)
     sim$speciesLayers <- Cache(prepSpeciesLayers_KNN,
                                destinationPath = dPath, # this is generic files (preProcess)
                                outputPath = dPath,
@@ -1566,6 +1568,7 @@ Save <- function(sim) {
                                year = P(sim)$dataYear,
                                userTags = c(cacheTags, "speciesLayers"),
                                omitArgs = c("userTags"))
+    options(opt)
 
     ## make sure empty pixels inside study area have 0 cover, instead of NAs.
     ## this can happen when data has NAs instead of 0s and is not merged/overlayed (e.g. CASFRI)
