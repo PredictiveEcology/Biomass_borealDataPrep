@@ -1,12 +1,14 @@
 ---
 title: "Biomass_borealDataPrep"
 author: "Yong Luo, Eliot McIntire, Ceres Barros"
-date: "24 September 2019"
+date: "24 September 2019, updated January 2021"
 output:
+  html_document:
+    df_print: paged
   pdf_document: default
-editor_options: 
+editor_options:
   chunk_output_type: console
----
+1---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
@@ -43,50 +45,53 @@ Depending on the objects, some are parametrised using empirical models, others u
 ## Filling data gaps
 
 * mismatches between stand age, stand biomass and species cover are dealt with by trusting species cover first.
-  If `cover > 0` and `age == 0`, `age` is empirically estimated using a LMEM:
+  If `cover > 0` and `age == 0`, `age` is empirically estimated using a linear mixed effect model:
 
-    age ~ B * speciesCode + (1 | initialEcoregionCode) + cover
-    
+    `age ~ B * speciesCode + (1 | initialEcoregionCode) + cover`
+
   If `cover` and `age == 0` and `biomass > 0`, `biomass` is set to `0`.
-  
-* species longevities are taken from published numbers from closest regions and adjusted using expert opinion
 
-* the user can choose to deal with certain land cover classes, like urban tissue and recent burns, as a data gap.
-  In this case, the module replaces these classes with the closest forest type, geographically.
- 
+* species `longevity` parameters are taken from published numbers from closest regions and adjusted using expert opinion.
+
+* the user can choose to replace certain land cover classes with others. For example, in a "Natural Range of Variation" project, urban pixels can be changed to forested. Since the currently available simulation modules do not drive land cover change, species-ecoregion traits will be spatially non-varying. This means that initial land cover classes that are "transient", such as "recent burn" are likely not appropriate to have "permanent" traits associated with them. This module offers the ability to estimate the parameters for these pixels *as if they were a neighbouring land cover class*. In these two cases, the module can replace these classes with a neighbouring forest type (probabilistically chosen in proportion to its neighbourhood abundance).
+
 
 ## Parametrisation
-**Species parameters**
-1. establishment probabilites - species establishment probabilities by ecoregion are empirically estimated using species cover data (converted to presence/absence) and a GLMEM defined as:
-prob. presence ~ species + (1|ecoregion)
-2. maxB and maxANPP - maxB is also estimated empirically, using stand age, stand biomass per species, per ecoregion data and a LMEM defined as:
-B ~ logAge * speciesCode + cover * speciesCode + (logAge + cover + speciesCode | ecoregionGroup)
-The model is then used to predict expected B when cover = 100 and logAge = log(longevity) for a given species in a given ecoregion.
-maxANPP is defined as maxB/30 following LANDIS-II.
-3. growth and mortality curve shapes are, at the moment, taken from LANDIS-II parameters. This is changing soon (see "in development" section below)
 
-All empirically estimated parameters can be estiamted using data from a larger study area (`studyAreaLarge`) than the one used to run the simulation (`studyArea`), if the user provides such a polygon.
+LandR-Biomass, like LANDIS-II Biomass Succession, has species-level traits and species-ecoregion level traits. The difference between these is the the species-ecoregion traits can vary spatially. During the steps here, we estimate these traits by *species* X *land cover class* X *ecodistrict* (Canadian, federal definition). This can mean that there are some species-ecoregion traits that are unique at the pixel level as there may be rare combinations of, say, a land cover type, for a given species, in a given ecodistrict.
+
+### Species ecoregion parameters
+
+  - establishment probabilites: species establishment probabilities (or sometimes `SEP` in LANDIS) by ecoregion are empirically estimated using species cover data (converted to presence/absence) and a GLMEM defined as:
+`prob. presence ~ species + (1|ecoregion)`
+
+  - `maxB` is estimated empirically, using stand age, stand biomass per species, per ecodistrict data and a LMEM defined as:
+`B ~ logAge * speciesCode + cover * speciesCode + (logAge + cover + speciesCode | ecoregionGroup)`
+Because this equation represents a curve whose positive slope is decreasing with age (via `log(age)`), we estimate `maxB` as the expected `B` when `cover = 100` and `logAge = log(longevity)` for a given species in a given `ecoregionGroup` (which is combination of `land cover class` X `ecodistrict`. This equation is a parameter in the module so can be changed by the user.
+
+  - `maxANPP`: is defined as maxB/30 following LANDIS-II. But see below for updates.
+
+### Species parameters
+
+  - `growthcurve` and `mortalityshape` are, at the moment, taken from LANDIS-II parameters. This is changing soon (see "in development" section below)
+
+All empirically estimated parameters *can* be estimated using data from a larger study area (`studyAreaLarge`) than the one used to run the simulation (`studyArea`), if the user provides such a polygon.
 
 ## In development
-**Changes to species parameters**
-1.	We run ~41,000,000 hypothetical species with full factorial combinations of longevity, ratio of maxANPP to maxBiomass, growthcurve, mortalityshape
+
+**updating species parameters**
+
+1.	We run ~41,000,000 hypothetical species with full factorial combinations of longevity, ratio of `maxANPP` to `maxBiomass`, `growthcurve`, `mortalityshape`
+
 2.	We take the closest permanent and temporary sample plots in or near the study area and find the hypothetical species in previous step that most closely matches the growth dynamics in the PSPs. This gives us the growthcurve, mortalityshape, and ratio of maximum biomass to maximum ANPP for each species in our study area
-3.	We introduce a new parameter, actualMaxBiomass, as the maxB parameter obtained empirically cannot be easily reached in the simulation, depending on the combination of growthcurve, mortalityshape, and longevity. The actualMaxBiomass is then obtained by multiplying the empirically estiamted maxB by the ratio between the maxBiomass parameter used for the simulations in poitn 1 and the maximum simulated biomass actually achivied in the simulations (of point 1).  We use this actualMaxBiomass so that the resulting non-linear growth curves will hit the the empirically estimated maxB. 
-3.	Species-specific maxANPP is estimated by multiplying the empirically estimated maxB (spatial) above and the ratio of the simulated maxANPP parameter (point 1) to the maximum simulated biomass (point 1) at the species level.
 
-# Install packages, if necessary
+3.	We introduce a new parameter, `actualMaxBiomass`. We recognize that `maxB`, as obtained empirically above, cannot be easily reached in simulations because all reasonable values of `growthcurve`, `mortalityshape` and `longevity` prevent the equation from reaching `maxB` (it acts as an asymptote that is never approached). The `actualMaxBiomass` is then obtained by multiplying the empirically estiamted `maxB` by the ratio between the maxBiomass parameter used for the simulations in step 1 (just above) and the maximum simulated biomass actually achieved in the simulations (of point 1).  We use this `actualMaxBiomass` so that the resulting non-linear growth curves will hit the the empirically estimated `maxB`. This adjustment effectively allows the growth equation's "maximum biomass" parameter to actually be the empirically estimated maximum biomass.  
 
-```{r package_installation, eval = TRUE}
-if (packageVersion("SpaDES") < "2.0.0") 
-  install.packages("SpaDES") # prepInputs with alsoExtract argument
+4.	Species-specific `maxANPP` is estimated by multiplying the empirically estimated maxB (spatial) above and the ratio of the simulated maxANPP parameter (point 1) to the maximum simulated biomass (point 1) at the species level. 
 
-# The most recent version of reproducible package is necessary -- check if reproducible is at least 0.2.0.9002 on your system. 
-if (packageVersion("reproducible") < "0.2.1") 
-  devtools::install_github("PredictiveEcology/reproducible@development", dependencies = FALSE) # uses version of prepInputs that is still in development branch only
-if (packageVersion("SpaDES.core") < "0.2.0") 
-  devtools::install_github("PredictiveEcology/SpaDES.core@development", dependencies = FALSE) # uses extractURL that is still in development branch only
-```
+## Get the module
 
+See [SpaDES-modules repository](https://github.com/PredictiveEcology/SpaDES-modules) to see how to download this and other SpaDES modules. Alternatively, it can be forked or cloned from github.com directly.
 # Load libraries
 
 ```{r load-libraries}
@@ -123,7 +128,7 @@ library(raster)
 
 ## do you want to hand-draw a map or use defaults?
 # - note that large areas will take longer to compute
-handDrawMap <- TRUE
+handDrawMap <- FALSE
 
 if (handDrawMap) {
   dev()
@@ -141,6 +146,8 @@ if (handDrawMap) {
                                           proj4string = crs(canadaMap))
   }
   Plot(studyAreaLarge, addTo = "canadaMap", col = "red")
+} else {
+  studyArea <- randomStudyArea(seed = 1234, size = (250^2)*100)
 }
 
 times <- list(start = 0, end = 10)
