@@ -20,8 +20,6 @@ link-citations: true
 always_allow_html: true
 ---
 
-# LandR *Biomass_borealDataPrep* Module
-
 <!-- the following are text references used in captions for LaTeX compatibility -->
 
 (ref:Biomass-borealDataPrep) *Biomass_borealDataPrep*
