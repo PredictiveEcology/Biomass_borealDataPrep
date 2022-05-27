@@ -154,7 +154,7 @@ simulation of forest dynamics in Western Canadian boreal forests using
 imputing missing data in some cases, which are presented thoroughly in [Data
 acquisition and treatment](#bboreal-dataprep).
 
-After the cleaning and formatting the raw input data (see [Data acquisition and treatment](#bboreal-dataprep)), the module:
+After the cleaning and formatting the raw input data, the module:
 
 1.  **calculates species biomass per pixel** by multiplying the observed species
 (ref:percent) cover by the observed stand biomass and an adjustment factor,
