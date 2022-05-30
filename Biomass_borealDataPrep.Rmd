@@ -119,6 +119,9 @@ trait values, as well as ecolocation-specific parameters, probabilities of
 germination and initial conditions necessary to run *Biomass_core*. For this,
 *Biomass_borealDataPrep* requires internet access to retrieve default data[^biomass_borealdataprep-1].
 
+[^1]: Raw data layers downloaded by the module are saved in \`dataPath(sim)\`,
+    which can be controlled via \`options(reproducible.destinationPath = ...)\`.
+
 We advise future users to run *Biomass_borealDataPrep* with defaults and inspect
 what the input objects are like before supplying alternative data (or data
 URLs).
@@ -137,10 +140,10 @@ forest dynamics simulation module. Used downstream from
 *Biomass_borealDataPrep*;
 
 -   [*Biomass_speciesData*](https://github.com/PredictiveEcology/Biomass_speciesData):
-grabs and merges several sources of species cover data, making species
-percent cover ((ref:percent) cover) layers used by other LandR Biomass
-modules. Default source data spans the entire Canadian territory. Used
-upstream from *Biomass_borealDataPrep*;
+    grabs and merges several sources of species cover data, making species
+    percent cover ((ref:percent) cover) layers used by other LandR Biomass
+    modules. Default source data spans the entire Canadian territory. Used
+    upstream from *Biomass_borealDataPrep*;
 
 -   [*Biomass_speciesParameters*](https://github.com/PredictiveEcology/Biomass_speciesParameters):
 calibrates four-species level traits using permanent sample plot data (i.e., 
@@ -160,18 +163,18 @@ acquisition and treatment](#bboreal-dataprep).
 After the cleaning and formatting the raw input data, the module:
 
 1.  **calculates species biomass per pixel** by multiplying the observed species
-(ref:percent) cover by the observed stand biomass and an adjustment factor,
-which can be statistically calibrated for the study area. Given that this
-adjusts the species biomass, this calibration step contributes to the
-calibration of `maxB` and `maxANPP` trait values, whose estimation is also
-based on species biomass (see [Initial species age and biomass per
-pixel](#bboreal-init-B-age) and [Adjustment of species
-biomass](#bboreal-adjustB));
+    (ref:percent) cover by the observed stand biomass and an adjustment factor,
+    which can be statistically calibrated for the study area. Given that this
+    adjusts the species biomass, this calibration step contributes to the
+    calibration of `maxB` and `maxANPP` trait values, whose estimation is also
+    based on species biomass (see [Initial species age and biomass per
+    pixel](#bboreal-init-B-age) and [Adjustment of species
+    biomass](#bboreal-adjustB));
 
 2.  prepares **invariant species traits** -- these are spatio-temporally
-constant species traits that influence population dynamics (e.g., growth,
-mortality, dispersal) and responses to fire (see [Invariant species
-traits](#bboreal-invariant-traits));
+    constant species traits that influence population dynamics (e.g., growth,
+    mortality, dispersal) and responses to fire (see [Invariant species
+    traits](#bboreal-invariant-traits));
 
 3.  defines **ecolocations** -- groupings of pixels with similar biophysical
 conditions. By default, ecolocations are defined as the spatial combination
@@ -181,27 +184,27 @@ ecolocations](#bboreal-forestedPix-ecolocations)). **Note that ecolocations
 are called `ecoregionGroup`'s across LandR modules**.
 
 4.  prepares **ecolocation-specific parameters** and **probabilities of
-germination** -- only one ecolocation-specific parameter is used, the
-[minimum relative biomass thresholds](#bboreal-minRelB), which defines the
-level of shade in a pixel. Together the level of shade and the
-[probabilities of germination](#bboreal-prob-germ) influence germination
-success in any given pixel;
+    germination** -- only one ecolocation-specific parameter is used, the
+    [minimum relative biomass thresholds](#bboreal-minRelB), which defines the
+    level of shade in a pixel. Together the level of shade and the
+    [probabilities of germination](#bboreal-prob-germ) influence germination
+    success in any given pixel;
 
 5.  estimates **spatio-temporally varying species traits** -- species traits
-that can vary by ecolocation and in time. These are maximum biomass
-(`maxB`), maximum above-ground net primary productivity (`maxANPP`; see
-[Maximum biomass and maximum aboveground net primary
-productivity](#bboreal-maxB-maxANPP)) and species establishment probability
-(SEP, called `establishprob` in the module traits table; see [Species
-establishment probability](#bboreal-SEP)). **By default,
-*Biomass_borealDataPrep* estimates temporally constant values of `maxB`,
-`maxANPP` and SEP**;
+    that can vary by ecolocation and in time. These are maximum biomass
+    (`maxB`), maximum above-ground net primary productivity (`maxANPP`; see
+    [Maximum biomass and maximum aboveground net primary
+    productivity](#bboreal-maxB-maxANPP)) and species establishment probability
+    (SEP, called `establishprob` in the module traits table; see [Species
+    establishment probability](#bboreal-SEP)). **By default,
+    *Biomass_borealDataPrep* estimates temporally constant values of `maxB`,
+    `maxANPP` and SEP**;
 
 6.  creates **initial landscape conditions** -- *Biomass_borealDataPrep*
-performs data-based landscape initialisation, by creating the species cohort
-table (`cohortData`) and corresponding map (`pixelGroupMap`; both used to
-initialise and track cohorts across the landscape) based on observed stand
-age and species biomass (after data clean-up and dealing with mismatches).
+    performs data-based landscape initialisation, by creating the species cohort
+    table (`cohortData`) and corresponding map (`pixelGroupMap`; both used to
+    initialise and track cohorts across the landscape) based on observed stand
+    age and species biomass (after data clean-up and dealing with mismatches).
 
 As *Biomass_core* only simulates tree species dynamics, *Biomass_borealDataPrep*
 prepares all inputs and estimates parameters in pixels within forested
@@ -307,11 +310,11 @@ A next set of data inconsistencies in cohort age (`age`), biomass (`B`) and
 cover (`cover`) is looked for and solved in the following order:
 
 4.  if `cover > 0` and `age == 0`, `B` is set to 0 (and stand biomass
-recalculated);
+    recalculated);
 
 5.  if `cover == 0` and `age > 0`, or if `age == NA`, `age` is empirically
-estimated using the remainder of the data to fit the model supplied by
-`P(sim)$imputeBadAgeModel`, which defaults to:
+    estimated using the remainder of the data to fit the model supplied by
+    `P(sim)$imputeBadAgeModel`, which defaults to:
 
 ```{r imputeBadAgeModel, echo = FALSE, eval = TRUE, message = FALSE}
 df_params <- SpaDES.core::moduleParams("Biomass_borealDataPrep", "..")
@@ -611,8 +614,8 @@ primary productivity](#bboreal-maxB-maxANPP)).
 Briefly, *Biomass_speciesParameters*:
 
 1.  Uses \~41,000,000 hypothetical species' growth curves (generated with
-*Biomass_core*), that cover a fully factorial combination of longevity,
-ratio of `maxANPP` to `maxBiomass`, `growthcurve`, `mortalityshape`;
+    *Biomass_core*), that cover a fully factorial combination of longevity,
+    ratio of `maxANPP` to `maxBiomass`, `growthcurve`, `mortalityshape`;
 
 2.  Takes permanent and temporary sample plot (PSP) data in or near the study
 area for the target species, and finds which hypothetical species' growth
@@ -636,7 +639,7 @@ generated doing *Biomass_core* simulation will be able to achieve the the
 empirically estimated `maxB`.
 
 4.  Estimates species-specific `maxANPP` by multiplying the final `maxB` above
-by `mANPPproportion` (estimated in step 2).
+    by `mANPPproportion` (estimated in step 2).
 
 In cases were there is insufficient PSP data to perform the above steps, `maxB`
 and `maxANPP` are left as estimated by *Biomass_borealDataPrep* (see [Maximum
@@ -800,31 +803,31 @@ The module produces the following outputs (Table
 **Tables**
 
 -   `cohortData` -- initial community table, containing corrected biomass
-(g/m2), age and species cover data, as well as ecolocation and `pixelGroup`
-information. This table defines the initial community composition and
-structure used by `Biomass_core`.
+    (g/m2), age and species cover data, as well as ecolocation and `pixelGroup`
+    information. This table defines the initial community composition and
+    structure used by `Biomass_core`.
 
 -   `species` -- table of invariant species traits. Will contain the same traits
-as in `speciesTable` above, but adjusted where necessary.
+    as in `speciesTable` above, but adjusted where necessary.
 
 -   `speciesEcoregion` -- table of spatially-varying species traits (`maxB`,
-`maxANPP`, SEP).
+    `maxANPP`, SEP).
 
 -   `minRelativeB` -- minimum relative biomass thresholds that determine a shade
-level in each pixel. X0-5 represent site shade classes from no-shade (0) to
-maximum shade (5).
+    level in each pixel. X0-5 represent site shade classes from no-shade (0) to
+    maximum shade (5).
 
 -   `sufficientLight` -- probability of germination for species shade tolerance
-(in `species`) and shade level`(defined by`minRelativeB\`)
+    (in `species`) and shade level`(defined by`minRelativeB\`)
 
 **Spatial layers**
 
 -   `biomassMap` -- map of initial stand biomass values after adjustments for
-data mismatches.
+    data mismatches.
 
 -   `pixelGroupMap` -- a map containing `pixelGroup` IDs per pixel. This defines
-the initial map used for hashing within `Biomass_core`, in conjunction with
-`cohortData`.
+    the initial map used for hashing within `Biomass_core`, in conjunction with
+    `cohortData`.
 
 -   `ecoregionMap` -- map of ecolocations.
 
@@ -846,18 +849,18 @@ The module runs only for one time step and contains The general flow of
 *Biomass_borealDataPrep* processes is:
 
 1.  Preparation of all necessary data and input objects that do not require
-parameter fitting (e.g., invariant species traits table, creating
-ecolocations);
+    parameter fitting (e.g., invariant species traits table, creating
+    ecolocations);
 
 2.  Fixing mismatched between raw cover, biomass and age data;
 
 3.  Imputing age values in pixels where mismatches exist or age data is missing;
 
 4.  Construction of an initial `data.table` of cohort biomass and age per pixel
-(with ecolocation information);
+    (with ecolocation information);
 
 5.  Sub-setting pixels in forested land-cover classes and (optional) converting
-transient land-cover classes to forested classes;
+    transient land-cover classes to forested classes;
 
 6.  Fitting `coverModel`;
 
@@ -866,7 +869,7 @@ transient land-cover classes to forested classes;
 8.  Estimating `maxB`, `maxANPP` and SEP per species and ecolocation.
 
 9.  (OPTIONAL) Correcting ages in pixels inside fire perimeters and reassigning
-biomass.
+    biomass.
 
 [steps 1-9 are part of the `init` event. Before step 1, the data is downloaded
 when during the run of the `.inputObjects` function]
