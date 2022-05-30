@@ -49,8 +49,12 @@ if (!require(Require)) {
   install.packages("Require")
   library(Require)
 }
-
-Require(c("dplyr", "data.table", "PredictiveEcology/LandR"), install = TRUE)
+if (!require(Require)) {
+  install.packages("Require")
+  library(Require)
+}
+Require(c("SpaDES.core", "git2r", "kableExtra",
+          "dplyr", "data.table", "PredictiveEcology/LandR"), install = TRUE)
 ```
 
 ```{r badgeFigs-Biomass-borealDataPrep, include=FALSE, eval = TRUE, cache = FALSE}
@@ -74,9 +78,33 @@ download.file(url = paste0("https://img.shields.io/badge/Biomass_borealDataPrep-
               mode = 'wb')
 ```
 
-[![module-version-Badge](`r normalizePath('figures/moduleVersionBadge.png')`)](https://github.com/CeresBarros/Biomass_borealDataPrep/commit/9250d68f905b8828d7965c733ab436e8a01fdf17)
+``` {r moduleBadge-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, cache = FALSE, results = "asis"}
+## try to automatically get the commit URL and the path to the badge image
+badgeURL <-  if (!git2r::is_detached()){
+commitSHA <- git2r::sha(git2r::revparse_single(".", "HEAD"))
+  repo <- sub(".*github.com:", "https://github.com/",
+      git2r::branch_remote_url(git2r::branch_get_upstream(git2r::repository_head("."))))
+  repo <- sub(".git$", "/commit/", repo)
+  paste0(repo, commitSHA)
+} else {
+  ## if detached point to the first remote
+  badgeURL <- git2r::remote_url()[1]
+}
 
-[![Issues-badge](`r normalizePath('figures/issuesBadge.png')`)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
+badgePath <- normalizePath("figures/moduleVersionBadge.png", winslash = "/")
+
+## make string of markdown code to be executed as-is
+paste0("[![module-version-Badge](", badgePath, ")](", badgeURL,")")
+```
+
+``` {r issuesBadge-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, cache = FALSE, results = "asis"}
+badgeURL <- "https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues"
+badgePath <- normalizePath("figures/issuesBadge.png", winslash = "/")
+
+## make string of markdown code to be executed as-is
+paste0("[![Issues-badge](", badgePath, ")](", badgeURL,")")
+```
+
 
 <!-- if knitting to pdf remember to add the pandoc_args: ["--extract-media", "."] option to yml in order to get the badge images -->
 
