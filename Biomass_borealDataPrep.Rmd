@@ -119,9 +119,6 @@ trait values, as well as ecolocation-specific parameters, probabilities of
 germination and initial conditions necessary to run *Biomass_core*. For this,
 *Biomass_borealDataPrep* requires internet access to retrieve default data[^biomass_borealdataprep-1].
 
-[^1]: Raw data layers downloaded by the module are saved in \`dataPath(sim)\`,
-    which can be controlled via \`options(reproducible.destinationPath = ...)\`.
-
 We advise future users to run *Biomass_borealDataPrep* with defaults and inspect
 what the input objects are like before supplying alternative data (or data
 URLs).
