@@ -53,8 +53,8 @@ if (!require(Require)) {
   install.packages("Require")
   library(Require)
 }
-Require(c("SpaDES.core", "git2r", "kableExtra",
-          "dplyr", "data.table", "PredictiveEcology/LandR"), install = TRUE)
+Require(c("dplyr", "data.table", "git2r", "kableExtra", "PredictiveEcology/LandR@development",
+          "SpaDES.core"))
 ```
 
 ```{r badgeFigs-Biomass-borealDataPrep, include=FALSE, eval = TRUE, cache = FALSE}
