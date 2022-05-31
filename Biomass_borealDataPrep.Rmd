@@ -80,21 +80,21 @@ download.file(url = paste0("https://img.shields.io/badge/Biomass_borealDataPrep-
 
 ``` {r moduleBadge-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, cache = FALSE, results = "asis"}
 ## try to automatically get the commit URL and the path to the badge image
-badgeURL <-  if (!git2r::is_detached()){
+badgeURL <- if (!git2r::is_detached()) {
   commitSHA <- git2r::sha(git2r::revparse_single(".", "HEAD"))
-  repo <- sub(".*github.com:", "https://github.com/",
+  repo <- sub("[.]git$", "/commit/",
               git2r::branch_remote_url(git2r::branch_get_upstream(git2r::repository_head("."))))
-  repo <- sub(".git$", "/commit/", repo)
   paste0(repo, commitSHA)
 } else {
   ## if detached point to the first remote
-  badgeURL <- git2r::remote_url()[1]
+  git2r::remote_url()[1]
 }
+badgeURL <- sub(".*github[.]com:", "https://github.com/", badgeURL)
 
 badgePath <- normPath("figures/moduleVersionBadge.png")
 
 ## make string of markdown code to be executed as-is
-cat(paste0("[![module-version-Badge](", badgePath, ")](", badgeURL,")"))
+cat(paste0("[![module-version-Badge](", badgePath, ")](", badgeURL, ")"))
 ```
 
 ``` {r issuesBadge-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, cache = FALSE, results = "asis"}
@@ -701,10 +701,17 @@ setnames(sppEquiv2, "Latin_full", "Species")
 
 sppEquiv2[, `:=`(Species = sub("(.*)", "\\*\\1\\*", Species),
                  `Modelled as` = sub("(.*)", "\\*\\1\\*", `Modelled as`))]  ## for italics
-
-knitr::kable(sppEquiv2, 
-             caption = "Example of species merging for simulation. Here the user wants to model (ref:Abie-bal), (ref:Abie-las) and (ref:Pinu-con) as separate species, but all (ref:Pice-sp) as a genus-level group. For this, all six species are identified in the \\'KNN\\' column, so that their (ref:percent) cover layers can be obtained, but in the 'Boreal' column (which defines the naming convention used in the simulation in this example) all (ref:Pice-sp) have the same name. (ref:Biomass-borealDataPrep) will merge their (ref:percent) cover data into a single layer by summing their cover per pixel.") %>%
-  kableExtra::kable_styling(latex_options = c("scale_down", "repeat_header"), full_width = TRUE)
+caption <- paste("Example of species merging for simulation.",
+                 "Here the user wants to model (ref:Abie-bal), (ref:Abie-las) and (ref:Pinu-con)",
+                 "as separate species, but all (ref:Pice-sp) as a genus-level group.",
+                 "For this, all six species are identified in the 'KNN' column,",
+                 "so that their (ref:percent) cover layers can be obtained,",
+                 "but in the 'Boreal' column (which defines the naming convention used in",
+                 "the simulation in this example) all (ref:Pice-sp) have the same name.",
+                 "(ref:Biomass-borealDataPrep) will merge their (ref:percent) cover data",
+                 "into a single layer by summing their cover per pixel.")
+knitr::kable(sppEquiv2, caption = caption) %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
 When groups contain species with different (invariant) trait values, the minimum
@@ -819,9 +826,9 @@ the model used to refit `deciduousCoverDiscount` in the supplied
 
 ```{r moduleParams2-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, message = FALSE}
 df_params <- SpaDES.core::moduleParams("Biomass_borealDataPrep", "..")
-knitr::kable(df_params,
-             caption = "List of (ref:Biomass-borealDataPrep) parameters and their description.") %>%
-  kableExtra::kable_styling(latex_options = c("scale_down", "repeat_header"), full_width = TRUE)
+caption <- "List of (ref:Biomass-borealDataPrep) parameters and their description."
+knitr::kable(df_params, caption = caption) %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
 ### List of outputs {#bboreal-outputs-list}
@@ -863,9 +870,9 @@ the initial map used for hashing within `Biomass_core`, in conjunction with
 
 ```{r moduleOutputs-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, message = FALSE}
 df_outputs <- SpaDES.core::moduleOutputs("Biomass_borealDataPrep", "..")
-knitr::kable(df_outputs,
-             caption = "List of (ref:Biomass-borealDataPrep) output objects and their description.") %>%
-  kableExtra::kable_styling(latex_options = c("scale_down", "repeat_header"), full_width = TRUE) %>%
+caption <- "List of (ref:Biomass-borealDataPrep) output objects and their description."
+knitr::kable(df_outputs, caption = caption) %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header")) %>%
   kableExtra::column_spec(column = 2, width = "40em")
 ```
 
