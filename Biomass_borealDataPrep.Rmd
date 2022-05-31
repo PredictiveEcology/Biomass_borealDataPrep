@@ -772,9 +772,9 @@ and *Biomass_core* manual for further detail about these columns.
 
 ```{r moduleInputs2-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, message = FALSE}
 df_inputs <- SpaDES.core::moduleInputs("Biomass_borealDataPrep", "..")
-knitr::kable(df_inputs, 
-             caption = "List of (ref:Biomass-borealDataPrep) input objects and their description.") %>%
-  kableExtra::kable_styling(latex_options = c("scale_down", "repeat_header"), full_width = TRUE)
+caption <- "List of (ref:Biomass-borealDataPrep) input objects and their description."
+knitr::kable(df_inputs,  caption = caption) %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header"))
 ```
 
 ### List of parameters {#bboreal-params-list}
