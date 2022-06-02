@@ -921,6 +921,6 @@ This module can be run stand-alone, but it won't do much more than prepare
 inputs for `Biomass_core`. Hence, we provide a usage example of this module and
 a few others in [this
 repository](https://github.com/CeresBarros/LandRBiomass_publication) and in
-@barros.
+@BarrosEtAlinreview.
 
 ## References {#bboreal-refs}
