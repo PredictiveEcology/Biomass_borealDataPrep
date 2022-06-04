@@ -49,9 +49,9 @@ if (!require(Require)) {
   install.packages("Require")
   library(Require)
 }
-if (!require(Require)) {
-  install.packages("Require")
-  library(Require)
+
+Require(c("SpaDES.core", "git2r", "openxlsx"), require = FALSE)
+Require(c("dplyr", "data.table", "kableExtra", "pander"))
 }
 Require(c("dplyr", "data.table", "git2r", "kableExtra", "PredictiveEcology/LandR@development",
           "SpaDES.core"))
