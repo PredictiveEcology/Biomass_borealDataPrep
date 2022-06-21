@@ -1380,11 +1380,12 @@ Save <- function(sim) {
         stop("'P(sim)$dataYear' must be 2001 OR 2011")
       }
     }
+
     sim$rawBiomassMap <- Cache(prepInputs,
                                url = biomassURL,
                                destinationPath = dPath,
                                studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                               rasterToMatch = if (!needRTM) sim$rasterToMatch else if (!needRTML) sim$rasterToMatchLarge else NULL,
+                               rasterToMatch = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else NULL,
                                maskWithRTM = if (!needRTM) TRUE else FALSE,
                                useSAcrs = FALSE,     ## never use SA CRS
                                method = "bilinear",
