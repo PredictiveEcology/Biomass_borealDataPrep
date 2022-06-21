@@ -966,6 +966,9 @@ createBiomass_coreInputs <- function(sim) {
     message(blue("Subsetting to studyArea"))
     rasterToMatchLarge <- sim$rasterToMatchLarge
     rasterToMatchLarge <- setValues(rasterToMatchLarge, seq(ncell(rasterToMatchLarge)))
+
+    useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
+    options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
     rasterToMatchLargeCropped <- Cache(postProcess,
                                        x = rasterToMatchLarge,
                                        rasterToMatch = sim$rasterToMatch,
@@ -975,6 +978,7 @@ createBiomass_coreInputs <- function(sim) {
                                        #useCache = "overwrite",
                                        userTags = c(cacheTags, "rasterToMatchLargeCropped"),
                                        omitArgs = c("userTags"))
+    options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
 
     assertthat::assert_that(sum(is.na(getValues(rasterToMatchLargeCropped))) < ncell(rasterToMatchLargeCropped)) ## i.e., not all NA
 
@@ -1004,6 +1008,9 @@ createBiomass_coreInputs <- function(sim) {
     if (ncell(sim$rasterToMatch) > 3e6) replicate(10, gc())
   }
   ## subset ecoregionFiles$ecoregionMap to smaller area.
+
+  useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
+  options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
   ecoregionFiles$ecoregionMap <- Cache(postProcess,
                                        x = ecoregionFiles$ecoregionMap,
                                        rasterToMatch = sim$rasterToMatch,
@@ -1011,6 +1018,7 @@ createBiomass_coreInputs <- function(sim) {
                                        filename2 = NULL,
                                        userTags = c(cacheTags, "ecoregionMap"),
                                        omitArgs = c("userTags"))
+  options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
 
   if (is(P(sim)$minRelativeBFunction, "call")) {
     sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
@@ -1205,7 +1213,10 @@ createBiomass_coreInputs <- function(sim) {
   ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
   message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
 
-  sim$speciesLayers <- Cache(postProcess, sim$speciesLayers,
+  useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
+  options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
+  sim$speciesLayers <- Cache(postProcess,
+                             sim$speciesLayers,
                              rasterToMatch = sim$rasterToMatch,
                              maskWithRTM = TRUE,
                              filename2 = .suffix(file.path(outputPath(sim), 'speciesLayers.grd'),
@@ -1216,6 +1227,7 @@ createBiomass_coreInputs <- function(sim) {
                              # Cache reads file content if it is a file, so it is
                              #    reading content of filename2, which is an output
                              omitArgs = c("userTags"))
+  options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
 
   ## double check these rasters all match RTM
   compareRaster(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap, sim$rasterToMatch, sim$speciesLayers)
