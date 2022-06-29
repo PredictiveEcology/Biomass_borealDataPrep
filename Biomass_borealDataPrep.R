@@ -1046,7 +1046,7 @@ createBiomass_coreInputs <- function(sim) {
 
       ## TODO: Ceres: it seems silly to get the fire perimeters twice, but for now this is the only way to know
       ## where ages were imputed
-      ## TODO: maybe we should fix the stand age inside fire perimeters before fittin biomassModel?
+      ## TODO: maybe we should fix the stand age inside fire perimeters before fitting biomassModel?
       opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
       on.exit(options(opt), add = TRUE)
       firePerimeters <- Cache(prepInputsFireYear,
