@@ -3,8 +3,8 @@ defineModule(sim, list(
   description = "A data preparation module for parameterizing Biomass_core from open data sources, within the Boreal forest of Canada",
   keywords = c("LandWeb", "Biomass_core"),
   authors = c(
-    person("Yong", "Luo", email = "yong.luo@canada.ca", role = c("aut")),
-    person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@canada.ca", role = c("aut", "cre")),
+    person("Yong", "Luo", email = "Yong.Luo@gov.bc.ca", role = c("aut")),
+    person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@nrcan-rncan.gc.ca", role = c("aut", "cre")),
     person(c("Ceres"), "Barros", email = "cbarros@mail.ubc.ca", role = c("ctb")),
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("ctb"))
   ),
