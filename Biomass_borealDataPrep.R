@@ -17,9 +17,9 @@ defineModule(sim, list(
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
   reqdPkgs = list("assertthat", "crayon", "data.table", "fasterize",  "ggplot2", "merTools",
                   "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
-                  "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.7.9022)",
-                  "PredictiveEcology/SpaDES.core@development (>=1.0.10.9005)",
+                  "PredictiveEcology/reproducible@development (>= 1.2.6.9009)",
+                  "PredictiveEcology/LandR@development (>= 1.0.7.9026)",
+                  "PredictiveEcology/SpaDES.core@development (>= 1.0.10.9005)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
