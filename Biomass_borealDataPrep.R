@@ -18,7 +18,7 @@ defineModule(sim, list(
   reqdPkgs = list("assertthat", "crayon", "data.table", "fasterize",  "ggplot2", "merTools",
                   "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   "PredictiveEcology/reproducible@development (>= 1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.7.9026)",
+                  "PredictiveEcology/LandR@development (>= 1.0.7.9027)",
                   "PredictiveEcology/SpaDES.core@development (>= 1.0.10.9005)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
@@ -477,25 +477,19 @@ createBiomass_coreInputs <- function(sim) {
   rstLCCAdj <- sim$rstLCC
 
   ## Clean pixels for veg. succession model
-  ## remove pixels with no species data
-  # pixelsToRm <- rowSums(!is.na(sim$speciesLayers[])) == 0 # keep
-  pixelsToRm <- is.na(sim$speciesLayers[[1]][]) # seems to be OK because seem to be NA on each layer for a given pixel
+  ## remove pixels with no species data or non-forested LCC
+  pixelsToRm <- nonForestedPixels(sim$speciesLayers, P(sim)$omitNonTreedPixels,
+                                  P(sim)$forestedLCCClasses, sim$rstLCC)
+  rstLCCAdj[pixelsToRm] <- NA
+
   pixelFateDT <- pixelFate(fate = "Total number pixels", runningPixelTotal = ncell(sim$speciesLayers))
   pixelFateDT <- pixelFate(pixelFateDT, "NAs on sim$speciesLayers", sum(pixelsToRm))
-
-  ## remove non-forested if asked by user
   if (P(sim)$omitNonTreedPixels) {
-    if (is.null(P(sim)$forestedLCCClasses))
-      stop("No P(sim)$forestedLCCClasses provided, but P(sim)$omitNonTreedPixels is TRUE.
-           \nPlease provide a vector of forested classes in P(sim)$forestedLCCClasses")
-
-    lccPixelsRemoveTF <- !(sim$rstLCC[] %in% P(sim)$forestedLCCClasses)
-    pixelsToRm <- lccPixelsRemoveTF | pixelsToRm
     pixelFateDT <- pixelFate(pixelFateDT, "Non forested pixels (based on LCC classes)",
-                             sum(lccPixelsRemoveTF) - tail(pixelFateDT$pixelsRemoved, 1))
+                             sum(!(sim$rstLCC[] %in% P(sim)$forestedLCCClasses)) -
+                               tail(pixelFateDT$pixelsRemoved, 1))
   }
 
-  rstLCCAdj[pixelsToRm] <- NA
 
   # The next function will remove the "zero" class on sim$ecoregionRst
   pixelFateDT <- pixelFate(pixelFateDT, "Removing 0 class in sim$ecoregionRst",
