@@ -525,13 +525,13 @@ because it will wrongly assume an *exponential* relationship between
 \@ref(fig:fig-biomassModelLogBtest)) and steep increases in species biomasses
 during the first years of the simulation (Fig. \@ref(fig:fig-simBLogBtest)).
 
-```{r fig-biomassModelLogBtest, eval=TRUE, echo=FALSE, fig.align = 'center', fig.cap = "Modelling biomass as a linear vs. exponential relationship. a) `modelBiomass` as `B ~ logAge * speciesCode + cover * speciesCode + (logAge + cover | ecoregionGroup)`. b) `modelBiomass` as `logB ~ logAge * speciesCode + cover * speciesCode + (logAge + cover | ecoregionGroup)`. Blue dots are marginal mean B values (back-transformed in b) cross ages with confidence intervals as the bars."}
+```{r fig-biomassModelLogBtest, eval=TRUE, echo=FALSE, fig.align = 'center', out.width = "70%", fig.cap = "Modelling biomass as a linear vs. exponential relationship. a) `modelBiomass` as `B ~ logAge * speciesCode + cover * speciesCode + (logAge + cover | ecoregionGroup)`. b) `modelBiomass` as `logB ~ logAge * speciesCode + cover * speciesCode + (logAge + cover | ecoregionGroup)`. Blue dots are marginal mean B values (back-transformed in b) cross ages with confidence intervals as the bars."}
 ## make sure all include_graphics have wd attached to figure path
 ## this is necessary to knit to pdf using child Rmds - see https://stackoverflow.com/questions/61065560/cant-compile-rmarkdown-pdf-with-image-in-child-rmd-latex-error-image-file
 knitr::include_graphics(normalizePath(c("figures/biomassModel_logBtest.png"), winslash = "/"))
 ```
 
-```{r fig-simBLogBtest, eval=TRUE, echo=FALSE, fig.align = 'center', fig.cap = "Thirty years of simulation with `maxB` values estimated from a `logB ~ ...` `biomassModel` (see Fig. \\@ref(fig:fig-biomassModelLogBtest)). The steep increase in such little time is abnormal."}
+```{r fig-simBLogBtest, eval=TRUE, echo=FALSE, fig.align = 'center', out.width = "70%", fig.cap = "Thirty years of simulation with `maxB` values estimated from a `logB ~ ...` `biomassModel` (see Fig. \\@ref(fig:fig-biomassModelLogBtest)). The steep increase in such little time is abnormal."}
 ## make sure all include_graphics have wd attached to figure path
 ## this is necessary to knit to pdf using child Rmds - see https://stackoverflow.com/questions/61065560/cant-compile-rmarkdown-pdf-with-image-in-child-rmd-latex-error-image-file
 knitr::include_graphics(normalizePath(c("figures/simulatedB_logBtest.png"), winslash = "/"))
