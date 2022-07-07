@@ -612,7 +612,6 @@ createBiomass_coreInputs <- function(sim) {
   pixelCohortData <- partitionBiomass(x = P(sim)$deciduousCoverDiscount, pixelCohortData)
   set(pixelCohortData, NULL, "B", asInteger(pixelCohortData$B/P(sim)$pixelGroupBiomassClass) *
         P(sim)$pixelGroupBiomassClass)
-  set(pixelCohortData, NULL, c("decid", "cover2"), NULL)
   set(pixelCohortData, NULL, "cover", asInteger(pixelCohortData$cover))
 
   #######################################################
