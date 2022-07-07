@@ -3,8 +3,8 @@ defineModule(sim, list(
   description = "A data preparation module for parameterizing Biomass_core from open data sources, within the Boreal forest of Canada",
   keywords = c("LandWeb", "Biomass_core"),
   authors = c(
-    person("Yong", "Luo", email = "yong.luo@canada.ca", role = c("aut")),
-    person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@canada.ca", role = c("aut", "cre")),
+    person("Yong", "Luo", email = "Yong.Luo@gov.bc.ca", role = c("aut")),
+    person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@nrcan-rncan.gc.ca", role = c("aut", "cre")),
     person(c("Ceres"), "Barros", email = "cbarros@mail.ubc.ca", role = c("ctb")),
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("ctb"))
   ),
@@ -17,9 +17,9 @@ defineModule(sim, list(
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
   reqdPkgs = list("assertthat", "crayon", "data.table", "fasterize",  "ggplot2", "merTools",
                   "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
-                  "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.7.9018)",
-                  "PredictiveEcology/SpaDES.core@development (>=1.0.10.9005)",
+                  "PredictiveEcology/reproducible@development (>= 1.2.6.9009)",
+                  "PredictiveEcology/LandR@development (>= 1.0.7.9026)",
+                  "PredictiveEcology/SpaDES.core@development (>= 1.0.10.9005)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
@@ -245,8 +245,9 @@ defineModule(sim, list(
     expectsInput("sppEquiv", "data.table",
                  desc = "table of species equivalencies. See `?LandR::sppEquivalencies_CA`."),
     expectsInput("sppNameVector", "character",
-                 desc = paste("an optional vector of species names to be pulled from `sppEquiv`. Species names must match",
-                              "`P(sim)$sppEquivCol` column in `sppEquiv`. If not provided, then species will be taken from",
+                 desc = paste("an optional vector of species names to be pulled from `sppEquiv`.",
+                              "Species names must match `P(sim)$sppEquivCol` column in `sppEquiv`.",
+                              "If not provided, then species will be taken from",
                               "the entire `P(sim)$sppEquivCol` column in `sppEquiv`.",
                               "See `LandR::sppEquivalencies_CA`.")),
     expectsInput("standAgeMap", "RasterLayer",
@@ -965,6 +966,9 @@ createBiomass_coreInputs <- function(sim) {
     message(blue("Subsetting to studyArea"))
     rasterToMatchLarge <- sim$rasterToMatchLarge
     rasterToMatchLarge <- setValues(rasterToMatchLarge, seq(ncell(rasterToMatchLarge)))
+
+    useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
+    options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
     rasterToMatchLargeCropped <- Cache(postProcess,
                                        x = rasterToMatchLarge,
                                        rasterToMatch = sim$rasterToMatch,
@@ -974,6 +978,7 @@ createBiomass_coreInputs <- function(sim) {
                                        #useCache = "overwrite",
                                        userTags = c(cacheTags, "rasterToMatchLargeCropped"),
                                        omitArgs = c("userTags"))
+    options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
 
     assertthat::assert_that(sum(is.na(getValues(rasterToMatchLargeCropped))) < ncell(rasterToMatchLargeCropped)) ## i.e., not all NA
 
@@ -1003,6 +1008,9 @@ createBiomass_coreInputs <- function(sim) {
     if (ncell(sim$rasterToMatch) > 3e6) replicate(10, gc())
   }
   ## subset ecoregionFiles$ecoregionMap to smaller area.
+
+  useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
+  options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
   ecoregionFiles$ecoregionMap <- Cache(postProcess,
                                        x = ecoregionFiles$ecoregionMap,
                                        rasterToMatch = sim$rasterToMatch,
@@ -1010,6 +1018,7 @@ createBiomass_coreInputs <- function(sim) {
                                        filename2 = NULL,
                                        userTags = c(cacheTags, "ecoregionMap"),
                                        omitArgs = c("userTags"))
+  options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
 
   if (is(P(sim)$minRelativeBFunction, "call")) {
     sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
@@ -1037,7 +1046,7 @@ createBiomass_coreInputs <- function(sim) {
 
       ## TODO: Ceres: it seems silly to get the fire perimeters twice, but for now this is the only way to know
       ## where ages were imputed
-      ## TODO: maybe we should fix the stand age inside fire perimeters before fittin biomassModel?
+      ## TODO: maybe we should fix the stand age inside fire perimeters before fitting biomassModel?
       opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
       on.exit(options(opt), add = TRUE)
       firePerimeters <- Cache(prepInputsFireYear,
@@ -1204,7 +1213,10 @@ createBiomass_coreInputs <- function(sim) {
   ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
   message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
 
-  sim$speciesLayers <- Cache(postProcess, sim$speciesLayers,
+  useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
+  options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
+  sim$speciesLayers <- Cache(postProcess,
+                             sim$speciesLayers,
                              rasterToMatch = sim$rasterToMatch,
                              maskWithRTM = TRUE,
                              filename2 = .suffix(file.path(outputPath(sim), 'speciesLayers.grd'),
@@ -1215,6 +1227,7 @@ createBiomass_coreInputs <- function(sim) {
                              # Cache reads file content if it is a file, so it is
                              #    reading content of filename2, which is an output
                              omitArgs = c("userTags"))
+  options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
 
   ## double check these rasters all match RTM
   compareRaster(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap, sim$rasterToMatch, sim$speciesLayers)
@@ -1367,11 +1380,12 @@ Save <- function(sim) {
         stop("'P(sim)$dataYear' must be 2001 OR 2011")
       }
     }
+
     sim$rawBiomassMap <- Cache(prepInputs,
                                url = biomassURL,
                                destinationPath = dPath,
                                studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                               rasterToMatch = if (!needRTM) sim$rasterToMatch else if (!needRTML) sim$rasterToMatchLarge else NULL,
+                               rasterToMatch = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else NULL,
                                maskWithRTM = if (!needRTM) TRUE else FALSE,
                                useSAcrs = FALSE,     ## never use SA CRS
                                method = "bilinear",
