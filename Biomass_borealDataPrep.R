@@ -474,12 +474,11 @@ createBiomass_coreInputs <- function(sim) {
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
 
-  rstLCCAdj <- sim$rstLCC
-
   ## Clean pixels for veg. succession model
   ## remove pixels with no species data or non-forested LCC
   pixelsToRm <- nonForestedPixels(sim$speciesLayers, P(sim)$omitNonTreedPixels,
                                   P(sim)$forestedLCCClasses, sim$rstLCC)
+  rstLCCAdj <- sim$rstLCC
   rstLCCAdj[pixelsToRm] <- NA
 
   pixelFateDT <- pixelFate(fate = "Total number pixels", runningPixelTotal = ncell(sim$speciesLayers))
@@ -489,8 +488,6 @@ createBiomass_coreInputs <- function(sim) {
                              sum(!(sim$rstLCC[] %in% P(sim)$forestedLCCClasses)) -
                                tail(pixelFateDT$pixelsRemoved, 1))
   }
-
-
   # The next function will remove the "zero" class on sim$ecoregionRst
   pixelFateDT <- pixelFate(pixelFateDT, "Removing 0 class in sim$ecoregionRst",
                            sum(sim$ecoregionRst[][!pixelsToRm] == 0, na.rm = TRUE))
