@@ -1527,16 +1527,7 @@ Save <- function(sim) {
 
     ## make sure empty pixels inside study area have 0 cover, instead of NAs.
     ## this can happen when data has NAs instead of 0s and is not merged/overlayed (e.g. CASFRI)
-    tempRas <- sim$rasterToMatchLarge
-    tempRas[!is.na(tempRas[])] <- 0
-    namesLayers <- names(sim$speciesLayers)
-    message("...making sure empty pixels inside study area have 0 cover, instead of NAs ...")
-    # Changed to terra Nov 17 by Eliot --> this was many minutes with raster::cover --> 3 seconds with terra
-    speciesLayers <- terra::cover(terra::rast(sim$speciesLayers), terra::rast(tempRas))
-    sim$speciesLayers <- raster::stack(speciesLayers)
-    names(sim$speciesLayers) <- namesLayers
-    message("   ...done")
-    rm(tempRas)
+    sim$speciesLayers <- NAcover2zero(sim$speciesLayers, sim$rasterToMatchLarge)
   }
 
   # 3. species maps
