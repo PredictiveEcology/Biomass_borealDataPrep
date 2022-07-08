@@ -1368,7 +1368,7 @@ Save <- function(sim) {
     }
   }
 
-  if (!suppliedElsewhere("rawBiomassMap", sim) || needRTM) {
+  if (!suppliedElsewhere("rawBiomassMap", sim)) {
     # httr::with_config(config = httr::config(ssl_verifypeer = 0L), { ## TODO: re-enable verify
     #necessary for KNN
     if (P(sim)$dataYear == 2001) {
@@ -1411,6 +1411,15 @@ Save <- function(sim) {
     if (needRTML && !needRTM) {
       sim$rasterToMatchLarge <- sim$rasterToMatch
     } else if (needRTML && needRTM) {
+      if (!compareRaster(sim$rawBiomassMap, sim$studyAreaLarge, origin = TRUE, stopiffalse = FALSE)) {
+        ## note that extents may never align if the resolution and projection do not allow for it
+        sim$rawBiomassMap <- Cache(postProcessTerra,
+                                   sim$rawBiomassMap,
+                                   studyArea = sim$studyAreaLarge,
+                                   useSAcrs = TRUE,
+                                   overwrite = TRUE)
+        sim$rawBiomassMap <- fixErrors(sim$rawBiomassMap)
+      }
       sim$rasterToMatchLarge <- sim$rawBiomassMap
     }
 
