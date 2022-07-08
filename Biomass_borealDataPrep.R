@@ -516,7 +516,7 @@ createBiomass_coreInputs <- function(sim) {
                           rasterToMatchLarge = sim$rasterToMatchLarge,
                           rstLCCAdj = rstLCCAdj,
                           pixelsToRm = pixelsToRm,
-                          cacheTags = cacheTags)
+                          userTags = c(cacheTags, "prepEcoregionFiles"))
 
   ################################################################
   ## put together pixelTable object
@@ -1139,7 +1139,8 @@ createBiomass_coreInputs <- function(sim) {
                            minAgeForGrouping = maxAgeHighQualityData,
                            rmImputedPix = P(sim)$rmImputedPix,
                            imputedPixID = sim$imputedPixID,
-                           pixelFateDT = pixelFateDT)
+                           pixelFateDT = pixelFateDT,
+                           userTags = c(cacheTags, "makeCohortData"))
 
   sim$cohortData <- cohortDataFiles$cohortData
   pixelCohortData <- cohortDataFiles$pixelCohortData
@@ -1257,7 +1258,8 @@ plottingFn <- function(sim) {
   seStacks <- Cache(LandR:::speciesEcoregionStack,
                     ecoregionMap = sim$ecoregionMap,
                     speciesEcoregion = sim$speciesEcoregion,
-                    columns = c("establishprob", "maxB", "maxANPP"))
+                    columns = c("establishprob", "maxB", "maxANPP"),
+                    userTags = c("speciesEcoregionStks"))
 
 
   # Step 2 make plots -- in this case up to 4 plots -- uses .plotInitialTime, .plots
@@ -1356,7 +1358,7 @@ Save <- function(sim) {
     }
   }
 
-  if (!suppliedElsewhere("rawBiomassMap", sim) || needRTM) {
+  if (!suppliedElsewhere("rawBiomassMap", sim)) {
     # httr::with_config(config = httr::config(ssl_verifypeer = 0L), { ## TODO: re-enable verify
     #necessary for KNN
     if (P(sim)$dataYear == 2001) {
@@ -1399,6 +1401,15 @@ Save <- function(sim) {
     if (needRTML && !needRTM) {
       sim$rasterToMatchLarge <- sim$rasterToMatch
     } else if (needRTML && needRTM) {
+      if (!compareRaster(sim$rawBiomassMap, sim$studyAreaLarge, stopiffalse = FALSE)) {
+        ## note that extents may never align if the resolution and projection do not allow for it
+        sim$rawBiomassMap <- Cache(postProcessTerra,
+                                   sim$rawBiomassMap,
+                                   studyArea = sim$studyAreaLarge,
+                                   useSAcrs = TRUE,
+                                   overwrite = TRUE)
+        sim$rawBiomassMap <- fixErrors(sim$rawBiomassMap)
+      }
       sim$rasterToMatchLarge <- sim$rawBiomassMap
     }
 
@@ -1533,7 +1544,9 @@ Save <- function(sim) {
         stop("'P(sim)$dataYear' must be 2001 OR 2011")
       }
     }
-    opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+    # Too many times this was failing with non-Terra # Eliot March 8, 2022
+    # Now it fails with terra: Ceres Jul 08 2022
+    opt <- options("reproducible.useTerra" = FALSE)
     on.exit(options(opt), add = TRUE)
 
     sim$standAgeMap <- Cache(prepInputsStandAgeMap,
@@ -1557,6 +1570,25 @@ Save <- function(sim) {
     if (P(sim)$overrideAgeInFires) {
       sim$standAgeMap <- replaceAgeInFires(sim$standAgeMap, sim$firePerimeters, start(sim))
     }
+  }
+
+  LandR::assertStandAgeMapAttr(sim$standAgeMap)
+  sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
+
+  if (!compareRaster(sim$standAgeMap, sim$rasterToMatchLarge, orig = TRUE, res = TRUE,
+                     stopiffalse = FALSE)) {
+    ## note that extents may never align if the resolution and projection do not allow for it
+    ## this is not working, need to use projectRaster
+    # Too many times this was failing with non-Terra # Eliot March 8, 2022
+    # Now it fails with terra: Ceres Jul 08 2022
+    opt <- options("reproducible.useTerra" = FALSE)
+    on.exit(options(opt), add = TRUE)
+    sim$standAgeMap <- Cache(postProcess,
+                             sim$standAgeMap,
+                             to = sim$rasterToMatchLarge,
+                             overwrite = TRUE)
+    options(opts)
+    attr(sim$standAgeMap, "imputedPixID") <- sim$imputedPixID
   }
 
   ## Species equivalencies table and associated columns ----------------------------
