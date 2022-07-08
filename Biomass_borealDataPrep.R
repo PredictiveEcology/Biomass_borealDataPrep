@@ -508,7 +508,7 @@ createBiomass_coreInputs <- function(sim) {
                           rasterToMatchLarge = sim$rasterToMatchLarge,
                           rstLCCAdj = rstLCCAdj,
                           pixelsToRm = pixelsToRm,
-                          cacheTags = cacheTags)
+                          userTags = c(cacheTags, "prepEcoregionFiles"))
 
   ################################################################
   ## put together pixelTable object
@@ -1149,7 +1149,8 @@ createBiomass_coreInputs <- function(sim) {
                            minAgeForGrouping = maxAgeHighQualityData,
                            rmImputedPix = P(sim)$rmImputedPix,
                            imputedPixID = sim$imputedPixID,
-                           pixelFateDT = pixelFateDT)
+                           pixelFateDT = pixelFateDT,
+                           userTags = c(cacheTags, "makeCohortData"))
 
   sim$cohortData <- cohortDataFiles$cohortData
   pixelCohortData <- cohortDataFiles$pixelCohortData
@@ -1267,7 +1268,8 @@ plottingFn <- function(sim) {
   seStacks <- Cache(LandR:::speciesEcoregionStack,
                     ecoregionMap = sim$ecoregionMap,
                     speciesEcoregion = sim$speciesEcoregion,
-                    columns = c("establishprob", "maxB", "maxANPP"))
+                    columns = c("establishprob", "maxB", "maxANPP"),
+                    userTags = c("speciesEcoregionStks"))
 
 
   # Step 2 make plots -- in this case up to 4 plots -- uses .plotInitialTime, .plots
