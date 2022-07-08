@@ -1356,35 +1356,15 @@ Save <- function(sim) {
     }
   }
 
-  if (!suppliedElsewhere("rawBiomassMap", sim) || needRTM) {
-    # httr::with_config(config = httr::config(ssl_verifypeer = 0L), { ## TODO: re-enable verify
-    #necessary for KNN
-    if (P(sim)$dataYear == 2001) {
-      biomassURL <- extractURL("rawBiomassMap")
-    } else {
-      if (P(sim)$dataYear == 2011) {
-        biomassURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
-                             "canada-forests-attributes_attributs-forests-canada/2011-attributes_attributs-2011/",
-                             "NFI_MODIS250m_2011_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif")
-      } else {
-        stop("'P(sim)$dataYear' must be 2001 OR 2011")
-      }
-    }
-
-    sim$rawBiomassMap <- Cache(prepInputs,
-                               url = biomassURL,
-                               destinationPath = dPath,
-                               studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                               rasterToMatch = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else NULL,
-                               maskWithRTM = if (!needRTM) TRUE else FALSE,
-                               useSAcrs = FALSE,     ## never use SA CRS
-                               method = "bilinear",
-                               datatype = "INT2U",
-                               filename2 = .suffix("rawBiomassMap.tif", paste0("_", P(sim)$.studyAreaName)),
-                               overwrite = TRUE,
-                               userTags = c(cacheTags, "rawBiomassMap"),
-                               omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
-    # })
+  ## biomass map
+  if (!suppliedElsewhere("rawBiomassMap", sim)) {
+    sim$rawBiomassMap <- prepRawBiomassMap(year = P(sim)$dataYear,
+                                           studyAreaName = P(sim)$.studyAreaName,
+                                           cacheTags = cacheTags,
+                                           rasterToMatch = if (!needRTM) sim$rasterToMatch else if (!needRTML) sim$rasterToMatchLarge else NULL,
+                                           maskWithRTM = if (!needRTM) TRUE else FALSE,
+                                           studyArea = sim$studyAreaLarge,
+                                           destinationPath = dPath)
   }
 
   if (needRTM || needRTML) {
