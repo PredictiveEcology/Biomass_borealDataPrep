@@ -1451,12 +1451,15 @@ Save <- function(sim) {
     } else if (needRTML && needRTM) {
       if (!compareRaster(sim$rawBiomassMap, sim$studyAreaLarge, stopiffalse = FALSE)) {
         ## note that extents may never align if the resolution and projection do not allow for it
-        sim$rawBiomassMap <- Cache(postProcessTerra,
+        opt <- options("reproducible.useTerra" = FALSE)
+        on.exit(options(opt), add = TRUE)
+        sim$rawBiomassMap <- Cache(postProcess,
                                    sim$rawBiomassMap,
                                    method = "bilinear",
                                    studyArea = sim$studyAreaLarge,
                                    useSAcrs = TRUE,
                                    overwrite = TRUE)
+        options(opts)
         sim$rawBiomassMap <- fixErrors(sim$rawBiomassMap)
       }
       sim$rasterToMatchLarge <- sim$rawBiomassMap
