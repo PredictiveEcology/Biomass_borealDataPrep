@@ -1366,72 +1366,29 @@ Save <- function(sim) {
                                            studyArea = sim$studyAreaLarge,
                                            destinationPath = dPath)
   }
-
-  if (needRTM || needRTML) {
-    ## if we need rasterToMatch/rasterToMatchLarge, that means a) we don't have it, but b) we will have rawBiomassMap
-    ## even if one of the rasterToMatch is present re-do both.
-
-    if (needRTM && needRTML)
-      warning(paste0("Both of rasterToMatch/rasterToMatchLarge is missing. Both will be created \n",
-                     "from rawBiomassMap and studyArea/studyAreaLarge.\n
-                     If this is wrong, provide both rasters"))
-
-    if (needRTML && !needRTM) {
-      sim$rasterToMatchLarge <- sim$rasterToMatch
-    } else if (needRTML && needRTM) {
-      sim$rasterToMatchLarge <- sim$rawBiomassMap
-    }
-
-    if (!anyNA(sim$rasterToMatchLarge[])) {
-      whZeros <- sim$rasterToMatchLarge[] == 0
-      if (sum(whZeros) > 0) {# means there are zeros instead of NAs for RTML --> change
-        sim$rasterToMatchLarge[whZeros] <- NA
-        message("There were no NAs on the rasterToMatchLarge, but there were zeros; converting these zeros to NA")
-      }
-    }
-
-    RTMvals <- getValues(sim$rasterToMatchLarge)
-    sim$rasterToMatchLarge[!is.na(RTMvals)] <- 1
-
-    sim$rasterToMatchLarge <- Cache(
-      writeOutputs,
-      sim$rasterToMatchLarge,
-      filename2 = .suffix(file.path(dPath, "rasterToMatchLarge.tif"),
-                          paste0("_", P(sim)$.studyAreaName)),
-      datatype = "INT2U",
-      overwrite = TRUE,
-      userTags = c(cacheTags, "rasterToMatchLarge"),
-      omitArgs = c("userTags")
-    )
-    if (needRTM) {
-      sim$rasterToMatch <- Cache(postProcessTerra,
-                                 from = sim$rasterToMatchLarge,
-                                 studyArea = sim$studyArea,
-                                 # rasterToMatch = sim$rasterToMatchLarge,   ## Ceres: this messes up the extent. if we are doing this it means BOTH RTMs come from biomassMap, so no need for RTMLarge here.
-                                 useSAcrs = FALSE,
-                                 # maskWithRTM = FALSE,   ## mask with SA
-                                 method = "bilinear",
-                                 datatype = "INT2U",
-                                 filename2 = .suffix(file.path(dPath, "rasterToMatch.tif"),
-                                                     paste0("_", P(sim)$.studyAreaName)),
+  if (!is.null(sim$rawBiomassMap)) {
+    if (!compareRaster(sim$rawBiomassMap, studyAreaLarge, stopiffalse = FALSE)) {
+      sim$rawBiomassMap <- Cache(postProcessTerra,
+                                 sim$rawBiomassMap,
+                                 studyArea = studyAreaLarge,
+                                 useSAcrs = TRUE,
                                  overwrite = TRUE,
-                                 # useCache = "overwrite",
-                                 userTags = c(cacheTags, "rasterToMatch"),
-                                 omitArgs = c("destinationPath", "targetFile", "userTags", "stable", "filename2",
-                                              "overwrite"))
+                                 userTags = c("postRTMtemplate"))
+      sim$rawBiomassMap <- fixErrors(sim$rawBiomassMap)
     }
-    ## covert to 'mask'
-    if (!anyNA(sim$rasterToMatch[])) {
-      whZeros <- sim$rasterToMatch[] == 0
-      if (sum(whZeros) > 0) {# means there are zeros instead of NAs for RTML --> change
-        sim$rasterToMatch[whZeros] <- NA
-        message("There were no NAs on the RTM, but there were zeros; converting these zeros to NA")
-      }
-    }
-
-    RTMvals <- getValues(sim$rasterToMatch)
-    sim$rasterToMatch[!is.na(RTMvals)] <- 1
   }
+
+  RTMs <- prepRasterToMatch(studyArea = sim$studyArea,
+                            studyAreaLarge = sim$studyAreaLarge,
+                            rasterToMatch = if (needRTM) NULL else sim$rasterToMatch,
+                            rasterToMatchLarge = if (needRTML) NULL else sim$rasterToMatchLarge,
+                            destinationPath = dPath,
+                            templateRas = sim$rawBiomassMap,
+                            studyAreaName = P(sim)$.studyAreaName,
+                            cacheTags = cacheTags)
+  sim$rasterToMatch <- RTMs$rasterToMatch
+  sim$rasterToMatchLarge <- RTMs$rasterToMatchLarge
+  rm(RTMs)
 
   ## TODO: KEEP THIS HERE OR ONLY INIT?
   if (!compareCRS(sim$studyArea, sim$rasterToMatch)) {
