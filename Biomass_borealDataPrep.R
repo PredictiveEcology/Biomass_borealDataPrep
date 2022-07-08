@@ -1538,7 +1538,9 @@ Save <- function(sim) {
         stop("'P(sim)$dataYear' must be 2001 OR 2011")
       }
     }
-    opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+    # Too many times this was failing with non-Terra # Eliot March 8, 2022
+    # Now it fails with terra: Ceres Jul 08 2022
+    opt <- options("reproducible.useTerra" = FALSE)
     on.exit(options(opt), add = TRUE)
     sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
                              destinationPath = dPath,
@@ -1562,18 +1564,19 @@ Save <- function(sim) {
   LandR::assertStandAgeMapAttr(sim$standAgeMap)
   sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
 
-  if (!compareRaster(sim$standAgeMap, sim$rasterToMatchLarge, stopiffalse = FALSE)) {
+  if (!compareRaster(sim$standAgeMap, sim$rasterToMatchLarge, orig = TRUE, res = TRUE,
+                     stopiffalse = FALSE)) {
     ## note that extents may never align if the resolution and projection do not allow for it
     ## this is not working, need to use projectRaster
-    # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
-    # on.exit(options(opt), add = TRUE)
-    # sim$standAgeMap <- Cache(postProcess,
-    #                          sim$standAgeMap,
-    #                          to = sim$rasterToMatchLarge,
-    #                          overwrite = TRUE)
-    # options(opts)
-
-    sim$standAgeMap <- projectRaster(sim$standAgeMap, sim$rasterToMatchLarge)
+    # Too many times this was failing with non-Terra # Eliot March 8, 2022
+    # Now it fails with terra: Ceres Jul 08 2022
+    opt <- options("reproducible.useTerra" = FALSE)
+    on.exit(options(opt), add = TRUE)
+    sim$standAgeMap <- Cache(postProcess,
+                             sim$standAgeMap,
+                             to = sim$rasterToMatchLarge,
+                             overwrite = TRUE)
+    options(opts)
     attr(sim$standAgeMap, "imputedPixID") <- sim$imputedPixID
   }
 
