@@ -1360,7 +1360,19 @@ Save <- function(sim) {
 
   ## biomass map
   if (!suppliedElsewhere("rawBiomassMap", sim)) {
-    sim$rawBiomassMap <- prepRawBiomassMap(year = P(sim)$dataYear,
+    if (P(sim)$dataYear == 2001) {
+      biomassURL <- extractURL("rawBiomassMap")
+    } else {
+      if (P(sim)$dataYear == 2011) {
+        biomassURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
+                             "canada-forests-attributes_attributs-forests-canada/2011-attributes_attributs-2011/",
+                             "NFI_MODIS250m_2011_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif")
+      } else {
+        stop("'P(sim)$dataYear' must be 2001 OR 2011")
+      }
+    }
+
+    sim$rawBiomassMap <- prepRawBiomassMap(url = biomassURL,
                                            studyAreaName = P(sim)$.studyAreaName,
                                            cacheTags = cacheTags,
                                            rasterToMatch = if (!needRTM) sim$rasterToMatch else if (!needRTML) sim$rasterToMatchLarge else NULL,
