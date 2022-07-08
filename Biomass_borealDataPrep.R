@@ -400,6 +400,54 @@ createBiomass_coreInputs <- function(sim) {
   }
 
   ## check that input rasters all match
+    # Too many times this was failing with non-Terra # Eliot March 8, 2022
+    # Now it fails with terra: Ceres Jul 08 2022
+    opt <- options("reproducible.useTerra" = FALSE)
+    on.exit(options(opt), add = TRUE)
+  if (!compareRaster(sim$rawBiomassMap, sim$rasterToMatchLarge,
+                     orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
+    ## note that extents may never align if the resolution and projection do not allow for it
+    sim$rawBiomassMap <- Cache(postProcess,
+                               sim$rawBiomassMap,
+                               method = "bilinear",
+                               rasterToMatch = sim$rasterToMatchLarge,
+                               overwrite = TRUE)
+  }
+
+  if (!compareRaster(sim$standAgeMap, sim$rasterToMatchLarge,
+                     orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
+    ## note that extents may never align if the resolution and projection do not allow for it
+    ## this is not working, need to use projectRaster
+    sim$standAgeMap <- Cache(postProcess,
+                             sim$standAgeMap,
+                             to = sim$rasterToMatchLarge,
+                             overwrite = TRUE)
+    attr(sim$standAgeMap, "imputedPixID") <- sim$imputedPixID
+  }
+
+  if (!compareRaster(sim$rstLCC, sim$rasterToMatchLarge,
+                     orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
+    sim$rstLCC <- Cache(postProcess,
+                        sim$rstLCC,
+                        to = sim$rasterToMatchLarge,
+                        overwrite = TRUE)
+  }
+
+  if (!compareRaster(sim$firePerimeters, sim$rasterToMatchLarge,
+                     orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
+    sim$firePerimeters <- Cache(postProcess,
+                        sim$firePerimeters,
+                        to = sim$rasterToMatchLarge,
+                        overwrite = TRUE)
+  }
+
+  if (!compareRaster(sim$speciesLayers, sim$rasterToMatchLarge,
+                     orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
+    sim$speciesLayers <- Cache(postProcess,
+                               sim$speciesLayers,
+                               to = sim$rasterToMatchLarge,
+                               overwrite = TRUE)
+  }
   compareRaster(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC,
                 sim$speciesLayers, sim$standAgeMap, orig = TRUE)
 
@@ -1493,10 +1541,6 @@ Save <- function(sim) {
                         omitArgs = c("destinationPath", "userTags", "filename2", "overwrite"))
   }
 
-  if (!compareRaster(sim$rstLCC, sim$rasterToMatchLarge)) {
-    sim$rstLCC <- projectRaster(sim$rstLCC, to = sim$rasterToMatchLarge)
-  }
-
   ## Ecodistrict ------------------------------------------------
   if (!suppliedElsewhere("ecoregionLayer", sim)) {
     sim$ecoregionLayer <- Cache(prepInputs,
@@ -1574,22 +1618,6 @@ Save <- function(sim) {
 
   LandR::assertStandAgeMapAttr(sim$standAgeMap)
   sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
-
-  if (!compareRaster(sim$standAgeMap, sim$rasterToMatchLarge, orig = TRUE, res = TRUE,
-                     stopiffalse = FALSE)) {
-    ## note that extents may never align if the resolution and projection do not allow for it
-    ## this is not working, need to use projectRaster
-    # Too many times this was failing with non-Terra # Eliot March 8, 2022
-    # Now it fails with terra: Ceres Jul 08 2022
-    opt <- options("reproducible.useTerra" = FALSE)
-    on.exit(options(opt), add = TRUE)
-    sim$standAgeMap <- Cache(postProcess,
-                             sim$standAgeMap,
-                             to = sim$rasterToMatchLarge,
-                             overwrite = TRUE)
-    options(opts)
-    attr(sim$standAgeMap, "imputedPixID") <- sim$imputedPixID
-  }
 
   ## Species equivalencies table and associated columns ----------------------------
   ## make sppEquiv table and associated columns, vectors
