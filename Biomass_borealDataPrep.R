@@ -1453,6 +1453,7 @@ Save <- function(sim) {
         ## note that extents may never align if the resolution and projection do not allow for it
         sim$rawBiomassMap <- Cache(postProcessTerra,
                                    sim$rawBiomassMap,
+                                   method = "bilinear",
                                    studyArea = sim$studyAreaLarge,
                                    useSAcrs = TRUE,
                                    overwrite = TRUE)
