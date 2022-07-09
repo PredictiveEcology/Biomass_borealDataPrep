@@ -100,8 +100,8 @@ updateYoungBiomasses <- function(young, modelBiomass, ...) {
 #' @export
 spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
                           # rasterToMatch, speciesLayers,
-                          minRelativeB, species, sppColorsVect, paths,
-                          currentModule, modules) {
+                          minRelativeB, species, sppEquiv, sppEquivCol,
+                          sppColorsVect, paths, currentModule, modules) {
   rng <- range(pixelCohortData$age)
   if (rng[1] <= 0) stop("This spinup is only tested with age > 0")
   if (rng[2] > maxAge) stop("This spinup is only tested with age <= maxAge")
@@ -150,7 +150,8 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
     minRelativeB = minRelativeB,
     ecoregion = ecoregion,
     ecoregionMap = ecoregionMap,
-    sppEquiv = data.table(),
+    sppEquiv = sppEquiv,
+    sppEquivCol = sppEquivCol,
     sppColorVect = sppColorsVect
   )
   opts <- options(
