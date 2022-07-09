@@ -400,10 +400,10 @@ createBiomass_coreInputs <- function(sim) {
   }
 
   ## check that input rasters all match
-    # Too many times this was failing with non-Terra # Eliot March 8, 2022
-    # Now it fails with terra: Ceres Jul 08 2022
-    opt <- options("reproducible.useTerra" = FALSE)
-    on.exit(options(opt), add = TRUE)
+  # Too many times this was failing with non-Terra # Eliot March 8, 2022
+  # Now it fails with terra: Ceres Jul 08 2022
+  opt <- options("reproducible.useTerra" = FALSE)
+  on.exit(options(opt), add = TRUE)
   if (!compareRaster(sim$rawBiomassMap, sim$rasterToMatchLarge,
                      orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
     ## note that extents may never align if the resolution and projection do not allow for it
@@ -436,10 +436,11 @@ createBiomass_coreInputs <- function(sim) {
   if (!compareRaster(sim$firePerimeters, sim$rasterToMatchLarge,
                      orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
     sim$firePerimeters <- Cache(postProcess,
-                        sim$firePerimeters,
-                        to = sim$rasterToMatchLarge,
-                        overwrite = TRUE)
+                                sim$firePerimeters,
+                                to = sim$rasterToMatchLarge,
+                                overwrite = TRUE)
   }
+  options(opts)
 
   if (!compareRaster(sim$speciesLayers, sim$rasterToMatchLarge,
                      orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
@@ -556,7 +557,6 @@ createBiomass_coreInputs <- function(sim) {
   # The next function will remove the "zero" class on sim$ecoregionRst
   pixelFateDT <- pixelFate(pixelFateDT, "Removing 0 class in sim$ecoregionRst",
                            sum(sim$ecoregionRst[][!pixelsToRm] == 0, na.rm = TRUE))
-
   ecoregionFiles <- Cache(prepEcoregions,
                           ecoregionRst = sim$ecoregionRst,
                           ecoregionLayer = sim$ecoregionLayer,
