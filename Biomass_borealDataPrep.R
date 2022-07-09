@@ -404,15 +404,6 @@ createBiomass_coreInputs <- function(sim) {
   # Now it fails with terra: Ceres Jul 08 2022
   opt <- options("reproducible.useTerra" = FALSE)
   on.exit(options(opt), add = TRUE)
-  if (!compareRaster(sim$rawBiomassMap, sim$rasterToMatchLarge,
-                     orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
-    ## note that extents may never align if the resolution and projection do not allow for it
-    sim$rawBiomassMap <- Cache(postProcess,
-                               sim$rawBiomassMap,
-                               method = "bilinear",
-                               rasterToMatch = sim$rasterToMatchLarge,
-                               overwrite = TRUE)
-  }
 
   if (!compareRaster(sim$standAgeMap, sim$rasterToMatchLarge,
                      orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
@@ -1417,6 +1408,20 @@ Save <- function(sim) {
                                            maskWithRTM = if (!needRTM) TRUE else FALSE,
                                            studyArea = sim$studyAreaLarge,
                                            destinationPath = dPath)
+  } else {
+    if (!is.null(sim$rawBiomassMap)) {
+      if (!compareRaster(sim$rawBiomassMap, sim$studyAreaLarge, stopiffalse = FALSE)) {
+        ## note that extents may never align if the resolution and projection do not allow for it
+        opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+        on.exit(options(opt), add = TRUE)
+        sim$rawBiomassMap <- Cache(postProcess,
+                                   sim$rawBiomassMap,
+                                   method = "bilinear",
+                                   studyArea = sim$studyAreaLarge,
+                                   overwrite = TRUE)
+        options(opt)
+      }
+    }
   }
 
   RTMs <- prepRasterToMatch(studyArea = sim$studyArea,
