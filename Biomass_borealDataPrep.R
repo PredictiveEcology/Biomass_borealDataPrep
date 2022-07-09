@@ -564,7 +564,7 @@ createBiomass_coreInputs <- function(sim) {
                           rasterToMatchLarge = sim$rasterToMatchLarge,
                           rstLCCAdj = rstLCCAdj,
                           pixelsToRm = pixelsToRm,
-                          userTags = c(cacheTags, "prepEcoregionFiles"))
+                          cacheTags = c(cacheTags, "prepEcoregionFiles"))
 
   ################################################################
   ## put together pixelTable object
