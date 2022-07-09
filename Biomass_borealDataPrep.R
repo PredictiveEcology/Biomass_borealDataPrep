@@ -443,7 +443,7 @@ createBiomass_coreInputs <- function(sim) {
 
   if (!compareRaster(sim$speciesLayers, sim$rasterToMatchLarge,
                      orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
-    sim$speciesLayers <- Cache(postProcess,
+    sim$speciesLayers <- Cache(postProcessTerra,
                                sim$speciesLayers,
                                to = sim$rasterToMatchLarge,
                                overwrite = TRUE)
