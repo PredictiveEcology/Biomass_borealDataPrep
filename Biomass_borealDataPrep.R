@@ -18,10 +18,11 @@ defineModule(sim, list(
   reqdPkgs = list("assertthat", "crayon", "data.table", "fasterize",  "ggplot2", "merTools",
                   "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   "PredictiveEcology/reproducible@development (>= 1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.7.9026)",
+                  "PredictiveEcology/LandR@development (>= 1.0.7.9027)",
                   "PredictiveEcology/SpaDES.core@development (>= 1.0.10.9005)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
+    ## maxB, maxANPP, SEP estimation section ------------------------------------------------
     defineParameter("biomassModel", "call",
                     quote(lme4::lmer(B ~ logAge * speciesCode + cover * speciesCode +
                                        (logAge + cover | ecoregionGroup))),
@@ -43,6 +44,20 @@ defineModule(sim, list(
                     paste("Model and formula used for estimating cover from `ecoregionGroup` and `speciesCode`",
                           "and potentially others. Defaults to a GLMEM if there are > 1 grouping levels.",
                           "A custom model call can also be provided, as long as the 'data' argument is NOT included")),
+    defineParameter("fixModelBiomass", "logical", FALSE, NA, NA,
+                    paste("should `biomassModel` be fixed in the case of non-convergence?",
+                          "Only scaling of variables and attempting to fit with a new optimizer (bobyqa, see `?lme4`)",
+                          "are implemented at this time.")),
+    defineParameter("subsetDataAttempts", "integer", 3, 1, 10,
+                    paste("How many times should `biomassModel` be attempted to fit with a new data subset in case of",
+                          "non-convergence? Each time, the data is resampled (if `subsetDataBiomassModel = TRUE`)",
+                          "and the model re-fit with the original data, scaled variables and/or a different optimizer",
+                          "if `fixModelBiomass = TRUE`. Model refiting with original data, rescaled variables and/or a new",
+                          "optimizer occurs up to three times for each data subset, regardless of this parameter's value.")),
+    defineParameter("subsetDataBiomassModel", "numeric", 50, NA, NA,
+                    paste("the number of samples to use when subsampling the biomass data model (`biomassModel`);",
+                          "Can be `TRUE`/`FALSE`/`NULL` or numeric; if `TRUE`, uses 50, the default.",
+                          "If `FALSE`/`NULL` no subsetting is done.")),
     ## deciduous cover to biomass cover section ------------------------------------------------
     defineParameter("coverPctToBiomassPctModel", "call",
                     quote(glm(I(log(B/100)) ~ logAge * I(log(totalBiomass/100)) * speciesCode * lcc)),
@@ -76,16 +91,6 @@ defineModule(sim, list(
                           "the user wants to investigate them further. Can be set to 'none' (no models are exported), 'all'",
                           "(both are exported), 'biomassModel' or 'coverModel'. BEWARE: because this is intended for posterior",
                           "model inspection, the models will be exported with data, which may mean very large simList(s)!")),
-    defineParameter("fireURL", "character", "https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip",
-                    desc = paste("A URL to a fire database, such as the Canadian National Fire Database,",
-                                 "that is a zipped shapefile with fire polygons, an attribute (i.e., a column) named 'Year'.",
-                                 "If supplied (omitted with `NULL` or `NA`), this will be used to 'update' age pixels on `standAgeMap`",
-                                 "with 'time since fire' as derived from this fire polygons map. Biomass is also updated in these pixels,",
-                                 "when the last fire is more recent than 1986. If `NULL` or `NA`, no age and biomass imputation will be done",
-                                 "in these pixels.")),
-    defineParameter("fixModelBiomass", "logical", FALSE, NA, NA,
-                    paste("should `modelBiomass` be fixed in the case of non-convergence?",
-                          "Only scaling of variables and attempting to fit with a new optimizer are implemented at this time")),
     defineParameter("forestedLCCClasses", "numeric", 1:6, 0, NA,
                     paste("The classes in the `rstLCC` layer that are 'treed' and will therefore be run in Biomass_core.",
                           "Defaults to forested classes in LCC2010 map.")),
@@ -94,7 +99,8 @@ defineModule(sim, list(
                     NA, NA,
                     paste("Model and formula used for imputing ages that are either missing or do not match well with",
                           "biomass or cover. Specifically, if biomass or cover is 0, but age is not, or if age is missing (`NA`),",
-                          "then age will be imputed.")),
+                          "then age will be imputed. Note that this is independent from replacing ages inside fire perimeters",
+                          "(see `P(sim)$overrideAgeInFires`)")),
     defineParameter("LCCClassesToReplaceNN", "numeric", numeric(0), NA, NA,
                     paste("This will replace these classes on the landscape with the closest forest class `P(sim)$forestedLCCClasses`.",
                           "If the user is using the LCC 2005 land-cover data product for `rstLCC`, then they may wish to",
@@ -117,9 +123,12 @@ defineModule(sim, list(
                                  "biomass-succession-main-inputs_BSW_Baseline.txt%7E."))),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by `P(sim)$forestedLCCClasses`?"),
+    defineParameter("overrideAgeInFires", "logical", TRUE, NA, NA,
+                    paste("should stand age values inside fire perimeters be replaced with number of years since last fire?")),
     defineParameter("overrideBiomassInFires", "logical", TRUE, NA, NA,
                     paste("should B values be re-estimated using *Biomass_core* for pixels within the fire perimeters",
-                          "obtained from `P(sim)$fireURL`, based on their time since fire age?")),
+                          "for which age was replaced with time since last fire? Ignored if `P(sim)$overrideAgeInFires = FALSE`. ",
+                          "See `firePerimeters` input object and `P(sim)$overrideAgeInFires` for further detail.")),
     defineParameter("pixelGroupAgeClass", "numeric", params(sim)$Biomass_borealDataPrep$successionTimestep, NA, NA,
                     paste("When assigning `pixelGroup` membership, this defines the resolution of ages that will be considered",
                           "'the same pixelGroup', e.g., if it is 10, then 6 and 14 will be the same")),
@@ -144,10 +153,8 @@ defineModule(sim, list(
                           "e.g., BSW, MC etc. Default is good for Alberta and other places in the western Canadian boreal forests.")),
     defineParameter("subsetDataAgeModel", "numeric", 50, NA, NA,
                     paste("the number of samples to use when subsampling the age data model and when fitting `coverPctToBiomassPctModel`;",
-                          "Can be `TRUE`/`FALSE`/`NULL` or numeric; if `TRUE`, uses 50. If `FALSE`/`NULL` no subsetting is done.")),
-    defineParameter("subsetDataBiomassModel", "numeric", NULL, NA, NA,
-                    paste("the number of samples to use when subsampling the biomass data model (`biomassModel`);",
-                          "Can be `TRUE`/`FALSE`/`NULL` or numeric; if `TRUE`, uses 50. If `FALSE`/`NULL` no subsetting is done.")),
+                          "Can be `TRUE`/`FALSE`/`NULL` or numeric; if `TRUE`, uses 50, the default.",
+                          "If `FALSE`/`NULL` no subsetting is done.")),
     defineParameter("successionTimestep", "numeric", 10, NA, NA, "defines the simulation time step, default is 10 years"),
     defineParameter("useCloudCacheForStats", "logical", TRUE, NA, NA,
                     paste("Some of the statistical models take long (at least 30 minutes, likely longer).",
@@ -193,6 +200,15 @@ defineModule(sim, list(
                               "It will be overlaid with landcover to generate classes for every ecoregion/LCC combination.",
                               "It must have same extent and crs as `rasterToMatchLarge` if supplied by user - use `reproducible::postProcess`.",
                               "If it uses an attribute table, it must contain the field 'ecoregion' to represent raster values")),
+    expectsInput("firePerimeters", "RasterLayer",
+                 desc = paste("Fire perimeters raster, with fire year information used to 'update' stand",
+                              "age using time since last fire as the imputed value. Only used if",
+                              "`P(sim)$overrideAgeInFires = TRUE`. Biomass will also be updated in these pixels",
+                              "if `P(sim)$overrideBiomassInFires = TRUE` and the last fire was later than 1985.",
+                              "Defaults to using fire perimeters in the Canadian National Fire Database, downloaded",
+                              "as a zipped shapefile with fire polygons, an attribute (i.e., a column) named 'YEAR',",
+                              "which is used to rasterize to the study area."),
+                 sourceURL = "https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip"),
     expectsInput("rstLCC", "RasterLayer",
                  desc = paste("A land classification map in study area. It must be 'corrected', in the sense that:\n",
                               "1) Every class must not conflict with any other map in this module\n",
@@ -216,8 +232,7 @@ defineModule(sim, list(
     expectsInput("rawBiomassMap", "RasterLayer",
                  desc = paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
                               "Service, National Forest Inventory, kNN-derived total aboveground biomass map",
-                              "from 2001 (in tonnes/ha), unless 'dataYear' != 2001. If necessary, biomass values",
-                              "are rescaled to match changes in resolution. See",
+                              "from 2001 (in tonnes/ha), unless 'dataYear' != 2001. See",
                               "https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990",
                               "for metadata."),
                  sourceURL = paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
@@ -251,7 +266,9 @@ defineModule(sim, list(
                               "the entire `P(sim)$sppEquivCol` column in `sppEquiv`.",
                               "See `LandR::sppEquivalencies_CA`.")),
     expectsInput("standAgeMap", "RasterLayer",
-                 desc =  paste("stand age map in study area.",
+                 desc =  paste("stand age map in study area. Must have a 'imputedPixID' attribute (a  vector of pixel IDs)",
+                               "indicating which pixels suffered age imputation. If no pixel ages were imputed, please set",
+                               "this attribute to `integer(0)`.",
                                "Defaults to the Canadian Forestry Service, National Forest Inventory,",
                                "kNN-derived biomass map from 2001, unless 'dataYear' != 2001.",
                                "See https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata"),
@@ -383,6 +400,55 @@ createBiomass_coreInputs <- function(sim) {
   }
 
   ## check that input rasters all match
+  # Too many times this was failing with non-Terra # Eliot March 8, 2022
+  # Now it fails with terra: Ceres Jul 08 2022
+  opt <- options("reproducible.useTerra" = FALSE)
+  on.exit(options(opt), add = TRUE)
+  if (!compareRaster(sim$rawBiomassMap, sim$rasterToMatchLarge,
+                     orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
+    ## note that extents may never align if the resolution and projection do not allow for it
+    sim$rawBiomassMap <- Cache(postProcess,
+                               sim$rawBiomassMap,
+                               method = "bilinear",
+                               rasterToMatch = sim$rasterToMatchLarge,
+                               overwrite = TRUE)
+  }
+
+  if (!compareRaster(sim$standAgeMap, sim$rasterToMatchLarge,
+                     orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
+    ## note that extents may never align if the resolution and projection do not allow for it
+    ## this is not working, need to use projectRaster
+    sim$standAgeMap <- Cache(postProcess,
+                             sim$standAgeMap,
+                             to = sim$rasterToMatchLarge,
+                             overwrite = TRUE)
+    attr(sim$standAgeMap, "imputedPixID") <- sim$imputedPixID
+  }
+
+  if (!compareRaster(sim$rstLCC, sim$rasterToMatchLarge,
+                     orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
+    sim$rstLCC <- Cache(postProcess,
+                        sim$rstLCC,
+                        to = sim$rasterToMatchLarge,
+                        overwrite = TRUE)
+  }
+
+  if (!compareRaster(sim$firePerimeters, sim$rasterToMatchLarge,
+                     orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
+    sim$firePerimeters <- Cache(postProcess,
+                                sim$firePerimeters,
+                                to = sim$rasterToMatchLarge,
+                                overwrite = TRUE)
+  }
+  options(opts)
+
+  if (!compareRaster(sim$speciesLayers, sim$rasterToMatchLarge,
+                     orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
+    sim$speciesLayers <- Cache(postProcessTerra,
+                               sim$speciesLayers,
+                               to = sim$rasterToMatchLarge,
+                               overwrite = TRUE)
+  }
   compareRaster(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC,
                 sim$speciesLayers, sim$standAgeMap, orig = TRUE)
 
@@ -391,19 +457,10 @@ createBiomass_coreInputs <- function(sim) {
   ################################################################
   message(blue("Prepare 'species' table, i.e., species level traits", Sys.time()))
 
-  ## TODO: this won't work if the user is not supplyng a `speciesTable` that looks like the default.
-  ## maybe `species` sould be the input and the mandotory number of columns smaller so that this step can be moved to
-  ## .inputObjects
   sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
                                   sppEquiv = sim$sppEquiv,
                                   areas = P(sim)$speciesTableAreas,
                                   sppEquivCol = P(sim)$sppEquivCol)
-
-  # sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
-  #                                 # speciesLayers = sim$speciesLayers,
-  #                                 sppEquiv = sim$sppEquiv[get(P(sim)$sppEquivCol) %in%
-  #                                                           names(sim$speciesLayers)],
-  #                                 sppEquivCol = P(sim)$sppEquivCol)
 
   ### override species table values ##############################
   if (!is.null(P(sim)$speciesUpdateFunction)) {
@@ -500,7 +557,6 @@ createBiomass_coreInputs <- function(sim) {
   # The next function will remove the "zero" class on sim$ecoregionRst
   pixelFateDT <- pixelFate(pixelFateDT, "Removing 0 class in sim$ecoregionRst",
                            sum(sim$ecoregionRst[][!pixelsToRm] == 0, na.rm = TRUE))
-
   ecoregionFiles <- Cache(prepEcoregions,
                           ecoregionRst = sim$ecoregionRst,
                           ecoregionLayer = sim$ecoregionLayer,
@@ -508,7 +564,7 @@ createBiomass_coreInputs <- function(sim) {
                           rasterToMatchLarge = sim$rasterToMatchLarge,
                           rstLCCAdj = rstLCCAdj,
                           pixelsToRm = pixelsToRm,
-                          userTags = c(cacheTags, "prepEcoregionFiles"))
+                          cacheTags = c(cacheTags, "prepEcoregionFiles"))
 
   ################################################################
   ## put together pixelTable object
@@ -702,12 +758,6 @@ createBiomass_coreInputs <- function(sim) {
   cohortDataShort <- cohortDataNo34to36[, list(coverPres = sum(cover > 0)),
                                         by = c("ecoregionGroup", "speciesCode")]
   ## find coverNum for each known class
-  ## TODO: Ceres: I feel we should be using the converted classes here...
-  ## otherwise  pixelTable is reintroducing the converted classes in cohortDataShortNoCover which is confusing
-  ## even if they end up being removed later by `makeSpeciesEcoregion`
-  ## because they end up with NAs that are converted to 0s
-  # aa <- table(pixelTable$initialEcoregionCode)
-
   ## add new ecoregions to pixelTable, before calc. table
   tempDT <- rbind(cohortData34to36[, .(pixelIndex, ecoregionGroup)],
                   cohortDataNo34to36[, .(pixelIndex, ecoregionGroup)])
@@ -788,8 +838,8 @@ createBiomass_coreInputs <- function(sim) {
   # Run 2 nested loops to do both of these things
   modelBiomassTags <- c(cacheTags, "modelBiomass",
                         paste0("subsetSize:", P(sim)$subsetDataBiomassModel))
-  maxDataSubsetTries <- 3 ## TODO: make this a param!
-  for (tryBiomassDataSubset in 1:maxDataSubsetTries) { # try 3 attempts of subsetting
+  maxDataSubsetTries <- P(sim)$subsetDataAttempts
+  for (tryBiomassDataSubset in 1:maxDataSubsetTries) {
     cohortDataNo34to36BiomassSubset <- subsetDT(cohortDataNo34to36Biomass,
                                                 by = c("ecoregionGroup", "speciesCode"),
                                                 doSubset = P(sim)$subsetDataBiomassModel)
@@ -834,7 +884,6 @@ createBiomass_coreInputs <- function(sim) {
         omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
       )
 
-      ## TODO: the following code should be moved to the model function
       modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
       needRedo <- (length(modMessages) > 0 & fixModelBiomass)
       if (needRedo && (!tryControl || !needRescaleModelB)) {
@@ -1032,59 +1081,41 @@ createBiomass_coreInputs <- function(sim) {
 
   # If this module used a fire database to extract better young ages, then we
   #   can use those high quality younger ages to help with our biomass estimates
-  if (isTRUE(P(sim)$overrideBiomassInFires)) {  ## TODO: why is this what turns on/off  fire age imputation in fire pixels? and why two nested ifs that basically do the same?
-    if (!(is.null(P(sim)$fireURL) | is.na(P(sim)$fireURL))) {
-      message("Using P(sim)$fireURL to download fire database; this is being used to override ",
-              "B values that originally came from rawBiomassMap, but only within the fire perimeters.",
-              "To skip this step, set parameter fireURL to NA")
-      # fireURL <- "https://cwfis.cfs.nrcan.gc.ca/downloads/nbac/nbac_1986_to_2019_20200921.zip"
-      # This was using the nbac filename to figure out what the earliest year in the
-      #   fire dataset was. Since that is not actually used here, it doesn't really
-      #   matter what the fire dataset was. Basically, this section is updating
-      #   young ages that are way outside of their biomass. Can set this to 1986 to just
-      #   give a cutoff
+  if (isTRUE(P(sim)$overrideBiomassInFires)) {
+    if (isFALSE(P(sim)$overrideAgeInFires)) {
+      message(blue("'P(sim)$overrideBiomassInFires' is TRUE but 'P(sim)$overrideAgeInFires' if FALSE."))
+      message(blue("B values will NOT be re-estimated inside fire perimeters."))
+    } else {
+      message(blue("Overriding B values (originally from 'rawBiomassMap') within the fire perimeters",
+                   "defined in 'firePerimeters'."))
+      message(blue("To skip this step, set 'P(sim)$overrideBiomassInFires' to FALSE."))
 
-      ## TODO: Ceres: it seems silly to get the fire perimeters twice, but for now this is the only way to know
-      ## where ages were imputed
-      ## TODO: maybe we should fix the stand age inside fire perimeters before fitting biomassModel?
-      opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
-      on.exit(options(opt), add = TRUE)
-      firePerimeters <- Cache(prepInputsFireYear,
-                              destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
-                              studyArea = raster::aggregate(sim$studyArea),
-                              rasterToMatch = sim$rasterToMatch,
-                              overwrite = TRUE,
-                              url = P(sim)$fireURL,
-                              fireField = "YEAR",
-                              fun = "sf::st_read",
-                              userTags = c(cacheTags, "firePerimeters"))
-      options(opt)
+      firstFireYear <- min(sim$firePerimeters[], na.rm = TRUE) # 1986 # as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", fireURL))
+      ## this is not necessary when using min(),
+      ## but will be kept in case we use something else in the future
+      whichFiresTooOld <- which(sim$firePerimeters[] < firstFireYear)
 
-
-      ## TODO: Ceres: 1986 is different from the earliest year (1950) used to impute ages.
-      ## this should be consistent with the earliest year used to impute ages
-
-      firstFireYear <- minValue(firePerimeters) # 1986 # as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", fireURL))
-      whichFiresTooOld <- which(firePerimeters[] < firstFireYear)
       if (length(whichFiresTooOld)) {
         message("There were fires in the database older than ", firstFireYear, ";",
-                " The data from these are not being used because firstFireYear = 1986")
-        firePerimeters[whichFiresTooOld] <- NA
+                " The data from these will not be used because firstFireYear = ", firstFireYear)
+        sim$firePerimeters[whichFiresTooOld] <- NA
       }
+
       maxAgeHighQualityData <- start(sim) - firstFireYear
       ## if maxAgeHighQualityData is lower than 0, it means it's prior to the first fire Year
       ## or not following calendar year
 
-      if (!is.na(maxAgeHighQualityData) & maxAgeHighQualityData >= 0) {
+      if (isTRUE(maxAgeHighQualityData >= 0)) {
         # identify young in the pixelCohortData
         youngRows <- pixelCohortData$age <= maxAgeHighQualityData
         young <- pixelCohortData[youngRows == TRUE]
 
-        youngRows2 <- !is.na(firePerimeters[young$pixelIndex])
+        youngRows2 <- !is.na(sim$firePerimeters[young$pixelIndex])
         young <- young[youngRows2]
 
         # whYoungBEqZero <- which(young$B == 0)
         whYoungZeroToMaxHighQuality <- which(young$age > 0)
+
         if (length(whYoungZeroToMaxHighQuality) > 0) {
           youngWAgeEqZero <- young[-whYoungZeroToMaxHighQuality]
           youngNoAgeEqZero <- young[whYoungZeroToMaxHighQuality]
@@ -1092,11 +1123,14 @@ createBiomass_coreInputs <- function(sim) {
           message("Running 'spinup' on pixels that are within fire polygons and whose age < ", maxAgeHighQualityData)
           young <- Cache(spinUpPartial,
                          youngNoAgeEqZero, speciesEcoregion, maxAgeHighQualityData,
-                         sim$minRelativeB, sim$species, sim$sppColorsVect, paths(sim),
-                         currentModule(sim), modules(sim),
+                         sim$minRelativeB, sim$species,
+                         sim$sppEquiv, P(sim)$sppEquivCol, sim$sppColorsVect,
+                         paths(sim), currentModule(sim), modules(sim),
                          userTags = c(cacheTags, "spinUpYoungBiomasses"),
                          omitArgs = c("userTags"))
 
+          ## method using modelBiomass
+          ## -- deprecated, as it overestimates B for young ages at the moment
           # young <- Cache(updateYoungBiomasses,
           #                young = youngNoAgeEqZero,
           #                modelBiomass = modelBiomass,
@@ -1108,6 +1142,8 @@ createBiomass_coreInputs <- function(sim) {
           }
 
           young <- rbindlist(list(young, youngWAgeEqZero), use.names = TRUE)
+        } else {
+          message(blue("No pixels found with ages needing age replacement with last fire year"))
         }
 
         lengthUniquePixelIndices <- length(unique(pixelCohortData$pixelIndex))
@@ -1122,7 +1158,9 @@ createBiomass_coreInputs <- function(sim) {
         ) # /4 is too strong -- 25 years is a lot of time
       } else {
         ## return maxAgeHighQualityData to -1
-        maxAgeHighQualityData <- -1   ## TODO: why? where is this used?
+        message(blue("Simulation start year is lower than oldest fire."))
+        message(blue("B values will NOT be re-estimated inside fire perimeters"))
+        maxAgeHighQualityData <- -1
       }
     }
   }
@@ -1413,11 +1451,15 @@ Save <- function(sim) {
     } else if (needRTML && needRTM) {
       if (!compareRaster(sim$rawBiomassMap, sim$studyAreaLarge, stopiffalse = FALSE)) {
         ## note that extents may never align if the resolution and projection do not allow for it
-        sim$rawBiomassMap <- Cache(postProcessTerra,
+        opt <- options("reproducible.useTerra" = FALSE)
+        on.exit(options(opt), add = TRUE)
+        sim$rawBiomassMap <- Cache(postProcess,
                                    sim$rawBiomassMap,
+                                   method = "bilinear",
                                    studyArea = sim$studyAreaLarge,
                                    useSAcrs = TRUE,
                                    overwrite = TRUE)
+        options(opts)
         sim$rawBiomassMap <- fixErrors(sim$rawBiomassMap)
       }
       sim$rasterToMatchLarge <- sim$rawBiomassMap
@@ -1474,7 +1516,6 @@ Save <- function(sim) {
     sim$rasterToMatch[!is.na(RTMvals)] <- 1
   }
 
-  ## TODO: KEEP THIS HERE OR ONLY INIT?
   if (!compareCRS(sim$studyArea, sim$rasterToMatch)) {
     warning(paste0("studyArea and rasterToMatch projections differ.\n",
                    "studyArea will be projected to match rasterToMatch"))
@@ -1504,10 +1545,6 @@ Save <- function(sim) {
                         omitArgs = c("destinationPath", "userTags", "filename2", "overwrite"))
   }
 
-  if (!compareRaster(sim$rstLCC, sim$rasterToMatchLarge)) {
-    sim$rstLCC <- projectRaster(sim$rstLCC, to = sim$rasterToMatchLarge)
-  }
-
   ## Ecodistrict ------------------------------------------------
   if (!suppliedElsewhere("ecoregionLayer", sim)) {
     sim$ecoregionLayer <- Cache(prepInputs,
@@ -1522,6 +1559,23 @@ Save <- function(sim) {
                                 useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
                                 fun = "raster::shapefile",
                                 userTags = c("prepInputsEcoDistrict_SA", currentModule(sim), cacheTags))
+  }
+
+  if (P(sim)$overrideAgeInFires) {
+    if (!suppliedElsewhere("firePerimeters", sim)) {
+      opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+      on.exit(options(opt), add = TRUE)
+      sim$firePerimeters <- Cache(prepInputsFireYear,
+                                  destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
+                                  studyArea = raster::aggregate(sim$studyArea),
+                                  rasterToMatch = sim$rasterToMatchLarge,
+                                  overwrite = TRUE,
+                                  url = extractURL("firePerimeters"),
+                                  fireField = "YEAR",
+                                  fun = "sf::st_read",
+                                  userTags = c(cacheTags, "firePerimeters"))
+      options(opt)
+    }
   }
 
   ## Stand age map ------------------------------------------------
@@ -1542,15 +1596,16 @@ Save <- function(sim) {
     # Now it fails with terra: Ceres Jul 08 2022
     opt <- options("reproducible.useTerra" = FALSE)
     on.exit(options(opt), add = TRUE)
-    sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
+
+    sim$standAgeMap <- Cache(prepInputsStandAgeMap,
                              destinationPath = dPath,
                              ageURL = ageURL,
                              studyArea = raster::aggregate(sim$studyAreaLarge),
                              rasterToMatch = sim$rasterToMatchLarge,
                              filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
-                             fireURL = P(sim)$fireURL,
-                             fireField = "YEAR",
+                             firePerimeters = if (P(sim)$overrideAgeInFires) sim$firePerimeters else NULL,
+                             fireURL = if (P(sim)$overrideAgeInFires) extractURL("firePerimeters") else NULL,
                              startTime = start(sim),
                              userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
                              omitArgs = c("destinationPath", "targetFile", "overwrite",
@@ -1559,26 +1614,14 @@ Save <- function(sim) {
     LandR::assertStandAgeMapAttr(sim$standAgeMap)
     sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
     # })
+  } else {
+    if (P(sim)$overrideAgeInFires) {
+      sim$standAgeMap <- replaceAgeInFires(sim$standAgeMap, sim$firePerimeters, start(sim))
+    }
   }
 
   LandR::assertStandAgeMapAttr(sim$standAgeMap)
   sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
-
-  if (!compareRaster(sim$standAgeMap, sim$rasterToMatchLarge, orig = TRUE, res = TRUE,
-                     stopiffalse = FALSE)) {
-    ## note that extents may never align if the resolution and projection do not allow for it
-    ## this is not working, need to use projectRaster
-    # Too many times this was failing with non-Terra # Eliot March 8, 2022
-    # Now it fails with terra: Ceres Jul 08 2022
-    opt <- options("reproducible.useTerra" = FALSE)
-    on.exit(options(opt), add = TRUE)
-    sim$standAgeMap <- Cache(postProcess,
-                             sim$standAgeMap,
-                             to = sim$rasterToMatchLarge,
-                             overwrite = TRUE)
-    options(opts)
-    attr(sim$standAgeMap, "imputedPixID") <- sim$imputedPixID
-  }
 
   ## Species equivalencies table and associated columns ----------------------------
   ## make sppEquiv table and associated columns, vectors
