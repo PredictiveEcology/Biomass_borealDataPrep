@@ -44,11 +44,13 @@ jobs:
             libxml2-dev \
             python3-gdal
 
-      - name: Install remotes, knitr, rmarkdown
+      - name: Install remotes, knitr, rmarkdown, etc.
         run: |
           install.packages("remotes")
           remotes::install_cran("rmarkdown")
           remotes::install_cran("knitr")
+          remotes::install_cran("bookdown")
+          remotes::install_cran("kableExtra")
         shell: Rscript {0}
 
       - name: Install SpaDES
@@ -71,5 +73,5 @@ jobs:
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git commit Biomass_borealDataPrep.html -m 'Re-build Biomass_borealDataPrep.Rmd' || echo "No changes to commit"
+          git commit Biomass_borealDataPrep.html Biomass_borealDataPrep.md -m 'Re-build Biomass_borealDataPrep.Rmd' || echo "No changes to commit"
           git push https://${{github.actor}}:${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git HEAD:${{github.ref}} || echo "No changes to commit"

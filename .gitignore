@@ -7,6 +7,13 @@
 ## module cache files
 cache/
 
+## html cache/files
+*_cache/
+*_files/
+
+## these are downloaded automatically, no point in caching
+figures/*Badge.png
+
 ## OAuth tokens
 .httr-oauth
 .httr-oauth-SUSPENDED
@@ -14,4 +21,6 @@ cache/
 ## misc OS files
 Thumbs.db
 
- ## !! Module data should be gitignored in the respective module's data dir !! 
+ ## !! Module data should be gitignored in the respective module's data dir !!
+
+Biomass_coreSubModule
