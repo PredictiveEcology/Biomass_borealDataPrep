@@ -19,7 +19,7 @@ defineModule(sim, list(
                   "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
                   "PredictiveEcology/LandR@development (>= 1.0.7.9008)",
-                  "PredictiveEcology/SpaDES.core@dotSeed (>=1.0.6.9016)",
+                  "PredictiveEcology/SpaDES.core@development (>=1.0.6.9016)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
