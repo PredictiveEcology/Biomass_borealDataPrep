@@ -1465,8 +1465,9 @@ Save <- function(sim) {
         stop("'P(sim)$dataYear' must be 2001 OR 2011")
       }
     }
-    opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
-    on.exit(options(opt), add = TRUE)
+    ## Ceres Sep 3rd 2022 -- this option caused failure when previously set to FALSE at project level.
+    # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+    # on.exit(options(opt), add = TRUE)
     sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
                              destinationPath = dPath,
                              ageURL = ageURL,
@@ -1480,7 +1481,7 @@ Save <- function(sim) {
                              userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
                              omitArgs = c("destinationPath", "targetFile", "overwrite",
                                           "alsoExtract", "userTags"))
-    options(opt)
+    # options(opt)
     LandR::assertStandAgeMapAttr(sim$standAgeMap)
     sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
     # })
