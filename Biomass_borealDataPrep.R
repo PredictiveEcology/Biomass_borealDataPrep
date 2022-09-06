@@ -906,9 +906,9 @@ createBiomass_coreInputs <- function(sim) {
           ## redo model call with new optimizer
           modCallChar <- paste(deparse(P(sim)$biomassModel), collapse = "")
           if (grepl("lme4::lmer", modCallChar)) {
-            modCallChar <-  sub(")$", ", control = lmerControl(optimizer = 'bobyqa'))", modCallChar)
+            modCallChar <-  sub(")$", ", control = lme4::lmerControl(optimizer = 'bobyqa'))", modCallChar)
           } else if (grepl("lme4::glmer", modCallChar)) {
-            modCallChar <-  sub(")$", ", = glmerControl(optimizer = 'bobyqa'))", modCallChar)
+            modCallChar <-  sub(")$", ", = lme4::glmerControl(optimizer = 'bobyqa'))", modCallChar)
           } else {
             message(blue("P(sim)$biomassModel does not call 'lme4::lmer' or 'lme4::glmer' explicitly",
                          "preventing an attempt to use a different optimizer."))
