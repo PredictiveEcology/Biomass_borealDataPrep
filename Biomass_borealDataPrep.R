@@ -15,11 +15,13 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
-  reqdPkgs = list("assertthat", "crayon", "data.table", "fasterize",  "ggplot2", "merTools",
-                  "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
+  reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2",
+                  # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
+                                    ## Excluded because loading is not necessary (just installation)
+                  "merTools", "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   "PredictiveEcology/reproducible@development (>= 1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.7.9027)",
-                  "PredictiveEcology/SpaDES.core@development (>= 1.0.10.9005)",
+                  "PredictiveEcology/LandR@development (>= 1.0.7.9008)",
+                  "PredictiveEcology/SpaDES.core@development (>= 1.0.6.9016)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     ## maxB, maxANPP, SEP estimation section ------------------------------------------------
@@ -175,6 +177,10 @@ defineModule(sim, list(
                     paste("Named list of seeds to use for each event (names). E.g., `list('init' = 123)` will `set.seed(123)`",
                           "at the start of the init event and unset it at the end. Defaults to `NULL`, meaning that",
                           "no seeds will be set")),
+    defineParameter(".sslVerify", "integer", unname(curl::curl_options("^ssl_verifypeer$")), NA , NA,
+                    paste("Passed to `httr::config(ssl_verifypeer = P(sim)$sslVerify)` when downloading KNN",
+                          "(NFI) datasets. Set to 0L if necessary to bypass checking the SSL certificate (this",
+                          "may be necessary when NFI's website SSL certificate is not correctly configured).")),
     defineParameter(".studyAreaName", "character", NA, NA, NA,
                     "Human-readable name for the study area used. If `NA`, a hash of studyArea will be used."),
     defineParameter(".useCache", "character", c(".inputObjects", "init"), NA, NA,
@@ -1406,8 +1412,7 @@ Save <- function(sim) {
     }
   }
 
-  if (!suppliedElsewhere("rawBiomassMap", sim)) {
-    # httr::with_config(config = httr::config(ssl_verifypeer = 0L), { ## TODO: re-enable verify
+  if (!suppliedElsewhere("rawBiomassMap", sim) || needRTM) {
     #necessary for KNN
     if (P(sim)$dataYear == 2001) {
       biomassURL <- extractURL("rawBiomassMap")
@@ -1421,20 +1426,21 @@ Save <- function(sim) {
       }
     }
 
-    sim$rawBiomassMap <- Cache(prepInputs,
-                               url = biomassURL,
-                               destinationPath = dPath,
-                               studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                               rasterToMatch = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else NULL,
-                               maskWithRTM = if (!needRTM) TRUE else FALSE,
-                               useSAcrs = FALSE,     ## never use SA CRS
-                               method = "bilinear",
-                               datatype = "INT2U",
-                               filename2 = .suffix("rawBiomassMap.tif", paste0("_", P(sim)$.studyAreaName)),
-                               overwrite = TRUE,
-                               userTags = c(cacheTags, "rawBiomassMap"),
-                               omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
-    # })
+    httr::with_config(config = httr::config(ssl_verifypeer = P(sim)$.sslVerify), {
+      sim$rawBiomassMap <- Cache(prepInputs,
+                                 url = biomassURL,
+                                 destinationPath = dPath,
+                                 studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
+                                 rasterToMatch = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else NULL,
+                                 maskWithRTM = if (!needRTM) TRUE else FALSE,
+                                 useSAcrs = FALSE,     ## never use SA CRS
+                                 method = "bilinear",
+                                 datatype = "INT2U",
+                                 filename2 = .suffix("rawBiomassMap.tif", paste0("_", P(sim)$.studyAreaName)),
+                                 overwrite = TRUE,
+                                 userTags = c(cacheTags, "rawBiomassMap"),
+                                 omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
+    })
   }
 
   if (needRTM || needRTML) {
@@ -1580,7 +1586,6 @@ Save <- function(sim) {
 
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
-    # httr::with_config(config = httr::config(ssl_verifypeer = 0L), {
     if (P(sim)$dataYear == 2001) {
       ageURL <- extractURL("standAgeMap")
     } else {
@@ -1595,27 +1600,24 @@ Save <- function(sim) {
     ## Ceres Sep 3rd 2022 -- this option caused failure when previously set to FALSE at project level.
     # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
     # on.exit(options(opt), add = TRUE)
-    sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
-                             destinationPath = dPath,
-                             ageURL = ageURL,
-                             studyArea = raster::aggregate(sim$studyAreaLarge),
-                             rasterToMatch = sim$rasterToMatchLarge,
-                             filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
-                             overwrite = TRUE,
-                             firePerimeters = if (P(sim)$overrideAgeInFires) sim$firePerimeters else NULL,
-                             fireURL = if (P(sim)$overrideAgeInFires) extractURL("firePerimeters") else NULL,
-                             startTime = start(sim),
-                             userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
-                             omitArgs = c("destinationPath", "targetFile", "overwrite",
-                                          "alsoExtract", "userTags"))
+    httr::with_config(config = httr::config(ssl_verifypeer = P(sim)$.sslVerify), {
+      sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
+                               destinationPath = dPath,
+                               ageURL = ageURL,
+                               studyArea = raster::aggregate(sim$studyAreaLarge),
+                               rasterToMatch = sim$rasterToMatchLarge,
+                               filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
+                               overwrite = TRUE,
+                               firePerimeters = if (P(sim)$overrideAgeInFires) sim$firePerimeters else NULL,
+                               fireURL = if (P(sim)$overrideAgeInFires) extractURL("firePerimeters") else NULL,
+                               startTime = start(sim),
+                               userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
+                               omitArgs = c("destinationPath", "targetFile", "overwrite",
+                                            "alsoExtract", "userTags"))
+    })
     # options(opt)
     LandR::assertStandAgeMapAttr(sim$standAgeMap)
     sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
-    # })
-  } else {
-    if (P(sim)$overrideAgeInFires) {
-      sim$standAgeMap <- replaceAgeInFires(sim$standAgeMap, sim$firePerimeters, start(sim))
-    }
   }
 
   LandR::assertStandAgeMapAttr(sim$standAgeMap)
@@ -1643,18 +1645,20 @@ Save <- function(sim) {
     #opts <- options(reproducible.useCache = "overwrite")
     opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
     on.exit(options(opt), add = TRUE)
-    sim$speciesLayers <- Cache(prepSpeciesLayers_KNN,
-                               destinationPath = dPath, # this is generic files (preProcess)
-                               outputPath = dPath,
-                               studyArea = sim$studyAreaLarge,
-                               studyAreaName = P(sim)$.studyAreaName,
-                               rasterToMatch = sim$rasterToMatchLarge,
-                               sppEquiv = sim$sppEquiv,
-                               sppEquivCol = P(sim)$sppEquivCol,
-                               thresh = 10,
-                               year = P(sim)$dataYear,
-                               userTags = c(cacheTags, "speciesLayers"),
-                               omitArgs = c("userTags"))
+    httr::with_config(config = httr::config(ssl_verifypeer = P(sim)$.sslVerify), {
+      sim$speciesLayers <- Cache(prepSpeciesLayers_KNN,
+                                 destinationPath = dPath, # this is generic files (preProcess)
+                                 outputPath = dPath,
+                                 studyArea = sim$studyAreaLarge,
+                                 studyAreaName = P(sim)$.studyAreaName,
+                                 rasterToMatch = sim$rasterToMatchLarge,
+                                 sppEquiv = sim$sppEquiv,
+                                 sppEquivCol = P(sim)$sppEquivCol,
+                                 thresh = 10,
+                                 year = P(sim)$dataYear,
+                                 userTags = c(cacheTags, "speciesLayers"),
+                                 omitArgs = c("userTags"))
+    })
     options(opt)
 
     ## make sure empty pixels inside study area have 0 cover, instead of NAs.
