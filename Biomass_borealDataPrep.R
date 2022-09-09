@@ -322,8 +322,7 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
 
   ## open a plotting device so that Biomass_core doesn't plot on top of it if it's too small.
   ## needs to be outside of init, in case init event is cached.
-  if (anyPlotting(P(sim)$.plots) &&
-      P(sim)$.plots == "screen") {
+  if (anyPlotting(P(sim)$.plots) && any("screen" %in% P(sim)$.plots)) {
     dev()
     clearPlot()
     mod$plotWindow <- dev.cur()
