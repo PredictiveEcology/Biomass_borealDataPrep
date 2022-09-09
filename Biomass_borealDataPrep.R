@@ -445,7 +445,7 @@ createBiomass_coreInputs <- function(sim) {
                                 to = sim$rasterToMatchLarge,
                                 overwrite = TRUE)
   }
-  options(opts)
+  options(opt)
 
   if (!compareRaster(sim$speciesLayers, sim$rasterToMatchLarge,
                      orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
@@ -577,10 +577,8 @@ createBiomass_coreInputs <- function(sim) {
   #  Round age to pixelGroupAgeClass
   # Internal data.table is changed; using memoise here causes the internal changes to
   #   come out to the pixelTable, which is not desired. Turn off memoising for one step
-  opts <- options("reproducible.useMemoise" = FALSE)
-  on.exit({
-    options(opts)
-  }, add = TRUE)
+  opt <- options("reproducible.useMemoise" = FALSE)
+  on.exit(options(opt), add = TRUE)
 
   pixelTable <- Cache(makePixelTable,
                       speciesLayers = sim$speciesLayers,
@@ -593,7 +591,7 @@ createBiomass_coreInputs <- function(sim) {
                       # pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
                       userTags = c(cacheTags, "pixelTable"),
                       omitArgs = c("userTags"))
-  options(opts)
+  options(opt)
 
   #######################################################
   # Make the initial pixelCohortData table
@@ -1464,7 +1462,7 @@ Save <- function(sim) {
                                    studyArea = sim$studyAreaLarge,
                                    useSAcrs = TRUE,
                                    overwrite = TRUE)
-        options(opts)
+        options(opt)
         sim$rawBiomassMap <- fixErrors(sim$rawBiomassMap)
       }
       sim$rasterToMatchLarge <- sim$rawBiomassMap
@@ -1641,7 +1639,7 @@ Save <- function(sim) {
 
   ## Species raster layers -------------------------------------------
   if (!suppliedElsewhere("speciesLayers", sim)) {
-    #opts <- options(reproducible.useCache = "overwrite")
+    #opt <- options(reproducible.useCache = "overwrite")
     opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
     on.exit(options(opt), add = TRUE)
     httr::with_config(config = httr::config(ssl_verifypeer = P(sim)$.sslVerify), {
