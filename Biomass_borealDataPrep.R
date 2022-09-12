@@ -329,8 +329,7 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
 
   ## open a plotting device so that Biomass_core doesn't plot on top of it if it's too small.
   ## needs to be outside of init, in case init event is cached.
-  if (anyPlotting(P(sim)$.plots) &&
-      P(sim)$.plots == "screen") {
+  if (anyPlotting(P(sim)$.plots) && any("screen" %in% P(sim)$.plots)) {
     dev()
     clearPlot()
     mod$plotWindow <- dev.cur()
@@ -515,9 +514,9 @@ createBiomass_coreInputs <- function(sim) {
   #  Round age to pixelGroupAgeClass
   # Internal data.table is changed; using memoise here causes the internal changes to
   #   come out to the pixelTable, which is not desired. Turn off memoising for one step
-  opts <- options("reproducible.useMemoise" = FALSE)
+  opt <- options("reproducible.useMemoise" = FALSE)
   on.exit({
-    options(opts)
+    options(opt)
   }, add = TRUE)
 
   pixelTable <- Cache(makePixelTable,
@@ -531,7 +530,7 @@ createBiomass_coreInputs <- function(sim) {
                       # pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
                       userTags = c(cacheTags, "pixelTable"),
                       omitArgs = c("userTags"))
-  options(opts)
+  options(opt)
 
   #######################################################
   # Make the initial pixelCohortData table
@@ -1538,7 +1537,7 @@ Save <- function(sim) {
 
   ## Species raster layers -------------------------------------------
   if (!suppliedElsewhere("speciesLayers", sim)) {
-    #opts <- options(reproducible.useCache = "overwrite")
+    #opt <- options(reproducible.useCache = "overwrite")
     sim$speciesLayers <- Cache(prepSpeciesLayers_KNN,
                                destinationPath = dPath, # this is generic files (preProcess)
                                outputPath = dPath,
