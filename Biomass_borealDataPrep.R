@@ -15,10 +15,13 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
-  reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2", "merTools",
-                  "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
+  reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr",
+                  "fasterize",  "ggplot2", "merTools", "plyr",
+                  # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
+                                    ## Excluded because loading is not necessary (just installation)
+                  "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.7.9008)",
+                  "CeresBarros/LandR@development (>= 1.0.9.9001)",
                   "PredictiveEcology/SpaDES.core@development (>=1.0.6.9016)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
@@ -166,6 +169,10 @@ defineModule(sim, list(
                     paste("Named list of seeds to use for each event (names). E.g., `list('init' = 123)` will `set.seed(123)`",
                           "at the start of the init event and unset it at the end. Defaults to `NULL`, meaning that",
                           "no seeds will be set")),
+    defineParameter(".sslVerify", "integer", curl::curl_options("^ssl_verifypeer$"), NA , NA,
+                    paste("Passed to `httr::config(ssl_verifypeer = P(sim)$sslVerify)` when downloading KNN",
+                          "(NFI) datasets. Set to 0L if necessary to bypass checking the SSL certificate (this",
+                          "may be necessary when NFI's FTP website SSL certificate is down/out-of-date).")),
     defineParameter(".studyAreaName", "character", NA, NA, NA,
                     "Human-readable name for the study area used. If `NA`, a hash of studyArea will be used."),
     defineParameter(".useCache", "character", c(".inputObjects", "init"), NA, NA,
@@ -1328,7 +1335,7 @@ Save <- function(sim) {
   }
 
   if (!suppliedElsewhere("rawBiomassMap", sim) || needRTM) {
-    # httr::with_config(config = httr::config(ssl_verifypeer = 0L), { ## TODO: re-enable verify
+    httr::with_config(config = httr::config(ssl_verifypeer = P(sim)$sslVerify), {
     #necessary for KNN
     if (P(sim)$dataYear == 2001) {
       biomassURL <- extractURL("rawBiomassMap")
@@ -1354,7 +1361,7 @@ Save <- function(sim) {
                                overwrite = TRUE,
                                userTags = c(cacheTags, "rawBiomassMap"),
                                omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
-    # })
+    })
   }
 
   if (needRTM) {
@@ -1452,7 +1459,7 @@ Save <- function(sim) {
 
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
-    # httr::with_config(config = httr::config(ssl_verifypeer = 0L), {
+    httr::with_config(config = httr::config(ssl_verifypeer = P(sim)$sslVerify), {
     if (P(sim)$dataYear == 2001) {
       ageURL <- extractURL("standAgeMap")
     } else {
@@ -1483,7 +1490,7 @@ Save <- function(sim) {
     # options(opt)
     LandR::assertStandAgeMapAttr(sim$standAgeMap)
     sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
-    # })
+    })
   }
   ## Species equivalencies table -------------------------------------------
   if (!suppliedElsewhere("sppEquiv", sim)) {
