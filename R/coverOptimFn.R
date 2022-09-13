@@ -66,7 +66,7 @@ coverOptimFn <- function(x, pixelCohortData, subset, bm, returnAIC = TRUE) {
 
   modelBiomass1 <- statsModel(
     modelFn = bm,
-    uniqueEcoregionGroups = .sortDotsUnderscoreFirst(as.character(unique(pixelCohortData2$initialEcoregionGroup))),
+    uniqueEcoregionGroups = .sortDotsUnderscoreFirst(as.character(unique(pixelCohortData2$initialEcoregionCode))),
     .specialData = pixelCohortData2#,
   )
   theAIC <- AIC(modelBiomass1$mod)
