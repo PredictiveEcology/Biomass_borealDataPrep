@@ -177,7 +177,7 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
     paths$modulePath <- file.path(curModPath, submodule, "module")
     moduleNameAndBranch <- c("Biomass_core@development (>= 1.3.9)")
     modules <- list(gsub("@.+", "", moduleNameAndBranch))
-    getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
+    SpaDES.project::getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
   } else {
   ## trim unnecessary modules:
   modules <- modules[modules == "Biomass_core"]
