@@ -1256,8 +1256,8 @@ createBiomass_coreInputs <- function(sim) {
   message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
 
   useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
-  options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
-  sim$speciesLayers <- Cache(postProcess,
+  #options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
+  sim$speciesLayers1 <- Cache(postProcess,
                              sim$speciesLayers,
                              rasterToMatch = sim$rasterToMatch,
                              maskWithRTM = TRUE,
@@ -1269,7 +1269,9 @@ createBiomass_coreInputs <- function(sim) {
                              # Cache reads file content if it is a file, so it is
                              #    reading content of filename2, which is an output
                              omitArgs = c("userTags"))
-  options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
+  sim$speciesLayers <- sim$speciesLayers1
+  sim$speciesLayers1 <- NULL
+    # options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
 
   ## double check these rasters all match RTM
   compareRaster(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap, sim$rasterToMatch, sim$speciesLayers)
@@ -1498,8 +1500,8 @@ Save <- function(sim) {
                                  # maskWithRTM = FALSE,   ## mask with SA
                                  method = "bilinear",
                                  datatype = "INT2U",
-                                 filename2 = .suffix(file.path(dPath, "rasterToMatch.tif"),
-                                                     paste0("_", P(sim)$.studyAreaName)),
+                                 #filename2 = .suffix(file.path(dPath, "rasterToMatch.tif"),
+                                #                     paste0("_", P(sim)$.studyAreaName)),
                                  overwrite = TRUE,
                                  # useCache = "overwrite",
                                  userTags = c(cacheTags, "rasterToMatch"),
