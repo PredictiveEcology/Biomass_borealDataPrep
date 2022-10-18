@@ -1251,7 +1251,7 @@ in *Biomass_borealDataPrep* and their detailed information.
   </tr>
   <tr>
    <td style="text-align:left;"> subsetDataBiomassModel </td>
-   <td style="text-align:left;"> numeric </td>
+   <td style="text-align:left;"> integer </td>
    <td style="text-align:left;"> 50 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
