@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/tree/105d3b952b13974ec7bace635f15c6662bad9e29)
+[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/tree/a118fe4eb89b7b60fe4deaf35ab33ae38d68d60c)
 
 [![Issues-badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -50,7 +50,7 @@ always_allow_html: true
 Yong Luo <yong.luo@canada.ca> [aut], Eliot J B McIntire <eliot.mcintire@nrcan-rncan.gc.ca> [aut, cre], Ceres Barros <ceres.barros@ubc.ca> [aut], Alex M. Chubaty <achubaty@for-cast.ca> [aut]
 <!-- ideally separate authors with new lines, '\n' not working -->
 
-**This documentation is work in progress. Potential discrepancies and omissions
+**This documentation is a work in progress. Potential discrepancies and omissions
 may exist for the time being. If you find any, contact us using the "Get help"
 link above.**
 
@@ -73,20 +73,20 @@ link above.**
 LandR *Biomass_borealDataPrep* (hereafter *Biomass_borealDataPrep*), prepares
 all necessary inputs for *Biomass_core* based on data available for forests
 across Canada forests, but focused on Western Canada boreal forest systems.
-Nevertheless, it provides a good foundation to develop other other modules aimed
+Nevertheless, it provides a good foundation to develop other modules aimed
 at different geographical contexts. By keeping data preparation and parameter
 estimation outside of *Biomass_core*, we promote the modularity of the
 LandR-based model systems and facilitate interoperability with other parameter
 estimation procedures.
 
-Specifically, it prepares and adjusts invariant and spatially varying species
+Specifically, it prepares and adjusts invariant and spatially-varying species
 trait values, as well as ecolocation-specific parameters, probabilities of
 germination and initial conditions necessary to run *Biomass_core*. For this,
 *Biomass_borealDataPrep* requires internet access to retrieve default
 data[^biomass_borealdataprep-1].
 
 We advise future users to run *Biomass_borealDataPrep* with defaults and inspect
-what the input objects are like before supplying alternative data (or data
+the resulting input objects are like before supplying alternative data (or data
 URLs).
 
 [^biomass_borealdataprep-1]: Raw data layers downloaded by the module are saved
@@ -124,10 +124,10 @@ from *Biomass_borealDataPrep*.
 *Biomass_borealDataPrep* prepares all inputs necessary to run a realistic
 simulation of forest dynamics in Western Canadian boreal forests using
 *Biomass_core*. Part of this process involves cleaning up the input data and
-imputing missing data in some cases, which are presented thoroughly in [Data
+imputing missing data in some cases, which are discussed in detail in [Data
 acquisition and treatment](#bboreal-dataprep).
 
-After the cleaning and formatting the raw input data, the module:
+After cleaning and formatting the raw input data, the module:
 
 1.  **calculates species biomass per pixel** by multiplying the observed species
 (ref:percent) cover by the observed stand biomass and an adjustment factor,
@@ -147,8 +147,8 @@ traits](#bboreal-invariant-traits));
 conditions. By default, ecolocations are defined as the spatial combination
 of ecodistricts of the National Ecological Framework for Canada, and the
 Land Cover of Canada 2010 map (see [Defining simulation pixels and
-ecolocations](#bboreal-forestedPix-ecolocations)). **Note that ecolocations
-are called `ecoregionGroup`'s across LandR modules**.
+ecolocations](#bboreal-forestedPix-ecolocations)). **Note that ecolocation
+is termed `ecoregionGroup` across LandR modules**.
 
 4.  prepares **ecolocation-specific parameters** and **probabilities of
 germination** -- only one ecolocation-specific parameter is used, the
@@ -171,7 +171,7 @@ establishment probability](#bboreal-SEP)). **By default,
 performs data-based landscape initialisation, by creating the species cohort
 table (`cohortData`) and corresponding map (`pixelGroupMap`; both used to
 initialise and track cohorts across the landscape) based on observed stand
-age and species biomass (after data clean-up and dealing with mismatches).
+age and species biomass.
 
 As *Biomass_core* only simulates tree species dynamics, *Biomass_borealDataPrep*
 prepares all inputs and estimates parameters in pixels within forested
@@ -191,7 +191,7 @@ study area used to derive parameters (`studyAreaLarge`) and the study area where
 the simulation will happen (`studyArea`). The two objects can be identical if
 the user chooses to parametrise and run the simulations in the same area. If not
 identical, `studyArea` must be fully within `studyAreaLarge`. If
-`studyAreaLarge` and `studyArea` are in Canada, the module is able to
+`studyAreaLarge` and `studyArea` are in Canada, the module can
 automatically estimate and prepare all input parameters and objects for
 *Biomass_core*, as the default raw data are FAIR data [*sensu*
 @WilkinsonEtAl2016] at the national-scale.
@@ -235,7 +235,7 @@ this by supplying different ecozonation or land-cover layers.
 
 #### Species cover {#bboreal-sppcover}
 
-Species percent cover ((ref:percent) cover) raster layers (`speciesLayers`) can
+Species cover ((ref:percent) cover) raster layers (`speciesLayers`) can
 be automatically obtained and pre-processed by *Biomass_borealDataPrep*. The
 module ensures that:
 
@@ -255,8 +255,8 @@ derive parameters and define initial species age and biomass across the
 landscape. These are also derived from MODIS satellite imagery from 2001
 prepared by the NFI [@BeaudoinEtAl2017] by default.
 
-*Biomass_borealDataPrep* downloads these data and performs a number of data h
-armonization operations to deal with data inconsistencies. It first searches for
+*Biomass_borealDataPrep* downloads these data and performs a number of data 
+harmonization operations to deal with data inconsistencies. It first searches for
 mismatches between stand age (`standAge`), stand biomass (`standB`) and total
 stand cover (`standCover`), assuming that cover is the most accurate of the
 three, and biomass the least, and in the following order:
@@ -295,7 +295,7 @@ relationship of conifer and broadleaf species (see [Adjustment of initial
 species biomass](#bboreal-adjustB)).
 
 Finally, *Biomass_borealDataPrep* can use fire perimeters to correct stand ages.
-For this, it downloads the latest fire perimeter data from the [Canadian
+To do so, it downloads the latest fire perimeter data from the [Canadian
 Wildfire Data Base](https://cwfis.cfs.nrcan.gc.ca/datamart) and changes pixel
 age inside fire perimeters to match the time since last fire, using fire years
 up to the first year of the simulation.
@@ -306,9 +306,9 @@ perimeter data. If the user does not want to assume 1), this data imputation
 step can be bypassed by setting the parameter `P(sim)$overrideBiomassInFires` to
 `FALSE` or `P(sim)$fireURL` to `NULL` or `NA`.
 
-In pixels were ages are changed to match time since the last fire, cohort
-biomass needs to be corrected -- in our default datasets we have noticed how it
-biomass is inflated in pixels with recent burnts. For this, the module uses a
+In pixels where ages are changed to match time since the last fire, cohort
+biomass needs to be corrected -- in our default datasets we have noticed 
+biomass is inflated in pixels with recent burns. Consequently, the module uses a
 spin-up simulation that grows cohorts to their fixed age inside each pixel using
 estimated `maxB` and `maxANPP` parameters (see [Maximum biomass and maximum
 aboveground net primary productivity](#bboreal-maxB-maxANPP)).
@@ -392,7 +392,7 @@ conversion factor between broadleaf species cover and `B` by minimizing AIC.
 
 #### Maximum biomass and maximum aboveground net primary productivity {#bboreal-maxB-maxANPP}
 
-*Biomass_borealDataPrep* statistically estimates maximum biomass (`maxB`),
+*Biomass_borealDataPrep* statistically estimates maximum biomass (`maxB`) and
 maximum aboveground net primary productivity (`maxANPP`) using the processed
 species ages and biomass.
 
@@ -420,7 +420,7 @@ If convergence issues occur and `P(sim)$fixModelBiomass == TRUE`, the module
 attempts to refit the model by re-sampling the data, re-fitting `lmer` with the
 `bobyqa` optimizer, and re-scaling the continuous predictors (by default,
 `cover` and `logAge`). These steps are tried additively until the convergence
-issue is resolved. If the module is still unable to solve the converge issue a
+issue is resolved. If the module is still unable to solve the convergence issue a
 message is printed and the module uses the last fitted model.
 
 Note that convergence issues are not usually problematic for the estimation of
@@ -432,7 +432,7 @@ exported to the `simList` using the `exportModels` parameter.
 
 Alternative model calls/formulas can be supplied via the `P(sim)$biomassModel`
 parameter. Note that if supplying a model call that does not use `lme4::lmer`
-the refitting process is likely to fail and may have to be turned off (via the
+the refitting process is likely to fail and may have to be disabled (via the
 `P(sim)$fixModelBiomass` parameter).
 
 Another consideration to add with respect to the estimation of `maxB`, is that
@@ -495,14 +495,13 @@ default:
 ```
 
 whereby the probability of occurrence of a species ($\pi$) -- calculated as the
-number of pixels with (ref:percent) cover \> 0 divided by the total number of
-pixels, by species within each ecolocation -- is modelled per species and
+proportion of pixels with (ref:percent) cover \> 0 -- is modelled per species and
 ecolocation following a binomial distribution with a logit link function. There
 is no data sub-sampling done before fitting the SEP statistical model, as the
-model fits quite fast even for very large sample sizes (e.g., \> 20 million
+model fits quickly even for very large sample sizes (e.g., \> 20 million
 points).
 
-SEP is then predicted by species and ecolocation combination and predicted
+SEP is then predicted by species and ecolocation combination and the resulting
 values are integrated over the length of the succession time step
 (`successionTimestep` parameter) as:
 
@@ -560,7 +559,7 @@ LANDIS-II applications in Canada's boreal forests (available in [Dominic Cyr's
 GitHub repository](https://github.com/dcyr/LANDIS-II_IA_generalUseFiles)), and
 all ecolocations share the same values.
 
-Initial runs revealed excessive recruitment of moderately shade intolerant
+Initial runs revealed excessive recruitment of moderately shade-intolerant
 species even as stand biomass increased, so values for shade levels X4 and X5
 are adjusted downwards (X4: 0.8 to 0.75; X5: 0.90 to 0.85) to reflect higher
 competition for resources (e.g. higher water limitation) in Western Canadian
@@ -617,25 +616,24 @@ empirically estimated `maxB`.
 4.  Estimates species-specific `maxANPP` by multiplying the final `maxB` above
 by `mANPPproportion` (estimated in step 2).
 
-In cases were there is insufficient PSP data to perform the above steps, `maxB`
+In cases where there is insufficient PSP data to perform the above steps, `maxB`
 and `maxANPP` are left as estimated by *Biomass_borealDataPrep* (see [Maximum
 biomass and maximum aboveground net primary
 productivity](#bboreal-maxB-maxANPP)) and `inflationFactor` and
 `mANPPproportion` take default values of 1 and 3.33.
 
-### Agregating species
+### Aggregating species
 
 *Biomass_borealDataPrep* will use the input table `sppEquiv` and the parameter
-`P(sim)$sppEquivCol` to know what species identities will be used for the
+`P(sim)$sppEquivCol` to select the naming convention to use for the
 simulation (see full list of [input objects](#bboreal-inputs-list) and
 [parameters](#bboreal-params-list) for details). The user can use this table and
-parameter to define grouping that "merge" species that have their own invariant
+parameter to define groupings that "merge" similar species that have their own invariant
 trait values (see [Invariant species traits](#bboreal-invariant-traits)) (e.g.
-genus-level group or a functional group). To do so, the user must repeat the
-name of the species group in `sppEquivCol` column of the `sppEquiv` table as
-many times as the species being grouped:
+genus-level group or a functional group). To do so, the name of the species group 
+in `sppEquivCol` column of the `sppEquiv` table must be identical for each grouped species.
 
-<table class="table" style="margin-left: auto; margin-right: auto;">
+<table>
 <caption>(\#tab:mergingSpp-Biomass-borealDataPrep)Example of species merging for simulation. Here the user wants to model (ref:Abie-bal), (ref:Abie-las) and (ref:Pinu-con) as separate species, but all (ref:Pice-sp) as a genus-level group. For this, all six species are identified in the 'KNN' column, so that their (ref:percent) cover layers can be obtained, but in the 'Boreal' column (which defines the naming convention used in the simulation in this example) all (ref:Pice-sp) have the same name. (ref:Biomass-borealDataPrep) will merge their (ref:percent) cover data into a single layer by summing their cover per pixel.</caption>
  <thead>
   <tr>
@@ -647,58 +645,58 @@ many times as the species being grouped:
  </thead>
 <tbody>
   <tr>
-   <td style="text-align:left;"> *Abies balsamea* </td>
+   <td style="text-align:left;font-style: italic;"> Abies balsamea </td>
    <td style="text-align:left;"> Abie_Bal </td>
    <td style="text-align:left;"> Abie_Bal </td>
-   <td style="text-align:left;"> *Abies balsamea* </td>
+   <td style="text-align:left;font-style: italic;"> Abies balsamea </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> *Abies lasiocarpa* </td>
+   <td style="text-align:left;font-style: italic;"> Abies lasiocarpa </td>
    <td style="text-align:left;"> Abie_Las </td>
    <td style="text-align:left;"> Abie_Las </td>
-   <td style="text-align:left;"> *Abies lasiocarpa* </td>
+   <td style="text-align:left;font-style: italic;"> Abies lasiocarpa </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> *Picea engelmannii x glauca* </td>
+   <td style="text-align:left;font-style: italic;"> Picea engelmannii x glauca </td>
    <td style="text-align:left;">  </td>
    <td style="text-align:left;"> Pice_Eng_Gla </td>
-   <td style="text-align:left;"> *Picea engelmannii x glauca* </td>
+   <td style="text-align:left;font-style: italic;"> Picea engelmannii x glauca </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> *Picea engelmannii x glauca* </td>
+   <td style="text-align:left;font-style: italic;"> Picea engelmannii x glauca </td>
    <td style="text-align:left;">  </td>
    <td style="text-align:left;"> Pice_Eng_Gla </td>
-   <td style="text-align:left;"> *Picea engelmannii x glauca* </td>
+   <td style="text-align:left;font-style: italic;"> Picea engelmannii x glauca </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> *Picea engelmannii* </td>
+   <td style="text-align:left;font-style: italic;"> Picea engelmannii </td>
    <td style="text-align:left;"> Pice_Eng </td>
    <td style="text-align:left;"> Pice_Spp </td>
-   <td style="text-align:left;"> *Picea spp.* </td>
+   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> *Picea glauca* </td>
+   <td style="text-align:left;font-style: italic;"> Picea glauca </td>
    <td style="text-align:left;"> Pice_Gla </td>
    <td style="text-align:left;"> Pice_Spp </td>
-   <td style="text-align:left;"> *Picea spp.* </td>
+   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> *Picea mariana* </td>
+   <td style="text-align:left;font-style: italic;"> Picea mariana </td>
    <td style="text-align:left;"> Pice_Mar </td>
    <td style="text-align:left;"> Pice_Spp </td>
-   <td style="text-align:left;"> *Picea spp.* </td>
+   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> *Pinus contorta var. contorta* </td>
+   <td style="text-align:left;font-style: italic;"> Pinus contorta var. contorta </td>
    <td style="text-align:left;">  </td>
    <td style="text-align:left;"> Pinu_Con </td>
-   <td style="text-align:left;"> *Pinus contorta var. contorta* </td>
+   <td style="text-align:left;font-style: italic;"> Pinus contorta var. contorta </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> *Pinus contorta* </td>
+   <td style="text-align:left;font-style: italic;"> Pinus contorta </td>
    <td style="text-align:left;"> Pinu_Con </td>
    <td style="text-align:left;"> Pinu_Con </td>
-   <td style="text-align:left;"> *Pinus contorta* </td>
+   <td style="text-align:left;font-style: italic;"> Pinus contorta </td>
   </tr>
 </tbody>
 </table>
@@ -740,7 +738,7 @@ must match those available in default (or provided) species traits tables
 -   `standAgeMap` -- a map of observed stand ages (in years).
 
 -   `studyArea` -- shapefile. A `SpatialPolygonsDataFrame` with a single polygon
-determining the where the simulation will take place. This input object
+determining where the simulation will take place. This input object
 **must be supplied by the user**.
 
 -   `studyAreaLarge` -- shapefile. A `SpatialPolygonsDataFrame` with a single
@@ -756,10 +754,13 @@ following columns (even if not all are necessary to the simulation):
 "firetolerance", "seeddistance_eff", "seeddistance_max", "resproutprob",
 "resproutage_min", "resproutage_max", "postfireregen", "leaflongevity",
 "wooddecayrate", "mortalityshape", "growthcurve", "leafLignin", "hardsoft".
-The columns names can be different but not their order. See @scheller2015
+The order can vary but the column names must be identical. See @scheller2015
 and *Biomass_core* manual for further detail about these columns.
 
-<table class="table" style="margin-left: auto; margin-right: auto;">
+\newpage
+\blandscape
+
+<table>
 <caption>(\#tab:moduleInputs2-Biomass-borealDataPrep)List of (ref:Biomass-borealDataPrep) input objects and their description.</caption>
  <thead>
   <tr>
@@ -869,6 +870,8 @@ and *Biomass_core* manual for further detail about these columns.
 </tbody>
 </table>
 
+\elandscape
+
 ### List of parameters {#bboreal-params-list}
 
 Table \@ref(tab:moduleParams2-Biomass-borealDataPrep) lists all parameters used
@@ -916,7 +919,10 @@ broadleaf species cover to biomass relationships; the second and third are
 the model used to refit `deciduousCoverDiscount` in the supplied
 `studyAreaLarge` and whether refitting should be attempted (respectively).
 
-<table class="table" style="margin-left: auto; margin-right: auto;">
+\newpage
+\blandscape
+
+<table>
 <caption>(\#tab:moduleParams2-Biomass-borealDataPrep)List of (ref:Biomass-borealDataPrep) parameters and their description.</caption>
  <thead>
   <tr>
@@ -1220,6 +1226,8 @@ the model used to refit `deciduousCoverDiscount` in the supplied
 </tbody>
 </table>
 
+\elandscape
+
 ### List of outputs {#bboreal-outputs-list}
 
 The module produces the following outputs (Table
@@ -1257,7 +1265,7 @@ the initial map used for hashing within `Biomass_core`, in conjunction with
 
 -   `ecoregionMap` -- map of ecolocations.
 
-<table class="table" style="margin-left: auto; margin-right: auto;">
+<table>
 <caption>(\#tab:moduleOutputs-Biomass-borealDataPrep)List of (ref:Biomass-borealDataPrep) output objects and their description.</caption>
  <thead>
   <tr>
@@ -1269,77 +1277,77 @@ the initial map used for hashing within `Biomass_core`, in conjunction with
 <tbody>
   <tr>
    <td style="text-align:left;"> biomassMap </td>
-   <td style="text-align:left;width: 40em; "> RasterLayer </td>
+   <td style="text-align:left;"> RasterLayer </td>
    <td style="text-align:left;"> total biomass raster layer in study area, filtered for pixels covered by cohortData. Units in g/m2 </td>
   </tr>
   <tr>
    <td style="text-align:left;"> cohortData </td>
-   <td style="text-align:left;width: 40em; "> data.table </td>
+   <td style="text-align:left;"> data.table </td>
    <td style="text-align:left;"> initial community table, containing corrected biomass (g/m2), age and species cover data, as well as ecolocation and `pixelGroup` information. This table defines the initial community composition and structure used by `Biomass_core` </td>
   </tr>
   <tr>
    <td style="text-align:left;"> ecoregion </td>
-   <td style="text-align:left;width: 40em; "> data.table </td>
+   <td style="text-align:left;"> data.table </td>
    <td style="text-align:left;"> `ecoregionGroup` look up table </td>
   </tr>
   <tr>
    <td style="text-align:left;"> ecoregionMap </td>
-   <td style="text-align:left;width: 40em; "> RasterLayer </td>
+   <td style="text-align:left;"> RasterLayer </td>
    <td style="text-align:left;"> `ecoregionGroup` map that has mapcodes match ecoregion table and `speciesEcoregion` table </td>
   </tr>
   <tr>
    <td style="text-align:left;"> imputedPixID </td>
-   <td style="text-align:left;width: 40em; "> integer </td>
+   <td style="text-align:left;"> integer </td>
    <td style="text-align:left;"> A vector of pixel IDs - matching rasterMatch IDs - that suffered data imputation. Data imputation may be in age (to match last fire event post 1950s, or 0 cover), biomass (to match fire-related imputed ages, correct for missing values or for 0 age/cover), land cover (to convert non-forested classes into to nearest forested class) </td>
   </tr>
   <tr>
    <td style="text-align:left;"> pixelGroupMap </td>
-   <td style="text-align:left;width: 40em; "> RasterLayer </td>
+   <td style="text-align:left;"> RasterLayer </td>
    <td style="text-align:left;"> initial community map that has mapcodes (`pixelGroup` IDs) match `cohortData` </td>
   </tr>
   <tr>
    <td style="text-align:left;"> pixelFateDT </td>
-   <td style="text-align:left;width: 40em; "> data.table </td>
+   <td style="text-align:left;"> data.table </td>
    <td style="text-align:left;"> A small table that keeps track of the pixel removals and cause. This may help diagnose issues related to understanding the creation of `cohortData` </td>
   </tr>
   <tr>
    <td style="text-align:left;"> minRelativeB </td>
-   <td style="text-align:left;width: 40em; "> data.frame </td>
+   <td style="text-align:left;"> data.frame </td>
    <td style="text-align:left;"> minimum relative biomass thresholds that determine a shade level in each pixel. X0-5 represent site shade classes from no-shade (0) to maximum shade (5). </td>
   </tr>
   <tr>
    <td style="text-align:left;"> modelCover </td>
-   <td style="text-align:left;width: 40em; "> data.frame </td>
+   <td style="text-align:left;"> data.frame </td>
    <td style="text-align:left;"> If `P(sim)$exportModels` is 'all', or 'cover', fitted cover model, as defined by `P(sim)$coverModel`. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> modelBiomass </td>
-   <td style="text-align:left;width: 40em; "> data.frame </td>
+   <td style="text-align:left;"> data.frame </td>
    <td style="text-align:left;"> If `P(sim)$exportModels` is 'all', or 'biomass', fitted biomass model, as defined by `P(sim)$biomassModel` </td>
   </tr>
   <tr>
    <td style="text-align:left;"> rawBiomassMap </td>
-   <td style="text-align:left;width: 40em; "> RasterLayer </td>
+   <td style="text-align:left;"> RasterLayer </td>
    <td style="text-align:left;"> total biomass raster layer in study area. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived total aboveground biomass map (in tonnes/ha) from 2001, unless 'dataYear' != 2001. See https://open.canada.ca/data/en/dataset/ ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata </td>
   </tr>
   <tr>
    <td style="text-align:left;"> species </td>
-   <td style="text-align:left;width: 40em; "> data.table </td>
+   <td style="text-align:left;"> data.table </td>
    <td style="text-align:left;"> a table that of invariant species traits. Will have the same traits as the input `speciesTable` with values adjusted where necessary </td>
   </tr>
   <tr>
    <td style="text-align:left;"> speciesEcoregion </td>
-   <td style="text-align:left;width: 40em; "> data.table </td>
+   <td style="text-align:left;"> data.table </td>
    <td style="text-align:left;"> table of spatially-varying species traits (`maxB`, `maxANPP`, `establishprob`), defined by species and `ecoregionGroup`) </td>
   </tr>
   <tr>
    <td style="text-align:left;"> studyArea </td>
-   <td style="text-align:left;width: 40em; "> SpatialPolygonsDataFrame </td>
+   <td style="text-align:left;"> SpatialPolygonsDataFrame </td>
    <td style="text-align:left;"> Polygon to use as the study area corrected for any spatial properties' mismatches with respect to `studyAreaLarge`. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> sufficientLight </td>
-   <td style="text-align:left;width: 40em; "> data.frame </td>
+   <td style="text-align:left;"> data.frame </td>
    <td style="text-align:left;"> Probability of germination for species shade tolerance (in `species`) and shade level`(defined by `minRelativeB`) combinations. Table values follow LANDIS-II test traits available at: https://raw.githubusercontent.com/LANDIS-II-Foundation/Extensions-Succession/master/biomass-succession-archive/trunk/tests/v6.0-2.0/biomass-succession_test.txt </td>
   </tr>
 </tbody>
@@ -1347,9 +1355,9 @@ the initial map used for hashing within `Biomass_core`, in conjunction with
 
 ### Simulation flow and module events {#bboreal-sim-flow}
 
-*Biomass_borealDataPrep* initialises itself and prepares all inputs provided it
-has internet access to retrieve the raw datasets used for parametrisation and
-preparing input objects for *Biomass_core*.
+*Biomass_borealDataPrep* initialises itself and prepares all inputs, provided it
+has internet access to retrieve the raw datasets, for parametrisation and
+use by *Biomass_core*.
 
 The module runs only for one time step and contains The general flow of
 *Biomass_borealDataPrep* processes is:
@@ -1390,6 +1398,6 @@ This module can be run stand-alone, but it won't do much more than prepare
 inputs for `Biomass_core`. Hence, we provide a usage example of this module and
 a few others in [this
 repository](https://github.com/CeresBarros/LandRBiomass_publication) and in
-@barros.
+@BarrosEtAlinreview.
 
 ## References {#bboreal-refs}
