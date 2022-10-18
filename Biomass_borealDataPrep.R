@@ -20,8 +20,8 @@ defineModule(sim, list(
                                     ## Excluded because loading is not necessary (just installation)
                   "merTools", "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   "PredictiveEcology/reproducible@development (>= 1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.7.9008)",
-                  "PredictiveEcology/SpaDES.core@development (>= 1.0.6.9016)",
+                  "PredictiveEcology/LandR@development (>= 1.0.7.9030)",
+                  "PredictiveEcology/SpaDES.core@development (>= 1.0.10.9005)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     ## maxB, maxANPP, SEP estimation section ------------------------------------------------
@@ -409,15 +409,6 @@ createBiomass_coreInputs <- function(sim) {
   # Now it fails with terra: Ceres Jul 08 2022
   opt <- options("reproducible.useTerra" = FALSE)
   on.exit(options(opt), add = TRUE)
-  if (!compareRaster(sim$rawBiomassMap, sim$rasterToMatchLarge,
-                     orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
-    ## note that extents may never align if the resolution and projection do not allow for it
-    sim$rawBiomassMap <- Cache(postProcess,
-                               sim$rawBiomassMap,
-                               method = "bilinear",
-                               rasterToMatch = sim$rasterToMatchLarge,
-                               overwrite = TRUE)
-  }
 
   if (!compareRaster(sim$standAgeMap, sim$rasterToMatchLarge,
                      orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
@@ -536,29 +527,20 @@ createBiomass_coreInputs <- function(sim) {
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
 
-  rstLCCAdj <- sim$rstLCC
-
   ## Clean pixels for veg. succession model
-  ## remove pixels with no species data
-  # pixelsToRm <- rowSums(!is.na(sim$speciesLayers[])) == 0 # keep
-  pixelsToRm <- is.na(sim$speciesLayers[[1]][]) # seems to be OK because seem to be NA on each layer for a given pixel
-  pixelFateDT <- pixelFate(fate = "Total number pixels", runningPixelTotal = ncell(sim$speciesLayers))
-  pixelFateDT <- pixelFate(pixelFateDT, "NAs on sim$speciesLayers", sum(pixelsToRm))
-
-  ## remove non-forested if asked by user
-  if (P(sim)$omitNonTreedPixels) {
-    if (is.null(P(sim)$forestedLCCClasses))
-      stop("No P(sim)$forestedLCCClasses provided, but P(sim)$omitNonTreedPixels is TRUE.
-           \nPlease provide a vector of forested classes in P(sim)$forestedLCCClasses")
-
-    lccPixelsRemoveTF <- !(sim$rstLCC[] %in% P(sim)$forestedLCCClasses)
-    pixelsToRm <- lccPixelsRemoveTF | pixelsToRm
-    pixelFateDT <- pixelFate(pixelFateDT, "Non forested pixels (based on LCC classes)",
-                             sum(lccPixelsRemoveTF) - tail(pixelFateDT$pixelsRemoved, 1))
-  }
-
+  ## remove pixels with no species data or non-forested LCC
+  pixelsToRm <- nonForestedPixels(sim$speciesLayers, P(sim)$omitNonTreedPixels,
+                                  P(sim)$forestedLCCClasses, sim$rstLCC)
+  rstLCCAdj <- sim$rstLCC
   rstLCCAdj[pixelsToRm] <- NA
 
+  pixelFateDT <- pixelFate(fate = "Total number pixels", runningPixelTotal = ncell(sim$speciesLayers))
+  pixelFateDT <- pixelFate(pixelFateDT, "NAs on sim$speciesLayers", sum(pixelsToRm))
+  if (P(sim)$omitNonTreedPixels) {
+    pixelFateDT <- pixelFate(pixelFateDT, "Non forested pixels (based on LCC classes)",
+                             sum(!(sim$rstLCC[] %in% P(sim)$forestedLCCClasses)) -
+                               tail(pixelFateDT$pixelsRemoved, 1))
+  }
   # The next function will remove the "zero" class on sim$ecoregionRst
   pixelFateDT <- pixelFate(pixelFateDT, "Removing 0 class in sim$ecoregionRst",
                            sum(sim$ecoregionRst[][!pixelsToRm] == 0, na.rm = TRUE))
@@ -680,7 +662,6 @@ createBiomass_coreInputs <- function(sim) {
   pixelCohortData <- partitionBiomass(x = P(sim)$deciduousCoverDiscount, pixelCohortData)
   set(pixelCohortData, NULL, "B", asInteger(pixelCohortData$B/P(sim)$pixelGroupBiomassClass) *
         P(sim)$pixelGroupBiomassClass)
-  set(pixelCohortData, NULL, c("decid", "cover2"), NULL)
   set(pixelCohortData, NULL, "cover", asInteger(pixelCohortData$cover))
 
   #######################################################
@@ -1409,8 +1390,8 @@ Save <- function(sim) {
     }
   }
 
-  if (!suppliedElsewhere("rawBiomassMap", sim) || needRTM) {
-    #necessary for KNN
+  ## biomass map
+  if (!suppliedElsewhere("rawBiomassMap", sim)) {
     if (P(sim)$dataYear == 2001) {
       biomassURL <- extractURL("rawBiomassMap")
     } else {
@@ -1423,101 +1404,40 @@ Save <- function(sim) {
       }
     }
 
-    httr::with_config(config = httr::config(ssl_verifypeer = P(sim)$.sslVerify), {
-      sim$rawBiomassMap <- Cache(prepInputs,
-                                 url = biomassURL,
-                                 destinationPath = dPath,
-                                 studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                                 rasterToMatch = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else NULL,
-                                 maskWithRTM = if (!needRTM) TRUE else FALSE,
-                                 useSAcrs = FALSE,     ## never use SA CRS
-                                 method = "bilinear",
-                                 datatype = "INT2U",
-                                 filename2 = .suffix("rawBiomassMap.tif", paste0("_", P(sim)$.studyAreaName)),
-                                 overwrite = TRUE,
-                                 userTags = c(cacheTags, "rawBiomassMap"),
-                                 omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
-    })
-  }
-
-  if (needRTM || needRTML) {
-    ## if we need rasterToMatch/rasterToMatchLarge, that means a) we don't have it, but b) we will have rawBiomassMap
-    ## even if one of the rasterToMatch is present re-do both.
-
-    if (needRTM && needRTML)
-      warning(paste0("Both of rasterToMatch/rasterToMatchLarge is missing. Both will be created \n",
-                     "from rawBiomassMap and studyArea/studyAreaLarge.\n
-                     If this is wrong, provide both rasters"))
-
-    if (needRTML && !needRTM) {
-      sim$rasterToMatchLarge <- sim$rasterToMatch
-    } else if (needRTML && needRTM) {
+    sim$rawBiomassMap <- prepRawBiomassMap(url = biomassURL,
+                                           studyAreaName = P(sim)$.studyAreaName,
+                                           cacheTags = cacheTags,
+                                           rasterToMatch = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else NULL,
+                                           maskWithRTM = if (!needRTM) TRUE else FALSE,
+                                           studyArea = sim$studyAreaLarge,
+                                           destinationPath = dPath)
+  } else {
+    if (!is.null(sim$rawBiomassMap)) {
       if (!compareRaster(sim$rawBiomassMap, sim$studyAreaLarge, stopiffalse = FALSE)) {
         ## note that extents may never align if the resolution and projection do not allow for it
-        opt <- options("reproducible.useTerra" = FALSE)
+        opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
         on.exit(options(opt), add = TRUE)
         sim$rawBiomassMap <- Cache(postProcess,
                                    sim$rawBiomassMap,
                                    method = "bilinear",
                                    studyArea = sim$studyAreaLarge,
-                                   useSAcrs = TRUE,
                                    overwrite = TRUE)
         options(opt)
-        sim$rawBiomassMap <- fixErrors(sim$rawBiomassMap)
-      }
-      sim$rasterToMatchLarge <- sim$rawBiomassMap
-    }
-
-    if (!anyNA(sim$rasterToMatchLarge[])) {
-      whZeros <- sim$rasterToMatchLarge[] == 0
-      if (sum(whZeros) > 0) {# means there are zeros instead of NAs for RTML --> change
-        sim$rasterToMatchLarge[whZeros] <- NA
-        message("There were no NAs on the rasterToMatchLarge, but there were zeros; converting these zeros to NA")
       }
     }
-
-    RTMvals <- getValues(sim$rasterToMatchLarge)
-    sim$rasterToMatchLarge[!is.na(RTMvals)] <- 1
-
-    sim$rasterToMatchLarge <- Cache(
-      writeOutputs,
-      sim$rasterToMatchLarge,
-      filename2 = .suffix(file.path(dPath, "rasterToMatchLarge.tif"),
-                          paste0("_", P(sim)$.studyAreaName)),
-      datatype = "INT2U",
-      overwrite = TRUE,
-      userTags = c(cacheTags, "rasterToMatchLarge"),
-      omitArgs = c("userTags")
-    )
-    if (needRTM) {
-      sim$rasterToMatch <- Cache(postProcessTerra,
-                                 from = sim$rasterToMatchLarge,
-                                 studyArea = sim$studyArea,
-                                 # rasterToMatch = sim$rasterToMatchLarge,   ## Ceres: this messes up the extent. if we are doing this it means BOTH RTMs come from biomassMap, so no need for RTMLarge here.
-                                 useSAcrs = FALSE,
-                                 # maskWithRTM = FALSE,   ## mask with SA
-                                 method = "bilinear",
-                                 datatype = "INT2U",
-                                 filename2 = .suffix(file.path(dPath, "rasterToMatch.tif"),
-                                                     paste0("_", P(sim)$.studyAreaName)),
-                                 overwrite = TRUE,
-                                 # useCache = "overwrite",
-                                 userTags = c(cacheTags, "rasterToMatch"),
-                                 omitArgs = c("destinationPath", "targetFile", "userTags", "stable", "filename2",
-                                              "overwrite"))
-    }
-    ## covert to 'mask'
-    if (!anyNA(sim$rasterToMatch[])) {
-      whZeros <- sim$rasterToMatch[] == 0
-      if (sum(whZeros) > 0) {# means there are zeros instead of NAs for RTML --> change
-        sim$rasterToMatch[whZeros] <- NA
-        message("There were no NAs on the RTM, but there were zeros; converting these zeros to NA")
-      }
-    }
-
-    RTMvals <- getValues(sim$rasterToMatch)
-    sim$rasterToMatch[!is.na(RTMvals)] <- 1
   }
+
+  RTMs <- prepRasterToMatch(studyArea = sim$studyArea,
+                            studyAreaLarge = sim$studyAreaLarge,
+                            rasterToMatch = if (needRTM) NULL else sim$rasterToMatch,
+                            rasterToMatchLarge = if (needRTML) NULL else sim$rasterToMatchLarge,
+                            destinationPath = dPath,
+                            templateRas = sim$rawBiomassMap,
+                            studyAreaName = P(sim)$.studyAreaName,
+                            cacheTags = cacheTags)
+  sim$rasterToMatch <- RTMs$rasterToMatch
+  sim$rasterToMatchLarge <- RTMs$rasterToMatchLarge
+  rm(RTMs)
 
   if (!compareCRS(sim$studyArea, sim$rasterToMatch)) {
     warning(paste0("studyArea and rasterToMatch projections differ.\n",
@@ -1660,16 +1580,7 @@ Save <- function(sim) {
 
     ## make sure empty pixels inside study area have 0 cover, instead of NAs.
     ## this can happen when data has NAs instead of 0s and is not merged/overlayed (e.g. CASFRI)
-    tempRas <- sim$rasterToMatchLarge
-    tempRas[!is.na(tempRas[])] <- 0
-    namesLayers <- names(sim$speciesLayers)
-    message("...making sure empty pixels inside study area have 0 cover, instead of NAs ...")
-    # Changed to terra Nov 17 by Eliot --> this was many minutes with raster::cover --> 3 seconds with terra
-    speciesLayers <- terra::cover(terra::rast(sim$speciesLayers), terra::rast(tempRas))
-    sim$speciesLayers <- raster::stack(speciesLayers)
-    names(sim$speciesLayers) <- namesLayers
-    message("   ...done")
-    rm(tempRas)
+    sim$speciesLayers <- NAcover2zero(sim$speciesLayers, sim$rasterToMatchLarge)
   }
 
   # 3. species maps

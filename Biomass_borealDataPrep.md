@@ -1,7 +1,7 @@
 ---
 title: "LandR _Biomass_borealDataPrep_ Manual"
 subtitle: "v.1.5.4"
-date: "Last updated: 2022-09-09"
+date: "Last updated: 2022-10-18"
 output:
   bookdown::html_document2:
     toc: true
@@ -982,15 +982,15 @@ species being grouped:
   </tr>
   <tr>
    <td style="text-align:left;"> *Picea engelmannii x glauca* </td>
-   <td style="text-align:left;">  </td>
    <td style="text-align:left;"> Pice_Eng_Gla </td>
-   <td style="text-align:left;"> *Picea engelmannii x glauca* </td>
+   <td style="text-align:left;"> Pice_Spp </td>
+   <td style="text-align:left;"> *Picea spp.* </td>
   </tr>
   <tr>
    <td style="text-align:left;"> *Picea engelmannii x glauca* </td>
-   <td style="text-align:left;">  </td>
    <td style="text-align:left;"> Pice_Eng_Gla </td>
-   <td style="text-align:left;"> *Picea engelmannii x glauca* </td>
+   <td style="text-align:left;"> Pice_Spp </td>
+   <td style="text-align:left;"> *Picea spp.* </td>
   </tr>
   <tr>
    <td style="text-align:left;"> *Picea engelmannii* </td>
