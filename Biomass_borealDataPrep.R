@@ -1336,31 +1336,31 @@ Save <- function(sim) {
 
   if (!suppliedElsewhere("rawBiomassMap", sim) || needRTM) {
     httr::with_config(config = httr::config(ssl_verifypeer = P(sim)$sslVerify), {
-    #necessary for KNN
-    if (P(sim)$dataYear == 2001) {
-      biomassURL <- extractURL("rawBiomassMap")
-    } else {
-      if (P(sim)$dataYear == 2011) {
-        biomassURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
-                             "canada-forests-attributes_attributs-forests-canada/2011-attributes_attributs-2011/",
-                             "NFI_MODIS250m_2011_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif")
+      #necessary for KNN
+      if (P(sim)$dataYear == 2001) {
+        biomassURL <- extractURL("rawBiomassMap")
       } else {
-        stop("'P(sim)$dataYear' must be 2001 OR 2011")
+        if (P(sim)$dataYear == 2011) {
+          biomassURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
+                               "canada-forests-attributes_attributs-forests-canada/2011-attributes_attributs-2011/",
+                               "NFI_MODIS250m_2011_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif")
+        } else {
+          stop("'P(sim)$dataYear' must be 2001 OR 2011")
+        }
       }
-    }
-    sim$rawBiomassMap <- Cache(prepInputs,
-                               url = biomassURL,
-                               destinationPath = dPath,
-                               studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                               rasterToMatch = if (!needRTM) sim$rasterToMatchLarge else NULL,
-                               maskWithRTM = if (!needRTM) TRUE else FALSE,
-                               useSAcrs = FALSE,     ## never use SA CRS
-                               method = "bilinear",
-                               datatype = "INT2U",
-                               filename2 = .suffix("rawBiomassMap.tif", paste0("_", P(sim)$.studyAreaName)),
-                               overwrite = TRUE,
-                               userTags = c(cacheTags, "rawBiomassMap"),
-                               omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
+      sim$rawBiomassMap <- Cache(prepInputs,
+                                 url = biomassURL,
+                                 destinationPath = dPath,
+                                 studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
+                                 rasterToMatch = if (!needRTM) sim$rasterToMatchLarge else NULL,
+                                 maskWithRTM = if (!needRTM) TRUE else FALSE,
+                                 useSAcrs = FALSE,     ## never use SA CRS
+                                 method = "bilinear",
+                                 datatype = "INT2U",
+                                 filename2 = .suffix("rawBiomassMap.tif", paste0("_", P(sim)$.studyAreaName)),
+                                 overwrite = TRUE,
+                                 userTags = c(cacheTags, "rawBiomassMap"),
+                                 omitArgs = c("destinationPath", "targetFile", "userTags", "stable"))
     })
   }
 
@@ -1460,36 +1460,36 @@ Save <- function(sim) {
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
     httr::with_config(config = httr::config(ssl_verifypeer = P(sim)$sslVerify), {
-    if (P(sim)$dataYear == 2001) {
-      ageURL <- extractURL("standAgeMap")
-    } else {
-      if (P(sim)$dataYear == 2011) {
-        ageURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
-                         "canada-forests-attributes_attributs-forests-canada/2011-attributes_attributs-2011/",
-                         "NFI_MODIS250m_2011_kNN_Structure_Stand_Age_v1.tif")
+      if (P(sim)$dataYear == 2001) {
+        ageURL <- extractURL("standAgeMap")
       } else {
-        stop("'P(sim)$dataYear' must be 2001 OR 2011")
+        if (P(sim)$dataYear == 2011) {
+          ageURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
+                           "canada-forests-attributes_attributs-forests-canada/2011-attributes_attributs-2011/",
+                           "NFI_MODIS250m_2011_kNN_Structure_Stand_Age_v1.tif")
+        } else {
+          stop("'P(sim)$dataYear' must be 2001 OR 2011")
+        }
       }
-    }
-    ## Ceres Sep 3rd 2022 -- this option caused failure when previously set to FALSE at project level.
-    # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
-    # on.exit(options(opt), add = TRUE)
-    sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
-                             destinationPath = dPath,
-                             ageURL = ageURL,
-                             studyArea = raster::aggregate(sim$studyAreaLarge),
-                             rasterToMatch = sim$rasterToMatchLarge,
-                             filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
-                             overwrite = TRUE,
-                             fireURL = P(sim)$fireURL,
-                             fireField = "YEAR",
-                             startTime = start(sim),
-                             userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
-                             omitArgs = c("destinationPath", "targetFile", "overwrite",
-                                          "alsoExtract", "userTags"))
-    # options(opt)
-    LandR::assertStandAgeMapAttr(sim$standAgeMap)
-    sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
+      ## Ceres Sep 3rd 2022 -- this option caused failure when previously set to FALSE at project level.
+      # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+      # on.exit(options(opt), add = TRUE)
+      sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
+                               destinationPath = dPath,
+                               ageURL = ageURL,
+                               studyArea = raster::aggregate(sim$studyAreaLarge),
+                               rasterToMatch = sim$rasterToMatchLarge,
+                               filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
+                               overwrite = TRUE,
+                               fireURL = P(sim)$fireURL,
+                               fireField = "YEAR",
+                               startTime = start(sim),
+                               userTags = c("prepInputsStandAge_rtm", currentModule(sim), cacheTags),
+                               omitArgs = c("destinationPath", "targetFile", "overwrite",
+                                            "alsoExtract", "userTags"))
+      # options(opt)
+      LandR::assertStandAgeMapAttr(sim$standAgeMap)
+      sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
     })
   }
   ## Species equivalencies table -------------------------------------------
