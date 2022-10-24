@@ -38,9 +38,9 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](D:/GitHub/LandR-Manual/modules/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/commit/34e78e1654bc259cb57be8d5a116db3d494389dc)
+[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep93bba44bb8a8852115434405aaf58d6908a47434)
 
-[![Issues-badge](D:/GitHub/LandR-Manual/modules/Biomass_borealDataPrep/figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
+[![Issues-badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
 
 <!-- if knitting to pdf remember to add the pandoc_args: ["--extract-media", "."] option to yml in order to get the badge images -->
@@ -633,7 +633,73 @@ trait values (see [Invariant species traits](#bboreal-invariant-traits)) (e.g.
 genus-level group or a functional group). To do so, the name of the species group 
 in `sppEquivCol` column of the `sppEquiv` table must be identical for each grouped species.
 
-
+<table>
+<caption>(\#tab:mergingSpp-Biomass-borealDataPrep)Example of species merging for simulation. Here the user wants to model (ref:Abie-bal), (ref:Abie-las) and (ref:Pinu-con) as separate species, but all (ref:Pice-sp) as a genus-level group. For this, all six species are identified in the 'KNN' column, so that their (ref:percent) cover layers can be obtained, but in the 'Boreal' column (which defines the naming convention used in the simulation in this example) all (ref:Pice-sp) have the same name. (ref:Biomass-borealDataPrep) will merge their (ref:percent) cover data into a single layer by summing their cover per pixel.</caption>
+ <thead>
+  <tr>
+   <th style="text-align:left;"> Species </th>
+   <th style="text-align:left;"> KNN </th>
+   <th style="text-align:left;"> Boreal </th>
+   <th style="text-align:left;"> Modelled as </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;font-style: italic;"> Abies balsamea </td>
+   <td style="text-align:left;"> Abie_Bal </td>
+   <td style="text-align:left;"> Abie_Bal </td>
+   <td style="text-align:left;font-style: italic;"> Abies balsamea </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;font-style: italic;"> Abies lasiocarpa </td>
+   <td style="text-align:left;"> Abie_Las </td>
+   <td style="text-align:left;"> Abie_Las </td>
+   <td style="text-align:left;font-style: italic;"> Abies lasiocarpa </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;font-style: italic;"> Picea engelmannii x glauca </td>
+   <td style="text-align:left;"> Pice_Eng_Gla </td>
+   <td style="text-align:left;"> Pice_Spp </td>
+   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;font-style: italic;"> Picea engelmannii x glauca </td>
+   <td style="text-align:left;"> Pice_Eng_Gla </td>
+   <td style="text-align:left;"> Pice_Spp </td>
+   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;font-style: italic;"> Picea engelmannii </td>
+   <td style="text-align:left;"> Pice_Eng </td>
+   <td style="text-align:left;"> Pice_Spp </td>
+   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;font-style: italic;"> Picea glauca </td>
+   <td style="text-align:left;"> Pice_Gla </td>
+   <td style="text-align:left;"> Pice_Spp </td>
+   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;font-style: italic;"> Picea mariana </td>
+   <td style="text-align:left;"> Pice_Mar </td>
+   <td style="text-align:left;"> Pice_Spp </td>
+   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;font-style: italic;"> Pinus contorta var. contorta </td>
+   <td style="text-align:left;">  </td>
+   <td style="text-align:left;"> Pinu_Con </td>
+   <td style="text-align:left;font-style: italic;"> Pinus contorta var. contorta </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;font-style: italic;"> Pinus contorta </td>
+   <td style="text-align:left;"> Pinu_Con </td>
+   <td style="text-align:left;"> Pinu_Con </td>
+   <td style="text-align:left;font-style: italic;"> Pinus contorta </td>
+  </tr>
+</tbody>
+</table>
 
 When groups contain species with different (invariant) trait values, the minimum
 value across all species is used. As for the default species (ref:percent) cover
