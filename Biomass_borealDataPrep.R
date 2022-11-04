@@ -9,7 +9,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.4"),
+  version = list(Biomass_borealDataPrep = "1.5.5"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
@@ -1503,18 +1503,18 @@ Save <- function(sim) {
 
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
-    if (P(sim)$dataYear == 2001) {
-      ageURL <- extractURL("standAgeMap")
-    } else {
-      if (P(sim)$dataYear == 2011) {
-        ageURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
-                         "canada-forests-attributes_attributs-forests-canada/2011-attributes_attributs-2011/",
-                         "NFI_MODIS250m_2011_kNN_Structure_Stand_Age_v1.tif")
+      if (P(sim)$dataYear == 2001) {
+        ageURL <- extractURL("standAgeMap")
       } else {
-        stop("'P(sim)$dataYear' must be 2001 OR 2011")
+        if (P(sim)$dataYear == 2011) {
+          ageURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
+                           "canada-forests-attributes_attributs-forests-canada/2011-attributes_attributs-2011/",
+                           "NFI_MODIS250m_2011_kNN_Structure_Stand_Age_v1.tif")
+        } else {
+          stop("'P(sim)$dataYear' must be 2001 OR 2011")
+        }
       }
-    }
-    ## Ceres Sep 3rd 2022 -- this option caused failure when previously set to FALSE at project level.
+      ## Ceres Sep 3rd 2022 -- this option caused failure when previously set to FALSE at project level.
     # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
     # on.exit(options(opt), add = TRUE)
     httr::with_config(config = httr::config(ssl_verifypeer = P(sim)$.sslVerify), {
