@@ -161,6 +161,7 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
     "spades.moduleCodeChecks" = FALSE # Turn off all module's code checking
   )
 
+  ## TODO: make the following into a function to use across modules (e.g. B_sppFactorial)
   curModPath <- file.path(paths$modulePath, currentModule)
   submodule <- "Biomass_coreSubModule"
   paths$outputPath <- file.path(curModPath, submodule, "outputs", rndstr()) ## avoid race conditions
