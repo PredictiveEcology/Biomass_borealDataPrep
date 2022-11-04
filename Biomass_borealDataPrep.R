@@ -5,8 +5,8 @@ defineModule(sim, list(
   authors = c(
     person("Yong", "Luo", email = "Yong.Luo@gov.bc.ca", role = c("aut")),
     person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@nrcan-rncan.gc.ca", role = c("aut", "cre")),
-    person(c("Ceres"), "Barros", email = "cbarros@mail.ubc.ca", role = c("ctb")),
-    person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("ctb"))
+    person(c("Ceres"), "Barros", email = "ceres.barros@ubc.ca", role = c("aut")),
+    person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
   version = list(Biomass_borealDataPrep = "1.5.4"),
@@ -178,7 +178,7 @@ defineModule(sim, list(
                           "at the start of the init event and unset it at the end. Defaults to `NULL`, meaning that",
                           "no seeds will be set")),
     defineParameter(".sslVerify", "integer", as.integer(unname(curl::curl_options("^ssl_verifypeer$"))), NA_integer_, NA_integer_,
-                    paste("Passed to `httr::config(ssl_verifypeer = P(sim)$sslVerify)` when downloading KNN",
+                    paste("Passed to `httr::config(ssl_verifypeer = P(sim)$.sslVerify)` when downloading KNN",
                           "(NFI) datasets. Set to 0L if necessary to bypass checking the SSL certificate (this",
                           "may be necessary when NFI's website SSL certificate is not correctly configured).")),
     defineParameter(".studyAreaName", "character", NA, NA, NA,
