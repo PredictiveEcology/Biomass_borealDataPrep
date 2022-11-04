@@ -16,12 +16,12 @@ defineModule(sim, list(
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2",
+                  "merTools", "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
                                     ## Excluded because loading is not necessary (just installation)
-                  "merTools", "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
-                  "PredictiveEcology/reproducible@development (>= 1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.7.9030)",
-                  "PredictiveEcology/SpaDES.core@development (>= 1.0.10.9005)",
+                  "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
+                  "PredictiveEcology/LandR@development (>= 1.0.9.9001)",
+                  "PredictiveEcology/SpaDES.core@development (>=1.0.10.9005)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     ## maxB, maxANPP, SEP estimation section ------------------------------------------------
