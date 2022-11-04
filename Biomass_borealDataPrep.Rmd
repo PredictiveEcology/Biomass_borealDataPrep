@@ -76,14 +76,14 @@ download.file(url = paste0("https://img.shields.io/badge/Biomass_borealDataPrep-
 ``` {r moduleBadge-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, cache = FALSE, results = "asis"}
 ## try to automatically get the commit URL and the path to the badge image
 modulePath <- if (grepl("Biomass_borealDataPrep$", normPath("."))) {
-    normPath(".")
-  } else {
-    modulePath <- grep("Biomass_borealDataPrep$", 
-                       list.files(pattern = "Biomass_borealDataPrep", recursive = TRUE, include.dirs = TRUE),
-                       value = TRUE)
-    modulePath <- grep("docs/", modulePath, value = TRUE, invert = TRUE)  ## exclude "copied" modules dirs for bookdown
-    normPath(modulePath)
-  }
+  normPath(".")
+} else {
+  modulePath <- grep("Biomass_borealDataPrep$", 
+                     list.files(pattern = "Biomass_borealDataPrep", recursive = TRUE, include.dirs = TRUE),
+                     value = TRUE)
+  modulePath <- grep("docs/", modulePath, value = TRUE, invert = TRUE)  ## exclude "copied" modules dirs for bookdown
+  normPath(modulePath)
+}
 
 badgeURL <- if (!is_detached(modulePath)) {
   commitSHA <- sha(revparse_single(modulePath, "HEAD"))
@@ -716,7 +716,8 @@ justCols <- sapply(sppEquiv2, function(x) ifelse(is.numeric(x), "right", "left")
 panble(sppEquiv2, caption, 
        panderArgs = list("justify" = justCols, "emphasize.italics.cols" = which(names(sppEquiv2) %in% c("Species", "Modelled as"))),
        column_specArgs = list("column" = which(names(sppEquiv2) %in% c("Species", "Modelled as")),
-                              "italic" = TRUE))
+                              "italic" = TRUE),
+       kable_stylingArgs = list(full_width = TRUE))
 ```
 
 When groups contain species with different (invariant) trait values, the minimum
@@ -790,8 +791,10 @@ if (knitr::is_latex_output()) {
   df_inputs$sourceURL <- wrapStrFun(df_inputs$sourceURL, size = 10)
 }
 
-panble(df_inputs, landscape = TRUE, caption, panderArgs = list("justify" = "left", "split.tables" = Inf,
-                                       "keep.line.breaks" = TRUE))
+panble(df_inputs, landscape = TRUE, caption, 
+       panderArgs = list("justify" = "left", "split.tables" = Inf, 
+                         "keep.line.breaks" = TRUE),
+       kable_stylingArgs = list(full_width = TRUE))
 ```
 
 \elandscape
@@ -850,7 +853,10 @@ the model used to refit `deciduousCoverDiscount` in the supplied
 df_params <- moduleParams("Biomass_borealDataPrep", "..")
 caption <- "List of (ref:Biomass-borealDataPrep) parameters and their description."
 
-panble(df_params, caption, landscape = TRUE, panderArgs = list("justify" = "left", "digits" = 3, "split.cells" = c(15,15, 5, 5, 5, 40), "split.tables" = Inf))
+panble(df_params, caption, landscape = TRUE,
+       panderArgs = list("justify" = "left", "digits" = 3,
+                         "split.cells" = c(15,15, 5, 5, 5, 40), "split.tables" = Inf),
+       kable_stylingArgs = list(full_width = TRUE))
 ```
 
 \elandscape
@@ -897,7 +903,8 @@ df_outputs <- moduleOutputs("Biomass_borealDataPrep", "..")
 caption <- "List of (ref:Biomass-borealDataPrep) output objects and their description."
 
 panble(df_outputs, caption, 
-       panderArgs = list("justify" = "left", "digits" = 3, "split.cells" = c(15, 15, 40), "split.tables" = Inf))
+       panderArgs = list("justify" = "left", "digits" = 3, "split.cells" = c(15, 15, 40), "split.tables" = Inf),
+       kable_stylingArgs = list(full_width = TRUE))
 ```
 
 ### Simulation flow and module events {#bboreal-sim-flow}
