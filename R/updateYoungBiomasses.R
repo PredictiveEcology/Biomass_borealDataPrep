@@ -166,7 +166,8 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
   paths$outputPath <- file.path(curModPath, submodule, "outputs", rndstr()) ## avoid race conditions
   on.exit(unlink(paths$outputPath, recursive = TRUE), add = TRUE)
 
-  if (!any(modules == "Biomass_core")) { # if Biomass_core doesn't exist in modulePath, then download it
+  if (!any(modules == "Biomass_core") ||
+      moduleVersion("Biomass_core", paths$modulePath) < "1.3.5") { # if Biomass_core doesn't exist in modulePath or is too old, then download it
     ## check that SpaDES.install is available in the right version
     if (!Require::Require("PredictiveEcology/SpaDES.install (>= 0.0.7)",
                           upgrade = FALSE, install = FALSE)) {
