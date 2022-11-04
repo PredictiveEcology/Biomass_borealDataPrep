@@ -360,28 +360,48 @@ Cohort biomass is then adjusted to reflect the different cover to biomass
 relationship of conifer and broadleaf species (see [Adjustment of initial
 species biomass](#bboreal-adjustB)).
 
-Finally, *Biomass_borealDataPrep* can use fire perimeters to correct stand ages.
+#### Replacing initial biomass and age within known fire perimeters {#bboreal-spin-up}
+
+*Biomass_borealDataPrep* can use fire perimeters to correct stand ages.
 To do so, it downloads the latest fire perimeter data from the [Canadian
 Wildfire Data Base](https://cwfis.cfs.nrcan.gc.ca/datamart) and changes pixel
 age inside fire perimeters to match the time since last fire, using fire years
 up to the first year of the simulation.
 
-Taking two independent datasets for stand age and stand biomass can causes
-discrepancies, e.g. stand age = 5 and aboveground biomass = 10000 m2/ha. This
-may be due to errors coming from a) a stand replacing disturbance that reset age
-to zero a few years before, but the biomass layer was no zeroed, or b) the
-disturbance was not stand-replacing (leaving biomass), but age was still zeroed.
-This means that either, aboveground biomass is wrong or age is.
+Taking two independent datasets for stand age (fire perimeters) and stand biomass
+(derived from MODIS satellite imagery) can cause discrepancies (e.g. stand age 
+= 5 and aboveground biomass = 10000 m2/ha). This may be due to errors coming 
+from a) a stand replacing disturbance that reset age to zero a few years before, 
+but the biomass layer was no zeroed, or b) the disturbance was not stand-replacing
+(leaving biomass), but age was still zeroed. This means that either, 
+aboveground biomass is wrong or age is.
 
-In pixels where ages are changed to match time since the last fire, cohort
-biomass needs to be corrected -- in our default datasets we have noticed 
-biomass is inflated in pixels with recent burns. Consequently, the module uses a
-spin-up simulation that grows cohorts to their fixed age inside each pixel using
-estimated `maxB` and `maxANPP` parameters (see [Maximum biomass and maximum
-aboveground net primary productivity](#bboreal-maxB-maxANPP)).
+Options to address this include 1) get better data for these two variables that 
+do not contradict one another (not currently available to us) or 2) estimate one 
+or the other. There is no obvious way to decide which one is incorrect, unless 
+there is an independent data source.
 
-**Note that pixels that had data imputation can be removed from the simulation
-by setting `P(sim)$rmImputedPix == TRUE`**.
+In the current *Biomass_borealDataPrep* module version, we chose to correct both.
+If `P(sim)$fireURL` is provided and `P(sim)$overrideBiomassInFires` is TRUE, 
+fire perimeters are used as the source of information for age, and *Biomass_core* 
+is used to generate corresponding biomassvalues based on the estimated growth parameters
+and known species presence/absence (from the species cover layers).
+
+This assumes that 1) recorded fires were stand-replacing, and so time since fire 
+is the new stand age and 2) that the first year of the simulation is later than
+the first fire year in the fire perimeter data. The biomass spin-up with 
+*Biomass_core* is only run in pixels were stand ages were corrected, for as long as the
+new stand age (i.e., the time since last fire). All specie start with age = 0 and 
+biomass = 0, and grow until time since last fire is achieved. The resulting 
+species biomass is used as the initial biomass values for each species cohort
+in the actual simulation.
+
+If the user does not want to perform this imputation, this step can be bypassed 
+by setting the parameter `P(sim)$overrideBiomassInFires` to FALSE or `P(sim)$fireURL` to NULL or NA.
+
+Also pixels that suffered *any kind* of data imputation (e.g., the age corrections 
+detailed in the [previous section](#bboreal-init-B-age)) can be excluded from the
+simulation by setting `P(sim)$rmImputedPix == TRUE`.
 
 #### Invariant species traits {#bboreal-invariant-traits}
 
@@ -604,6 +624,7 @@ SEP = 0
 (\#eq:SEPfinal3)
 \end{equation}
 ```
+
 #### Ecolocation-specific parameter -- minimum relative biomass {#bboreal-minRelB}
 
 Minimum relative biomass (`minRelativeB`) is a spatially-varying parameter used
