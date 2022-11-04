@@ -73,7 +73,7 @@ download.file(url = paste0("https://img.shields.io/badge/Biomass_borealDataPrep-
               mode = 'wb')
 ```
 
-``` {r moduleBadge-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, cache = FALSE, results = "asis"}
+```{r moduleBadge-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, cache = FALSE, results = "asis"}
 ## try to automatically get the commit URL and the path to the badge image
 modulePath <- if (grepl("Biomass_borealDataPrep$", normPath("."))) {
   normPath(".")
@@ -102,14 +102,13 @@ badgePath <- normPath("figures/moduleVersionBadge.png")
 cat(paste0("[![module-version-Badge](", badgePath, ")](", badgeURL, ")"))
 ```
 
-``` {r issuesBadge-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, cache = FALSE, results = "asis"}
+```{r issuesBadge-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, cache = FALSE, results = "asis"}
 badgeURL <- "https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues"
 badgePath <- normPath("figures/issuesBadge.png")
 
 ## make string of markdown code to be executed as-is
 cat(paste0("[![Issues-badge](", badgePath, ")](", badgeURL,")"))
 ```
-
 
 <!-- if knitting to pdf remember to add the pandoc_args: ["--extract-media", "."] option to yml in order to get the badge images -->
 
@@ -118,9 +117,9 @@ cat(paste0("[![Issues-badge](", badgePath, ")](", badgeURL,")"))
 `r paste(as.character(moduleMetadata(module = 'Biomass_borealDataPrep', path = '..')$authors), sep = ', ')`
 <!-- ideally separate authors with new lines, '\n' not working -->
 
-**This documentation is a work in progress. Potential discrepancies and omissions
-may exist for the time being. If you find any, contact us using the "Get help"
-link above.**
+**This documentation is a work in progress. Potential discrepancies and
+omissions may exist for the time being. If you find any, contact us using the
+"Get help" link above.**
 
 ## Module Overview
 
@@ -141,8 +140,8 @@ link above.**
 LandR *Biomass_borealDataPrep* (hereafter *Biomass_borealDataPrep*), prepares
 all necessary inputs for *Biomass_core* based on data available for forests
 across Canada forests, but focused on Western Canada boreal forest systems.
-Nevertheless, it provides a good foundation to develop other modules aimed
-at different geographical contexts. By keeping data preparation and parameter
+Nevertheless, it provides a good foundation to develop other modules aimed at
+different geographical contexts. By keeping data preparation and parameter
 estimation outside of *Biomass_core*, we promote the modularity of the
 LandR-based model systems and facilitate interoperability with other parameter
 estimation procedures.
@@ -153,13 +152,13 @@ germination and initial conditions necessary to run *Biomass_core*. For this,
 *Biomass_borealDataPrep* requires internet access to retrieve default
 data[^biomass_borealdataprep-1].
 
+[^biomass_borealdataprep-1]: Raw data layers downloaded by the module are saved
+    in \`dataPath(sim)\`, which can be controlled via
+    \`options(reproducible.destinationPath = ...)\`.
+
 We advise future users to run *Biomass_borealDataPrep* with defaults and inspect
 the resulting input objects are like before supplying alternative data (or data
 URLs).
-
-[^biomass_borealdataprep-1]: Raw data layers downloaded by the module are saved
-in \`dataPath(sim)\`, which can be controlled via
-\`options(reproducible.destinationPath = ...)\`.
 
 ### Links to other modules {#bboreal-links-modules}
 
@@ -259,10 +258,10 @@ study area used to derive parameters (`studyAreaLarge`) and the study area where
 the simulation will happen (`studyArea`). The two objects can be identical if
 the user chooses to parametrise and run the simulations in the same area. If not
 identical, `studyArea` must be fully within `studyAreaLarge`. If
-`studyAreaLarge` and `studyArea` are in Canada, the module can
-automatically estimate and prepare all input parameters and objects for
-*Biomass_core*, as the default raw data are FAIR data [*sensu*
-@WilkinsonEtAl2016] at the national-scale.
+`studyAreaLarge` and `studyArea` are in Canada, the module can automatically
+estimate and prepare all input parameters and objects for *Biomass_core*, as the
+default raw data are FAIR data [*sensu* @WilkinsonEtAl2016] at the
+national-scale.
 
 If no other inputs are supplied, *Biomass_borealDataPrep* will create raster
 layer versions `studyAreaLarge` and `studyArea` (`rasterToMatchLarge` and
@@ -303,9 +302,9 @@ this by supplying different ecozonation or land-cover layers.
 
 #### Species cover {#bboreal-sppcover}
 
-Species cover ((ref:percent) cover) raster layers (`speciesLayers`) can
-be automatically obtained and pre-processed by *Biomass_borealDataPrep*. The
-module ensures that:
+Species cover ((ref:percent) cover) raster layers (`speciesLayers`) can be
+automatically obtained and pre-processed by *Biomass_borealDataPrep*. The module
+ensures that:
 
 1.  all data have the same geospatial properties (extent, resolution);
 2.  all layers these are correctly re-projected to `studyAreaLarge` and
@@ -323,11 +322,11 @@ derive parameters and define initial species age and biomass across the
 landscape. These are also derived from MODIS satellite imagery from 2001
 prepared by the NFI [@BeaudoinEtAl2017] by default.
 
-*Biomass_borealDataPrep* downloads these data and performs a number of data 
-harmonization operations to deal with data inconsistencies. It first searches for
-mismatches between stand age (`standAge`), stand biomass (`standB`) and total
-stand cover (`standCover`), assuming that cover is the most accurate of the
-three, and biomass the least, and in the following order:
+*Biomass_borealDataPrep* downloads these data and performs a number of data
+harmonization operations to deal with data inconsistencies. It first searches
+for mismatches between stand age (`standAge`), stand biomass (`standB`) and
+total stand cover (`standCover`), assuming that cover is the most accurate of
+the three, and biomass the least, and in the following order:
 
 1.  Pixels with `standCover < 5%` are removed;
 
@@ -362,46 +361,48 @@ species biomass](#bboreal-adjustB)).
 
 #### Replacing initial biomass and age within known fire perimeters {#bboreal-spin-up}
 
-*Biomass_borealDataPrep* can use fire perimeters to correct stand ages.
-To do so, it downloads the latest fire perimeter data from the [Canadian
-Wildfire Data Base](https://cwfis.cfs.nrcan.gc.ca/datamart) and changes pixel
-age inside fire perimeters to match the time since last fire, using fire years
-up to the first year of the simulation.
+*Biomass_borealDataPrep* can use fire perimeters to correct stand ages. To do
+so, it downloads the latest fire perimeter data from the [Canadian Wildfire Data
+Base](https://cwfis.cfs.nrcan.gc.ca/datamart) and changes pixel age inside fire
+perimeters to match the time since last fire, using fire years up to the first
+year of the simulation.
 
-Taking two independent datasets for stand age (fire perimeters) and stand biomass
-(derived from MODIS satellite imagery) can cause discrepancies (e.g. stand age 
-= 5 and aboveground biomass = 10000 m2/ha). This may be due to errors coming 
-from a) a stand replacing disturbance that reset age to zero a few years before, 
-but the biomass layer was no zeroed, or b) the disturbance was not stand-replacing
-(leaving biomass), but age was still zeroed. This means that either, 
-aboveground biomass is wrong or age is.
+Taking two independent datasets for stand age (fire perimeters) and stand
+biomass (derived from MODIS satellite imagery) can cause discrepancies (e.g.
+stand age = 5 and aboveground biomass = 10000 m2/ha). This may be due to errors
+coming from a) a stand replacing disturbance that reset age to zero a few years
+before, but the biomass layer was no zeroed, or b) the disturbance was not
+stand-replacing (leaving biomass), but age was still zeroed. This means that
+either, aboveground biomass is wrong or age is.
 
-Options to address this include 1) get better data for these two variables that 
-do not contradict one another (not currently available to us) or 2) estimate one 
-or the other. There is no obvious way to decide which one is incorrect, unless 
+Options to address this include 1) get better data for these two variables that
+do not contradict one another (not currently available to us) or 2) estimate one
+or the other. There is no obvious way to decide which one is incorrect, unless
 there is an independent data source.
 
-In the current *Biomass_borealDataPrep* module version, we chose to correct both.
-If `P(sim)$fireURL` is provided and `P(sim)$overrideBiomassInFires` is TRUE, 
-fire perimeters are used as the source of information for age, and *Biomass_core* 
-is used to generate corresponding biomassvalues based on the estimated growth parameters
-and known species presence/absence (from the species cover layers).
+In the current *Biomass_borealDataPrep* module version, we chose to correct
+both. If `P(sim)$fireURL` is provided and `P(sim)$overrideBiomassInFires` is
+TRUE, fire perimeters are used as the source of information for age, and
+*Biomass_core* is used to generate corresponding biomassvalues based on the
+estimated growth parameters and known species presence/absence (from the species
+cover layers).
 
-This assumes that 1) recorded fires were stand-replacing, and so time since fire 
+This assumes that 1) recorded fires were stand-replacing, and so time since fire
 is the new stand age and 2) that the first year of the simulation is later than
-the first fire year in the fire perimeter data. The biomass spin-up with 
-*Biomass_core* is only run in pixels were stand ages were corrected, for as long as the
-new stand age (i.e., the time since last fire). All specie start with age = 0 and 
-biomass = 0, and grow until time since last fire is achieved. The resulting 
-species biomass is used as the initial biomass values for each species cohort
-in the actual simulation.
+the first fire year in the fire perimeter data. The biomass spin-up with
+*Biomass_core* is only run in pixels were stand ages were corrected, for as long
+as the new stand age (i.e., the time since last fire). All specie start with age
+= 0 and biomass = 0, and grow until time since last fire is achieved. The
+resulting species biomass is used as the initial biomass values for each species
+cohort in the actual simulation.
 
-If the user does not want to perform this imputation, this step can be bypassed 
-by setting the parameter `P(sim)$overrideBiomassInFires` to FALSE or `P(sim)$fireURL` to NULL or NA.
+If the user does not want to perform this imputation, this step can be bypassed
+by setting the parameter `P(sim)$overrideBiomassInFires` to FALSE or
+`P(sim)$fireURL` to NULL or NA.
 
-Also pixels that suffered *any kind* of data imputation (e.g., the age corrections 
-detailed in the [previous section](#bboreal-init-B-age)) can be excluded from the
-simulation by setting `P(sim)$rmImputedPix == TRUE`.
+Also pixels that suffered *any kind* of data imputation (e.g., the age
+corrections detailed in the [previous section](#bboreal-init-B-age)) can be
+excluded from the simulation by setting `P(sim)$rmImputedPix == TRUE`.
 
 #### Invariant species traits {#bboreal-invariant-traits}
 
@@ -501,8 +502,8 @@ If convergence issues occur and `P(sim)$fixModelBiomass == TRUE`, the module
 attempts to refit the model by re-sampling the data, re-fitting `lmer` with the
 `bobyqa` optimizer, and re-scaling the continuous predictors (by default,
 `cover` and `logAge`). These steps are tried additively until the convergence
-issue is resolved. If the module is still unable to solve the convergence issue a
-message is printed and the module uses the last fitted model.
+issue is resolved. If the module is still unable to solve the convergence issue
+a message is printed and the module uses the last fitted model.
 
 Note that convergence issues are not usually problematic for the estimation of
 coefficient values, only for estimation of their standard errors. However, the
@@ -575,10 +576,10 @@ df_params[df_params$paramName == "coverModel", "default"]
 ```
 
 whereby the probability of occurrence of a species ($\pi$) -- calculated as the
-proportion of pixels with (ref:percent) cover \> 0 -- is modelled per species and
-ecolocation following a binomial distribution with a logit link function. There
-is no data sub-sampling done before fitting the SEP statistical model, as the
-model fits quickly even for very large sample sizes (e.g., \> 20 million
+proportion of pixels with (ref:percent) cover \> 0 -- is modelled per species
+and ecolocation following a binomial distribution with a logit link function.
+There is no data sub-sampling done before fitting the SEP statistical model, as
+the model fits quickly even for very large sample sizes (e.g., \> 20 million
 points).
 
 SEP is then predicted by species and ecolocation combination and the resulting
@@ -624,7 +625,6 @@ SEP = 0
 (\#eq:SEPfinal3)
 \end{equation}
 ```
-
 #### Ecolocation-specific parameter -- minimum relative biomass {#bboreal-minRelB}
 
 Minimum relative biomass (`minRelativeB`) is a spatially-varying parameter used
@@ -706,13 +706,14 @@ productivity](#bboreal-maxB-maxANPP)) and `inflationFactor` and
 ### Aggregating species
 
 *Biomass_borealDataPrep* will use the input table `sppEquiv` and the parameter
-`P(sim)$sppEquivCol` to select the naming convention to use for the
-simulation (see full list of [input objects](#bboreal-inputs-list) and
+`P(sim)$sppEquivCol` to select the naming convention to use for the simulation
+(see full list of [input objects](#bboreal-inputs-list) and
 [parameters](#bboreal-params-list) for details). The user can use this table and
-parameter to define groupings that "merge" similar species that have their own invariant
-trait values (see [Invariant species traits](#bboreal-invariant-traits)) (e.g.
-genus-level group or a functional group). To do so, the name of the species group 
-in `sppEquivCol` column of the `sppEquiv` table must be identical for each grouped species.
+parameter to define groupings that "merge" similar species that have their own
+invariant trait values (see [Invariant species
+traits](#bboreal-invariant-traits)) (e.g. genus-level group or a functional
+group). To do so, the name of the species group in `sppEquivCol` column of the
+`sppEquiv` table must be identical for each grouped species.
 
 ```{r mergingSpp-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, message = FALSE, results = 'asis'}
 data("sppEquivalencies_CA", package = "LandR", envir = environment())
@@ -779,11 +780,11 @@ must match those available in default (or provided) species traits tables
 -   `standAgeMap` -- a map of observed stand ages (in years).
 
 -   `studyArea` -- shapefile. A `SpatialPolygonsDataFrame` with a single polygon
-determining where the simulation will take place. This input object
-**must be supplied by the user**.
+    determining where the simulation will take place. This input object **must
+    be supplied by the user**.
 
 -   `studyAreaLarge` -- shapefile. A `SpatialPolygonsDataFrame` with a single
-polygon determining the where the statistical models for parameter
+    polygon determining the where the statistical models for parameter
 estimation will be fitted. It **must** contain `studyArea` fully, if they
 are not identical. This object **must be supplied by the user**.
 
@@ -937,8 +938,8 @@ panble(df_outputs, caption,
 ### Simulation flow and module events {#bboreal-sim-flow}
 
 *Biomass_borealDataPrep* initialises itself and prepares all inputs, provided it
-has internet access to retrieve the raw datasets, for parametrisation and
-use by *Biomass_core*.
+has internet access to retrieve the raw datasets, for parametrisation and use by
+*Biomass_core*.
 
 The module runs only for one time step and contains The general flow of
 *Biomass_borealDataPrep* processes is:
