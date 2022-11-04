@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrepaff4c9050ce5a3a8dd35174ac965ab4f8a19de38)
+[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep946dff8df0663e95890ed4d878d9b86ef3d8b53e)
 
 [![Issues-badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -1205,7 +1205,7 @@ the model used to refit `deciduousCoverDiscount` in the supplied
    <td style="text-align:left;"> 64 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Passed to `httr::config(ssl_verifypeer = P(sim)$sslVerify)` when downloading KNN (NFI) datasets. Set to 0L if necessary to bypass checking the SSL certificate (this may be necessary when NFI's FTP website SSL certificate is down/out-of-date). </td>
+   <td style="text-align:left;"> Passed to `httr::config(ssl_verifypeer = P(sim)$.sslVerify)` when downloading KNN (NFI) datasets. Set to 0L if necessary to bypass checking the SSL certificate (this may be necessary when NFI's website SSL certificate is not correctly configured). </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .studyAreaName </td>
@@ -1264,6 +1264,9 @@ the initial map used for hashing within `Biomass_core`, in conjunction with
 `cohortData`.
 
 -   `ecoregionMap` -- map of ecolocations.
+
+\newpage
+\blandscape
 
 <table class="table" style="margin-left: auto; margin-right: auto;">
 <caption>(\#tab:moduleOutputs-Biomass-borealDataPrep)List of (ref:Biomass-borealDataPrep) output objects and their description.</caption>
@@ -1352,6 +1355,8 @@ the initial map used for hashing within `Biomass_core`, in conjunction with
   </tr>
 </tbody>
 </table>
+
+\elandscape
 
 ### Simulation flow and module events {#bboreal-sim-flow}
 
