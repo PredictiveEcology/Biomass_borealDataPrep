@@ -351,7 +351,7 @@ recalculated);
 estimated using the remainder of the data to fit the model supplied by
 `P(sim)$imputeBadAgeModel`, which defaults to:
 
-```{r imputeBadAgeModel, echo = FALSE, eval = TRUE, message = FALSE}
+```{r imputeBadAgeModel, echo = FALSE, eval = TRUE, message = FALSE, tidy = TRUE, tidy.opts = list(width.cutoff = 60)}
 df_params <- moduleParams("Biomass_borealDataPrep", "..")
 df_params[df_params$paramName == "imputeBadAgeModel", "default"]
 ```
@@ -443,7 +443,7 @@ the user can chose to re-estimate it by setting
 `P(sim)$fitDeciduousCoverDiscount == TRUE`. In this case, by default
 *Biomass_borealDataPrep* will fit the the following model:
 
-```{r coverPctToBiomassPctModel, echo = FALSE, eval = TRUE, message = FALSE}
+```{r coverPctToBiomassPctModel, echo = FALSE, eval = TRUE, message = FALSE, tidy = TRUE, tidy.opts = list(width.cutoff = 60)}
 df_params[df_params$paramName == "coverPctToBiomassPctModel", "default"]
 ```
 
@@ -463,7 +463,7 @@ species ages and biomass.
 species age and cover, while accounting for variation between ecolocations
 (`ecoregionGroup` below):
 
-```{r biomassModel, echo = FALSE, eval = TRUE, message = FALSE}
+```{r biomassModel, echo = FALSE, eval = TRUE, message = FALSE, tidy = TRUE, tidy.opts = list(width.cutoff = 60)}
 df_params[df_params$paramName == "biomassModel", "default"]
 ```
 
@@ -513,13 +513,13 @@ because it will wrongly assume an *exponential* relationship between
 \@ref(fig:fig-biomassModelLogBtest)) and steep increases in species biomasses
 during the first years of the simulation (Fig. \@ref(fig:fig-simBLogBtest)).
 
-```{r fig-biomassModelLogBtest, eval=TRUE, echo=FALSE, fig.align = 'center', out.width = "70%", fig.cap = "Modelling biomass as a linear vs. exponential relationship. a) `modelBiomass` as `B ~ logAge * speciesCode + cover * speciesCode + (logAge + cover | ecoregionGroup)`. b) `modelBiomass` as `logB ~ logAge * speciesCode + cover * speciesCode + (logAge + cover | ecoregionGroup)`. Blue dots are marginal mean B values (back-transformed in b) cross ages with confidence intervals as the bars."}
+```{r fig-biomassModelLogBtest, eval=TRUE, echo=FALSE, fig.align = 'center', out.width = ifelse(is_latex_output(), "100%", "70%"), fig.cap = "Modelling biomass as a linear vs. exponential relationship. a) `modelBiomass` as `B ~ logAge * speciesCode + cover * speciesCode + (logAge + cover | ecoregionGroup)`. b) `modelBiomass` as `logB ~ logAge * speciesCode + cover * speciesCode + (logAge + cover | ecoregionGroup)`. Blue dots are marginal mean B values (back-transformed in b) cross ages with confidence intervals as the bars."}
 ## make sure all include_graphics have wd attached to figure path
 ## this is necessary to knit to pdf using child Rmds - see https://stackoverflow.com/questions/61065560/cant-compile-rmarkdown-pdf-with-image-in-child-rmd-latex-error-image-file
 knitr::include_graphics(normPath(c("figures/biomassModel_logBtest.png")))
 ```
 
-```{r fig-simBLogBtest, eval=TRUE, echo=FALSE, fig.align = 'center', out.width = "70%", fig.cap = "Thirty years of simulation with `maxB` values estimated from a `logB ~ ...` `biomassModel` (see Fig. \\@ref(fig:fig-biomassModelLogBtest)). The steep increase in such little time is abnormal."}
+```{r fig-simBLogBtest, eval=TRUE, echo=FALSE, fig.align = 'center', out.width = ifelse(is_latex_output(), "100%", "70%"),  fig.cap = "Thirty years of simulation with `maxB` values estimated from a `logB ~ ...` `biomassModel` (see Fig. \\@ref(fig:fig-biomassModelLogBtest)). The steep increase in such little time is abnormal."}
 ## make sure all include_graphics have wd attached to figure path
 ## this is necessary to knit to pdf using child Rmds - see https://stackoverflow.com/questions/61065560/cant-compile-rmarkdown-pdf-with-image-in-child-rmd-latex-error-image-file
 knitr::include_graphics(normPath(c("figures/simulatedB_logBtest.png")))
@@ -549,7 +549,7 @@ ecolocation. For this, *Biomass_borealDataPrep* models the relationship between
 probability of occurrence of a species ($\pi$) using the following model by
 default:
 
-```{r coverModel, echo = FALSE, eval = TRUE, message = FALSE}
+```{r coverModel, echo = FALSE, eval = TRUE, message = FALSE, tidy = TRUE, tidy.opts = list(width.cutoff = 60)}
 df_params[df_params$paramName == "coverModel", "default"]
 ```
 
@@ -898,6 +898,9 @@ the initial map used for hashing within `Biomass_core`, in conjunction with
 
 -   `ecoregionMap` -- map of ecolocations.
 
+\newpage
+\blandscape
+
 ```{r moduleOutputs-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, message = FALSE, results = 'asis'}
 df_outputs <- moduleOutputs("Biomass_borealDataPrep", "..")
 caption <- "List of (ref:Biomass-borealDataPrep) output objects and their description."
@@ -906,6 +909,8 @@ panble(df_outputs, caption,
        panderArgs = list("justify" = "left", "digits" = 3, "split.cells" = c(15, 15, 40), "split.tables" = Inf),
        kable_stylingArgs = list(full_width = TRUE))
 ```
+
+\elandscape
 
 ### Simulation flow and module events {#bboreal-sim-flow}
 
