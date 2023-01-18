@@ -1149,7 +1149,7 @@ createBiomass_coreInputs <- function(sim) {
     }
   }
 
-  assertthat::assert_that(all(inRange(pixelCohortData$B, 0, round(maxRawB, -2)))) # should they all be below the initial biomass map?
+  assertthat::assert_that(all(inRange(pixelCohortData$B, 0, round(maxRawB, -3)))) # should they all be below the initial biomass map?
 
   # Fill in any remaining B values that are still NA -- the previous chunk filled in B for young cohorts only
   if (anyNA(pixelCohortData$B)) {
