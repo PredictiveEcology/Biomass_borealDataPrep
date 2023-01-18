@@ -19,8 +19,8 @@ defineModule(sim, list(
                   # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
                                     ## Excluded because loading is not necessary (just installation)
                   "merTools", "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
-                  "PredictiveEcology/reproducible@development (>= 1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.7.9030)",
+                  "PredictiveEcology/reproducible@development (>= 1.2.6.9017)",
+                  "PredictiveEcology/LandR@development (>= 1.1.0.9012)",
                   "PredictiveEcology/SpaDES.core@development (>= 1.0.10.9005)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
@@ -1488,15 +1488,16 @@ Save <- function(sim) {
     if (!suppliedElsewhere("firePerimeters", sim)) {
       opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
       on.exit(options(opt), add = TRUE)
-      sim$firePerimeters <- Cache(prepInputsFireYear,
-                                  destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
-                                  studyArea = raster::aggregate(sim$studyArea),
-                                  rasterToMatch = sim$rasterToMatchLarge,
-                                  overwrite = TRUE,
-                                  url = extractURL("firePerimeters"),
-                                  fireField = "YEAR",
-                                  fun = "sf::st_read",
-                                  userTags = c(cacheTags, "firePerimeters"))
+      sim$firePerimeters <- Cache(
+        prepInputsFireYear(destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
+                           studyArea = raster::aggregate(sim$studyArea),
+                           rasterToMatch = sim$rasterToMatchLarge,
+                           overwrite = TRUE,
+                           url = extractURL("firePerimeters"),
+                           fireField = "YEAR",
+                           fun = "sf::st_read"),
+        userTags = c(cacheTags, "firePerimeters")
+      )
       options(opt)
     }
   }
