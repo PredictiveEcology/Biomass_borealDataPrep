@@ -1243,7 +1243,7 @@ createBiomass_coreInputs <- function(sim) {
                              sim$speciesLayers,
                              rasterToMatch = sim$rasterToMatch,
                              maskWithRTM = TRUE,
-                             filename2 = .suffix(file.path(outputPath(sim), 'speciesLayers.grd'),
+                             filename2 = .suffix(file.path(outputPath(sim), 'speciesLayers.tif'),
                                                  paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
                              userTags = c(cacheTags, "speciesLayersRTM"),
