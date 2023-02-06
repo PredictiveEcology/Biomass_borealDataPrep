@@ -20,7 +20,7 @@ defineModule(sim, list(
                                     ## Excluded because loading is not necessary (just installation)
                   "merTools", "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   "PredictiveEcology/reproducible@development (>= 1.2.6.9017)",
-                  "PredictiveEcology/LandR@development (>= 1.1.0.9012)",
+                  "PredictiveEcology/LandR@development (>= 1.1.0.9018)",
                   "PredictiveEcology/SpaDES.core@development (>= 1.0.10.9005)",
                   "PredictiveEcology/SpaDES.project@transition", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
@@ -1495,8 +1495,7 @@ Save <- function(sim) {
                            rasterToMatch = sim$rasterToMatchLarge,
                            overwrite = TRUE,
                            url = extractURL("firePerimeters"),
-                           fireField = "YEAR",
-                           fun = "sf::st_read"),
+                           fireField = "YEAR"),
         userTags = c(cacheTags, "firePerimeters")
       )
       options(opt)
