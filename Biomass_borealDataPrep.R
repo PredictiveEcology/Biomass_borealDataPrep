@@ -22,6 +22,7 @@ defineModule(sim, list(
                   "PredictiveEcology/reproducible@development (>= 1.2.6.9017)",
                   "PredictiveEcology/LandR@development (>= 1.1.0.9012)",
                   "PredictiveEcology/SpaDES.core@development (>= 1.0.10.9005)",
+                  "PredictiveEcology/SpaDES.project@transition", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     ## maxB, maxANPP, SEP estimation section ------------------------------------------------
@@ -1242,7 +1243,7 @@ createBiomass_coreInputs <- function(sim) {
                              sim$speciesLayers,
                              rasterToMatch = sim$rasterToMatch,
                              maskWithRTM = TRUE,
-                             filename2 = .suffix(file.path(outputPath(sim), 'speciesLayers.grd'),
+                             filename2 = .suffix(file.path(outputPath(sim), 'speciesLayers.tif'),
                                                  paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
                              userTags = c(cacheTags, "speciesLayersRTM"),
