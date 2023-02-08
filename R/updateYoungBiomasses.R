@@ -167,7 +167,7 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
   on.exit(unlink(paths$outputPath, recursive = TRUE), add = TRUE)
 
   if (!any(modules == "Biomass_core")) { # if Biomass_core doesn't exist in modulePath, then download it
-    moduleVersion("Biomass_core", paths$modulePath) < "1.3.9") { # if Biomass_core doesn't exist in modulePath or is too old, then download it
+    if (moduleVersion("Biomass_core", paths$modulePath) < "1.3.9") { # if Biomass_core doesn't exist in modulePath or is too old, then download it
       ## check that SpaDES.install is available in the right version
       if (!"SpaDES.project" %in% row.names(installed.packages(lib.loc = .libPaths()[1])) ||
           packageVersion("SpaDES.project") < "0.0.7") {
