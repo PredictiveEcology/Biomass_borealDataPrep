@@ -1,6 +1,6 @@
 ---
 title: "LandR _Biomass_borealDataPrep_ Manual"
-date: "Last updated: 2022-10-26"
+date: "Last updated: 2022-11-04"
 output:
   bookdown::html_document2:
     toc: true
@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/CeresBarros/Biomass_borealDataPrepf28fdf6646d202c355f1709956305653e88abc22)
+[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep946dff8df0663e95890ed4d878d9b86ef3d8b53e)
 
 [![Issues-badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -633,7 +633,7 @@ trait values (see [Invariant species traits](#bboreal-invariant-traits)) (e.g.
 genus-level group or a functional group). To do so, the name of the species group 
 in `sppEquivCol` column of the `sppEquiv` table must be identical for each grouped species.
 
-<table>
+<table class="table" style="margin-left: auto; margin-right: auto;">
 <caption>(\#tab:mergingSpp-Biomass-borealDataPrep)Example of species merging for simulation. Here the user wants to model (ref:Abie-bal), (ref:Abie-las) and (ref:Pinu-con) as separate species, but all (ref:Pice-sp) as a genus-level group. For this, all six species are identified in the 'KNN' column, so that their (ref:percent) cover layers can be obtained, but in the 'Boreal' column (which defines the naming convention used in the simulation in this example) all (ref:Pice-sp) have the same name. (ref:Biomass-borealDataPrep) will merge their (ref:percent) cover data into a single layer by summing their cover per pixel.</caption>
  <thead>
   <tr>
@@ -760,7 +760,7 @@ and *Biomass_core* manual for further detail about these columns.
 \newpage
 \blandscape
 
-<table>
+<table class="table" style="margin-left: auto; margin-right: auto;">
 <caption>(\#tab:moduleInputs2-Biomass-borealDataPrep)List of (ref:Biomass-borealDataPrep) input objects and their description.</caption>
  <thead>
   <tr>
@@ -922,7 +922,7 @@ the model used to refit `deciduousCoverDiscount` in the supplied
 \newpage
 \blandscape
 
-<table>
+<table class="table" style="margin-left: auto; margin-right: auto;">
 <caption>(\#tab:moduleParams2-Biomass-borealDataPrep)List of (ref:Biomass-borealDataPrep) parameters and their description.</caption>
  <thead>
   <tr>
@@ -1205,7 +1205,7 @@ the model used to refit `deciduousCoverDiscount` in the supplied
    <td style="text-align:left;"> 64 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Passed to `httr::config(ssl_verifypeer = P(sim)$sslVerify)` when downloading KNN (NFI) datasets. Set to 0L if necessary to bypass checking the SSL certificate (this may be necessary when NFI's FTP website SSL certificate is down/out-of-date). </td>
+   <td style="text-align:left;"> Passed to `httr::config(ssl_verifypeer = P(sim)$.sslVerify)` when downloading KNN (NFI) datasets. Set to 0L if necessary to bypass checking the SSL certificate (this may be necessary when NFI's website SSL certificate is not correctly configured). </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .studyAreaName </td>
@@ -1265,7 +1265,10 @@ the initial map used for hashing within `Biomass_core`, in conjunction with
 
 -   `ecoregionMap` -- map of ecolocations.
 
-<table>
+\newpage
+\blandscape
+
+<table class="table" style="margin-left: auto; margin-right: auto;">
 <caption>(\#tab:moduleOutputs-Biomass-borealDataPrep)List of (ref:Biomass-borealDataPrep) output objects and their description.</caption>
  <thead>
   <tr>
@@ -1352,6 +1355,8 @@ the initial map used for hashing within `Biomass_core`, in conjunction with
   </tr>
 </tbody>
 </table>
+
+\elandscape
 
 ### Simulation flow and module events {#bboreal-sim-flow}
 
