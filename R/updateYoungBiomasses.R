@@ -61,10 +61,10 @@ updateYoungBiomasses <- function(young, modelBiomass, ...) {
     young[tooSmall == TRUE, newB := pred - 2*se]
   }
   if (sum(young$beyond) > 0)
-  message("Within the cohorts aged ", max(young$age)," and younger, ",
-          "there were ", sum(young$beyond), " cohorts whose biomass was way out of line for their ages. ",
-          "Their biomasses have been adjusted down if too high (or up if too low) ",
-          "to their predicted mean +1.96se (or - if too low) based on the fitted biomass model")
+    message("Within the cohorts aged ", max(young$age)," and younger, ",
+            "there were ", sum(young$beyond), " cohorts whose biomass was way out of line for their ages. ",
+            "Their biomasses have been adjusted down if too high (or up if too low) ",
+            "to their predicted mean +1.96se (or - if too low) based on the fitted biomass model")
   young[beyond == FALSE, newB := B]
   young[, B := asInteger(pmax(0, newB))]
   if (useRescaled) {
@@ -167,22 +167,22 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
   on.exit(unlink(paths$outputPath, recursive = TRUE), add = TRUE)
 
   if (!any(modules == "Biomass_core")) { # if Biomass_core doesn't exist in modulePath, then download it
-      moduleVersion("Biomass_core", paths$modulePath) < "1.3.9") { # if Biomass_core doesn't exist in modulePath or is too old, then download it
+    moduleVersion("Biomass_core", paths$modulePath) < "1.3.9") { # if Biomass_core doesn't exist in modulePath or is too old, then download it
       ## check that SpaDES.install is available in the right version
       if (!"SpaDES.project" %in% row.names(installed.packages(lib.loc = .libPaths()[1])) ||
           packageVersion("SpaDES.project") < "0.0.7") {
-      stop(paste("Please install SpaDES.project using:",
-                 "Require::Install('PredictiveEcology/SpaDES.project@transition')")) ## TODO: update once merged
-    }
+        stop(paste("Please install SpaDES.project using:",
+                   "Require::Install('PredictiveEcology/SpaDES.project@transition')")) ## TODO: update once merged
+      }
 
-    paths$modulePath <- file.path(curModPath, submodule, "module")
-    moduleNameAndBranch <- c("Biomass_core@development (>= 1.3.9)")
-    modules <- list(gsub("@.+", "", moduleNameAndBranch))
-    SpaDES.project::getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
+      paths$modulePath <- file.path(curModPath, submodule, "module")
+      moduleNameAndBranch <- c("PredictiveEcology/Biomass_core@development (>= 1.3.9)")
+      modules <- list("Biomass_core")
+      SpaDES.project::getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
     }
   } else {
-  ## trim unnecessary modules:
-  modules <- modules[modules == "Biomass_core"]
+    ## trim unnecessary modules:
+    modules <- modules[modules == "Biomass_core"]
   }
 
   outputs <- data.frame(expand.grid(objectName = "cohortData",
