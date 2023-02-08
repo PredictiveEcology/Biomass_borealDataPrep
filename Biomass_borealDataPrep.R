@@ -19,9 +19,10 @@ defineModule(sim, list(
                   "merTools", "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
                                     ## Excluded because loading is not necessary (just installation)
-                  "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "PredictiveEcology/LandR@development (>= 1.0.9.9001)",
-                  "PredictiveEcology/SpaDES.core@development (>=1.0.10.9005)",
+                  "PredictiveEcology/reproducible@development (>= 1.2.6.9017)",
+                  "PredictiveEcology/LandR@development (>= 1.1.0.9018)",
+                  "PredictiveEcology/SpaDES.core@development (>= 1.0.10.9005)",
+                  "PredictiveEcology/SpaDES.project@transition", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     ## maxB, maxANPP, SEP estimation section ------------------------------------------------
@@ -860,7 +861,7 @@ createBiomass_coreInputs <- function(sim) {
         .specialData = specDat,
         useCloud = useCloud,
         # useCache = "overwrite",
-        # useCache = FALSE,
+        useCache = FALSE, ## TODO: cache is failing with data.table join error
         cloudFolderID = sim$cloudFolderID,
         # showSimilar = getOption("reproducible.showSimilar", FALSE),
         userTags = c(modelBiomassTags,
@@ -1149,7 +1150,7 @@ createBiomass_coreInputs <- function(sim) {
     }
   }
 
-  assertthat::assert_that(all(inRange(pixelCohortData$B, 0, round(maxRawB, -2)))) # should they all be below the initial biomass map?
+  assertthat::assert_that(all(inRange(pixelCohortData$B, 0, round(maxRawB, -3)))) # should they all be below the initial biomass map?
 
   # Fill in any remaining B values that are still NA -- the previous chunk filled in B for young cohorts only
   if (anyNA(pixelCohortData$B)) {
@@ -1242,7 +1243,7 @@ createBiomass_coreInputs <- function(sim) {
                              sim$speciesLayers,
                              rasterToMatch = sim$rasterToMatch,
                              maskWithRTM = TRUE,
-                             filename2 = .suffix(file.path(outputPath(sim), 'speciesLayers.grd'),
+                             filename2 = .suffix(file.path(outputPath(sim), 'speciesLayers.tif'),
                                                  paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
                              userTags = c(cacheTags, "speciesLayersRTM"),
@@ -1488,15 +1489,15 @@ Save <- function(sim) {
     if (!suppliedElsewhere("firePerimeters", sim)) {
       opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
       on.exit(options(opt), add = TRUE)
-      sim$firePerimeters <- Cache(prepInputsFireYear,
-                                  destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
-                                  studyArea = raster::aggregate(sim$studyArea),
-                                  rasterToMatch = sim$rasterToMatchLarge,
-                                  overwrite = TRUE,
-                                  url = extractURL("firePerimeters"),
-                                  fireField = "YEAR",
-                                  fun = "sf::st_read",
-                                  userTags = c(cacheTags, "firePerimeters"))
+      sim$firePerimeters <- Cache(
+        prepInputsFireYear(destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
+                           studyArea = raster::aggregate(sim$studyArea),
+                           rasterToMatch = sim$rasterToMatchLarge,
+                           overwrite = TRUE,
+                           url = extractURL("firePerimeters"),
+                           fireField = "YEAR"),
+        userTags = c(cacheTags, "firePerimeters")
+      )
       options(opt)
     }
   }
