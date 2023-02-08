@@ -9,7 +9,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("ctb"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.4"),
+  version = list(Biomass_borealDataPrep = "1.5.5"),
   spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
