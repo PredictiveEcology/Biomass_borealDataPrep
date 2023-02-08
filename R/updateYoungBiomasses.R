@@ -161,25 +161,25 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
     "spades.moduleCodeChecks" = FALSE # Turn off all module's code checking
   )
 
+  ## TODO: make the following into a function to use across modules (e.g. B_sppFactorial)
   curModPath <- file.path(paths$modulePath, currentModule)
   submodule <- "Biomass_coreSubModule"
   paths$outputPath <- file.path(curModPath, submodule, "outputs", rndstr()) ## avoid race conditions
   on.exit(unlink(paths$outputPath, recursive = TRUE), add = TRUE)
 
-  if (!any(modules == "Biomass_core")) { # if Biomass_core doesn't exist in modulePath, then download it
-    if (moduleVersion("Biomass_core", paths$modulePath) < "1.3.9") { # if Biomass_core doesn't exist in modulePath or is too old, then download it
-      ## check that SpaDES.install is available in the right version
-      if (!"SpaDES.project" %in% row.names(installed.packages(lib.loc = .libPaths()[1])) ||
-          packageVersion("SpaDES.project") < "0.0.7") {
-        stop(paste("Please install SpaDES.project using:",
-                   "Require::Install('PredictiveEcology/SpaDES.project@transition')")) ## TODO: update once merged
-      }
-
-      paths$modulePath <- file.path(curModPath, submodule, "module")
-      moduleNameAndBranch <- c("PredictiveEcology/Biomass_core@development (>= 1.3.9)")
-      modules <- list("Biomass_core")
-      SpaDES.project::getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
+  ## if Biomass_core doesn't exist in modulePath or is too old, then download it
+  if (!any(modules == "Biomass_core") ||
+      moduleVersion("Biomass_core", paths$modulePath) < "1.3.9") {
+    if (!"SpaDES.project" %in% row.names(installed.packages(lib.loc = .libPaths()[1])) ||
+        packageVersion("SpaDES.project") < "0.0.7") {
+      stop(paste("Please install SpaDES.project using:",
+                 "Require::Install('PredictiveEcology/SpaDES.project@transition')")) ## TODO: update once merged
     }
+
+    paths$modulePath <- file.path(curModPath, submodule, "module")
+    moduleNameAndBranch <- c("PredictiveEcology/Biomass_core@development (>= 1.3.9)")
+    modules <- list("Biomass_core")
+    SpaDES.project::getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
   } else {
     ## trim unnecessary modules:
     modules <- modules[modules == "Biomass_core"]
