@@ -578,7 +578,6 @@ createBiomass_coreInputs <- function(sim) {
   opt <- options("reproducible.useMemoise" = FALSE)
   on.exit(options(opt), add = TRUE)
 
-  browser()
   pixelTable <- Cache(makePixelTable,
                       speciesLayers = sim$speciesLayers,
                       # species = sim$species,
