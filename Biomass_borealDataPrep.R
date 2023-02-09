@@ -383,6 +383,7 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
 }
 
 createBiomass_coreInputs <- function(sim) {
+
   origDTthreads <- data.table::getDTthreads()
   data.table::setDTthreads(min(origDTthreads, 2)) # seems to only improve up to 2 threads
   on.exit(setDTthreads(origDTthreads))
@@ -482,8 +483,18 @@ createBiomass_coreInputs <- function(sim) {
     stop("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
          "Please check the species list and traits table")
   } else if (length(missingTraits)) {
-    stop("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
-         "Missing traits will result in species removal from simulation.\n
+    spps <- grep("_Spp", missingTraits, ignore.case = TRUE)
+    if (length(spps)) {
+      toRm <- grep("_Spp", names(sim$speciesLayers))
+      sim$speciesLayers <- sim$speciesLayers[[-toRm]] # works on Raster or SpatRaster
+      message("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
+              " Since this is a 'genus-level' designation (_Spp), omittint it. ",
+              " Please ensure that is the correct behaviour")
+    }
+    missingTraits <- setdiff(names(sim$speciesLayers), sim$species$species)
+    if (length(missingTraits))
+      stop("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
+           "Missing traits will result in species removal from simulation.\n
             Please check the species list and traits table")
   }
 
@@ -545,14 +556,18 @@ createBiomass_coreInputs <- function(sim) {
   # The next function will remove the "zero" class on sim$ecoregionRst
   pixelFateDT <- pixelFate(pixelFateDT, "Removing 0 class in sim$ecoregionRst",
                            sum(sim$ecoregionRst[][!pixelsToRm] == 0, na.rm = TRUE))
+
+  # ELIOT's work arounds is keep them as Raster during transition to reproducible.rasterRead = "terra::rast"
   ecoregionFiles <- Cache(prepEcoregions,
                           ecoregionRst = sim$ecoregionRst,
                           ecoregionLayer = sim$ecoregionLayer,
                           ecoregionLayerField = P(sim)$ecoregionLayerField,
-                          rasterToMatchLarge = sim$rasterToMatchLarge,
-                          rstLCCAdj = rstLCCAdj,
+                          rasterToMatchLarge = as(sim$rasterToMatchLarge, "Raster"),
+                          rstLCCAdj = as(rstLCCAdj, "Raster"),
                           pixelsToRm = pixelsToRm,
                           cacheTags = c(cacheTags, "prepEcoregionFiles"))
+  if (identical(getOption("reproducible.rasterRead"), "terra::rast"))
+    ecoregionFiles$ecoregionMap <- terra::rast(ecoregionFiles$ecoregionMap)
 
   ################################################################
   ## put together pixelTable object
@@ -563,6 +578,7 @@ createBiomass_coreInputs <- function(sim) {
   opt <- options("reproducible.useMemoise" = FALSE)
   on.exit(options(opt), add = TRUE)
 
+  browser()
   pixelTable <- Cache(makePixelTable,
                       speciesLayers = sim$speciesLayers,
                       # species = sim$species,
@@ -574,7 +590,6 @@ createBiomass_coreInputs <- function(sim) {
                       # pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
                       userTags = c(cacheTags, "pixelTable"),
                       omitArgs = c("userTags"))
-  options(opt)
 
   #######################################################
   # Make the initial pixelCohortData table
@@ -996,7 +1011,7 @@ createBiomass_coreInputs <- function(sim) {
   ## 3. Re-do pixel ID numbering so that it matches the final rasterToMatch
   ## Note: if SA and SALarge are the same, no subsetting will take place.
 
-  if (sum(is.na(getValues(sim$rasterToMatch))) != sum(is.na(getValues(sim$rasterToMatchLarge)))) {
+  if (sum(is.na(as.vector(values(sim$rasterToMatch)))) != sum(is.na(as.vector(values(sim$rasterToMatchLarge))))) {
     message(blue("Subsetting to studyArea"))
     rasterToMatchLarge <- sim$rasterToMatchLarge
     rasterToMatchLarge <- setValues(rasterToMatchLarge, seq(ncell(rasterToMatchLarge)))
@@ -1014,18 +1029,18 @@ createBiomass_coreInputs <- function(sim) {
                                        omitArgs = c("userTags"))
     options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
 
-    assertthat::assert_that(sum(is.na(getValues(rasterToMatchLargeCropped))) < ncell(rasterToMatchLargeCropped)) ## i.e., not all NA
+    assertthat::assert_that(sum(is.na(as.vector(values(rasterToMatchLargeCropped)))) < ncell(rasterToMatchLargeCropped)) ## i.e., not all NA
 
     if (!compareRaster(rasterToMatchLargeCropped, sim$rasterToMatch, orig = TRUE, stopiffalse = FALSE))
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.",
            "Please debug Biomass_borealDataPrep::createBiomass_coreInputs().")
 
     ## subset pixels that are in studyArea/rasterToMatch only
-    pixToKeep <- na.omit(getValues(rasterToMatchLargeCropped)) # these are the old indices of RTML
+    pixToKeep <- na.omit(as.vector(values(rasterToMatchLargeCropped))) # these are the old indices of RTML
     pixelCohortData <- pixelCohortData[pixelIndex %in% pixToKeep]
 
     ## re-do pixelIndex (it now needs to match rasterToMatch)
-    newPixelIndexDT <- data.table(pixelIndex = getValues(rasterToMatchLargeCropped),
+    newPixelIndexDT <- data.table(pixelIndex = as.vector(values(rasterToMatchLargeCropped)),
                                   newPixelIndex = as.integer(1:ncell(rasterToMatchLargeCropped))) %>%
       na.omit(.)
 
@@ -1044,7 +1059,7 @@ createBiomass_coreInputs <- function(sim) {
   ## subset ecoregionFiles$ecoregionMap to smaller area.
 
   useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
-  options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
+  # options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
   ecoregionFiles$ecoregionMap <- Cache(postProcess,
                                        x = ecoregionFiles$ecoregionMap,
                                        rasterToMatch = sim$rasterToMatch,
@@ -1052,7 +1067,7 @@ createBiomass_coreInputs <- function(sim) {
                                        filename2 = NULL,
                                        userTags = c(cacheTags, "ecoregionMap"),
                                        omitArgs = c("userTags"))
-  options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
+  # options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
 
   if (is(P(sim)$minRelativeBFunction, "call")) {
     sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
@@ -1062,10 +1077,13 @@ createBiomass_coreInputs <- function(sim) {
   }
 
   maxAgeHighQualityData <- -1
-  maxRawB <- maxValue(sim$rawBiomassMap) * 100 ## match units in cohortData (t/ha ==> g/m^2)
+
+  maxRawB <- max(values(sim$rawBiomassMap), na.rm = TRUE) * 100 ## match units in cohortData (t/ha ==> g/m^2)
+  # maxRawB <- maxValue(sim$rawBiomassMap) * 100 ## match units in cohortData (t/ha ==> g/m^2)
 
   # If this module used a fire database to extract better young ages, then we
   #   can use those high quality younger ages to help with our biomass estimates
+
   if (isTRUE(P(sim)$overrideBiomassInFires)) {
     if (isFALSE(P(sim)$overrideAgeInFires)) {
       message(blue("'P(sim)$overrideBiomassInFires' is TRUE but 'P(sim)$overrideAgeInFires' if FALSE."))
@@ -1150,7 +1168,7 @@ createBiomass_coreInputs <- function(sim) {
     }
   }
 
-  assertthat::assert_that(all(inRange(pixelCohortData$B, 0, round(maxRawB, -3)))) # should they all be below the initial biomass map?
+  assertthat::assert_that(all(inRange(pixelCohortData$B, 0, round(maxRawB, -2)))) # should they all be below the initial biomass map?
 
   # Fill in any remaining B values that are still NA -- the previous chunk filled in B for young cohorts only
   if (anyNA(pixelCohortData$B)) {
@@ -1238,7 +1256,7 @@ createBiomass_coreInputs <- function(sim) {
   message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
 
   useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
-  options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
+  # options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
   sim$speciesLayers <- Cache(postProcess,
                              sim$speciesLayers,
                              rasterToMatch = sim$rasterToMatch,
@@ -1251,10 +1269,15 @@ createBiomass_coreInputs <- function(sim) {
                              # Cache reads file content if it is a file, so it is
                              #    reading content of filename2, which is an output
                              omitArgs = c("userTags"))
-  options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
+  # options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
 
   ## double check these rasters all match RTM
-  compareRaster(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap, sim$rasterToMatch, sim$speciesLayers)
+  if (inherits(sim$rasterToMatch, "SpatRaster")) {
+    terra::compareGeom(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap)
+    terra::compareGeom(sim$pixelGroupMap, sim$rasterToMatch, sim$speciesLayers)
+  } else {
+    raster::compareRaster(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap, sim$rasterToMatch, sim$speciesLayers)
+  }
 
   ## rm ecoregions that may not be present in rasterToMatch
   ## make ecoregionGroup a factor and export speciesEcoregion to sim
@@ -1520,6 +1543,7 @@ Save <- function(sim) {
     # on.exit(options(opt), add = TRUE)
     httr::with_config(config = httr::config(ssl_verifypeer = P(sim)$.sslVerify), {
       sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
+                               ageFun = getOption("reproducible.rasterRead", "raster::raster"), # the backwards compatible default
                                destinationPath = dPath,
                                ageURL = ageURL,
                                studyArea = raster::aggregate(sim$studyAreaLarge),
@@ -1534,11 +1558,11 @@ Save <- function(sim) {
                                             "alsoExtract", "userTags"))
     })
     # options(opt)
-    LandR::assertStandAgeMapAttr(sim$standAgeMap)
+    # LandR::assertStandAgeMapAttr(sim$standAgeMap)
     sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
   }
 
-  LandR::assertStandAgeMapAttr(sim$standAgeMap)
+  # LandR::assertStandAgeMapAttr(sim$standAgeMap)
   sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
 
   ## Species equivalencies table and associated columns ----------------------------
