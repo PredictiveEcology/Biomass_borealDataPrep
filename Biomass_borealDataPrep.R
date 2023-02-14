@@ -528,14 +528,14 @@ createBiomass_coreInputs <- function(sim) {
   if (!compareCRS(raster::crs(sim$studyArea), raster::crs(sim$rasterToMatch))) {
     warning(paste0("studyArea and rasterToMatch projections differ.\n",
                    "studyArea will be projected to match rasterToMatch"))
-    sim$studyArea <- spTransform(sim$studyArea, raster::crs(sim$rasterToMatch))
+    sim$studyArea <- projectTo(sim$studyArea, crs(sim$rasterToMatch))
     sim$studyArea <- fixErrors(sim$studyArea)
   }
 
   if (!compareCRS(raster::crs(sim$studyAreaLarge), raster::crs(sim$rasterToMatchLarge))) {
     warning(paste0("studyAreaLarge and rasterToMatchLarge projections differ.\n",
                    "studyAreaLarge will be projected to match rasterToMatchLarge"))
-    sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, raster::crs(sim$rasterToMatchLarge))
+    sim$studyAreaLarge <- projectTo(sim$studyAreaLarge, crs(sim$rasterToMatchLarge))
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
 
@@ -1367,7 +1367,7 @@ Save <- function(sim) {
   if (!compareCRS(sim$studyArea, sim$studyAreaLarge)) {
     warning("studyArea and studyAreaLarge have different projections.\n
             studyAreaLarge will be projected to match raster::crs(studyArea)")
-    sim$studyAreaLarge <- spTransform(sim$studyAreaLarge, raster::crs(sim$studyArea))
+    sim$studyAreaLarge <- projectTo(sim$studyAreaLarge, crs(sim$studyArea))
   }
 
   if (is.na(P(sim)$.studyAreaName)) {
