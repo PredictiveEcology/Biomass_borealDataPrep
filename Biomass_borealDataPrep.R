@@ -1500,7 +1500,6 @@ Save <- function(sim) {
                                 studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                                 overwrite = TRUE,
                                 useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
-                                fun = "raster::shapefile",
                                 userTags = c("prepInputsEcoDistrict_SA", currentModule(sim), cacheTags))
   }
 
