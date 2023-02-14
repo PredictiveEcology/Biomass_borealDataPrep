@@ -1551,6 +1551,7 @@ Save <- function(sim) {
                                rasterToMatch = sim$rasterToMatchLarge,
                                filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
                                overwrite = TRUE,
+                               useCache = FALSE, ### for now due to attributes being lost on retrieval
                                firePerimeters = if (P(sim)$overrideAgeInFires) sim$firePerimeters else NULL,
                                fireURL = if (P(sim)$overrideAgeInFires) extractURL("firePerimeters") else NULL,
                                startTime = start(sim),
