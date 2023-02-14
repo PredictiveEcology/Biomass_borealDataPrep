@@ -1557,8 +1557,6 @@ Save <- function(sim) {
                                             "alsoExtract", "userTags"))
     })
     # options(opt)
-    # LandR::assertStandAgeMapAttr(sim$standAgeMap)
-    sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
   }
 
   LandR::assertStandAgeMapAttr(sim$standAgeMap)
