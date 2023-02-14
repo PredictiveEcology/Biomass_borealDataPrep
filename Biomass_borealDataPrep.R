@@ -409,11 +409,10 @@ createBiomass_coreInputs <- function(sim) {
   ## check that input rasters all match
   # Too many times this was failing with non-Terra # Eliot March 8, 2022
   # Now it fails with terra: Ceres Jul 08 2022
-  opt <- options("reproducible.useTerra" = FALSE)
-  on.exit(options(opt), add = TRUE)
-
+  # opt <- options("reproducible.useTerra" = FALSE)
+  # on.exit(options(opt), add = TRUE)
   if (!compareRaster(sim$standAgeMap, sim$rasterToMatchLarge,
-                     orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
+                   orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
     ## note that extents may never align if the resolution and projection do not allow for it
     ## this is not working, need to use projectRaster
     sim$standAgeMap <- Cache(postProcess,
@@ -1438,14 +1437,14 @@ Save <- function(sim) {
     if (!is.null(sim$rawBiomassMap)) {
       if (!compareRaster(sim$rawBiomassMap, sim$studyAreaLarge, stopiffalse = FALSE)) {
         ## note that extents may never align if the resolution and projection do not allow for it
-        opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
-        on.exit(options(opt), add = TRUE)
+        # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+        # on.exit(options(opt), add = TRUE)
         sim$rawBiomassMap <- Cache(postProcess,
                                    sim$rawBiomassMap,
                                    method = "bilinear",
                                    studyArea = sim$studyAreaLarge,
                                    overwrite = TRUE)
-        options(opt)
+        # options(opt)
       }
     }
   }
@@ -1505,8 +1504,8 @@ Save <- function(sim) {
 
   if (P(sim)$overrideAgeInFires) {
     if (!suppliedElsewhere("firePerimeters", sim)) {
-      opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
-      on.exit(options(opt), add = TRUE)
+      # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+      # on.exit(options(opt), add = TRUE)
       sim$firePerimeters <- Cache(
         prepInputsFireYear(destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
                            studyArea = aggregate(sim$studyArea),
@@ -1516,7 +1515,7 @@ Save <- function(sim) {
                            fireField = "YEAR"),
         userTags = c(cacheTags, "firePerimeters")
       )
-      options(opt)
+      # options(opt)
     }
   }
 
@@ -1578,8 +1577,8 @@ Save <- function(sim) {
   ## Species raster layers -------------------------------------------
   if (!suppliedElsewhere("speciesLayers", sim)) {
     #opt <- options(reproducible.useCache = "overwrite")
-    opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
-    on.exit(options(opt), add = TRUE)
+    # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+    # on.exit(options(opt), add = TRUE)
     httr::with_config(config = httr::config(ssl_verifypeer = P(sim)$.sslVerify), {
       sim$speciesLayers <- Cache(prepSpeciesLayers_KNN,
                                  destinationPath = dPath, # this is generic files (preProcess)
@@ -1594,7 +1593,7 @@ Save <- function(sim) {
                                  userTags = c(cacheTags, "speciesLayers"),
                                  omitArgs = c("userTags"))
     })
-    options(opt)
+    # options(opt)
 
     ## make sure empty pixels inside study area have 0 cover, instead of NAs.
     ## this can happen when data has NAs instead of 0s and is not merged/overlayed (e.g. CASFRI)
