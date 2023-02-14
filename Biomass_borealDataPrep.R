@@ -18,7 +18,7 @@ defineModule(sim, list(
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2",
                   "merTools", "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
                   # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
-                                    ## Excluded because loading is not necessary (just installation)
+                  ## Excluded because loading is not necessary (just installation)
                   "PredictiveEcology/reproducible@development (>= 1.2.6.9017)",
                   "PredictiveEcology/LandR@development (>= 1.1.0.9018)",
                   "PredictiveEcology/SpaDES.core@development (>= 1.0.10.9005)",
@@ -423,7 +423,7 @@ createBiomass_coreInputs <- function(sim) {
   }
 
   if (!.compareRas(sim$rstLCC, sim$rasterToMatchLarge,
-                     orig = TRUE, res = TRUE)) {
+                   orig = TRUE, res = TRUE)) {
     sim$rstLCC <- Cache(postProcess,
                         sim$rstLCC,
                         to = sim$rasterToMatchLarge,
@@ -431,7 +431,7 @@ createBiomass_coreInputs <- function(sim) {
   }
 
   if (!.compareRas(sim$firePerimeters, sim$rasterToMatchLarge,
-                     orig = TRUE, res = TRUE)) {
+                   orig = TRUE, res = TRUE)) {
     sim$firePerimeters <- Cache(postProcess,
                                 sim$firePerimeters,
                                 to = sim$rasterToMatchLarge,
@@ -440,7 +440,7 @@ createBiomass_coreInputs <- function(sim) {
   # options(opt)
 
   if (!.compareRas(sim$speciesLayers, sim$rasterToMatchLarge,
-                     orig = TRUE, res = TRUE)) {
+                   orig = TRUE, res = TRUE)) {
     sim$speciesLayers <- Cache(postProcessTerra,
                                sim$speciesLayers,
                                to = sim$rasterToMatchLarge,
@@ -569,8 +569,6 @@ createBiomass_coreInputs <- function(sim) {
                           rstLCCAdj = as(rstLCCAdj, "Raster"),
                           pixelsToRm = pixelsToRm,
                           cacheTags = c(cacheTags, "prepEcoregionFiles"))
-  if (identical(getOption("reproducible.rasterRead"), "terra::rast"))
-    ecoregionFiles$ecoregionMap <- terra::rast(ecoregionFiles$ecoregionMap)
 
   ################################################################
   ## put together pixelTable object
@@ -1523,18 +1521,18 @@ Save <- function(sim) {
 
   ## Stand age map ------------------------------------------------
   if (!suppliedElsewhere("standAgeMap", sim)) {
-      if (P(sim)$dataYear == 2001) {
-        ageURL <- extractURL("standAgeMap")
+    if (P(sim)$dataYear == 2001) {
+      ageURL <- extractURL("standAgeMap")
+    } else {
+      if (P(sim)$dataYear == 2011) {
+        ageURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
+                         "canada-forests-attributes_attributs-forests-canada/2011-attributes_attributs-2011/",
+                         "NFI_MODIS250m_2011_kNN_Structure_Stand_Age_v1.tif")
       } else {
-        if (P(sim)$dataYear == 2011) {
-          ageURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
-                           "canada-forests-attributes_attributs-forests-canada/2011-attributes_attributs-2011/",
-                           "NFI_MODIS250m_2011_kNN_Structure_Stand_Age_v1.tif")
-        } else {
-          stop("'P(sim)$dataYear' must be 2001 OR 2011")
-        }
+        stop("'P(sim)$dataYear' must be 2001 OR 2011")
       }
-      ## Ceres Sep 3rd 2022 -- this option caused failure when previously set to FALSE at project level.
+    }
+    ## Ceres Sep 3rd 2022 -- this option caused failure when previously set to FALSE at project level.
     # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
     # on.exit(options(opt), add = TRUE)
     httr::with_config(config = httr::config(ssl_verifypeer = P(sim)$.sslVerify), {
