@@ -437,7 +437,7 @@ createBiomass_coreInputs <- function(sim) {
                                 to = sim$rasterToMatchLarge,
                                 overwrite = TRUE)
   }
-  options(opt)
+  # options(opt)
 
   if (!.compareRas(sim$speciesLayers, sim$rasterToMatchLarge,
                      orig = TRUE, res = TRUE)) {
