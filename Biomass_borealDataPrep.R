@@ -447,12 +447,10 @@ createBiomass_coreInputs <- function(sim) {
                                overwrite = TRUE)
   }
 
-  if (inherits(sim$rasterToMatchLarge, "SpatRaster")) {
-    terra::compareGeom(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC, orig = TRUE)
-    terra::compareGeom(sim$rstLCC, sim$speciesLayers, sim$standAgeMap, orig = TRUE)
-  } else {
-    raster::compareRaster(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC,
-                          sim$speciesLayers, sim$standAgeMap, orig = TRUE)
+  if (!.compareRas(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC,
+                   sim$speciesLayers, sim$standAgeMap, orig = TRUE, res = TRUE)) {
+    stop("sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC,
+                   sim$speciesLayers, sim$standAgeMap properties do not match")
   }
 
   ################################################################
@@ -1276,12 +1274,8 @@ createBiomass_coreInputs <- function(sim) {
   # options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
 
   ## double check these rasters all match RTM
-  if (inherits(sim$rasterToMatch, "SpatRaster")) {
-    terra::compareGeom(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap)
-    terra::compareGeom(sim$pixelGroupMap, sim$rasterToMatch, sim$speciesLayers)
-  } else {
-    raster::compareRaster(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap, sim$rasterToMatch, sim$speciesLayers)
-  }
+  .compareRas(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap,
+              sim$rasterToMatch, sim$speciesLayers, orig = TRUE, res = TRUE)
 
   ## rm ecoregions that may not be present in rasterToMatch
   ## make ecoregionGroup a factor and export speciesEcoregion to sim
