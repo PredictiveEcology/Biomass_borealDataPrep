@@ -1441,6 +1441,7 @@ Save <- function(sim) {
                                            destinationPath = dPath)
   } else {
     if (!is.null(sim$rawBiomassMap)) {
+      ## TODO: compareRaster will need to be replaced.
       if (!compareRaster(sim$rawBiomassMap, sim$studyAreaLarge, stopiffalse = FALSE)) {
         ## note that extents may never align if the resolution and projection do not allow for it
         # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
