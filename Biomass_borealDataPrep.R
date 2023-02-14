@@ -553,12 +553,12 @@ createBiomass_coreInputs <- function(sim) {
   pixelFateDT <- pixelFate(pixelFateDT, "NAs on sim$speciesLayers", sum(pixelsToRm))
   if (P(sim)$omitNonTreedPixels) {
     pixelFateDT <- pixelFate(pixelFateDT, "Non forested pixels (based on LCC classes)",
-                             sum(!(sim$rstLCC[] %in% P(sim)$forestedLCCClasses)) -
+                             sum(!(as.vector(sim$rstLCC[]) %in% P(sim)$forestedLCCClasses)) -
                                tail(pixelFateDT$pixelsRemoved, 1))
   }
   # The next function will remove the "zero" class on sim$ecoregionRst
   pixelFateDT <- pixelFate(pixelFateDT, "Removing 0 class in sim$ecoregionRst",
-                           sum(sim$ecoregionRst[][!pixelsToRm] == 0, na.rm = TRUE))
+                           sum(as.vector(sim$ecoregionRst[])[!pixelsToRm] == 0, na.rm = TRUE))
 
   # ELIOT's work arounds is keep them as Raster during transition to reproducible.rasterRead = "terra::rast"
   ecoregionFiles <- Cache(prepEcoregions,
@@ -1095,10 +1095,10 @@ createBiomass_coreInputs <- function(sim) {
                    "defined in 'firePerimeters'."))
       message(blue("To skip this step, set 'P(sim)$overrideBiomassInFires' to FALSE."))
 
-      firstFireYear <- min(sim$firePerimeters[], na.rm = TRUE) # 1986 # as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", fireURL))
+      firstFireYear <- min(as.vector(sim$firePerimeters[]), na.rm = TRUE) # 1986 # as.numeric(gsub("^.+nbac_(.*)_to.*$", "\\1", fireURL))
       ## this is not necessary when using min(),
       ## but will be kept in case we use something else in the future
-      whichFiresTooOld <- which(sim$firePerimeters[] < firstFireYear)
+      whichFiresTooOld <- which(as.vector(sim$firePerimeters[]) < firstFireYear)
 
       if (length(whichFiresTooOld)) {
         message("There were fires in the database older than ", firstFireYear, ";",
@@ -1115,7 +1115,7 @@ createBiomass_coreInputs <- function(sim) {
         youngRows <- pixelCohortData$age <= maxAgeHighQualityData
         young <- pixelCohortData[youngRows == TRUE]
 
-        youngRows2 <- !is.na(sim$firePerimeters[young$pixelIndex])
+        youngRows2 <- !is.na(as.vector(sim$firePerimeters[young$pixelIndex]))
         young <- young[youngRows2]
 
         # whYoungBEqZero <- which(young$B == 0)
