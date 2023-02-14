@@ -411,8 +411,8 @@ createBiomass_coreInputs <- function(sim) {
   # Now it fails with terra: Ceres Jul 08 2022
   # opt <- options("reproducible.useTerra" = FALSE)
   # on.exit(options(opt), add = TRUE)
-  if (!compareRaster(sim$standAgeMap, sim$rasterToMatchLarge,
-                   orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
+  if (!.compareRas(sim$standAgeMap, sim$rasterToMatchLarge,
+                   orig = TRUE, res = TRUE)) {
     ## note that extents may never align if the resolution and projection do not allow for it
     ## this is not working, need to use projectRaster
     sim$standAgeMap <- Cache(postProcess,
@@ -422,16 +422,16 @@ createBiomass_coreInputs <- function(sim) {
     attr(sim$standAgeMap, "imputedPixID") <- sim$imputedPixID
   }
 
-  if (!compareRaster(sim$rstLCC, sim$rasterToMatchLarge,
-                     orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
+  if (!.compareRas(sim$rstLCC, sim$rasterToMatchLarge,
+                     orig = TRUE, res = TRUE)) {
     sim$rstLCC <- Cache(postProcess,
                         sim$rstLCC,
                         to = sim$rasterToMatchLarge,
                         overwrite = TRUE)
   }
 
-  if (!compareRaster(sim$firePerimeters, sim$rasterToMatchLarge,
-                     orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
+  if (!.compareRas(sim$firePerimeters, sim$rasterToMatchLarge,
+                     orig = TRUE, res = TRUE)) {
     sim$firePerimeters <- Cache(postProcess,
                                 sim$firePerimeters,
                                 to = sim$rasterToMatchLarge,
@@ -439,15 +439,21 @@ createBiomass_coreInputs <- function(sim) {
   }
   options(opt)
 
-  if (!compareRaster(sim$speciesLayers, sim$rasterToMatchLarge,
-                     orig = TRUE, res = TRUE, stopiffalse = FALSE)) {
+  if (!.compareRas(sim$speciesLayers, sim$rasterToMatchLarge,
+                     orig = TRUE, res = TRUE)) {
     sim$speciesLayers <- Cache(postProcessTerra,
                                sim$speciesLayers,
                                to = sim$rasterToMatchLarge,
                                overwrite = TRUE)
   }
-  compareRaster(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC,
-                sim$speciesLayers, sim$standAgeMap, orig = TRUE)
+
+  if (inherits(sim$rasterToMatchLarge, "SpatRaster")) {
+    terra::compareGeom(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC, orig = TRUE)
+    terra::compareGeom(sim$rstLCC, sim$speciesLayers, sim$standAgeMap, orig = TRUE)
+  } else {
+    raster::compareRaster(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC,
+                          sim$speciesLayers, sim$standAgeMap, orig = TRUE)
+  }
 
   ################################################################
   ## species traits inputs
@@ -1029,7 +1035,7 @@ createBiomass_coreInputs <- function(sim) {
 
     assertthat::assert_that(sum(is.na(as.vector(values(rasterToMatchLargeCropped)))) < ncell(rasterToMatchLargeCropped)) ## i.e., not all NA
 
-    if (!compareRaster(rasterToMatchLargeCropped, sim$rasterToMatch, orig = TRUE, stopiffalse = FALSE))
+    if (!.compareRas(rasterToMatchLargeCropped, sim$rasterToMatch, orig = TRUE))
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.",
            "Please debug Biomass_borealDataPrep::createBiomass_coreInputs().")
 
