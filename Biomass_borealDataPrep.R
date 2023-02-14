@@ -1561,7 +1561,7 @@ Save <- function(sim) {
     sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
   }
 
-  # LandR::assertStandAgeMapAttr(sim$standAgeMap)
+  LandR::assertStandAgeMapAttr(sim$standAgeMap)
   sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
 
   ## Species equivalencies table and associated columns ----------------------------
