@@ -1510,7 +1510,7 @@ Save <- function(sim) {
       on.exit(options(opt), add = TRUE)
       sim$firePerimeters <- Cache(
         prepInputsFireYear(destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
-                           studyArea = raster::aggregate(sim$studyArea),
+                           studyArea = aggregate(sim$studyArea),
                            rasterToMatch = sim$rasterToMatchLarge,
                            overwrite = TRUE,
                            url = extractURL("firePerimeters"),
@@ -1542,7 +1542,7 @@ Save <- function(sim) {
                                ageFun = getOption("reproducible.rasterRead", "raster::raster"), # the backwards compatible default
                                destinationPath = dPath,
                                ageURL = ageURL,
-                               studyArea = raster::aggregate(sim$studyAreaLarge),
+                               studyArea = aggregate(sim$studyAreaLarge),
                                rasterToMatch = sim$rasterToMatchLarge,
                                filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
                                overwrite = TRUE,
