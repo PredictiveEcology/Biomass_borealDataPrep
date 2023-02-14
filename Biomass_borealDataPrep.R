@@ -525,14 +525,14 @@ createBiomass_coreInputs <- function(sim) {
   ################################################################
   ## initialEcoregionMap
   ################################################################
-  if (!compareCRS(raster::crs(sim$studyArea), raster::crs(sim$rasterToMatch))) {
+  if (!.compareCRS(sim$studyArea, sim$rasterToMatch)) {
     warning(paste0("studyArea and rasterToMatch projections differ.\n",
                    "studyArea will be projected to match rasterToMatch"))
     sim$studyArea <- projectTo(sim$studyArea, crs(sim$rasterToMatch))
     sim$studyArea <- fixErrors(sim$studyArea)
   }
 
-  if (!compareCRS(raster::crs(sim$studyAreaLarge), raster::crs(sim$rasterToMatchLarge))) {
+  if (!.compareCRS(sim$studyAreaLarge, sim$rasterToMatchLarge)) {
     warning(paste0("studyAreaLarge and rasterToMatchLarge projections differ.\n",
                    "studyAreaLarge will be projected to match rasterToMatchLarge"))
     sim$studyAreaLarge <- projectTo(sim$studyAreaLarge, crs(sim$rasterToMatchLarge))
@@ -1364,9 +1364,9 @@ Save <- function(sim) {
     # sim <- objectSynonyms(sim, list(c("studyAreaLarge", "studyArea"))) # Jan 2021 we agreed to force user to provide a SA/SAL
   }
 
-  if (!compareCRS(sim$studyArea, sim$studyAreaLarge)) {
+  if (!.compareCRS(sim$studyArea, sim$studyAreaLarge)) {
     warning("studyArea and studyAreaLarge have different projections.\n
-            studyAreaLarge will be projected to match raster::crs(studyArea)")
+            studyAreaLarge will be projected to match crs(studyArea)")
     sim$studyAreaLarge <- projectTo(sim$studyAreaLarge, crs(sim$studyArea))
   }
 
@@ -1462,15 +1462,14 @@ Save <- function(sim) {
   sim$rasterToMatchLarge <- RTMs$rasterToMatchLarge
   rm(RTMs)
 
-  if (!compareCRS(sim$studyArea, sim$rasterToMatch)) {
+  if (!.compareCRS(sim$studyArea, sim$rasterToMatch)) {
     warning(paste0("studyArea and rasterToMatch projections differ.\n",
                    "studyArea will be projected to match rasterToMatch"))
     sim$studyArea <- projectInputs(sim$studyArea, raster::crs(sim$rasterToMatch))
     # sim$studyArea <- spTransform(sim$studyArea, raster::crs(sim$rasterToMatch)) # This didn't work when sim$studyArea is sf
     sim$studyArea <- fixErrors(sim$studyArea)
   }
-
-  if (!compareCRS(sim$studyAreaLarge, sim$rasterToMatchLarge)) {
+  if (!.compareCRS(sim$studyAreaLarge, sim$rasterToMatchLarge)) {
     warning(paste0("studyAreaLarge and rasterToMatchLarge projections differ.\n",
                    "studyAreaLarge will be projected to match rasterToMatchLarge"))
     sim$studyAreaLarge <- projectInputs(sim$studyAreaLarge, raster::crs(sim$rasterToMatchLarge))
