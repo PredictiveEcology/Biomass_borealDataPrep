@@ -559,14 +559,12 @@ createBiomass_coreInputs <- function(sim) {
   # The next function will remove the "zero" class on sim$ecoregionRst
   pixelFateDT <- pixelFate(pixelFateDT, "Removing 0 class in sim$ecoregionRst",
                            sum(as.vector(sim$ecoregionRst[])[!pixelsToRm] == 0, na.rm = TRUE))
-
-  # ELIOT's work arounds is keep them as Raster during transition to reproducible.rasterRead = "terra::rast"
   ecoregionFiles <- Cache(prepEcoregions,
                           ecoregionRst = sim$ecoregionRst,
                           ecoregionLayer = sim$ecoregionLayer,
                           ecoregionLayerField = P(sim)$ecoregionLayerField,
-                          rasterToMatchLarge = as(sim$rasterToMatchLarge, "Raster"),
-                          rstLCCAdj = as(rstLCCAdj, "Raster"),
+                          rasterToMatchLarge = sim$rasterToMatchLarge,
+                          rstLCCAdj = rstLCCAdj,
                           pixelsToRm = pixelsToRm,
                           cacheTags = c(cacheTags, "prepEcoregionFiles"))
 
