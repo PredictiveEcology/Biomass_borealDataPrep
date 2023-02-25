@@ -328,12 +328,17 @@ defineModule(sim, list(
     createsOutput("species", "data.table",
                   desc = paste("a table that of invariant species traits. Will have the same traits as the input `speciesTable` with",
                                "values adjusted where necessary")),
+    createsOutput("speciesLayers", "RasterStack",
+                 desc = paste("cover percentage raster layers by species in Canada species map.",
+                              "Defaults to the Canadian Forestry Service, National Forest Inventory,",
+                              "kNN-derived species cover maps from 2001 using a cover threshold of 10 -",
+                              "see https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata")),
     createsOutput("speciesEcoregion", "data.table",
                   desc = paste("table of spatially-varying species traits (`maxB`, `maxANPP`,",
                                "`establishprob`), defined by species and `ecoregionGroup`)")),
-    createsOutput("studyArea", "SpatialPolygonsDataFrame",
-                  desc = paste("Polygon to use as the study area corrected for any spatial properties' mismatches with respect to",
-                               "`studyAreaLarge`.")),
+    # createsOutput("studyArea", "SpatialPolygonsDataFrame",
+    #               desc = paste("Polygon to use as the study area corrected for any spatial properties' mismatches with respect to",
+    #                            "`studyAreaLarge`.")),
     createsOutput("sufficientLight", "data.frame",
                   desc = paste("Probability of germination for species shade tolerance (in `species`) and shade level`(defined by `minRelativeB`)",
                                "combinations. Table values follow LANDIS-II test traits available at: ",
@@ -804,6 +809,7 @@ createBiomass_coreInputs <- function(sim) {
     uniqueEcoregionGroups = .sortDotsUnderscoreFirst(as.character(unique(cohortDataShort$ecoregionGroup))),
     sumResponse = sum(cohortDataShort$coverPres, cohortDataShort$coverNum, na.rm = TRUE),
     .specialData = cds,
+    .cacheExtra = levels(cohortDataShort$speciesCode), # in case sppEquivCol changes
     useCloud = useCloud,
     cloudFolderID = sim$cloudFolderID,
     # useCache = "overwrite",
@@ -1411,7 +1417,12 @@ Save <- function(sim) {
   ## biomass map
   if (!suppliedElsewhere("rawBiomassMap", sim)) {
     if (P(sim)$dataYear == 2001) {
-      biomassURL <- extractURL("rawBiomassMap")
+      biomassURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
+                           "canada-forests-attributes_attributs-forests-canada/",
+                           "2001-attributes_attributs-2001/",
+                           "NFI_MODIS250m_2001_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif")
+
+      # biomassURL <- extractURL("rawBiomassMap")
     } else {
       if (P(sim)$dataYear == 2011) {
         biomassURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
@@ -1504,13 +1515,20 @@ Save <- function(sim) {
     if (!suppliedElsewhere("firePerimeters", sim)) {
       # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
       # on.exit(options(opt), add = TRUE)
+      sa <- if (is(sim$studyArea, "sf")) {
+        aggregate(sim$studyArea, list(rep(1, nrow(sim$studyArea))),
+                  FUN = function(x) x)
+      } else {
+        aggregate(sim$studyArea)
+      }
       sim$firePerimeters <- Cache(
         prepInputsFireYear(destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
-                           studyArea = aggregate(sim$studyArea),
+                           studyArea = sa,
                            rasterToMatch = sim$rasterToMatchLarge,
                            overwrite = TRUE,
                            url = extractURL("firePerimeters"),
-                           fireField = "YEAR"),
+                           fireField = "YEAR",
+                           omitArgs = "destinationPath"),
         userTags = c(cacheTags, "firePerimeters")
       )
       # options(opt)
@@ -1533,12 +1551,18 @@ Save <- function(sim) {
     ## Ceres Sep 3rd 2022 -- this option caused failure when previously set to FALSE at project level.
     # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
     # on.exit(options(opt), add = TRUE)
+    sa <- if (is(sim$studyAreaLarge, "sf")) {
+      aggregate(sim$studyAreaLarge, list(rep(1, nrow(sim$studyAreaLarge))),
+                FUN = function(x) x)
+    } else {
+      aggregate(sim$studyAreaLarge)
+    }
     httr::with_config(config = httr::config(ssl_verifypeer = P(sim)$.sslVerify), {
       sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
                                ageFun = getOption("reproducible.rasterRead", "raster::raster"), # the backwards compatible default
                                destinationPath = dPath,
                                ageURL = ageURL,
-                               studyArea = aggregate(sim$studyAreaLarge),
+                               studyArea = sa,
                                rasterToMatch = sim$rasterToMatchLarge,
                                filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
                                overwrite = TRUE,
