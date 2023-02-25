@@ -1517,13 +1517,20 @@ Save <- function(sim) {
     if (!suppliedElsewhere("firePerimeters", sim)) {
       # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
       # on.exit(options(opt), add = TRUE)
+      sa <- if (is(sim$studyArea, "sf")) {
+        aggregate(sim$studyArea, list(rep(1, nrow(sim$studyArea))),
+                  FUN = function(x) x)
+      } else {
+        aggregate(sim$studyArea)
+      }
       sim$firePerimeters <- Cache(
         prepInputsFireYear(destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
-                           studyArea = aggregate(sim$studyArea),
+                           studyArea = sa,
                            rasterToMatch = sim$rasterToMatchLarge,
                            overwrite = TRUE,
                            url = extractURL("firePerimeters"),
-                           fireField = "YEAR"),
+                           fireField = "YEAR",
+                           omitArgs = "destinationPath"),
         userTags = c(cacheTags, "firePerimeters")
       )
       # options(opt)
@@ -1546,12 +1553,18 @@ Save <- function(sim) {
     ## Ceres Sep 3rd 2022 -- this option caused failure when previously set to FALSE at project level.
     # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
     # on.exit(options(opt), add = TRUE)
+    sa <- if (is(sim$studyAreaLarge, "sf")) {
+      aggregate(sim$studyAreaLarge, list(rep(1, nrow(sim$studyAreaLarge))),
+                FUN = function(x) x)
+    } else {
+      aggregate(sim$studyAreaLarge)
+    }
     httr::with_config(config = httr::config(ssl_verifypeer = P(sim)$.sslVerify), {
       sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
                                ageFun = getOption("reproducible.rasterRead", "raster::raster"), # the backwards compatible default
                                destinationPath = dPath,
                                ageURL = ageURL,
-                               studyArea = aggregate(sim$studyAreaLarge),
+                               studyArea = sa,
                                rasterToMatch = sim$rasterToMatchLarge,
                                filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
                                overwrite = TRUE,
