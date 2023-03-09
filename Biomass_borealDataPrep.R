@@ -1597,6 +1597,9 @@ Save <- function(sim) {
   P(sim, module = currentModule(sim))$sppEquivCol <- sppOuts$sppEquivCol
   sim$sppColorVect <- sppOuts$sppColorVect
 
+  ## check again
+  paramCheckOtherMods(sim, "sppEquivCol", ifSetButDifferent = "error")
+
   ## Species raster layers -------------------------------------------
   if (!suppliedElsewhere("speciesLayers", sim)) {
     #opt <- options(reproducible.useCache = "overwrite")
