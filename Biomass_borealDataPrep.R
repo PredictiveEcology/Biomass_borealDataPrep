@@ -335,7 +335,7 @@ defineModule(sim, list(
                               "see https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata")),
     createsOutput("speciesEcoregion", "data.table",
                   desc = paste("table of spatially-varying species traits (`maxB`, `maxANPP`,",
-                               "`establishprob`), defined by species and `ecoregionGroup`)")),
+                               "`establishprob`), defined by species and `ecoregionGroup` (i.e. ecolocation)")),
     # createsOutput("studyArea", "sfc",
     #               desc = paste("Polygon to use as the study area corrected for any spatial properties' mismatches with respect to",
     #                            "`studyAreaLarge`.")),
