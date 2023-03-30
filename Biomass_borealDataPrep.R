@@ -124,6 +124,13 @@ defineModule(sim, list(
                           "values from LANDIS-II available at:",
                           paste0("https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/",
                                  "biomass-succession-main-inputs_BSW_Baseline.txt%7E."))),
+    defineParameter("rstLCCURL", "character", NA_character_, NA, NA,
+                    desc = paste("The URL to source rstLCC from. The default, `NA`, will rely on `P(sim)$rstLCCYear` to",
+                                 "choose a land-cover layer from Canada Land Cover Modis product",
+                                 "(http://www.cec.org/north-american-environmental-atlas/land-cover-2010-modis-250m/)")),
+    defineParameter("rstLCCYear", "integer", 2010L, 2005L, 2015L,
+                    desc = paste("The year of the land-cover layer to use when `P(sim)$rstLCCURL` is `NA`. See",
+                                 "`?LandR::prepInputsLCC`")),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by `P(sim)$forestedLCCClasses`?"),
     defineParameter("overrideAgeInFires", "logical", TRUE, NA, NA,
@@ -227,7 +234,7 @@ defineModule(sim, list(
                               "    neighbour class, based on `P(sim)$LCCClassesToReplaceNN`.\n",
                               "The default layer used, if not supplied, is Canada national land classification in 2010.",
                               " The metadata (res, proj, ext, origin) need to match `rasterToMatchLarge`."),
-                 sourceURL = NA), ## uses LandR::prepInputsLCC() defaults
+                 sourceURL = NA), ## uses P(sim)$rstLCCYear and LandR::prepInputsLCC() defaults
     expectsInput("rasterToMatch", "SpatRaster",
                  desc = paste("A raster of the `studyArea` in the same resolution and projection as `rawBiomassMap`.",
                               "This is the scale used for all *outputs* for use in the simulation.",
@@ -1484,8 +1491,17 @@ Save <- function(sim) {
 
   ## Land cover raster ------------------------------------------------
   if (!suppliedElsewhere("rstLCC", sim)) {
+    ## if using default LC source, year must be one of 2005, 2010 or 2015
+    if (is.na(P(sim)$rstLCCURL)) {
+      if (!P(sim)$rstLCCYear %in% c(2005, 2010, 2015)) {
+        stop("If using default 'P(sim)$rstLCCURL', 'P(sim)$rstLCCYear' must be one of:",
+             "\n 2005, 2010 or 2015")
+      }
+    }
+
     sim$rstLCC <- Cache(prepInputsLCC,
-                        year = 2010,
+                        year = P(sim)$rstLCCYear,
+                        url = if (is.na(P(sim)$rstLCCURL)) NULL else P(sim)$rstLCCURL,
                         studyArea = sim$studyAreaLarge, ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
                         rasterToMatch = sim$rasterToMatchLarge,
                         destinationPath = dPath,
