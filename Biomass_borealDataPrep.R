@@ -423,8 +423,7 @@ createBiomass_coreInputs <- function(sim) {
   # Now it fails with terra: Ceres Jul 08 2022
   # opt <- options("reproducible.useTerra" = FALSE)
   # on.exit(options(opt), add = TRUE)
-  if (!.compareRas(sim$standAgeMap, sim$rasterToMatchLarge,
-                   orig = TRUE, res = TRUE)) {
+  if (!.compareRas(sim$standAgeMap, sim$rasterToMatchLarge, res = TRUE)) {
     ## note that extents may never align if the resolution and projection do not allow for it
     ## this is not working, need to use projectRaster
     sim$standAgeMap <- Cache(postProcess,
@@ -434,16 +433,14 @@ createBiomass_coreInputs <- function(sim) {
     attr(sim$standAgeMap, "imputedPixID") <- sim$imputedPixID
   }
 
-  if (!.compareRas(sim$rstLCC, sim$rasterToMatchLarge,
-                   orig = TRUE, res = TRUE)) {
+  if (!.compareRas(sim$rstLCC, sim$rasterToMatchLarge, res = TRUE)) {
     sim$rstLCC <- Cache(postProcess,
                         sim$rstLCC,
                         to = sim$rasterToMatchLarge,
                         overwrite = TRUE)
   }
 
-  if (!.compareRas(sim$firePerimeters, sim$rasterToMatchLarge,
-                   orig = TRUE, res = TRUE)) {
+  if (!.compareRas(sim$firePerimeters, sim$rasterToMatchLarge, res = TRUE)) {
     sim$firePerimeters <- Cache(postProcess,
                                 sim$firePerimeters,
                                 to = sim$rasterToMatchLarge,
@@ -451,8 +448,7 @@ createBiomass_coreInputs <- function(sim) {
   }
   # options(opt)
 
-  if (!.compareRas(sim$speciesLayers, sim$rasterToMatchLarge,
-                   orig = TRUE, res = TRUE)) {
+  if (!.compareRas(sim$speciesLayers, sim$rasterToMatchLarge, res = TRUE)) {
     sim$speciesLayers <- Cache(postProcessTerra,
                                sim$speciesLayers,
                                to = sim$rasterToMatchLarge,
@@ -460,7 +456,7 @@ createBiomass_coreInputs <- function(sim) {
   }
 
   if (!.compareRas(sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC,
-                   sim$speciesLayers, sim$standAgeMap, orig = TRUE, res = TRUE)) {
+                   sim$speciesLayers, sim$standAgeMap, res = TRUE)) {
     stop("sim$rasterToMatchLarge, sim$rawBiomassMap, sim$rstLCC,
                    sim$speciesLayers, sim$standAgeMap properties do not match")
   }
@@ -1284,7 +1280,7 @@ createBiomass_coreInputs <- function(sim) {
 
   ## double check these rasters all match RTM
   .compareRas(sim$biomassMap, sim$ecoregionMap, sim$pixelGroupMap,
-              sim$rasterToMatch, sim$speciesLayers, orig = TRUE, res = TRUE)
+              sim$rasterToMatch, sim$speciesLayers, res = TRUE)
 
   ## rm ecoregions that may not be present in rasterToMatch
   ## make ecoregionGroup a factor and export speciesEcoregion to sim
