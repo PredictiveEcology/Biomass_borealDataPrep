@@ -307,7 +307,7 @@ defineModule(sim, list(
     createsOutput("ecoregion", "data.table",
                   desc = "`ecoregionGroup` look up table"),
     createsOutput("ecoregionMap", "SpatRaster",
-                  desc = "`ecoregionGroup` map that has mapcodes match ecoregion table and `speciesEcoregion` table"),
+                  desc = "`ecoregionGroup` map that has mapcodes match `ecoregion` table and `speciesEcoregion` table"),
     createsOutput("imputedPixID", "integer",
                   desc = paste("A vector of pixel IDs - matching rasterMatch IDs - that suffered data imputation.",
                                "Data imputation may be in age (to match last fire event post 1950s, or 0 cover), biomass (to match",
