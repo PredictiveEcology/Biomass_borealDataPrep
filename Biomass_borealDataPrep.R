@@ -1027,8 +1027,7 @@ createBiomass_coreInputs <- function(sim) {
     options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
     rasterToMatchLargeCropped <- Cache(postProcess,
                                        x = rasterToMatchLarge,
-                                       rasterToMatch = sim$rasterToMatch,
-                                       maskWithRTM = TRUE,
+                                       to = sim$rasterToMatch,
                                        filename2 = NULL,
                                        datatype = assessDataType(rasterToMatchLarge),
                                        #useCache = "overwrite",
@@ -1069,8 +1068,7 @@ createBiomass_coreInputs <- function(sim) {
   # options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
   ecoregionFiles$ecoregionMap <- Cache(postProcess,
                                        x = ecoregionFiles$ecoregionMap,
-                                       rasterToMatch = sim$rasterToMatch,
-                                       maskWithRTM = TRUE,
+                                       to = sim$rasterToMatch,
                                        filename2 = NULL,
                                        userTags = c(cacheTags, "ecoregionMap"),
                                        omitArgs = c("userTags"))
@@ -1266,8 +1264,7 @@ createBiomass_coreInputs <- function(sim) {
   # options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
   sim$speciesLayers <- Cache(postProcess,
                              sim$speciesLayers,
-                             rasterToMatch = sim$rasterToMatch,
-                             maskWithRTM = TRUE,
+                             to = sim$rasterToMatch,
                              filename2 = .suffix(file.path(outputPath(sim), 'speciesLayers.tif'),
                                                  paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
@@ -1453,7 +1450,9 @@ Save <- function(sim) {
         sim$rawBiomassMap <- Cache(postProcess,
                                    sim$rawBiomassMap,
                                    method = "bilinear",
-                                   studyArea = sim$studyAreaLarge,
+                                   cropTo = sim$studyAreaLarge,
+                                   maskTo = sim$studyAreaLarge,
+                                   projectTo = NA,  ## don't project to SA
                                    overwrite = TRUE)
         # options(opt)
       }
