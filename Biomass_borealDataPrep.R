@@ -20,7 +20,7 @@ defineModule(sim, list(
                   # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
                   ## Excluded because loading is not necessary (just installation)
                   "PredictiveEcology/reproducible@development (>= 1.2.6.9017)",
-                  "PredictiveEcology/LandR@terra-migration (>= 1.1.0.9027)",
+                  "CeresBarros/LandR@deprecatedArgs",
                   "PredictiveEcology/SpaDES.core@development (>= 1.0.10.9005)",
                   "PredictiveEcology/SpaDES.project@transition", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
@@ -1495,11 +1495,15 @@ Save <- function(sim) {
       }
     }
 
+    ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
     sim$rstLCC <- Cache(prepInputsLCC,
                         year = P(sim)$rstLCCYear,
                         url = if (is.na(P(sim)$rstLCCURL)) NULL else P(sim)$rstLCCURL,
-                        studyArea = sim$studyAreaLarge, ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                        rasterToMatch = sim$rasterToMatchLarge,
+                        # studyArea = sim$studyAreaLarge,
+                        # rasterToMatch = sim$rasterToMatchLarge,
+                        cropTo = sim$rasterToMatchLarge,
+                        projectTo = sim$rasterToMatchLarge,
+                        maskTo = sim$studyAreaLarge,
                         destinationPath = dPath,
                         filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName)),
                         overwrite = TRUE,
