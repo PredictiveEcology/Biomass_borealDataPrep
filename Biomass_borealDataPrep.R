@@ -1511,6 +1511,7 @@ Save <- function(sim) {
 
   ## Ecodistrict ------------------------------------------------
   if (!suppliedElsewhere("ecoregionLayer", sim)) {
+    ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
     sim$ecoregionLayer <- Cache(prepInputs,
                                 targetFile = "ecodistricts.shp",
                                 archive = asPath("ecodistrict_shp.zip"),
@@ -1518,10 +1519,9 @@ Save <- function(sim) {
                                 alsoExtract = "similar",
                                 destinationPath = dPath,
                                 filename2 = NULL,
-                                studyArea = sim$studyAreaLarge,   ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
+                                to = sim$studyAreaLarge,
                                 fun = if (grepl("raster::", getOption("reproducible.rasterRead"))) "raster::shapefile" else "terra::vect",
                                 overwrite = TRUE,
-                                useSAcrs = TRUE, # this is required to make ecoZone be in CRS of studyArea
                                 userTags = c("prepInputsEcoDistrict_SA", currentModule(sim), cacheTags))
   }
 
