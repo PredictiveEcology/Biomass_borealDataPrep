@@ -1436,9 +1436,8 @@ Save <- function(sim) {
     sim$rawBiomassMap <- prepRawBiomassMap(url = biomassURL,
                                            studyAreaName = P(sim)$.studyAreaName,
                                            cacheTags = cacheTags,
-                                           cropTo = sim$studyAreaLarge,
-                                           projectTo = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else NA,   ## don't project to SA
-                                           maskTo = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else sim$studyAreaLarge,
+                                           to = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else sim$studyAreaLarge,
+                                           projectTo = if (!needRTML || !needRTM) NULL else NA, ## don't project to SA if RTMs not present
                                            destinationPath = dPath)
   } else {
     if (!is.null(sim$rawBiomassMap)) {
