@@ -20,7 +20,7 @@ defineModule(sim, list(
                   # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
                   ## Excluded because loading is not necessary (just installation)
                   "PredictiveEcology/reproducible@development (>= 1.2.6.9017)",
-                  "CeresBarros/LandR@deprecatedArgs",
+                  "CeresBarros/LandR@deprecatedArgs (HEAD)",
                   "PredictiveEcology/SpaDES.core@development (>= 1.0.10.9005)",
                   "PredictiveEcology/SpaDES.project@transition", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
