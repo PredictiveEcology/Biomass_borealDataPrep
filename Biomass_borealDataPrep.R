@@ -1450,8 +1450,7 @@ Save <- function(sim) {
         sim$rawBiomassMap <- Cache(postProcess,
                                    sim$rawBiomassMap,
                                    method = "bilinear",
-                                   cropTo = sim$studyAreaLarge,
-                                   maskTo = sim$studyAreaLarge,
+                                   to = sim$studyAreaLarge,
                                    projectTo = NA,  ## don't project to SA
                                    overwrite = TRUE)
         # options(opt)
