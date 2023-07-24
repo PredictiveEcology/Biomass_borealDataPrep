@@ -1028,7 +1028,7 @@ createBiomass_coreInputs <- function(sim) {
     rasterToMatchLargeCropped <- Cache(postProcess,
                                        x = rasterToMatchLarge,
                                        to = sim$rasterToMatch,
-                                       filename2 = NULL,
+                                       writeTo = NULL,
                                        datatype = assessDataType(rasterToMatchLarge),
                                        #useCache = "overwrite",
                                        userTags = c(cacheTags, "rasterToMatchLargeCropped"),
@@ -1069,7 +1069,7 @@ createBiomass_coreInputs <- function(sim) {
   ecoregionFiles$ecoregionMap <- Cache(postProcess,
                                        x = ecoregionFiles$ecoregionMap,
                                        to = sim$rasterToMatch,
-                                       filename2 = NULL,
+                                       writeTo = NULL,
                                        userTags = c(cacheTags, "ecoregionMap"),
                                        omitArgs = c("userTags"))
   # options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
@@ -1265,13 +1265,13 @@ createBiomass_coreInputs <- function(sim) {
   sim$speciesLayers <- Cache(postProcess,
                              sim$speciesLayers,
                              to = sim$rasterToMatch,
-                             filename2 = .suffix(file.path(outputPath(sim), 'speciesLayers.tif'),
+                             writeTo = .suffix(file.path(outputPath(sim), 'speciesLayers.tif'),
                                                  paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
                              userTags = c(cacheTags, "speciesLayersRTM"),
-                             quick = "filename2", # don't digest the file content, just filename
+                             quick = "writeTo", # don't digest the file content, just filename
                              # Cache reads file content if it is a file, so it is
-                             #    reading content of filename2, which is an output
+                             #    reading content of writeTo, which is an output
                              omitArgs = c("userTags"))
   # options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
 
@@ -1502,10 +1502,10 @@ Save <- function(sim) {
                         projectTo = sim$rasterToMatchLarge,
                         maskTo = sim$studyAreaLarge,
                         destinationPath = dPath,
-                        filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName)),
+                        writeTo = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName)),
                         overwrite = TRUE,
                         userTags = c("rstLCC", currentModule(sim), P(sim)$.studyAreaName),
-                        omitArgs = c("destinationPath", "userTags", "filename2", "overwrite"))
+                        omitArgs = c("destinationPath", "userTags", "writeTo", "overwrite"))
   }
 
   ## Ecodistrict ------------------------------------------------
@@ -1517,7 +1517,7 @@ Save <- function(sim) {
                                 url = extractURL("ecoregionLayer", sim),
                                 alsoExtract = "similar",
                                 destinationPath = dPath,
-                                filename2 = NULL,
+                                writeTo = NULL,
                                 to = sim$studyAreaLarge,
                                 fun = if (grepl("raster::", getOption("reproducible.rasterRead"))) "raster::shapefile" else "terra::vect",
                                 overwrite = TRUE,
@@ -1577,7 +1577,7 @@ Save <- function(sim) {
                                ageURL = ageURL,
                                studyArea = sa,
                                rasterToMatch = sim$rasterToMatchLarge,
-                               filename2 = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
+                               writeTo = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
                                overwrite = TRUE,
                                useCache = FALSE, ### for now due to attributes being lost on retrieval
                                firePerimeters = if (P(sim)$overrideAgeInFires) sim$firePerimeters else NULL,
