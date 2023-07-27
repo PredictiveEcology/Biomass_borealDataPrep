@@ -109,8 +109,7 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
   cd[, `:=`(pixelGroup = as.integer(factor(pixelIndex)))]
   pixelGroupMap <- pixelGroupMapGenerate(cd)
   # Maps
-  studyArea <- as(extent(pixelGroupMap), 'SpatialPolygons')
-  crs(studyArea) <- crs(pixelGroupMap)
+  studyArea <- vect(ext(pixelGroupMap), crs(pixelGroupMap))
   rasterToMatch <- pixelGroupMap
   ecoregionMap <- pixelGroupMap
   levels(ecoregionMap) <- data.frame(ID = 1:max(cd$pixelGroup, na.rm = TRUE),
