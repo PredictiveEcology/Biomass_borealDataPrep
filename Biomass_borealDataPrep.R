@@ -1436,13 +1436,14 @@ Save <- function(sim) {
     sim$rawBiomassMap <- prepRawBiomassMap(url = biomassURL,
                                            studyAreaName = P(sim)$.studyAreaName,
                                            cacheTags = cacheTags,
-                                           to = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else sim$studyAreaLarge,
+                                           cropTo = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else sim$studyAreaLarge,
+                                           maskTo = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else sim$studyAreaLarge,
                                            projectTo = if (!needRTML || !needRTM) NULL else NA, ## don't project to SA if RTMs not present
                                            destinationPath = dPath)
   } else {
     if (!is.null(sim$rawBiomassMap)) {
       ## TODO: compareRaster will need to be replaced.
-      if (!compareRaster(sim$rawBiomassMap, sim$studyAreaLarge, stopiffalse = FALSE)) {
+      if (!.compareCRS(sim$rawBiomassMap, sim$studyAreaLarge)) {
         ## note that extents may never align if the resolution and projection do not allow for it
         # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
         # on.exit(options(opt), add = TRUE)
