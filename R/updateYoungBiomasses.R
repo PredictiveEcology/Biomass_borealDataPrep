@@ -211,7 +211,7 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
 }
 
 pixelGroupMapGenerate <- function(cohortData) {
-  pixelGroupMap <- raster(res = c(1, 1))
+  pixelGroupMap <- rast(res = c(1, 1))
   nrow(pixelGroupMap) <- round(sqrt(max(cohortData$pixelGroup)), 0)
   ncol(pixelGroupMap) <- round(sqrt(max(cohortData$pixelGroup)), 0) + 1
   vals <- c(1:max(cohortData$pixelGroup), rep(NA, times = ncell(pixelGroupMap) - max(cohortData$pixelGroup)))
