@@ -883,7 +883,6 @@ createBiomass_coreInputs <- function(sim) {
         .specialData = specDat,
         useCloud = useCloud,
         # useCache = "overwrite",
-        useCache = FALSE, ## TODO: cache is failing with data.table join error
         cloudFolderID = sim$cloudFolderID,
         # showSimilar = getOption("reproducible.showSimilar", FALSE),
         userTags = c(modelBiomassTags,
