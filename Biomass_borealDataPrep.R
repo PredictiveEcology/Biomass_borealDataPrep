@@ -1129,10 +1129,17 @@ createBiomass_coreInputs <- function(sim) {
 
           message("Running 'spinup' on pixels that are within fire polygons and whose age < ", maxAgeHighQualityData)
           young <- Cache(spinUpPartial,
-                         youngNoAgeEqZero, speciesEcoregion, maxAgeHighQualityData,
-                         sim$minRelativeB, sim$species,
-                         sim$sppEquiv, P(sim)$sppEquivCol, sim$sppColorsVect,
-                         paths(sim), currentModule(sim), modules(sim),
+                         pixelCohortData = youngNoAgeEqZero,
+                         speciesEcoregion = speciesEcoregion,
+                         maxAge = maxAgeHighQualityData,
+                         minRelativeB = sim$minRelativeB,
+                         species = sim$species,
+                         sppEquiv = sim$sppEquiv,
+                         sppEquivCol = P(sim)$sppEquivCol,
+                         sppColorsVect = sim$sppColorsVect,
+                         paths = paths(sim),
+                         currentModule = currentModule(sim),
+                         modules = modules(sim),
                          userTags = c(cacheTags, "spinUpYoungBiomasses"),
                          omitArgs = c("userTags"))
 
