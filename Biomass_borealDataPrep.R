@@ -1601,14 +1601,18 @@ Save <- function(sim) {
   LandR::assertStandAgeMapAttr(sim$standAgeMap)
   sim$imputedPixID <- attr(sim$standAgeMap, "imputedPixID")
 
+  ## check parameter consistency across modules
+  paramCheckOtherMods(sim, "dataYear", ifSetButDifferent = "warning")
+  paramCheckOtherMods(sim, "minCoverThreshold", ifSetButDifferent = "warning")
+
+  paramCheckOtherMods(sim, "sppEquivCol", ifSetButDifferent = "error")
+  paramCheckOtherMods(sim, "vegLeadingProportion", ifSetButDifferent = "error")
+
   ## Species equivalencies table and associated columns ----------------------------
   ## make sppEquiv table and associated columns, vectors
   ## do not use suppliedElsewhere here as we need the tables to exist (or not)
   ## already (rather than potentially being supplied by a downstream module)
   ## the function checks whether the tables exist internally.
-  ## check parameter consistency across modules
-  paramCheckOtherMods(sim, "sppEquivCol", ifSetButDifferent = "error")
-  paramCheckOtherMods(sim, "vegLeadingProportion", ifSetButDifferent = "error")
 
   sppOuts <- sppHarmonize(sim$sppEquiv, sim$sppNameVector, P(sim)$sppEquivCol,
                           sim$sppColorVect, P(sim)$vegLeadingProportion, sim$studyAreaLarge)
