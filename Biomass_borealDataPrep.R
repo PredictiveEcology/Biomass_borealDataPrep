@@ -292,10 +292,11 @@ defineModule(sim, list(
                                     "2001-attributes_attributs-2001/",
                                     "NFI_MODIS250m_2001_kNN_Structure_Stand_Age_v1.tif")),
     expectsInput("studyArea", "sfc",
-                 desc = paste("Polygon to use as the study area. Must be supplied by the user.")),
+                 desc = paste("Polygon to use as the study area. Must be supplied by the user. Can also be a SpatVector.")),
     expectsInput("studyAreaLarge", "sfc",
                  desc = paste("multipolygon (potentially larger than `studyArea`) used for parameter estimation,",
-                              "Must be supplied by the user. If larger than `studyArea`, it must fully contain it."))
+                              "Must be supplied by the user. If larger than `studyArea`, it must fully contain it.",
+                              "Can also be a SpatVector."))
   ),
   outputObjects = bindrows(
     createsOutput("biomassMap", "SpatRaster",
