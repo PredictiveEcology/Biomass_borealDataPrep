@@ -24,3 +24,5 @@ Thumbs.db
  ## !! Module data should be gitignored in the respective module's data dir !!
 
 Biomass_coreSubModule
+
+Biomass_borealDataPrep2.Rmd
