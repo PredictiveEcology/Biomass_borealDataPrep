@@ -52,15 +52,15 @@ Require(c("SpaDES.core", "git2r", "dplyr", "data.table", "kableExtra",
         upgrade = FALSE, install = FALSE)
 ```
 
-#### Authors:
-
-`r paste(as.character(moduleMetadata(module = 'Biomass_borealDataPrep', path = '..')$authors), sep = ', ')`
-<!-- ideally separate authors with new lines, '\n' not working -->
-
 :::{.rmdwarning}
 This documentation is work in progress.
 Please report any discrepancies or omissions at <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>.
 :::
+
+#### Authors:
+
+`r paste(as.character(moduleMetadata(module = 'Biomass_borealDataPrep', path = '..')$authors), sep = ', ')`
+<!-- ideally separate authors with new lines, '\n' not working -->
 
 ## Module Overview
 
