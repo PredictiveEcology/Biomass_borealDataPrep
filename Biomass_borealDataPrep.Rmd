@@ -114,7 +114,7 @@ cat(paste0("[![Issues-badge](", badgePath, ")](", badgeURL,")"))
 
 #### Authors:
 
-`r paste(as.character(moduleMetadata(module = 'Biomass_borealDataPrep', path = '..')$authors), sep = ', ')`
+`r paste(as.character(SpaDES.core::moduleMetadata(module = 'Biomass_borealDataPrep', path = '..')$authors), sep = ', ')`
 <!-- ideally separate authors with new lines, '\n' not working -->
 
 **This documentation is a work in progress. Potential discrepancies and
@@ -351,7 +351,7 @@ cover (`cover`) is looked for and solved in the following order:
     `P(sim)$imputeBadAgeModel`, which defaults to:
 
 ```{r imputeBadAgeModel, echo = FALSE, eval = TRUE, message = FALSE, tidy = TRUE, tidy.opts = list(width.cutoff = 60)}
-df_params <- moduleParams("Biomass_borealDataPrep", "..")
+df_params <- SpaDES.core::moduleParams("Biomass_borealDataPrep", "..")
 df_params[df_params$paramName == "imputeBadAgeModel", "default"]
 ```
 
@@ -803,7 +803,7 @@ and *Biomass_core* manual for further detail about these columns.
 \blandscape
 
 ```{r moduleInputs2-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, message = FALSE, results = 'asis'}
-df_inputs <- moduleInputs("Biomass_borealDataPrep", "..")
+df_inputs <- SpaDES.core::moduleInputs("Biomass_borealDataPrep", "..")
 caption <- "List of (ref:Biomass-borealDataPrep) input objects and their description."
 
 ## pander's hyphenation doesn't work with URLs and big/strange words (like obj names). split manually
@@ -873,7 +873,7 @@ the model used to refit `deciduousCoverDiscount` in the supplied
 \blandscape
 
 ```{r moduleParams2-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, message = FALSE, results = 'asis'}
-df_params <- moduleParams("Biomass_borealDataPrep", "..")
+df_params <- SpaDES.core::moduleParams("Biomass_borealDataPrep", "..")
 caption <- "List of (ref:Biomass-borealDataPrep) parameters and their description."
 
 panble(df_params, caption, landscape = TRUE,
@@ -925,7 +925,7 @@ The module produces the following outputs (Table
 \blandscape
 
 ```{r moduleOutputs-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, message = FALSE, results = 'asis'}
-df_outputs <- moduleOutputs("Biomass_borealDataPrep", "..")
+df_outputs <- SpaDES.core::moduleOutputs("Biomass_borealDataPrep", "..")
 caption <- "List of (ref:Biomass-borealDataPrep) output objects and their description."
 
 panble(df_outputs, caption, 
