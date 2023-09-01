@@ -52,9 +52,9 @@ pkgResults <- Require(
   upgrade = FALSE,
   install = FALSE
 )
-message(pkgResults)
+message(paste(basename(names(pkgResults)), pkgResults, sep = ": ", collapse = "\n"))
 
-stopifnot(all(isTRUE(pkgResults)))
+stopifnot(isTRUE(all(pkgResults)))
 ```
 
 :::{.rmdwarning}
