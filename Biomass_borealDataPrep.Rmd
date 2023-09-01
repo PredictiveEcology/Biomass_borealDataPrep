@@ -47,9 +47,14 @@ if (!file.exists("citations/ecology-letters.csl")) {
 
 library(Require)
 
-Require(c("SpaDES.core", "git2r", "dplyr", "data.table", "kableExtra",
-          "pander", "PredictiveEcology/SpaDES.docs"),
-        upgrade = FALSE, install = FALSE)
+pkgResults <- Require(
+  c("SpaDES.core", "git2r", "dplyr", "data.table", "kableExtra", "pander", "PredictiveEcology/SpaDES.docs"),
+  upgrade = FALSE,
+  install = FALSE
+)
+message(pkgResults)
+
+stopifnot(all(isTRUE(pkgResults)))
 ```
 
 :::{.rmdwarning}
