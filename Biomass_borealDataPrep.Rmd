@@ -687,7 +687,7 @@ SpaDES.docs::panble(sppEquiv2, caption,
                                       "emphasize.italics.cols" = which(names(sppEquiv2) %in% c("Species", "Modelled as"))),
                     column_specArgs = list("column" = which(names(sppEquiv2) %in% c("Species", "Modelled as")),
                                            "italic" = TRUE),
-                    kable_stylingArgs = list(full_width = TRUE))
+                    kable_stylingArgs = list(full_width = FALSE))
 ```
 
 When groups contain species with different (invariant) trait values, the minimum
@@ -764,7 +764,7 @@ if (knitr::is_latex_output()) {
 SpaDES.docs::panble(df_inputs, landscape = TRUE, caption, 
                     panderArgs = list("justify" = "left", "split.tables" = Inf, 
                                       "keep.line.breaks" = TRUE),
-                    kable_stylingArgs = list(full_width = TRUE))
+                    kable_stylingArgs = list(full_width = FALSE))
 ```
 
 \elandscape
@@ -826,7 +826,7 @@ caption <- "List of (ref:Biomass-borealDataPrep) parameters and their descriptio
 SpaDES.docs::panble(df_params, caption, landscape = TRUE,
                     panderArgs = list("justify" = "left", "digits" = 3,
                                       "split.cells" = c(15,15, 5, 5, 5, 40), "split.tables" = Inf),
-                    kable_stylingArgs = list(full_width = TRUE))
+                    kable_stylingArgs = list(full_width = FALSE))
 ```
 
 \elandscape
@@ -877,7 +877,7 @@ caption <- "List of (ref:Biomass-borealDataPrep) output objects and their descri
 
 SpaDES.docs::panble(df_outputs, caption,
                     panderArgs = list("justify" = "left", "digits" = 3, "split.cells" = c(15, 15, 40), "split.tables" = Inf),
-                    kable_stylingArgs = list(full_width = TRUE))
+                    kable_stylingArgs = list(full_width = FALSE))
 ```
 
 \elandscape
