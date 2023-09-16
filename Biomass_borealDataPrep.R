@@ -804,11 +804,6 @@ createBiomass_coreInputs <- function(sim) {
   message(blue("Estimating Species Establishment Probability using P(sim)$coverModel, which is"))
   message(magenta(paste0(format(P(sim)$coverModel, appendLF = FALSE), collapse = "")))
 
-  # for backwards compatibility -- change from parameter to object
-  if (is.null(sim$cloudFolderID))
-    if (!is.null(P(sim)$cloudFolderID))
-      sim$cloudFolderID <- P(sim)$cloudFolderID
-
   useCloud <- if (!is.null(sim$cloudFolderID)) {
     (isTRUE(getOption("reproducible.useCache", FALSE)) && P(sim)$useCloudCacheForStats)
   } else {
@@ -1371,6 +1366,11 @@ Save <- function(sim) {
   objExists <- !unlist(lapply(objNames, function(x) is.null(sim[[x]])))
   names(objExists) <- objNames
 
+  # for backwards compatibility -- change from parameter to object
+  if (!suppliedElsewhere("cloudFolderID", sim)) {
+    if (!is.null(P(sim)$cloudFolderID))
+      sim$cloudFolderID <- P(sim)$cloudFolderID
+  }
   ## Study area(s) ------------------------------------------------
   if (!suppliedElsewhere("studyArea", sim)) {
     stop("Please provide a 'studyArea' polygon")
