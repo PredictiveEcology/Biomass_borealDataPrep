@@ -1437,50 +1437,50 @@ Save <- function(sim) {
     }
   }
 
-  if (needRTML || needRTM) {
-    ## biomass map
-    if (!suppliedElsewhere("rawBiomassMap", sim)) {
-      if (P(sim)$dataYear == 2001) {
-        biomassURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
-                             "canada-forests-attributes_attributs-forests-canada/",
-                             "2001-attributes_attributs-2001/",
-                             "NFI_MODIS250m_2001_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif")
+  ## biomass map
+  if (!suppliedElsewhere("rawBiomassMap", sim)) {
+    if (P(sim)$dataYear == 2001) {
+      biomassURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
+                           "canada-forests-attributes_attributs-forests-canada/",
+                           "2001-attributes_attributs-2001/",
+                           "NFI_MODIS250m_2001_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif")
 
-        # biomassURL <- extractURL("rawBiomassMap")
-      } else {
-        if (P(sim)$dataYear == 2011) {
-          biomassURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
-                               "canada-forests-attributes_attributs-forests-canada/2011-attributes_attributs-2011/",
-                               "NFI_MODIS250m_2011_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif")
-        } else {
-          stop("'P(sim)$dataYear' must be 2001 OR 2011")
-        }
-      }
-
-      sim$rawBiomassMap <- prepRawBiomassMap(url = biomassURL,
-                                             studyAreaName = P(sim)$.studyAreaName,
-                                             cacheTags = cacheTags,
-                                             cropTo = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else sim$studyAreaLarge,
-                                             maskTo = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else sim$studyAreaLarge,
-                                             projectTo = if (!needRTML || !needRTM) NULL else NA, ## don't project to SA if RTMs not present
-                                             destinationPath = dPath)
+      # biomassURL <- extractURL("rawBiomassMap")
     } else {
-      if (!is.null(sim$rawBiomassMap)) {
-        if (!.compareCRS(sim$rawBiomassMap, sim$studyAreaLarge)) {
-          ## note that extents may never align if the resolution and projection do not allow for it
-          # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
-          # on.exit(options(opt), add = TRUE)
-          sim$rawBiomassMap <- Cache(postProcess,
-                                     sim$rawBiomassMap,
-                                     method = "bilinear",
-                                     to = sim$studyAreaLarge,
-                                     projectTo = NA,  ## don't project to SA
-                                     overwrite = TRUE)
-          # options(opt)
-        }
+      if (P(sim)$dataYear == 2011) {
+        biomassURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
+                             "canada-forests-attributes_attributs-forests-canada/2011-attributes_attributs-2011/",
+                             "NFI_MODIS250m_2011_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif")
+      } else {
+        stop("'P(sim)$dataYear' must be 2001 OR 2011")
       }
     }
 
+    sim$rawBiomassMap <- prepRawBiomassMap(url = biomassURL,
+                                           studyAreaName = P(sim)$.studyAreaName,
+                                           cacheTags = cacheTags,
+                                           cropTo = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else sim$studyAreaLarge,
+                                           maskTo = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else sim$studyAreaLarge,
+                                           projectTo = if (!needRTML || !needRTM) NULL else NA, ## don't project to SA if RTMs not present
+                                           destinationPath = dPath)
+  } else {
+    if (!is.null(sim$rawBiomassMap)) {
+      if (!.compareCRS(sim$rawBiomassMap, sim$studyAreaLarge)) {
+        ## note that extents may never align if the resolution and projection do not allow for it
+        # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+        # on.exit(options(opt), add = TRUE)
+        sim$rawBiomassMap <- Cache(postProcess,
+                                   sim$rawBiomassMap,
+                                   method = "bilinear",
+                                   to = sim$studyAreaLarge,
+                                   projectTo = NA,  ## don't project to SA
+                                   overwrite = TRUE)
+        # options(opt)
+      }
+    }
+  }
+
+  if (needRTML || needRTM) {
     RTMs <- prepRasterToMatch(studyArea = sim$studyArea,
                               studyAreaLarge = sim$studyAreaLarge,
                               rasterToMatch = if (needRTM) NULL else sim$rasterToMatch,
