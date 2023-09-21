@@ -1048,7 +1048,7 @@ createBiomass_coreInputs <- function(sim) {
 
     assertthat::assert_that(sum(is.na(as.vector(values(rasterToMatchLargeCropped)))) < ncell(rasterToMatchLargeCropped)) ## i.e., not all NA
 
-    if (!.compareRas(rasterToMatchLargeCropped, sim$rasterToMatch, orig = TRUE))
+    if (!.compareRas(rasterToMatchLargeCropped, sim$rasterToMatch))
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.",
            "Please debug Biomass_borealDataPrep::createBiomass_coreInputs().")
 
