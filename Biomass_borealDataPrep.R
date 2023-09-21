@@ -1473,7 +1473,9 @@ Save <- function(sim) {
         # options(opt)
       }
     }
+  }
 
+  if (needRTML || needRTM) {
     RTMs <- prepRasterToMatch(studyArea = sim$studyArea,
                               studyAreaLarge = sim$studyAreaLarge,
                               rasterToMatch = if (needRTM) NULL else sim$rasterToMatch,
