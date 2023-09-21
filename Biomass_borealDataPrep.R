@@ -1279,10 +1279,10 @@ createBiomass_coreInputs <- function(sim) {
 
   useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
   # options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
-  sim$speciesLayers <- Cache(postProcess,
+  sim$speciesLayers <- Cache(postProcessTo,
                              sim$speciesLayers,
                              to = sim$rasterToMatch,
-                             writeTo = .suffix(file.path(outputPath(sim), 'speciesLayers.tif'),
+                             writeTo = .suffix(file.path(outputPath(sim), "speciesLayers.tif"),
                                                paste0("_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
                              userTags = c(cacheTags, "speciesLayersRTM"),
