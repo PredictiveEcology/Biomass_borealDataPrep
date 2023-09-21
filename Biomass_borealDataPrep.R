@@ -1326,8 +1326,6 @@ createBiomass_coreInputs <- function(sim) {
 }
 
 plottingFn <- function(sim) {
-  checkPath(file.path(outputPath(sim), "figures"), create = TRUE)
-
   # Step 1 make data
   seStacks <- Cache(LandR:::speciesEcoregionStack,
                     ecoregionMap = sim$ecoregionMap,
@@ -1343,8 +1341,7 @@ plottingFn <- function(sim) {
   Map(stk = seStacks, SEtype = names(seStacks),
       function(stk, SEtype) {
         Plots(stk, fn = plotFn_speciesEcoregion, SEtype = SEtype,
-              filename = file.path(outputPath(sim), "figures",
-                                   paste0("speciesEcoregion", "_", time(sim), "_", SEtype)))
+              filename = file.path(figurePath(sim), paste0("speciesEcoregion", "_", time(sim), "_", SEtype)))
       }
   )
 }
@@ -1679,4 +1676,12 @@ Save <- function(sim) {
   }
 
   return(invisible(sim))
+}
+
+## older versions of SpaDES.core don't have this function
+if (packageVersion("SpaDES.core") < "2.0.2.9001") {
+  figurePath <- function(sim) {
+    file.path(outputPath(sim), "figures", current(sim)[["moduleName"]]) |>
+      checkPath(create = TRUE)
+  }
 }
