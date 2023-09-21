@@ -1047,7 +1047,7 @@ createBiomass_coreInputs <- function(sim) {
 
     assertthat::assert_that(sum(is.na(as.vector(values(rasterToMatchLargeCropped)))) < ncell(rasterToMatchLargeCropped)) ## i.e., not all NA
 
-    if (!.compareRas(rasterToMatchLargeCropped, sim$rasterToMatch, orig = TRUE))
+    if (!.compareRas(rasterToMatchLargeCropped, sim$rasterToMatch))
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.",
            "Please debug Biomass_borealDataPrep::createBiomass_coreInputs().")
 
@@ -1057,8 +1057,8 @@ createBiomass_coreInputs <- function(sim) {
 
     ## re-do pixelIndex (it now needs to match rasterToMatch)
     newPixelIndexDT <- data.table(pixelIndex = as.vector(values(rasterToMatchLargeCropped)),
-                                  newPixelIndex = as.integer(1:ncell(rasterToMatchLargeCropped))) %>%
-      na.omit(.)
+                                  newPixelIndex = as.integer(1:ncell(rasterToMatchLargeCropped))) |>
+      na.omit()
 
     pixelCohortData <- newPixelIndexDT[pixelCohortData, on = "pixelIndex"]
     pixelCohortData[, pixelIndex := NULL]
@@ -1406,11 +1406,11 @@ Save <- function(sim) {
 
   #this is necessary if studyArea and studyAreaLarge are multipolygon objects
   if (nrow(studyArea) > 1) {
-    studyArea <- st_buffer(studyArea, 0) %>% st_union()
+    studyArea <- st_buffer(studyArea, 0) |> st_union()
   }
 
   if (nrow(studyAreaLarge) > 1) {
-    studyAreaLarge <- st_buffer(studyAreaLarge, 0) %>% st_union()
+    studyAreaLarge <- st_buffer(studyAreaLarge, 0) |> st_union()
   }
 
   if (length(st_within(studyArea, studyAreaLarge))[[1]] == 0)
