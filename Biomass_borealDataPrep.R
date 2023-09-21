@@ -477,9 +477,7 @@ createBiomass_coreInputs <- function(sim) {
                    sim$speciesLayers, sim$standAgeMap properties do not match")
   }
 
-  ################################################################
-  ## species traits inputs
-  ################################################################
+  ## species traits inputs ---------------------------------------
   message(blue("Prepare 'species' table, i.e., species level traits", Sys.time()))
 
   sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
@@ -487,7 +485,7 @@ createBiomass_coreInputs <- function(sim) {
                                   areas = P(sim)$speciesTableAreas,
                                   sppEquivCol = P(sim)$sppEquivCol)
 
-  ### override species table values ##############################
+  ## override species table values -------------------------------
   if (!is.null(P(sim)$speciesUpdateFunction)) {
     for (fn in P(sim)$speciesUpdateFunction) {
       if (is(fn, "call")) {
@@ -549,9 +547,7 @@ createBiomass_coreInputs <- function(sim) {
                                     X4 = c(rep(0, 4), 1),
                                     X5 = c(rep(0, 4), 1))
 
-  ################################################################
-  ## initialEcoregionMap
-  ################################################################
+  ## initialEcoregionMap -----------------------------------------
   if (!.compareCRS(sim$studyArea, sim$rasterToMatch)) {
     warning(paste0("studyArea and rasterToMatch projections differ.\n",
                    "studyArea will be projected to match rasterToMatch"))
@@ -592,9 +588,7 @@ createBiomass_coreInputs <- function(sim) {
                           pixelsToRm = pixelsToRm,
                           cacheTags = c(cacheTags, "prepEcoregionFiles"))
 
-  ################################################################
-  ## put together pixelTable object
-  ################################################################
+  ## create pixelTable object ------------------------------------
   #  Round age to pixelGroupAgeClass
   # Internal data.table is changed; using memoise here causes the internal changes to
   #   come out to the pixelTable, which is not desired. Turn off memoising for one step
@@ -613,9 +607,7 @@ createBiomass_coreInputs <- function(sim) {
                       userTags = c(cacheTags, "pixelTable"),
                       omitArgs = c("userTags"))
 
-  #######################################################
-  # Make the initial pixelCohortData table
-  #######################################################
+  ## create initial pixelCohortData table ---------------
   coverColNames <- paste0("cover.", sim$species$species)
   pixelCohortData <- Cache(makeAndCleanInitialCohortData, pixelTable,
                            sppColumns = coverColNames,
@@ -633,10 +625,8 @@ createBiomass_coreInputs <- function(sim) {
                            tail(pixelFateDT$runningPixelTotal, 1) -
                              NROW(unique(pixelCohortData$pixelIndex)))
 
-  #######################################################
-  # Partition totalBiomass into individual species B, via estimating how %cover and %biomass
-  #   are related
-  #######################################################
+  ## partition totalBiomass into individual species B -----------------------------------------
+  ## via estimating how %cover and %biomass are related
   message(blue("Partitioning totalBiomass per pixel into cohort B as:"))
   if (isTRUE(P(sim)$fitDeciduousCoverDiscount)) {
     message(magenta(paste0(format(P(sim)$coverPctToBiomassPctModel, appendLF = FALSE))))
@@ -702,24 +692,22 @@ createBiomass_coreInputs <- function(sim) {
         P(sim)$pixelGroupBiomassClass)
   set(pixelCohortData, NULL, "cover", asInteger(pixelCohortData$cover))
 
-  #######################################################
-  #replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*.
-  # 1. We need
-  #to have a spatial estimate of maxBiomass everywhere there is forest; we can't
-  #have gaps The pixels that are 34, 35 or 36 are places for which we don't want
-  #maxBiomass associated with their LCC ... i.e., we don't want a maximum
-  #biomass associated with 34 and 35 because those classes are transient. They
-  #will transition to another class before they arrive at a tree maximum
-  #biomass. So, 34 and 35 should not have estimates of maxBiomass 36 is urban.
-  #So, we SHOULD remove these pixels from our studies, except if we are doing
-  #NRV studies (e.g., LandWeb wanted to replace 36 with some forest class) We
-  #decided that we should not use 34 or 35 in our models of Biomass because the
-  #only objective of these models is to estimate maxBiomass, so don't use 34 or
-  #35 To associate the pixels that were 34 or 35 with a maxBiomass , we need to
-  #give them a "forest class" that they might "become" after they grow out of
-  #being 34 or 35. The pixels where there were 34 and 35 nevertheless have
-  #Biomass estimates in them from KNN and other sources. We leave those as is.
-  #######################################################
+  ## replace unwanted LCC classes ----------------------------------------------------------------
+  ## replace 34 and 35 and 36 values -- burns and cities -- to a neighbour class *that exists*.
+  ## 1. We need to have a spatial estimate of maxBiomass everywhere there is forest;
+  ## we can't have gaps. The pixels that are 34, 35 or 36 are places for which we don't want
+  ## maxBiomass associated with their LCC ... i.e., we don't want a maximum
+  ## biomass associated with 34 and 35 because those classes are transient.
+  ## They will transition to another class before they arrive at a tree maximum biomass.
+  ## So, 34 and 35 should not have estimates of maxBiomass 36 is urban.
+  ## So, we SHOULD remove these pixels from our studies, except if we are doing
+  ## NRV studies (e.g., LandWeb wanted to replace 36 with some forest class) We
+  ## decided that we should not use 34 or 35 in our models of Biomass because the
+  ## only objective of these models is to estimate maxBiomass, so don't use 34 or
+  ## 35 To associate the pixels that were 34 or 35 with a maxBiomass , we need to
+  ## give them a "forest class" that they might "become" after they grow out of
+  ## being 34 or 35. The pixels where there were 34 and 35 nevertheless have
+  ## Biomass estimates in them from KNN and other sources. We leave those as is.
   if (length(P(sim)$LCCClassesToReplaceNN)) {
     uwc <- P(sim)$LCCClassesToReplaceNN
 
@@ -774,9 +762,7 @@ createBiomass_coreInputs <- function(sim) {
     assert2(cohortDataNo34to36, classesToReplace = P(sim)$LCCClassesToReplaceNN)
   }
 
-  ##############################################################
-  # Statistical estimation of establishprob, maxB and maxANPP
-  ##############################################################
+  ## Statistical estimation of establishprob, maxB and maxANPP ----------------------
   cohortDataShort <- cohortDataNo34to36[, list(coverPres = sum(cover > 0)),
                                         by = c("ecoregionGroup", "speciesCode")]
   ## find coverNum for each known class
@@ -792,10 +778,10 @@ createBiomass_coreInputs <- function(sim) {
   dt1 <- dt1[allCombos, on = "ecoregionGroup", nomatch = 0]
   cohortDataShortNoCover <- cohortDataShort[dt1, on = c("ecoregionGroup", "speciesCode"), nomatch = NA]
 
-  #cohortDataShortNoCover <- cohortDataShort[coverPres == 0] #
+  # cohortDataShortNoCover <- cohortDataShort[coverPres == 0]
   cohortDataShort <- cohortDataShortNoCover[coverPres > 0] # remove places where there is 0 cover
   cohortDataShortNoCover <- cohortDataShortNoCover[is.na(coverPres)][, coverPres := 0]
-  # will be added back as establishprob = 0
+  ##  will be added back as establishprob = 0
 
   if (length(P(sim)$LCCClassesToReplaceNN)) {
     assert2(cohortDataShort, classesToReplace = P(sim)$LCCClassesToReplaceNN)
@@ -971,10 +957,10 @@ createBiomass_coreInputs <- function(sim) {
 
   ## remove logB
   # cohortDataNo34to36BiomassSubset[, logB := NULL]
-  ########################################################################
-  # create speciesEcoregion -- a single line for each combination of ecoregionGroup & speciesCode
-  #   doesn't include combinations with B = 0 because those places can't have the species/ecoregion combo
-  ########################################################################
+
+  ## create speciesEcoregion ---------------------------------------------
+  ## a single line for each combination of ecoregionGroup & speciesCode;
+  ## doesn't include combinations with B = 0 because those places can't have the species/ecoregion combo
   ## cohortDataNo34to36BiomassSubset ends up determining which ecoregion combinations end up in
   ## species ecoregion, thus removing converted/masked classes present cohortDataShortNoCover
   message(blue("Create speciesEcoregion using modelCover and modelBiomass to estimate species traits"))
@@ -1011,23 +997,18 @@ createBiomass_coreInputs <- function(sim) {
 
   if (ncell(sim$rasterToMatchLarge) > 3e6) replicate(10, gc())
 
-  ########################################################################
-  # Create initial communities, i.e., pixelGroups
-  ########################################################################
-  # Rejoin back the pixels that were 34:36
+  ## Create initial communities, i.e., pixelGroups -----------------------
+  ## Rejoin back the pixels that were 34:36
   set(cohortData34to36, NULL, "initialEcoregionCode", NULL)
   pixelCohortData <- rbindlist(list(cohortData34to36, cohortDataNo34to36),
                                use.names = TRUE, fill = TRUE)
 
-  ########################################################################
-  # "Downsize" to studyArea after estimating parameters on studyAreaLarge
-  ########################################################################
+  ## "Downsize" to studyArea after estimating parameters on studyAreaLarge --------------
   ## 1. Subset pixels (IDs) on rasterToMatchLarge, using rasterToMatch
   ## 2. Subset data.tables using the pixel IDs / ecoregion/species combinations
   ##    that are common across the two rasters
   ## 3. Re-do pixel ID numbering so that it matches the final rasterToMatch
   ## Note: if SA and SALarge are the same, no subsetting will take place.
-
   if (sum(is.na(as.vector(values(sim$rasterToMatch)))) != sum(is.na(as.vector(values(sim$rasterToMatchLarge))))) {
     message(blue("Subsetting to studyArea"))
     rasterToMatchLarge <- sim$rasterToMatchLarge
