@@ -23,7 +23,7 @@ defineModule(sim, list(
                   ## Excluded because loading is not necessary (just installation)
                   "PredictiveEcology/reproducible@development (>= 2.0.2)",
                   "CeresBarros/LandR@deprecatedArgs (HEAD)",
-                  "PredictiveEcology/SpaDES.core@development (>= 2.0.2)",
+                  "PredictiveEcology/SpaDES.core@development (>= 2.0.2.9004)",
                   "PredictiveEcology/SpaDES.project@transition", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
