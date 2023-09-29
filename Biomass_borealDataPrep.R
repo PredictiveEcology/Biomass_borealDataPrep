@@ -1407,10 +1407,12 @@ Save <- function(sim) {
       needRTML <- TRUE
       message("There is no rasterToMatchLarge supplied; will use rasterToMatch")
     } else {
-      stop("rasterToMatch/rasterToMatchLarge is going to be supplied, but ", currentModule(sim), " requires it ",
-           "as part of its .inputObjects. Please make it accessible to ", currentModule(sim),
-           " in the .inputObjects by passing it in as an object in simInit(objects = list(rasterToMatch = aRaster)",
-           " or in a module that gets loaded prior to ", currentModule(sim))
+      if (is.null(sim$rasterToMatchLarge)) {
+        stop("rasterToMatchLarge is going to be supplied, but ", currentModule(sim), " requires it ",
+             "as part of its .inputObjects. Please make it accessible to ", currentModule(sim),
+             " in the .inputObjects by passing it in as an object in simInit(objects = list(rasterToMatchLarge = aRaster)",
+             " or in a module that gets loaded prior to ", currentModule(sim))
+      }
     }
   }
 
