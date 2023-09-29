@@ -1436,6 +1436,13 @@ Save <- function(sim) {
       maskTo = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else sim$studyAreaLarge,
       projectTo = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else NA, ## don't project to SA if RTMs not present
       destinationPath = dPath)
+  } else {
+    if (is.null(sim$rawBiomassMap)) {
+      stop("rawBiomassMap is going to be supplied, but ", currentModule(sim), " requires it ",
+           "as part of its .inputObjects. Please make it accessible to ", currentModule(sim),
+           " in the .inputObjects by passing it in as an object in simInit(objects = list(rawBiomassMap = aRaster)",
+           " or in a module that gets loaded prior to ", currentModule(sim))
+    }
   }
 
   if (needRTML || needRTM) {
