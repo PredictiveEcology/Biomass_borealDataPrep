@@ -1446,19 +1446,23 @@ Save <- function(sim) {
   }
 
   if (needRTML || needRTM) {
-    if (!is.null(sim$rawBiomassMap)) {
-      if (!.compareCRS(sim$rawBiomassMap, sim$studyAreaLarge)) {
-        ## note that extents may never align if the resolution and projection do not allow for it
-        # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
-        # on.exit(options(opt), add = TRUE)
-        sim$rawBiomassMap <- Cache(postProcess,
-                                   sim$rawBiomassMap,
-                                   method = "bilinear",
-                                   to = if (!needRTML) sim$rasterToMatchLarge else sim$studyAreaLarge,
-                                   projectTo = if (!needRTML) NULL else NA,  ## don't project to SA
-                                   overwrite = TRUE)
-        # options(opt)
-      }
+    reProj <- if (!needRTML) {
+      !.compareCRS(sim$rawBiomassMap, sim$rasterToMatchLarge)
+    } else {
+      !.compareCRS(sim$rawBiomassMap, sim$studyAreaLarge)
+    }
+
+    if (reProj) {
+      ## note that extents may never align if the resolution and projection do not allow for it
+      # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+      # on.exit(options(opt), add = TRUE)
+      sim$rawBiomassMap <- Cache(postProcess,
+                                 sim$rawBiomassMap,
+                                 method = "bilinear",
+                                 to = if (!needRTML) sim$rasterToMatchLarge else sim$studyAreaLarge,
+                                 projectTo = if (!needRTML) NULL else NA,  ## don't project to SA
+                                 overwrite = TRUE)
+      # options(opt)
     }
   }
 
