@@ -1448,7 +1448,7 @@ Save <- function(sim) {
                                    sim$rawBiomassMap,
                                    method = "bilinear",
                                    to = if (!needRTML) sim$rasterToMatchLarge else sim$studyAreaLarge,
-                                   projectTo = if (!needRTML) sim$rasterToMatchLarge NULL else NA,  ## don't project to SA
+                                   projectTo = if (!needRTML) NULL else NA,  ## don't project to SA
                                    overwrite = TRUE)
         # options(opt)
       }
