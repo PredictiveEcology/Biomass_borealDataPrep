@@ -166,7 +166,7 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
   paths$outputPath <- file.path(curModPath, submodule, "outputs", rndstr()) ## avoid race conditions
   on.exit(unlink(paths$outputPath, recursive = TRUE), add = TRUE)
 
-  bcVersion <- "1.3.9"
+  bcVersion <- "2.0.2.9004"
   ## if Biomass_core doesn't exist in modulePath or is too old, then download it
   if (!any(modules == "Biomass_core") ||
       moduleVersion("Biomass_core", paths$modulePath) < bcVersion) {
@@ -177,7 +177,7 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
     }
 
     paths$modulePath <- file.path(curModPath, submodule, "module")
-    moduleNameAndBranch <- paste0("PredictiveEcology/Biomass_core@development (>= ", bcVersion, ")")
+    moduleNameAndBranch <- paste0("PredictiveEcology/Biomass_core@terra-migration (>= ", bcVersion, ")")
     modules <- Require::extractPkgName(moduleNameAndBranch)
     getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
   } else {
