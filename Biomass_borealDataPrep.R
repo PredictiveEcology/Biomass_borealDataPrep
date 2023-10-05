@@ -21,7 +21,7 @@ defineModule(sim, list(
                   "merTools", "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools (>= 2.0.0)", "terra",
                   # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
                   ## Excluded because loading is not necessary (just installation)
-                  "PredictiveEcology/reproducible@development (>= 2.0.2)",
+                  "PredictiveEcology/reproducible@development (>= 2.0.8.9002)", #for nested prepInputs
                   "PredictiveEcology/LandR@development (>= 1.1.0.9054)",
                   "PredictiveEcology/SpaDES.core@development (>= 2.0.2.9004)",
                   "PredictiveEcology/SpaDES.project@transition", ## TODO: update this once merged
