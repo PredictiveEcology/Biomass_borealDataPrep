@@ -21,7 +21,7 @@ defineModule(sim, list(
                   "merTools", "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools (>= 2.0.0)", "terra",
                   # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
                   ## Excluded because loading is not necessary (just installation)
-                  "PredictiveEcology/reproducible@development (>= 2.0.8.9002)", #for nested prepInputs
+                  "PredictiveEcology/reproducible@development (>= 2.0.8.9005)", #for nested prepInputs
                   "PredictiveEcology/LandR@development (>= 1.1.0.9054)",
                   "PredictiveEcology/SpaDES.core@development (>= 2.0.2.9004)",
                   "PredictiveEcology/SpaDES.project@transition", ## TODO: update this once merged
@@ -1264,9 +1264,10 @@ createBiomass_coreInputs <- function(sim) {
                              sim$speciesLayers,
                              to = sim$rasterToMatch,
                              writeTo = .suffix(file.path(outputPath(sim), "speciesLayers.tif"),
-                                               paste0("_", P(sim)$.studyAreaName)),
+                                               paste0("_", P(sim)$dataYear,
+                                                      "_", P(sim)$.studyAreaName)),
                              overwrite = TRUE,
-                             userTags = c(cacheTags, "speciesLayersRTM"),
+                             userTags = c(cacheTags, "speciesLayersRTM", P(sim)$dataYear),
                              quick = "writeTo", # don't digest the file content, just filename
                              # Cache reads file content if it is a file, so it is
                              #    reading content of writeTo, which is an output
@@ -1500,9 +1501,11 @@ Save <- function(sim) {
                         projectTo = sim$rasterToMatchLarge,
                         maskTo = sim$studyAreaLarge,
                         destinationPath = dPath,
-                        writeTo = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName)),
+                        writeTo = .suffix("rstLCC.tif", paste0("_", P(sim)$dataYear,
+                                                               "_", P(sim)$.studyAreaName)),
                         overwrite = TRUE,
-                        userTags = c("rstLCC", currentModule(sim), P(sim)$.studyAreaName),
+                        userTags = c("rstLCC", currentModule(sim), 
+                                     P(sim)$rstLCCYear, P(sim)$.studyAreaName),
                         omitArgs = c("destinationPath", "userTags", "writeTo", "overwrite"))
   }
 
