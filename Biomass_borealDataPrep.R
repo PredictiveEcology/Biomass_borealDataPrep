@@ -1520,7 +1520,7 @@ Save <- function(sim) {
                                 destinationPath = dPath,
                                 writeTo = NULL,
                                 to = sim$studyAreaLarge,
-                                fun = if (grepl("raster::", getOption("reproducible.rasterRead"))) "raster::shapefile" else "terra::vect",
+                                fun = getOption("reproducible.shapefileRead"),
                                 overwrite = TRUE,
                                 userTags = c("prepInputsEcoDistrict_SA", currentModule(sim), cacheTags))
   }
