@@ -303,9 +303,9 @@ defineModule(sim, list(
   outputObjects = bindrows(
     createsOutput("biomassMap", "SpatRaster",
                   desc = paste("total biomass raster layer in study area,",
-                               "filtered for pixels covered by cohortData. Units in g/m2")),
+                               "filtered for pixels covered by cohortData. Units in $g/m^2$")),
     createsOutput("cohortData", "data.table",
-                  desc = paste("initial community table, containing corrected biomass (g/m2), age and",
+                  desc = paste("initial community table, containing corrected biomass ($g/m^2$), age and",
                                "species cover data, as well as ecolocation and `pixelGroup` information. This table defines",
                                "the initial community composition and structure used by `Biomass_core`")),
     createsOutput("ecoregion", "data.table",
@@ -827,7 +827,7 @@ createBiomass_coreInputs <- function(sim) {
   if (isTRUE(any(cdsWh))) {
     cds[, pred := fitted(modelCover$mod, response = "response")]
     cohortDataShort <- cds[, -c("coverPres", "coverNum")][cohortDataShort,
-                                                          on = c('ecoregionGroup', 'speciesCode'), nomatch = NA]
+                                                          on = c("ecoregionGroup", "speciesCode"), nomatch = NA]
     cohortDataShort[is.na(pred), pred := 1]
     modelCover <- cohortDataShort$pred
   }
