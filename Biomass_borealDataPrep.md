@@ -1,6 +1,6 @@
 ---
 title: "LandR _Biomass_borealDataPrep_ Manual"
-date: "Last updated: 2023-02-08"
+date: "Last updated: 2023-10-19"
 output:
   bookdown::html_document2:
     toc: true
@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrepf069461d0822050fa2a0c852fd7905dce7a1c531)
+[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrepede2180d57326b0afe5a08c82514330c82babfb8)
 
 [![Issues-badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -808,49 +808,49 @@ and *Biomass_core* manual for further detail about these columns.
   </tr>
   <tr>
    <td style="text-align:left;"> ecoregionLayer </td>
-   <td style="text-align:left;"> SpatialPolygonsDataFrame </td>
-   <td style="text-align:left;"> A `SpatialPolygonsDataFrame` that characterizes the unique ecological regions (`ecoregionGroup`) used to parameterize the biomass, cover, and species establishment probability models. It will be overlaid with landcover to generate classes for every ecoregion/LCC combination. It must have same extent and crs as `studyAreaLarge`. It is superseded by `sim$ecoregionRst` if that object is supplied by the user </td>
+   <td style="text-align:left;"> sfc </td>
+   <td style="text-align:left;"> A `sfc` polygon object that characterizes the unique ecological regions (`ecoregionGroup`) used to parameterize the biomass, cover, and species establishment probability models. It will be overlaid with landcover to generate classes for every ecoregion/LCC combination. It must have same extent and crs as `studyAreaLarge`. It is superseded by `sim$ecoregionRst` if that object is supplied by the user </td>
    <td style="text-align:left;"> https://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip </td>
   </tr>
   <tr>
    <td style="text-align:left;"> ecoregionRst </td>
-   <td style="text-align:left;"> RasterLayer </td>
+   <td style="text-align:left;"> SpatRaster </td>
    <td style="text-align:left;"> A raster that characterizes the unique ecological regions used to parameterize the biomass, cover, and species establishment probability models. If this object is provided, it will supercede `sim$ecoregionLayer`. It will be overlaid with landcover to generate classes for every ecoregion/LCC combination. It must have same extent and crs as `rasterToMatchLarge` if supplied by user - use `reproducible::postProcess`. If it uses an attribute table, it must contain the field 'ecoregion' to represent raster values </td>
    <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
    <td style="text-align:left;"> firePerimeters </td>
-   <td style="text-align:left;"> RasterLayer </td>
+   <td style="text-align:left;"> SpatRaster </td>
    <td style="text-align:left;"> Fire perimeters raster, with fire year information used to 'update' stand age using time since last fire as the imputed value. Only used if `P(sim)$overrideAgeInFires = TRUE`. Biomass will also be updated in these pixels if `P(sim)$overrideBiomassInFires = TRUE` and the last fire was later than 1985. Defaults to using fire perimeters in the Canadian National Fire Database, downloaded as a zipped shapefile with fire polygons, an attribute (i.e., a column) named 'YEAR', which is used to rasterize to the study area. </td>
    <td style="text-align:left;"> https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip </td>
   </tr>
   <tr>
    <td style="text-align:left;"> rstLCC </td>
-   <td style="text-align:left;"> RasterLayer </td>
+   <td style="text-align:left;"> SpatRaster </td>
    <td style="text-align:left;"> A land classification map in study area. It must be 'corrected', in the sense that: 1) Every class must not conflict with any other map in this module (e.g., `speciesLayers` should not have data in LCC classes that are non-treed); 2) It can have treed and non-treed classes. The non-treed will be removed within this module if `P(sim)$omitNonTreedPixels` is `TRUE`; 3) It can have transient pixels, such as 'young fire'. These will be converted to a the nearest non-transient class, probabilistically if there is more than 1 nearest neighbour class, based on `P(sim)$LCCClassesToReplaceNN`. The default layer used, if not supplied, is Canada national land classification in 2010. The metadata (res, proj, ext, origin) need to match `rasterToMatchLarge`. </td>
    <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
    <td style="text-align:left;"> rasterToMatch </td>
-   <td style="text-align:left;"> RasterLayer </td>
+   <td style="text-align:left;"> SpatRaster </td>
    <td style="text-align:left;"> A raster of the `studyArea` in the same resolution and projection as `rawBiomassMap`. This is the scale used for all outputs for use in the simulation. If not supplied will be forced to match the default `rawBiomassMap`. </td>
    <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
    <td style="text-align:left;"> rasterToMatchLarge </td>
-   <td style="text-align:left;"> RasterLayer </td>
+   <td style="text-align:left;"> SpatRaster </td>
    <td style="text-align:left;"> A raster of the `studyAreaLarge` in the same resolution and projection as `rawBiomassMap`. This is the scale used for all inputs for use in the simulation. If not supplied will be forced to match the default `rawBiomassMap`. </td>
    <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
    <td style="text-align:left;"> rawBiomassMap </td>
-   <td style="text-align:left;"> RasterLayer </td>
+   <td style="text-align:left;"> SpatRaster </td>
    <td style="text-align:left;"> total biomass raster layer in study area. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived total aboveground biomass map from 2001 (in tonnes/ha), unless 'dataYear' != 2001. See https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata. </td>
    <td style="text-align:left;"> http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/canada-forests-attributes_attributs-forests-canada/2001-attributes_attributs-2001/NFI_MODIS250m_2001_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif </td>
   </tr>
   <tr>
    <td style="text-align:left;"> speciesLayers </td>
-   <td style="text-align:left;"> RasterStack </td>
+   <td style="text-align:left;"> SpatRaster </td>
    <td style="text-align:left;"> cover percentage raster layers by species in Canada species map. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived species cover maps from 2001 using a cover threshold of 10 - see https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata </td>
    <td style="text-align:left;"> http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/canada-forests-attributes_attributs-forests-canada/2001-attributes_attributs-2001/ </td>
   </tr>
@@ -880,20 +880,20 @@ and *Biomass_core* manual for further detail about these columns.
   </tr>
   <tr>
    <td style="text-align:left;"> standAgeMap </td>
-   <td style="text-align:left;"> RasterLayer </td>
+   <td style="text-align:left;"> SpatRaster </td>
    <td style="text-align:left;"> stand age map in study area. Must have a 'imputedPixID' attribute (a vector of pixel IDs) indicating which pixels suffered age imputation. If no pixel ages were imputed, please set this attribute to `integer(0)`. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived biomass map from 2001, unless 'dataYear' != 2001. See https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata </td>
    <td style="text-align:left;"> http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/canada-forests-attributes_attributs-forests-canada/2001-attributes_attributs-2001/NFI_MODIS250m_2001_kNN_Structure_Stand_Age_v1.tif </td>
   </tr>
   <tr>
    <td style="text-align:left;"> studyArea </td>
-   <td style="text-align:left;"> SpatialPolygonsDataFrame </td>
-   <td style="text-align:left;"> Polygon to use as the study area. Must be supplied by the user. </td>
+   <td style="text-align:left;"> sfc </td>
+   <td style="text-align:left;"> Polygon to use as the study area. Must be supplied by the user. Can also be a SpatVector. </td>
    <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
    <td style="text-align:left;"> studyAreaLarge </td>
-   <td style="text-align:left;"> SpatialPolygonsDataFrame </td>
-   <td style="text-align:left;"> multipolygon (potentially larger than `studyArea`) used for parameter estimation, Must be supplied by the user. If larger than `studyArea`, it must fully contain it. </td>
+   <td style="text-align:left;"> sfc </td>
+   <td style="text-align:left;"> multipolygon (potentially larger than `studyArea`) used for parameter estimation, Must be supplied by the user. If larger than `studyArea`, it must fully contain it. Can also be a SpatVector. </td>
    <td style="text-align:left;"> NA </td>
   </tr>
 </tbody>
@@ -1090,7 +1090,23 @@ the model used to refit `deciduousCoverDiscount` in the supplied
    <td style="text-align:left;"> LandR::m.... </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> A quoted function that makes the table of min. relative B determining a stand shade level for each ecoregionGroup. Using the internal object `pixelCohortData` is advisable to access/use the list of `ecoregionGroups` per pixel. The function must output a `data.frame` with 6 columns, named `ecoregionGroup` and 'X1' to 'X5', with one line per `ecoregionGroup` code, and the min. relative biomass for each stand shade level X1-5. The default function uses values from LANDIS-II available at: https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/biomass-succession-main-inputs_BSW_Baseline.txt%7E. </td>
+   <td style="text-align:left;"> A quoted function that makes the table of min. relative B determining a stand shade level for each ecoregionGroup. Using the internal object `pixelCohortData` is advisable to access/use the list of `ecoregionGroups` per pixel. The function must output a `data.frame` with 6 columns, named `ecoregionGroup` and 'X1' to 'X5', with one line per `ecoregionGroup` code, and the min. relative biomass for each stand shade level X1-5. The default function uses values from LANDIS-II available at: https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/biomass-succession-main-inputs_BSW_Baseline.txt and applies them to all ecolocations (`ecoregionGroup` codes) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> rstLCCURL </td>
+   <td style="text-align:left;"> character </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> The URL to source rstLCC from. The default, `NA`, will rely on `P(sim)$rstLCCYear` to choose a land-cover layer from Canada Land Cover Modis product (http://www.cec.org/north-american-environmental-atlas/land-cover-2010-modis-250m/) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> rstLCCYear </td>
+   <td style="text-align:left;"> integer </td>
+   <td style="text-align:left;"> 2010 </td>
+   <td style="text-align:left;"> 2005 </td>
+   <td style="text-align:left;"> 2015 </td>
+   <td style="text-align:left;"> The year of the land-cover layer to use when `P(sim)$rstLCCURL` is `NA`. See `?LandR::prepInputsLCC` </td>
   </tr>
   <tr>
    <td style="text-align:left;"> omitNonTreedPixels </td>
@@ -1325,13 +1341,13 @@ The module produces the following outputs (Table
 <tbody>
   <tr>
    <td style="text-align:left;"> biomassMap </td>
-   <td style="text-align:left;"> RasterLayer </td>
-   <td style="text-align:left;"> total biomass raster layer in study area, filtered for pixels covered by cohortData. Units in g/m2 </td>
+   <td style="text-align:left;"> SpatRaster </td>
+   <td style="text-align:left;"> total biomass raster layer in study area, filtered for pixels covered by cohortData. Units in $g/m^2$ </td>
   </tr>
   <tr>
    <td style="text-align:left;"> cohortData </td>
    <td style="text-align:left;"> data.table </td>
-   <td style="text-align:left;"> initial community table, containing corrected biomass (g/m2), age and species cover data, as well as ecolocation and `pixelGroup` information. This table defines the initial community composition and structure used by `Biomass_core` </td>
+   <td style="text-align:left;"> initial community table, containing corrected biomass ($g/m^2$), age and species cover data, as well as ecolocation and `pixelGroup` information. This table defines the initial community composition and structure used by `Biomass_core` </td>
   </tr>
   <tr>
    <td style="text-align:left;"> ecoregion </td>
@@ -1340,8 +1356,13 @@ The module produces the following outputs (Table
   </tr>
   <tr>
    <td style="text-align:left;"> ecoregionMap </td>
-   <td style="text-align:left;"> RasterLayer </td>
-   <td style="text-align:left;"> `ecoregionGroup` map that has mapcodes match ecoregion table and `speciesEcoregion` table </td>
+   <td style="text-align:left;"> SpatRaster </td>
+   <td style="text-align:left;"> `ecoregionGroup` map that has mapcodes match `ecoregion` table and `speciesEcoregion` table </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> firePerimeters </td>
+   <td style="text-align:left;"> SpatRaster </td>
+   <td style="text-align:left;"> As the input object `firePerimeters`, but potentially cropped/masked/projected to match `rasterToMatchLarge` </td>
   </tr>
   <tr>
    <td style="text-align:left;"> imputedPixID </td>
@@ -1350,7 +1371,7 @@ The module produces the following outputs (Table
   </tr>
   <tr>
    <td style="text-align:left;"> pixelGroupMap </td>
-   <td style="text-align:left;"> RasterLayer </td>
+   <td style="text-align:left;"> SpatRaster </td>
    <td style="text-align:left;"> initial community map that has mapcodes (`pixelGroup` IDs) match `cohortData` </td>
   </tr>
   <tr>
@@ -1375,8 +1396,13 @@ The module produces the following outputs (Table
   </tr>
   <tr>
    <td style="text-align:left;"> rawBiomassMap </td>
-   <td style="text-align:left;"> RasterLayer </td>
+   <td style="text-align:left;"> SpatRaster </td>
    <td style="text-align:left;"> total biomass raster layer in study area. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived total aboveground biomass map (in tonnes/ha) from 2001, unless 'dataYear' != 2001. See https://open.canada.ca/data/en/dataset/ ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> rstLCC </td>
+   <td style="text-align:left;"> SpatRaster </td>
+   <td style="text-align:left;"> As the input object `rstLCC`, but potentially cropped/projected/masked to match `rasterToMatchLarge` </td>
   </tr>
   <tr>
    <td style="text-align:left;"> species </td>
@@ -1384,14 +1410,29 @@ The module produces the following outputs (Table
    <td style="text-align:left;"> a table that of invariant species traits. Will have the same traits as the input `speciesTable` with values adjusted where necessary </td>
   </tr>
   <tr>
+   <td style="text-align:left;"> speciesLayers </td>
+   <td style="text-align:left;"> SpatRaster </td>
+   <td style="text-align:left;"> cover percentage raster layers by species in Canada species map. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived species cover maps from 2001 using a cover threshold of 10 - see https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata </td>
+  </tr>
+  <tr>
    <td style="text-align:left;"> speciesEcoregion </td>
    <td style="text-align:left;"> data.table </td>
-   <td style="text-align:left;"> table of spatially-varying species traits (`maxB`, `maxANPP`, `establishprob`), defined by species and `ecoregionGroup`) </td>
+   <td style="text-align:left;"> table of spatially-varying species traits (`maxB`, `maxANPP`, `establishprob`), defined by species and `ecoregionGroup` (i.e. ecolocation) </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> standAgeMap </td>
+   <td style="text-align:left;"> SpatRaster </td>
+   <td style="text-align:left;"> As the input object `standAgeMap`, but potentially cropped/projected/masked to match `rasterToMatchLarge` </td>
   </tr>
   <tr>
    <td style="text-align:left;"> studyArea </td>
-   <td style="text-align:left;"> SpatialPolygonsDataFrame </td>
-   <td style="text-align:left;"> Polygon to use as the study area corrected for any spatial properties' mismatches with respect to `studyAreaLarge`. </td>
+   <td style="text-align:left;"> sfc </td>
+   <td style="text-align:left;"> As the input object `studyArea`, but potentially projected to match `rasterToMatch` CRS </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> studyAreaLarge </td>
+   <td style="text-align:left;"> sfc </td>
+   <td style="text-align:left;"> As the input object `studyAreaLarge`, but potentially projected to match `studyArea` and `rasterToMatch` CRS </td>
   </tr>
   <tr>
    <td style="text-align:left;"> sufficientLight </td>
@@ -1448,6 +1489,6 @@ This module can be run stand-alone, but it won't do much more than prepare
 inputs for `Biomass_core`. Hence, we provide a usage example of this module and
 a few others in [this
 repository](https://github.com/CeresBarros/LandRBiomass_publication) and in
-@BarrosEtAlaccepted.
+@Barros2023.
 
 ## References {#bboreal-refs}
