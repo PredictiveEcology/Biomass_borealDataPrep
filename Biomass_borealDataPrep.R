@@ -10,7 +10,6 @@ defineModule(sim, list(
   ),
   childModules = character(0),
   version = list(Biomass_borealDataPrep = "1.5.5"),
-  spatialExtent = raster::extent(rep(NA_real_, 4)),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -18,7 +17,7 @@ defineModule(sim, list(
   loadOrder = list(after = c("Biomass_speciesData"),
                    before = c("Biomass_core")),
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2",
-                  "merTools", "plyr", "raster", "rasterVis", "sf", "sp", "SpaDES.tools (>= 2.0.0)", "terra",
+                  "merTools", "plyr", "rasterVis", "sf", "SpaDES.tools (>= 2.0.0)", "terra",
                   # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
                   ## Excluded because loading is not necessary (just installation)
                   "PredictiveEcology/reproducible@development (>= 2.0.8.9005)", #for nested prepInputs
@@ -1119,7 +1118,8 @@ createBiomass_coreInputs <- function(sim) {
           youngWAgeEqZero <- young[-whYoungZeroToMaxHighQuality]
           youngNoAgeEqZero <- young[whYoungZeroToMaxHighQuality]
 
-          message("Running 'spinup' on pixels that are within fire polygons and whose age < ", maxAgeHighQualityData)
+          message("Running 'spinup' on pixels that are within fire polygons and whose age < ",
+                  maxAgeHighQualityData)
           young <- Cache(spinUpPartial,
                          pixelCohortData = youngNoAgeEqZero,
                          speciesEcoregion = speciesEcoregion,
@@ -1573,7 +1573,7 @@ Save <- function(sim) {
     }
     httr::with_config(config = httr::config(ssl_verifypeer = P(sim)$.sslVerify), {
       sim$standAgeMap <- Cache(LandR::prepInputsStandAgeMap,
-                               ageFun = getOption("reproducible.rasterRead", "raster::raster"), # the backwards compatible default
+                               ageFun = getOption("reproducible.rasterRead", "terra::rast"), # the backwards compatible default
                                destinationPath = dPath,
                                ageURL = ageURL,
                                studyArea = sa,
