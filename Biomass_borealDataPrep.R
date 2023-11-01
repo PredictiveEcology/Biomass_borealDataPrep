@@ -1408,10 +1408,12 @@ Save <- function(sim) {
       needRTML <- TRUE
       message("There is no rasterToMatchLarge supplied; will use rasterToMatch")
     } else {
-      stop("rasterToMatch/rasterToMatchLarge is going to be supplied, but ", currentModule(sim), " requires it ",
-           "as part of its .inputObjects. Please make it accessible to ", currentModule(sim),
-           " in the .inputObjects by passing it in as an object in simInit(objects = list(rasterToMatch = aRaster)",
-           " or in a module that gets loaded prior to ", currentModule(sim))
+      if (is.null(sim$rasterToMatchLarge)) {
+        stop("rasterToMatchLarge is going to be supplied, but ", currentModule(sim), " requires it ",
+             "as part of its .inputObjects. Please make it accessible to ", currentModule(sim),
+             " in the .inputObjects by passing it in as an object in simInit(objects = list(rasterToMatchLarge = aRaster)",
+             " or in a module that gets loaded prior to ", currentModule(sim))
+      }
     }
   }
 
@@ -1435,22 +1437,33 @@ Save <- function(sim) {
       maskTo = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else sim$studyAreaLarge,
       projectTo = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else NA, ## don't project to SA if RTMs not present
       destinationPath = dPath)
+  } else {
+    if (is.null(sim$rawBiomassMap)) {
+      stop("rawBiomassMap is going to be supplied, but ", currentModule(sim), " requires it ",
+           "as part of its .inputObjects. Please make it accessible to ", currentModule(sim),
+           " in the .inputObjects by passing it in as an object in simInit(objects = list(rawBiomassMap = aRaster)",
+           " or in a module that gets loaded prior to ", currentModule(sim))
+    }
   }
 
   if (needRTML || needRTM) {
-    if (!is.null(sim$rawBiomassMap)) {
-      if (!.compareCRS(sim$rawBiomassMap, sim$studyAreaLarge)) {
-        ## note that extents may never align if the resolution and projection do not allow for it
-        # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
-        # on.exit(options(opt), add = TRUE)
-        sim$rawBiomassMap <- Cache(postProcess,
-                                   sim$rawBiomassMap,
-                                   method = "bilinear",
-                                   to = sim$studyAreaLarge,
-                                   projectTo = NA,  ## don't project to SA
-                                   overwrite = TRUE)
-        # options(opt)
-      }
+    reProj <- if (!needRTML) {
+      !.compareCRS(sim$rawBiomassMap, sim$rasterToMatchLarge)
+    } else {
+      !.compareCRS(sim$rawBiomassMap, sim$studyAreaLarge)
+    }
+
+    if (reProj) {
+      ## note that extents may never align if the resolution and projection do not allow for it
+      # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
+      # on.exit(options(opt), add = TRUE)
+      sim$rawBiomassMap <- Cache(postProcess,
+                                 sim$rawBiomassMap,
+                                 method = "bilinear",
+                                 to = if (!needRTML) sim$rasterToMatchLarge else sim$studyAreaLarge,
+                                 projectTo = if (!needRTML) NULL else NA,  ## don't project to SA
+                                 overwrite = TRUE)
+      # options(opt)
     }
   }
 
