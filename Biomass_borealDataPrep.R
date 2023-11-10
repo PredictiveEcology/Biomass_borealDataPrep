@@ -1002,7 +1002,7 @@ createBiomass_coreInputs <- function(sim) {
   #   quickPlot::dev(curDev)
   # }
 
-  if (ncell(sim$rasterToMatchLarge) > 3e6) replicate(10, gc())
+  if (ncell(sim$rasterToMatchLarge) > 3e7) replicate(3, gc())
 
   ## Create initial communities, i.e., pixelGroups -----------------------
   ## Rejoin back the pixels that were 34:36
@@ -1058,7 +1058,7 @@ createBiomass_coreInputs <- function(sim) {
     sim$imputedPixID <- newPixelIndexDT[pixelIndex %in% sim$imputedPixID, newPixelIndex]
 
     rm(pixToKeep, rasterToMatchLargeCropped, newPixelIndexDT)
-    if (ncell(sim$rasterToMatch) > 3e6) replicate(10, gc())
+    if (ncell(sim$rasterToMatch) > 3e7) replicate(3, gc())
   }
   ## subset ecoregionFiles$ecoregionMap to smaller area.
 
