@@ -868,7 +868,7 @@ createBiomass_coreInputs <- function(sim) {
     ### force parameter values to avoid more checks
     # If using mixed effect model, see here for good discussion of
     #  shrinkage https://www.tjmahr.com/plotting-partial-pooling-in-mixed-effects-models/
-    message(blue("Estimating biomass using P(sim)$biomassModel as:\n"),
+    message(blue("Estimating biomass using P(sim)$biomassModel as:"), "\n",
             magenta(paste0(format(P(sim)$biomassModel, appendLF = FALSE), collapse = "")))
 
     ## NOTE: we are NOT using logB because the relationship between B~age should be hump-shaped
