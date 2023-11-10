@@ -599,8 +599,8 @@ createBiomass_coreInputs <- function(sim) {
   #  Round age to pixelGroupAgeClass
   # Internal data.table is changed; using memoise here causes the internal changes to
   #   come out to the pixelTable, which is not desired. Turn off memoising for one step
-  opt <- options("reproducible.useMemoise" = FALSE)
-  on.exit(options(opt), add = TRUE)
+  # opt <- options("reproducible.useMemoise" = FALSE)
+  # on.exit(try(options(opt), silent = TRUE), add = TRUE)
 
   pixelTable <- Cache(makePixelTable,
                       speciesLayers = sim$speciesLayers,
@@ -613,6 +613,7 @@ createBiomass_coreInputs <- function(sim) {
                       # pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
                       userTags = c(cacheTags, "pixelTable"),
                       omitArgs = c("userTags"))
+  # options(opt)
 
   ## create initial pixelCohortData table ---------------
   coverColNames <- paste0("cover.", sim$species$species)
