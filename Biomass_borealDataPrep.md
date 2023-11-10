@@ -1,6 +1,6 @@
 ---
 title: "LandR _Biomass_borealDataPrep_ Manual"
-date: "Last updated: 2023-10-21"
+date: "Last updated: 2023-11-10"
 output:
   bookdown::html_document2:
     toc: true
@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep40fb03234e40e52c7688e798101084cc93b0b047)
+[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrepa539b5f53c2a1fa2ab98717b612e89fc5f702008)
 
 [![Issues-badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -823,6 +823,12 @@ and *Biomass_core* manual for further detail about these columns.
    <td style="text-align:left;"> SpatRaster </td>
    <td style="text-align:left;"> Fire perimeters raster, with fire year information used to 'update' stand age using time since last fire as the imputed value. Only used if `P(sim)$overrideAgeInFires = TRUE`. Biomass will also be updated in these pixels if `P(sim)$overrideBiomassInFires = TRUE` and the last fire was later than 1985. Defaults to using fire perimeters in the Canadian National Fire Database, downloaded as a zipped shapefile with fire polygons, an attribute (i.e., a column) named 'YEAR', which is used to rasterize to the study area. </td>
    <td style="text-align:left;"> https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> imputedPixID </td>
+   <td style="text-align:left;"> integer </td>
+   <td style="text-align:left;"> A vector of pixel IDs - matching rasterMatch IDs - that suffered data imputation. Data imputation may be in age (to match last fire event post 1950s, or 0 cover), biomass (to match fire-related imputed ages, correct for missing values or for 0 age/cover), land cover (to convert non-forested classes into to nearest forested class). If standAgeMap had imputed data, then this is expected to be created at that time. It will be added as an attribute to `sim$standAgeMap` </td>
+   <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
    <td style="text-align:left;"> rstLCC </td>
