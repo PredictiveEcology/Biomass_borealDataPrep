@@ -520,7 +520,7 @@ createBiomass_coreInputs <- function(sim) {
       toRm <- grep("_Spp", names(sim$speciesLayers))
       sim$speciesLayers <- sim$speciesLayers[[-toRm]] # works on Raster or SpatRaster
       message("No trait values were found for ", paste(missingTraits, collapse = ", "), ".\n",
-              " Since this is a 'genus-level' designation (_Spp), omittint it. ",
+              " Since this is a 'genus-level' designation (_Spp), omitting it. ",
               " Please ensure that is the correct behaviour")
     }
     missingTraits <- setdiff(names(sim$speciesLayers), sim$species$species)
