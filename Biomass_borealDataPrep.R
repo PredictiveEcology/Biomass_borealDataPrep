@@ -1448,8 +1448,7 @@ Save <- function(sim) {
       url = biomassURL,
       studyAreaName = P(sim)$.studyAreaName,
       cacheTags = cacheTags,
-      cropTo = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else sim$studyAreaLarge,
-      maskTo = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else sim$studyAreaLarge,
+      to = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else sim$studyAreaLarge,
       projectTo = if (!needRTML) sim$rasterToMatchLarge else if (!needRTM) sim$rasterToMatch else NA, ## don't project to SA if RTMs not present
       destinationPath = dPath)
   }
@@ -1509,13 +1508,13 @@ Save <- function(sim) {
     }
 
     ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
+    urlHere <- if (is.na(P(sim)$rstLCCURL)) NULL else P(sim)$rstLCCURL
     sim$rstLCC <- Cache(prepInputsLCC,
                         year = P(sim)$rstLCCYear,
-                        url = if (is.na(P(sim)$rstLCCURL)) NULL else P(sim)$rstLCCURL,
+                        url = urlHere,
                         # studyArea = sim$studyAreaLarge,
                         # rasterToMatch = sim$rasterToMatchLarge,
-                        cropTo = sim$rasterToMatchLarge,
-                        projectTo = sim$rasterToMatchLarge,
+                        to = sim$rasterToMatchLarge,
                         maskTo = sim$studyAreaLarge,
                         destinationPath = dPath,
                         writeTo = .suffix("rstLCC.tif", paste0("_", P(sim)$dataYear,
