@@ -1150,7 +1150,7 @@ createBiomass_coreInputs <- function(sim) {
                          currentModule = currentModule(sim),
                          modules = modules(sim),
                          userTags = c(cacheTags, "spinUpYoungBiomasses"),
-                         omitArgs = c("userTags"))
+                         omitArgs = c("userTags", "paths", "modules"))
 
           ## method using modelBiomass
           ## -- deprecated, as it overestimates B for young ages at the moment
