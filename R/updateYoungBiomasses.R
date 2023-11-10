@@ -166,15 +166,18 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
   paths$outputPath <- file.path(curModPath, submodule, "outputs", rndstr()) ## avoid race conditions
   on.exit(unlink(paths$outputPath, recursive = TRUE), add = TRUE)
 
-  bcVersion <- "2.0.2.9004"
+  bcVersion <- "1.3.10"
   ## if Biomass_core doesn't exist in modulePath or is too old, then download it
   if (!any(modules == "Biomass_core") ||
       moduleVersion("Biomass_core", paths$modulePath) < bcVersion) {
-    if (!"SpaDES.project" %in% row.names(installed.packages(lib.loc = .libPaths()[1])) ||
-        packageVersion("SpaDES.project") < "0.0.7") {
-      stop(paste("Please install SpaDES.project using:",
-                 "Require::Install('PredictiveEcology/SpaDES.project@transition')")) ## TODO: update once merged
+
+    getOrUpdatePkg <- function(p, minVer, repo) {
+      if (!isFALSE(try(packageVersion(p) < minVer, silent = TRUE) )) {
+        if (missing(repo)) repo = c("predictiveecology.r-universe.dev", getOption("repos"))
+        install.packages(p, repos = repo)
+      }
     }
+    getOrUpdatePkg("SpaDES.project", "0.0.8.9026")
 
     paths$modulePath <- file.path(curModPath, submodule, "module")
     moduleNameAndBranch <- paste0("PredictiveEcology/Biomass_core@terra-migration (>= ", bcVersion, ")")
