@@ -487,10 +487,10 @@ createBiomass_coreInputs <- function(sim) {
   ## species traits inputs ---------------------------------------
   message(blue("Prepare 'species' table, i.e., species level traits", Sys.time()))
 
-  sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
+  sim$species <- Cache(prepSpeciesTable(speciesTable = sim$speciesTable,
                                   sppEquiv = sim$sppEquiv,
                                   areas = P(sim)$speciesTableAreas,
-                                  sppEquivCol = P(sim)$sppEquivCol)
+                                  sppEquivCol = P(sim)$sppEquivCol))
 
   ## override species table values -------------------------------
   if (!is.null(P(sim)$speciesUpdateFunction)) {
@@ -694,7 +694,7 @@ createBiomass_coreInputs <- function(sim) {
                  round(P(sim)$deciduousCoverDiscount, 3)))
   }
 
-  pixelCohortData <- partitionBiomass(x = P(sim)$deciduousCoverDiscount, pixelCohortData)
+  pixelCohortData <- Cache(partitionBiomass(x = P(sim)$deciduousCoverDiscount, pixelCohortData))
   set(pixelCohortData, NULL, "B", asInteger(pixelCohortData$B/P(sim)$pixelGroupBiomassClass) *
         P(sim)$pixelGroupBiomassClass)
   set(pixelCohortData, NULL, "cover", asInteger(pixelCohortData$cover))
@@ -774,16 +774,25 @@ createBiomass_coreInputs <- function(sim) {
                                         by = c("ecoregionGroup", "speciesCode")]
   ## find coverNum for each known class
   ## add new ecoregions to pixelTable, before calc. table
-  tempDT <- rbind(cohortData34to36[, .(pixelIndex, ecoregionGroup)],
-                  cohortDataNo34to36[, .(pixelIndex, ecoregionGroup)])
-  pixelTable <- tempDT[pixelTable, on = .(pixelIndex)]
-  aa <- table(as.character(pixelTable$ecoregionGroup))   ## as.character avoids counting levels that don't exist anymore
+  cohortDataShortNoCover <-
+    (function(x) {
+      tempDT <- rbind(cohortData34to36[, .(pixelIndex, ecoregionGroup)],
+                      cohortDataNo34to36[, .(pixelIndex, ecoregionGroup)])
+      pixelTable <- tempDT[pixelTable, on = .(pixelIndex)]
 
-  dt1 <- data.table(ecoregionGroup = factor(names(aa)), coverNum = as.integer(unname(aa)))
-  allCombos <- expand.grid(ecoregionGroup = dt1$ecoregionGroup, speciesCode = unique(cohortDataShort$speciesCode))
-  setDT(allCombos)
-  dt1 <- dt1[allCombos, on = "ecoregionGroup", nomatch = 0]
-  cohortDataShortNoCover <- cohortDataShort[dt1, on = c("ecoregionGroup", "speciesCode"), nomatch = NA]
+      aa <- table(as.character(pixelTable$ecoregionGroup))   ## as.character avoids counting levels that don't exist anymore
+
+      dt1 <- data.table(ecoregionGroup = factor(names(aa)), coverNum = as.integer(unname(aa)))
+      allCombos <- expand.grid(ecoregionGroup = dt1$ecoregionGroup, speciesCode = unique(cohortDataShort$speciesCode))
+      setDT(allCombos)
+      dt1 <- dt1[allCombos, on = "ecoregionGroup", nomatch = 0]
+      cohortDataShortNoCover <- cohortDataShort[dt1, on = c("ecoregionGroup", "speciesCode"), nomatch = NA]
+    })() |>
+    Cache(.functionName = "cohortDataShortNoCover",
+          .cacheExtra = list(cohortData34to36[, .(pixelIndex, ecoregionGroup)],
+                             cohortDataNo34to36[, .(pixelIndex, ecoregionGroup)],
+                             pixelTable,
+                             cohortDataShort))
 
   # cohortDataShortNoCover <- cohortDataShort[coverPres == 0]
   cohortDataShort <- cohortDataShortNoCover[coverPres > 0] # remove places where there is 0 cover
