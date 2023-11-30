@@ -1,6 +1,6 @@
 ---
 title: "LandR _Biomass_borealDataPrep_ Manual"
-date: "Last updated: 2023-11-10"
+date: "Last updated: 2023-11-30"
 output:
   bookdown::html_document2:
     toc: true
@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrepbc010ae0fc3d0bcdf40b752605146d22ab9f9f66)
+[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep4c36b0acb2921e5f203965c1eb5fbe391c5aa0d6)
 
 [![Issues-badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -1388,7 +1388,7 @@ The module produces the following outputs (Table
   <tr>
    <td style="text-align:left;"> minRelativeB </td>
    <td style="text-align:left;"> data.frame </td>
-   <td style="text-align:left;"> minimum relative biomass thresholds that determine a shade level in each pixel. X0-5 represent site shade classes from no-shade (0) to maximum shade (5). </td>
+   <td style="text-align:left;"> minimum relative biomass thresholds that determine a shade level in each pixel. `X0-5` represent site shade classes from no-shade (0) to maximum shade (5). </td>
   </tr>
   <tr>
    <td style="text-align:left;"> modelCover </td>
@@ -1403,7 +1403,7 @@ The module produces the following outputs (Table
   <tr>
    <td style="text-align:left;"> rawBiomassMap </td>
    <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> total biomass raster layer in study area. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived total aboveground biomass map (in tonnes/ha) from 2001, unless 'dataYear' != 2001. See https://open.canada.ca/data/en/dataset/ ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata </td>
+   <td style="text-align:left;"> total biomass raster layer in study area. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived total aboveground biomass map (in tonnes/ha) from 2001, unless `dataYear != 2001`. See &lt;https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990&gt; for metadata </td>
   </tr>
   <tr>
    <td style="text-align:left;"> rstLCC </td>
