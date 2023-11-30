@@ -162,8 +162,8 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
 
   ## TODO: make the following into a function to use across modules (e.g. B_sppFactorial)
   curModPath <- file.path(paths$modulePath, currentModule)
-  submodule <- "Biomass_coreSubModule"
-  paths$outputPath <- file.path(curModPath, submodule, "outputs", rndstr()) ## avoid race conditions
+  submodulePath <- file.path(curModPath, "submodules") |> checkPath(create = TRUE)
+  paths$outputPath <- file.path(submodulePath, "outputs", rndstr()) ## avoid race conditions
   on.exit(unlink(paths$outputPath, recursive = TRUE), add = TRUE)
 
   bcVersion <- "1.3.10"
@@ -179,9 +179,9 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
     }
     getOrUpdatePkg("SpaDES.project", "0.0.8.9026")
 
-    paths$modulePath <- file.path(curModPath, submodule, "module")
-    moduleNameAndBranch <- paste0("PredictiveEcology/Biomass_core@terra-migration (>= ", bcVersion, ")")
+    moduleNameAndBranch <- paste0("PredictiveEcology/Biomass_core@development (>= ", bcVersion, ")")
     modules <- Require::extractPkgName(moduleNameAndBranch)
+    paths$modulePath <- file.path(submodulePath, "Biomass_core")
     getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
   } else {
     ## trim unnecessary modules:
