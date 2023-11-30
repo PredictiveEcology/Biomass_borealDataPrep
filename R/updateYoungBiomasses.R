@@ -171,13 +171,14 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
   if (!any(modules == "Biomass_core") ||
       moduleVersion("Biomass_core", paths$modulePath) < bcVersion) {
 
-    getOrUpdatePkg <- function(p, minVer, repo) {
-      if (!isFALSE(try(packageVersion(p) < minVer, silent = TRUE) )) {
-        if (missing(repo)) repo = c("predictiveecology.r-universe.dev", getOption("repos"))
-        install.packages(p, repos = repo)
-      }
-    }
-    getOrUpdatePkg("SpaDES.project", "0.0.8.9026")
+    ## TODO: remove this, we already have a mechanism for getting the package via module metadata
+    # getOrUpdatePkg <- function(p, minVer, repo) {
+    #   if (!isFALSE(try(packageVersion(p) < minVer, silent = TRUE) )) {
+    #     if (missing(repo)) repo = c("predictiveecology.r-universe.dev", getOption("repos"))
+    #     install.packages(p, repos = repo)
+    #   }
+    # }
+    # getOrUpdatePkg("SpaDES.project", "0.0.8.9026")
 
     moduleNameAndBranch <- paste0("PredictiveEcology/Biomass_core@development (>= ", bcVersion, ")")
     modules <- Require::extractPkgName(moduleNameAndBranch)
