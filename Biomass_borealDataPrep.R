@@ -1,6 +1,7 @@
 defineModule(sim, list(
   name = "Biomass_borealDataPrep",
-  description = "A data preparation module for parameterizing Biomass_core from open data sources, within the Boreal forest of Canada",
+  description = paste("A data preparation module for parameterizing `Biomass_core` from open data sources,",
+                      "within the Boreal forest of Canada."),
   keywords = c("LandWeb", "Biomass_core"),
   authors = c(
     person("Yong", "Luo", email = "Yong.Luo@gov.bc.ca", role = c("aut")),
@@ -23,7 +24,7 @@ defineModule(sim, list(
                   "PredictiveEcology/reproducible@development (>= 2.0.8.9005)", #for nested prepInputs
                   "PredictiveEcology/LandR@development (>= 1.1.0.9054)",
                   "PredictiveEcology/SpaDES.core@development (>= 2.0.2.9004)",
-                  "PredictiveEcology/SpaDES.project@transition", ## TODO: update this once merged
+                  "PredictiveEcology/SpaDES.project@transition (>= 0.0.8.9026)", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     ## maxB, maxANPP, SEP estimation section ------------------------------------------------
@@ -333,7 +334,7 @@ defineModule(sim, list(
                                "related to understanding the creation of `cohortData`")),
     createsOutput("minRelativeB", "data.frame",
                   desc = paste("minimum relative biomass thresholds that determine a shade level in each",
-                               "pixel. X0-5 represent site shade classes from no-shade (0) to maximum shade (5).")),
+                               "pixel. `X0-5` represent site shade classes from no-shade (0) to maximum shade (5).")),
     createsOutput("modelCover", "data.frame",
                   desc = paste("If `P(sim)$exportModels` is 'all', or 'cover',",
                                "fitted cover model, as defined by `P(sim)$coverModel`.")),
@@ -342,14 +343,16 @@ defineModule(sim, list(
                                "fitted biomass model, as defined by `P(sim)$biomassModel`")),
     createsOutput("rawBiomassMap", "SpatRaster",
                   desc = paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
-                               "Service, National Forest Inventory, kNN-derived total aboveground biomass map (in tonnes/ha)",
-                               "from 2001, unless 'dataYear' != 2001. See https://open.canada.ca/data/en/dataset/",
-                               "ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata")),
+                               "Service, National Forest Inventory, kNN-derived total aboveground biomass map",
+                               "(in tonnes/ha) from 2001, unless `dataYear != 2001`.",
+                               "See <https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990>",
+                               "for metadata")),
     createsOutput("rstLCC", "SpatRaster",
                   desc =  paste("As the input object `rstLCC`, but potentially cropped/projected/masked to match",
                                 "`rasterToMatchLarge`")),
     createsOutput("species", "data.table",
-                  desc = paste("a table that of invariant species traits. Will have the same traits as the input `speciesTable` with",
+                  desc = paste("a table that of invariant species traits.",
+                               "Will have the same traits as the input `speciesTable` with",
                                "values adjusted where necessary")),
     createsOutput("speciesLayers", "SpatRaster",
                   desc = paste("cover percentage raster layers by species in Canada species map.",
@@ -950,7 +953,8 @@ createBiomass_coreInputs <- function(sim) {
           fixModelBiomass <- FALSE
       } else {
         if (tryControl && needRescaleModelB)
-          warning("Biomass model did not converge and automated attempts to fix also failed. This will need more attention.")
+          warning("Biomass model did not converge and automated attempts to fix also failed.",
+                  " This will need more attention.")
         break
       }
     } # End of tryBiomassModel
@@ -963,7 +967,8 @@ createBiomass_coreInputs <- function(sim) {
   }
 
   if (isTRUE(tryBiomassDataSubset == maxDataSubsetTries) && isTRUE(needRedo)) {
-    warning("The biomass model did not converge with ", tryBiomassDataSubset," attempts of data subsetting and changing lme algorithm")
+    warning("The biomass model did not converge with ", tryBiomassDataSubset,
+            " attempts of data subsetting and changing lme algorithm.")
   }
 
   message(blue("  The rsquared is: "))
