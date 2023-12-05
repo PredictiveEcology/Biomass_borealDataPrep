@@ -1281,7 +1281,7 @@ createBiomass_coreInputs <- function(sim) {
   ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
   message(blue("Writing sim$speciesLayers to disk as they are likely no longer needed in RAM"))
 
-  useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
+  # useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
   # options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
   sim$speciesLayers <- Cache(postProcessTo,
                              sim$speciesLayers,
