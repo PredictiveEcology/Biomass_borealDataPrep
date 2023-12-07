@@ -1534,16 +1534,16 @@ Save <- function(sim) {
   ## Ecodistrict ------------------------------------------------
   if (!suppliedElsewhere("ecoregionLayer", sim)) {
     ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-    sim$ecoregionLayer <- Cache(prepInputs,
-                                targetFile = "ecodistricts.shp",
-                                archive = asPath("ecodistrict_shp.zip"),
-                                url = extractURL("ecoregionLayer", sim),
-                                alsoExtract = "similar",
-                                destinationPath = dPath,
-                                writeTo = NULL,
-                                to = sim$studyAreaLarge,
-                                fun = getOption("reproducible.shapefileRead"),
-                                overwrite = TRUE,
+    sim$ecoregionLayer <- Cache(prepInputs(targetFile = "ecodistricts.shp",
+                                           archive = asPath("ecodistrict_shp.zip"),
+                                           url = extractURL("ecoregionLayer", sim),
+                                           alsoExtract = "similar",
+                                           destinationPath = dPath,
+                                           writeTo = NULL,
+                                           to = sim$studyAreaLarge,
+                                           fun = getOption("reproducible.shapefileRead"),
+                                           overwrite = TRUE),
+                                .functionName = "prepInputs_forEcoregionLayer",
                                 userTags = c("prepInputsEcoDistrict_SA", currentModule(sim), cacheTags))
   }
 
