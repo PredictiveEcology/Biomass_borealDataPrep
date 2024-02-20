@@ -617,6 +617,7 @@ createBiomass_coreInputs <- function(sim) {
                       userTags = c(cacheTags, "pixelTable"),
                       omitArgs = c("userTags"))
   options(opt)
+  pixelTable[, rasterToMatch := NULL]
 
   ## create initial pixelCohortData table ---------------
   coverColNames <- paste0("cover.", sim$species$species)
@@ -756,7 +757,7 @@ createBiomass_coreInputs <- function(sim) {
                             all.y = FALSE, by = "pixelIndex")
   cohortDataNo34to36 <- pixelCohortData[!pixelIndex %in% newLCCClasses$pixelIndex]
   if (!length(P(sim)$LCCClassesToReplaceNN)) {
-    if (!identical(cohortDataNo34to36, pixelCohortData))
+    if (!all.equal(cohortDataNo34to36, pixelCohortData, attributes = FALSE))
       stop("No LCC classes were listed for replacement, but some pixels may have been lost")
   }
   setnames(cohortDataNo34to36, "initialEcoregionCode", "ecoregionGroup")
