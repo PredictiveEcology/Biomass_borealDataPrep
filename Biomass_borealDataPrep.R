@@ -757,7 +757,7 @@ createBiomass_coreInputs <- function(sim) {
                             all.y = FALSE, by = "pixelIndex")
   cohortDataNo34to36 <- pixelCohortData[!pixelIndex %in% newLCCClasses$pixelIndex]
   if (!length(P(sim)$LCCClassesToReplaceNN)) {
-    if (!all.equal(cohortDataNo34to36, pixelCohortData, attributes = FALSE))
+    if (!all.equal(cohortDataNo34to36, pixelCohortData, check.attributes = FALSE))
       stop("No LCC classes were listed for replacement, but some pixels may have been lost")
   }
   setnames(cohortDataNo34to36, "initialEcoregionCode", "ecoregionGroup")
