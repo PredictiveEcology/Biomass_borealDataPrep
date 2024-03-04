@@ -1491,13 +1491,14 @@ Save <- function(sim) {
       on.exit(options(opt), add = TRUE)
       sim$firePerimeters <- Cache(
         prepInputsFireYear(destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
-                           studyArea = raster::aggregate(sim$studyArea),
+                           studyArea = raster::aggregate(sim$studyArea) |> sf::st_as_sf(), ## TODO: terra fails full landweb
                            rasterToMatch = sim$rasterToMatchLarge,
                            overwrite = TRUE,
                            url = extractURL("firePerimeters"),
+                           fun = "sf::st_read", ## TODO: terra failing on full landweb study area
                            fireField = "YEAR"),
         userTags = c(cacheTags, "firePerimeters")
-      )
+      ) ## TODO: need to convert back to Spatial object?
       options(opt)
     }
   }
