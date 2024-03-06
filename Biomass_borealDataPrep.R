@@ -22,7 +22,7 @@ defineModule(sim, list(
                   # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
                   ## Excluded because loading is not necessary (just installation)
                   "PredictiveEcology/reproducible@development (>= 2.0.8.9005)", #for nested prepInputs
-                  "PredictiveEcology/LandR@development (>= 1.1.0.9054)",
+                  "PredictiveEcology/LandR@development (>= 1.1.0.9080)",
                   "PredictiveEcology/SpaDES.core@development (>= 2.0.2.9004)",
                   "PredictiveEcology/SpaDES.project@transition (>= 0.0.8.9026)", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
@@ -83,8 +83,8 @@ defineModule(sim, list(
     ## -------------------------------------------------------------------------------------------
     defineParameter("dataYear", "numeric", 2001, NA, NA,
                     paste("Used to override the default 'sourceURL' of KNN datasets (species cover, stand biomass",
-                          "and stand age), which point to 2001 data, to fetch KNN data for another year.",
-                          "Currently, the only other possible year is 2011.")),
+                          "and stand age), which point to 2001 data, to fetch KNN data for another year. Currently,",
+                          "the only other possible year is 2011. Will also select NTEMS landcover from appropriate year.")),
     defineParameter("ecoregionLayerField", "character", NULL, NA, NA,
                     paste("the name of the field used to distinguish ecoregions, if supplying a polygon.",
                           "Defaults to `NULL` and tries to use  'ECODISTRIC' where available (for legacy reasons), or the row numbers of",
@@ -1506,13 +1506,16 @@ Save <- function(sim) {
 
   ## Land cover raster ------------------------------------------------
   if (!suppliedElsewhere("rstLCC", sim)) {
-    ## if using default LC source, year must be one of 2005, 2010 or 2015
-    if (is.na(P(sim)$rstLCCURL)) {
-      if (!P(sim)$rstLCCYear %in% c(2005, 2010, 2015)) {
-        stop("If using default 'P(sim)$rstLCCURL', 'P(sim)$rstLCCYear' must be one of:",
-             "\n 2005, 2010 or 2015")
-      }
-    }
+    sim$rstLCC <- Cache(prepInputs_NTEMS_LCC_FAO,
+                        year = P(sim)$dataYear,
+                        studyArea = sim$studyAreaLarge, ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
+                        rasterToMatch = sim$rasterToMatchLarge,
+                        disturbedCode = 0,
+                        destinationPath = dPath,
+                        filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName), "_", P(sim)$dataYear),
+                        userTags = c("rstLCC", currentModule(sim), 
+                                     P(sim)$.studyAreaName), P(sim)$dataYear)
+  }
 
     ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
     urlHere <- if (is.na(P(sim)$rstLCCURL)) NULL else P(sim)$rstLCCURL
