@@ -106,7 +106,7 @@ defineModule(sim, list(
                           "biomass or cover. Specifically, if biomass or cover is 0, but age is not, or if age is missing (`NA`),",
                           "then age will be imputed. Note that this is independent from replacing ages inside fire perimeters",
                           "(see `P(sim)$overrideAgeInFires`)")),
-    defineParameter("LCCClassesToReplaceNN", "numeric", numeric(0), NA, NA,
+    defineParameter("LCCClassesToReplaceNN", "numeric", numeric(240), NA, NA,
                     paste("This will replace these classes on the landscape with the closest forest class `P(sim)$forestedLCCClasses`.",
                           "If the user is using the LCC 2005 land-cover data product for `rstLCC`, then they may wish to",
                           "include 36 (cities -- if running a historic range of variation project), and 34:35 (burns)",
@@ -1508,31 +1508,14 @@ Save <- function(sim) {
   if (!suppliedElsewhere("rstLCC", sim)) {
     sim$rstLCC <- Cache(prepInputs_NTEMS_LCC_FAO,
                         year = P(sim)$dataYear,
-                        studyArea = sim$studyAreaLarge, ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-                        rasterToMatch = sim$rasterToMatchLarge,
-                        disturbedCode = 0,
+                        maskTo = sim$studyAreaLarge, ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
+                        cropTo = sim$rasterToMatchLarge,
+                        projectTo = sim$rasterTomatchLarge,
+                        disturbedCode = 240,
                         destinationPath = dPath,
                         filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName), "_", P(sim)$dataYear),
                         userTags = c("rstLCC", currentModule(sim), 
                                      P(sim)$.studyAreaName), P(sim)$dataYear)
-  }
-
-    ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-    urlHere <- if (is.na(P(sim)$rstLCCURL)) NULL else P(sim)$rstLCCURL
-    sim$rstLCC <- Cache(prepInputsLCC,
-                        year = P(sim)$rstLCCYear,
-                        url = urlHere,
-                        # studyArea = sim$studyAreaLarge,
-                        # rasterToMatch = sim$rasterToMatchLarge,
-                        to = sim$rasterToMatchLarge,
-                        maskTo = sim$studyAreaLarge,
-                        destinationPath = dPath,
-                        writeTo = .suffix("rstLCC.tif", paste0("_", P(sim)$dataYear,
-                                                               "_", P(sim)$.studyAreaName)),
-                        overwrite = TRUE,
-                        userTags = c("rstLCC", currentModule(sim),
-                                     P(sim)$rstLCCYear, P(sim)$.studyAreaName),
-                        omitArgs = c("destinationPath", "userTags", "writeTo", "overwrite"))
   }
 
   ## Ecodistrict ------------------------------------------------
