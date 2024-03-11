@@ -1503,17 +1503,17 @@ Save <- function(sim) {
     sim$studyAreaLarge <- projectInputs(sim$studyAreaLarge, crs(sim$rasterToMatchLarge))
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
-
+  browser()
   ## Land cover raster ------------------------------------------------
   if (!suppliedElsewhere("rstLCC", sim)) {
     sim$rstLCC <- Cache(prepInputs_NTEMS_LCC_FAO,
                         year = P(sim)$dataYear,
-                        maskTo = sim$studyAreaLarge, ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
+                        maskTo = sim$studyAreaLarge,
                         cropTo = sim$rasterToMatchLarge,
-                        projectTo = sim$rasterTomatchLarge,
+                        projectTo = sim$rasterToMatchLarge,
                         disturbedCode = 240,
                         destinationPath = dPath,
-                        filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName), "_", P(sim)$dataYear),
+                        filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName, "_", P(sim)$dataYear)),
                         userTags = c("rstLCC", currentModule(sim), 
                                      P(sim)$.studyAreaName), P(sim)$dataYear)
   }
