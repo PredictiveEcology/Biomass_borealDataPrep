@@ -96,9 +96,10 @@ defineModule(sim, list(
                           "the user wants to investigate them further. Can be set to 'none' (no models are exported), 'all'",
                           "(both are exported), 'biomassModel' or 'coverModel'. BEWARE: because this is intended for posterior",
                           "model inspection, the models will be exported with data, which may mean very large simList(s)!")),
-    defineParameter("forestedLCCClasses", "numeric", 1:6, 0, NA,
+    defineParameter("forestedLCCClasses", "numeric", c(210, 220, 230, 240), 0, NA,
                     paste("The classes in the `rstLCC` layer that are 'treed' and will therefore be run in Biomass_core.",
-                          "Defaults to forested classes in LCC2010 map.")),
+                          "Defaults to forested classes in NTEMS map (210 = conif, 220 deciduous, 230 mixed) plus", 
+                          "LandR-generated 240 class, which is recently disturbed forest.")),
     defineParameter("imputeBadAgeModel", "call",
                     quote(lme4::lmer(age ~ log(totalBiomass) * cover * speciesCode + (log(totalBiomass) | initialEcoregionCode))),
                     NA, NA,
@@ -106,7 +107,7 @@ defineModule(sim, list(
                           "biomass or cover. Specifically, if biomass or cover is 0, but age is not, or if age is missing (`NA`),",
                           "then age will be imputed. Note that this is independent from replacing ages inside fire perimeters",
                           "(see `P(sim)$overrideAgeInFires`)")),
-    defineParameter("LCCClassesToReplaceNN", "numeric", numeric(240), NA, NA,
+    defineParameter("LCCClassesToReplaceNN", "numeric", 240, NA, NA,
                     paste("This will replace these classes on the landscape with the closest forest class `P(sim)$forestedLCCClasses`.",
                           "If the user is using the LCC 2005 land-cover data product for `rstLCC`, then they may wish to",
                           "include 36 (cities -- if running a historic range of variation project), and 34:35 (burns)",
@@ -1513,9 +1514,10 @@ Save <- function(sim) {
                         projectTo = sim$rasterToMatchLarge,
                         disturbedCode = 240,
                         destinationPath = dPath,
+                        overwrite = TRUE,
                         filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName, "_", P(sim)$dataYear)),
                         userTags = c("rstLCC", currentModule(sim), 
-                                     P(sim)$.studyAreaName), P(sim)$dataYear)
+                                     P(sim)$.studyAreaName, P(sim)$dataYear))
   }
 
   ## Ecodistrict ------------------------------------------------
