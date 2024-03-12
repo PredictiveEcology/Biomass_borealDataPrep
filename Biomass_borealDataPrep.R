@@ -1540,23 +1540,23 @@ Save <- function(sim) {
     if (!suppliedElsewhere("firePerimeters", sim)) {
       # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
       # on.exit(options(opt), add = TRUE)
-      sa <- if (is(sim$studyArea, "sf")) {
-        aggregate(sim$studyArea, list(rep(1, nrow(sim$studyArea))),
+      sa <- if (is(sim$studyAreaLarge, "sf")) {
+        aggregate(sim$studyAreaLarge, list(rep(1, nrow(sim$studyAreaLarge))),
                   FUN = function(x) x)
       } else {
-        aggregate(sim$studyArea)
+       aggregate(sim$studyAreaLarge)
       }
       sim$firePerimeters <- Cache(
-        prepInputsFireYear(destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
-                           studyArea = sa,
-                           rasterToMatch = sim$rasterToMatchLarge,
-                           overwrite = TRUE,
-                           url = extractURL("firePerimeters"),
-                           fireField = "YEAR",
-                           omitArgs = "destinationPath"),
+        prepInputsFireYear, 
+        destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
+        studyArea = sa,
+        rasterToMatch = sim$rasterToMatchLarge,
+        overwrite = TRUE,
+        url = extractURL("firePerimeters"),
+        fireField = "YEAR",
+        omitArgs = "destinationPath",
         userTags = c(cacheTags, "firePerimeters")
       )
-      # options(opt)
     }
   }
 
