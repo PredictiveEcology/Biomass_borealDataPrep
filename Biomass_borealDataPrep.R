@@ -465,12 +465,14 @@ createBiomass_coreInputs <- function(sim) {
                         to = sim$rasterToMatchLarge,
                         overwrite = TRUE)
   }
-
-  if (!.compareRas(sim$firePerimeters, sim$rasterToMatchLarge, res = TRUE, stopOnError = FALSE)) {
-    sim$firePerimeters <- Cache(postProcess,
-                                sim$firePerimeters,
-                                to = sim$rasterToMatchLarge,
-                                overwrite = TRUE)
+  
+  if (P(sim)$overrideAgeInFires) {
+    if (!.compareRas(sim$firePerimeters, sim$rasterToMatchLarge, res = TRUE, stopOnError = FALSE)) {
+      sim$firePerimeters <- Cache(postProcess,
+                                  sim$firePerimeters,
+                                  to = sim$rasterToMatchLarge,
+                                  overwrite = TRUE)
+    }
   }
   # options(opt)
 
