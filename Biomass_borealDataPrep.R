@@ -22,7 +22,7 @@ defineModule(sim, list(
                   # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
                   ## Excluded because loading is not necessary (just installation)
                   "PredictiveEcology/reproducible@development (>= 2.0.8.9005)", #for nested prepInputs
-                  "PredictiveEcology/LandR@development (>= 1.1.0.9080)",
+                  "PredictiveEcology/LandR@lccFix (>= 1.1.0.9082)",
                   "PredictiveEcology/SpaDES.core@development (>= 2.0.2.9004)",
                   "PredictiveEcology/SpaDES.project@transition (>= 0.0.8.9026)", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
@@ -423,6 +423,7 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
 }
 
 createBiomass_coreInputs <- function(sim) {
+
   origDTthreads <- data.table::getDTthreads()
   data.table::setDTthreads(min(origDTthreads, 2)) # seems to only improve up to 2 threads
   on.exit(setDTthreads(origDTthreads))
@@ -1504,7 +1505,6 @@ Save <- function(sim) {
     sim$studyAreaLarge <- projectInputs(sim$studyAreaLarge, crs(sim$rasterToMatchLarge))
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
-
   ## Land cover raster ------------------------------------------------
   if (!suppliedElsewhere("rstLCC", sim)) {
     sim$rstLCC <- Cache(prepInputs_NTEMS_LCC_FAO,
@@ -1515,6 +1515,7 @@ Save <- function(sim) {
                         disturbedCode = 240,
                         destinationPath = dPath,
                         overwrite = TRUE,
+                        useCache = 'overwrite',
                         filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName, "_", P(sim)$dataYear)),
                         userTags = c("rstLCC", currentModule(sim), 
                                      P(sim)$.studyAreaName, P(sim)$dataYear))
