@@ -1157,7 +1157,7 @@ createBiomass_coreInputs <- function(sim) {
                          sppColorsVect = sim$sppColorsVect,
                          paths = paths(sim),
                          currentModule = currentModule(sim),
-                         modules = modules(sim),
+                         modules = modules(sim), ## will also check modules in paths$moduelPath
                          userTags = c(cacheTags, "spinUpYoungBiomasses"),
                          omitArgs = c("userTags", "paths", "modules"))
 
