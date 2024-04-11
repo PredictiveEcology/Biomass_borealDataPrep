@@ -1185,7 +1185,9 @@ createBiomass_coreInputs <- function(sim) {
         assertthat::assert_that(lengthUniquePixelIndices == length(unique(pixelCohortData$pixelIndex)))
 
         sim$imputedPixID <- unique(c(sim$imputedPixID, young$pixelIndex))
-        assertthat::assert_that( ## TODO: reassess 2.8x multiplier; it's high, but needed in RoF_shield
+
+        ## TODO: reassess 2.8x multiplier; it's high, but needed in RoF_shield
+        assertthat::assert_that(
           all(inRange(young$B, 0, 2.8 * maxRawB / min(sim$species$longevity/maxAgeHighQualityData)))
         ) # /4 is too strong -- 25 years is a lot of time
       } else {
