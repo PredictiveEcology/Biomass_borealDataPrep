@@ -98,7 +98,7 @@ defineModule(sim, list(
                           "model inspection, the models will be exported with data, which may mean very large simList(s)!")),
     defineParameter("forestedLCCClasses", "numeric", c(210, 220, 230, 240), 0, NA,
                     paste("The classes in the `rstLCC` layer that are 'treed' and will therefore be run in Biomass_core.",
-                          "Defaults to forested classes in NTEMS map (210 = conif, 220 deciduous, 230 mixed) plus", 
+                          "Defaults to forested classes in NTEMS map (210 = conif, 220 deciduous, 230 mixed) plus",
                           "LandR-generated 240 class, which is recently disturbed forest.")),
     defineParameter("imputeBadAgeModel", "call",
                     quote(lme4::lmer(age ~ log(totalBiomass) * cover * speciesCode + (log(totalBiomass) | initialEcoregionCode))),
@@ -423,7 +423,6 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
 }
 
 createBiomass_coreInputs <- function(sim) {
-
   origDTthreads <- data.table::getDTthreads()
   data.table::setDTthreads(min(origDTthreads, 2)) # seems to only improve up to 2 threads
   on.exit(setDTthreads(origDTthreads))
@@ -435,12 +434,13 @@ createBiomass_coreInputs <- function(sim) {
   cacheTags <- c(currentModule(sim), "init")
 
   message(blue("Starting to createBiomass_coreInputs in Biomass_borealDataPrep: ", Sys.time()))
-  if (is.null(sim$speciesLayers))
+  if (is.null(sim$speciesLayers)) {
     stop(red(paste(
       "'speciesLayers' are missing in Biomass_borealDataPrep init event.\n",
       "This is likely due to the module producing 'speciesLayers' being scheduled after Biomass_borealDataPrep.\n",
       "Please check module order."
     )))
+  }
 
   if (!all(P(sim)$LCCClassesToReplaceNN %in% P(sim)$forestedLCCClasses)) {
     stop("All 'LCCClassesToReplaceNN' should be included in 'forestedLCCClasses'.")
@@ -1409,7 +1409,7 @@ Save <- function(sim) {
   studyArea <- st_as_sf(sim$studyArea)
   studyAreaLarge <- st_as_sf(sim$studyAreaLarge)
 
-  #this is necessary if studyArea and studyAreaLarge are multipolygon objects
+  ## this is necessary if studyArea and studyAreaLarge are multipolygon objects
   if (nrow(studyArea) > 1) {
     studyArea <- st_buffer(studyArea, 0) |> st_union()
   }
@@ -1418,9 +1418,10 @@ Save <- function(sim) {
     studyAreaLarge <- st_buffer(studyAreaLarge, 0) |> st_union()
   }
 
-  if (length(st_within(studyArea, studyAreaLarge))[[1]] == 0)
+  if (length(st_within(studyArea, studyAreaLarge))[[1]] == 0) {
     stop("studyArea is not fully within studyAreaLarge.
          Please check the aligment, projection and shapes of these polygons")
+  }
   rm(studyArea, studyAreaLarge)
 
   ## Raster(s) to match ------------------------------------------------
@@ -1517,7 +1518,7 @@ Save <- function(sim) {
                         overwrite = TRUE,
                         useCache = 'overwrite',
                         filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName, "_", P(sim)$dataYear)),
-                        userTags = c("rstLCC", currentModule(sim), 
+                        userTags = c("rstLCC", currentModule(sim),
                                      P(sim)$.studyAreaName, P(sim)$dataYear))
   }
 
@@ -1548,7 +1549,7 @@ Save <- function(sim) {
        aggregate(sim$studyAreaLarge)
       }
       sim$firePerimeters <- Cache(
-        prepInputsFireYear, 
+        prepInputsFireYear,
         destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
         studyArea = sa,
         rasterToMatch = sim$rasterToMatchLarge,
