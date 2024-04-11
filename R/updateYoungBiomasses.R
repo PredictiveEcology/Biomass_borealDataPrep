@@ -168,7 +168,10 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
 
   bcVersion <- "1.3.10"
   ## if Biomass_core doesn't exist in modulePath or is too old, then download it
-  modulesInProject <- c(modules, list.dirs(paths$modulePath, full.names = FALSE, recursive = FALSE))
+  modulesInProject <- list.dirs(paths$modulePath, full.names = TRUE, recursive = FALSE) |> as.list()
+  names(modulesInProject) <- modulesInProject
+  modulesInProject <- lapply(modulesInProject, basename)
+  modules <- modifyList(modules, modulesInProject)
   if (!any("Biomass_core" %in% modulesInProject) ||
       moduleVersion("Biomass_core", paths$modulePath) < bcVersion) {
 
