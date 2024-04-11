@@ -260,7 +260,7 @@ defineModule(sim, list(
                               "from 2001 (in tonnes/ha), unless 'dataYear' != 2001. See",
                               "https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990",
                               "for metadata."),
-                 sourceURL = paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
+                 sourceURL = paste0("https://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
                                     "canada-forests-attributes_attributs-forests-canada/",
                                     "2001-attributes_attributs-2001/",
                                     "NFI_MODIS250m_2001_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif")),
@@ -1444,11 +1444,7 @@ Save <- function(sim) {
   ## biomass map
   if (!suppliedElsewhere("rawBiomassMap", sim)) {
     if (P(sim)$dataYear %in% c(2001, 2011)) {
-      biomassURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
-                           "canada-forests-attributes_attributs-forests-canada/",
-                           P(sim)$dataYear, "-attributes_attributs-", P(sim)$dataYear, "/",
-                           "NFI_MODIS250m_", P(sim)$dataYear,
-                           "_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif")
+      biomassURL <- extractURL("rawBiomassMap") |> gsub("2001", P(sim)$dataYear, x = _)
     } else {
       stop("'P(sim)$dataYear' must be one of 2001 or 2011")
     }
@@ -1578,14 +1574,10 @@ Save <- function(sim) {
   if (!suppliedElsewhere("standAgeMap", sim)) {
     if (P(sim)$dataYear == 2001) {
       ageURL <- extractURL("standAgeMap")
+    } else if (P(sim)$dataYear == 2011) {
+        ageURL <- extractURL("standAgeMap") |> gsub("2001", "2011", x = _)
     } else {
-      if (P(sim)$dataYear == 2011) {
-        ageURL <- paste0("http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/",
-                         "canada-forests-attributes_attributs-forests-canada/2011-attributes_attributs-2011/",
-                         "NFI_MODIS250m_2011_kNN_Structure_Stand_Age_v1.tif")
-      } else {
-        stop("'P(sim)$dataYear' must be 2001 OR 2011")
-      }
+      stop("'P(sim)$dataYear' must be 2001 OR 2011")
     }
     ## Ceres Sep 3rd 2022 -- this option caused failure when previously set to FALSE at project level.
     # opt <- options("reproducible.useTerra" = TRUE) # Too many times this was failing with non-Terra # Eliot March 8, 2022
