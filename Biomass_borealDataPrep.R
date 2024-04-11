@@ -1362,7 +1362,7 @@ Save <- function(sim) {
 
 .inputObjects <- function(sim) {
   cacheTags <- c(currentModule(sim), "otherFunctions:.inputObjects")
-  dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
+  dPath <- asPath(getOption("reproducible.destinationPath", inputPath(sim)), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
   # 1. test if all input objects are already present (e.g., from inputs, objects or another module)
