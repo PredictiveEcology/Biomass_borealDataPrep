@@ -1364,7 +1364,7 @@ Save <- function(sim) {
 
 .inputObjects <- function(sim) {
   cacheTags <- c(currentModule(sim), "otherFunctions:.inputObjects")
-  dPath <- asPath(getOption("reproducible.destinationPath", inputPath(sim)), 1)
+  dPath <- asPath(inputPath(sim), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
   # 1. test if all input objects are already present (e.g., from inputs, objects or another module)
@@ -1548,7 +1548,7 @@ Save <- function(sim) {
       }
       sim$firePerimeters <- Cache(
         prepInputsFireYear,
-        destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
+        destinationPath = dPath,
         studyArea = sa,
         rasterToMatch = sim$rasterToMatchLarge,
         overwrite = TRUE,
