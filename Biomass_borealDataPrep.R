@@ -1514,7 +1514,6 @@ Save <- function(sim) {
                         disturbedCode = 240,
                         destinationPath = dPath,
                         overwrite = TRUE,
-                        useCache = 'overwrite',
                         filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName, "_", P(sim)$dataYear)),
                         userTags = c("rstLCC", currentModule(sim),
                                      P(sim)$.studyAreaName, P(sim)$dataYear))
