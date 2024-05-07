@@ -467,12 +467,14 @@ createBiomass_coreInputs <- function(sim) {
                         to = sim$rasterToMatchLarge,
                         overwrite = TRUE)
   }
-
-  if (!.compareRas(sim$firePerimeters, sim$rasterToMatchLarge, res = TRUE)) {
-    sim$firePerimeters <- Cache(postProcess,
-                                sim$firePerimeters,
-                                to = sim$rasterToMatchLarge,
-                                overwrite = TRUE)
+  
+  if (P(sim)$overrideAgeInFires) {
+    if (!.compareRas(sim$firePerimeters, sim$rasterToMatchLarge, res = TRUE, stopOnError = FALSE)) {
+      sim$firePerimeters <- Cache(postProcess,
+                                  sim$firePerimeters,
+                                  to = sim$rasterToMatchLarge,
+                                  overwrite = TRUE)
+    }
   }
   # options(opt)
 
@@ -1349,8 +1351,8 @@ plottingFn <- function(sim) {
   }
   Map(stk = seStacks, SEtype = names(seStacks),
       function(stk, SEtype) {
-        Plots(stk, fn = plotFn_speciesEcoregion, SEtype = SEtype,
-              filename = file.path(figurePath(sim), paste0("speciesEcoregion", "_", time(sim), "_", SEtype)))
+        f <- file.path(figurePath(sim), paste0("speciesEcoregion", "_", time(sim), "_", SEtype))
+        Plots(stk, fn = plotFn_speciesEcoregion, SEtype = SEtype, filename = f)
       }
   )
 }
@@ -1364,7 +1366,7 @@ Save <- function(sim) {
 
 .inputObjects <- function(sim) {
   cacheTags <- c(currentModule(sim), "otherFunctions:.inputObjects")
-  dPath <- asPath(getOption("reproducible.destinationPath", inputPath(sim)), 1)
+  dPath <- asPath(inputPath(sim), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
   # 1. test if all input objects are already present (e.g., from inputs, objects or another module)
@@ -1514,7 +1516,6 @@ Save <- function(sim) {
                         disturbedCode = 240,
                         destinationPath = dPath,
                         overwrite = TRUE,
-                        useCache = 'overwrite',
                         filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName, "_", P(sim)$dataYear)),
                         userTags = c("rstLCC", currentModule(sim),
                                      P(sim)$.studyAreaName, P(sim)$dataYear))
@@ -1548,7 +1549,7 @@ Save <- function(sim) {
       }
       sim$firePerimeters <- Cache(
         prepInputsFireYear,
-        destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
+        destinationPath = dPath,
         studyArea = sa,
         rasterToMatch = sim$rasterToMatchLarge,
         overwrite = TRUE,
