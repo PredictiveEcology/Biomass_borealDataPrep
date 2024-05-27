@@ -19,10 +19,10 @@ defineModule(sim, list(
                   "fasterize",  "ggplot2", "merTools", "plyr",
                   # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
                                     ## Excluded because loading is not necessary (just installation)
-                  "raster", "rasterVis", "sf", "sp", "SpaDES.tools", "terra",
-                  "PredictiveEcology/reproducible@development (>=1.2.6.9009)",
-                  "CeresBarros/LandR@development (>= 1.0.9.9001)",
-                  "PredictiveEcology/SpaDES.core@development (>=1.0.6.9016)",
+                  "raster", "rasterVis", "sf", "sp",
+                  "reproducible", "SpaDES.tools",
+                  "SpaDES.core", "terra",
+                  "PredictiveEcology/LandR@development (>= 1.0.9.9001)",
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     defineParameter("biomassModel", "call",
