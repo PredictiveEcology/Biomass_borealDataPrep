@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep948dd70fb33da61cbbbea748421073d46436a0ad)
+[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep43c5a95bdd9652301db9a98ac1e8e49d059ea2bd)
 
 [![Issues-badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -1097,22 +1097,6 @@ the model used to refit `deciduousCoverDiscount` in the supplied
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> A quoted function that makes the table of min. relative B determining a stand shade level for each ecoregionGroup. Using the internal object `pixelCohortData` is advisable to access/use the list of `ecoregionGroups` per pixel. The function must output a `data.frame` with 6 columns, named `ecoregionGroup` and 'X1' to 'X5', with one line per `ecoregionGroup` code, and the min. relative biomass for each stand shade level X1-5. The default function uses values from LANDIS-II available at: https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/biomass-succession-main-inputs_BSW_Baseline.txt and applies them to all ecolocations (`ecoregionGroup` codes) </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> rstLCCURL </td>
-   <td style="text-align:left;"> character </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> The URL to source rstLCC from. The default, `NA`, will rely on `P(sim)$rstLCCYear` to choose a land-cover layer from Canada Land Cover Modis product (http://www.cec.org/north-american-environmental-atlas/land-cover-2010-modis-250m/) </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> rstLCCYear </td>
-   <td style="text-align:left;"> integer </td>
-   <td style="text-align:left;"> 2010 </td>
-   <td style="text-align:left;"> 2005 </td>
-   <td style="text-align:left;"> 2015 </td>
-   <td style="text-align:left;"> The year of the land-cover layer to use when `P(sim)$rstLCCURL` is `NA`. See `?LandR::prepInputsLCC` </td>
   </tr>
   <tr>
    <td style="text-align:left;"> omitNonTreedPixels </td>
