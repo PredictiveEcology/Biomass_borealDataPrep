@@ -1,6 +1,6 @@
 ---
 title: "LandR _Biomass_borealDataPrep_ Manual"
-date: "Last updated: 2022-11-04"
+date: "Last updated: 2024-05-28"
 output:
   bookdown::html_document2:
     toc: true
@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep946dff8df0663e95890ed4d878d9b86ef3d8b53e)
+[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep6b062955bf9cf1680a28dc4c067618473eae0341)
 
 [![Issues-badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -1074,7 +1074,7 @@ the model used to refit `deciduousCoverDiscount` in the supplied
   <tr>
    <td style="text-align:left;"> pixelGroupAgeClass </td>
    <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;"> params(s.... </td>
+   <td style="text-align:left;">  </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> When assigning `pixelGroup` membership, this defines the resolution of ages that will be considered 'the same pixelGroup', e.g., if it is 10, then 6 and 14 will be the same </td>
@@ -1154,7 +1154,7 @@ the model used to refit `deciduousCoverDiscount` in the supplied
   <tr>
    <td style="text-align:left;"> .plotInitialTime </td>
    <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;"> start(sim) </td>
+   <td style="text-align:left;"> 0 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> This is here for backwards compatibility. Please use `.plots` </td>
