@@ -22,7 +22,7 @@ defineModule(sim, list(
                   # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
                   ## Excluded because loading is not necessary (just installation)
                   "PredictiveEcology/reproducible@development (>= 2.0.8.9005)", #for nested prepInputs
-                  "PredictiveEcology/LandR@lccFix (>= 1.1.0.9082)",
+                  "PredictiveEcology/LandR@development (>= 1.1.1)",
                   "PredictiveEcology/SpaDES.core@development (>= 2.0.2.9004)",
                   "PredictiveEcology/SpaDES.project@transition (>= 0.0.8.9026)", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
@@ -128,13 +128,6 @@ defineModule(sim, list(
                           paste0("https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/",
                                  "biomass-succession-main-inputs_BSW_Baseline.txt"),
                           "and applies them to all ecolocations (`ecoregionGroup` codes)")),
-    defineParameter("rstLCCURL", "character", NA_character_, NA, NA,
-                    desc = paste("The URL to source rstLCC from. The default, `NA`, will rely on `P(sim)$rstLCCYear` to",
-                                 "choose a land-cover layer from Canada Land Cover Modis product",
-                                 "(http://www.cec.org/north-american-environmental-atlas/land-cover-2010-modis-250m/)")),
-    defineParameter("rstLCCYear", "integer", 2010L, 2005L, 2015L,
-                    desc = paste("The year of the land-cover layer to use when `P(sim)$rstLCCURL` is `NA`. See",
-                                 "`?LandR::prepInputsLCC`")),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by `P(sim)$forestedLCCClasses`?"),
     defineParameter("overrideAgeInFires", "logical", TRUE, NA, NA,
