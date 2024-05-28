@@ -1,6 +1,6 @@
 ---
 title: "LandR _Biomass_borealDataPrep_ Manual"
-date: "Last updated: 2024-04-11"
+date: "Last updated: 2024-05-28"
 output:
   bookdown::html_document2:
     toc: true
@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrepb25a8a19c31294a4ec13d7be8816383a28e637f8)
+[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep948dd70fb33da61cbbbea748421073d46436a0ad)
 
 [![Issues-badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -827,7 +827,7 @@ and *Biomass_core* manual for further detail about these columns.
   <tr>
    <td style="text-align:left;"> imputedPixID </td>
    <td style="text-align:left;"> integer </td>
-   <td style="text-align:left;"> A vector of pixel IDs - matching rasterMatch IDs - that suffered data imputation. Data imputation may be in age (to match last fire event post 1950s, or 0 cover), biomass (to match fire-related imputed ages, correct for missing values or for 0 age/cover), land cover (to convert non-forested classes into to nearest forested class). If standAgeMap had imputed data, then this is expected to be created at that time. It will be added as an attribute to `sim$standAgeMap` </td>
+   <td style="text-align:left;"> A vector of pixel IDs - matching rasterMatch IDs - that suffered data imputation. Data imputation may be in age (to match last fire event post 1950s, or 0 cover), biomass (to match fire-related imputed ages; correct for missing values or for 0 age/cover), land cover (to convert non-forested classes into to nearest forested class). If `standAgeMap` had imputed data, then this is expected to be created at that time. It will be added as an attribute to `sim$standAgeMap` </td>
    <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
@@ -1040,7 +1040,7 @@ the model used to refit `deciduousCoverDiscount` in the supplied
    <td style="text-align:left;"> 2001 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Used to override the default 'sourceURL' of KNN datasets (species cover, stand biomass and stand age), which point to 2001 data, to fetch KNN data for another year. Currently, the only other possible year is 2011. </td>
+   <td style="text-align:left;"> Used to override the default 'sourceURL' of KNN datasets (species cover, stand biomass and stand age), which point to 2001 data, to fetch KNN data for another year. Currently, the only other possible year is 2011. Will also select NTEMS landcover from appropriate year. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> ecoregionLayerField </td>
@@ -1061,10 +1061,10 @@ the model used to refit `deciduousCoverDiscount` in the supplied
   <tr>
    <td style="text-align:left;"> forestedLCCClasses </td>
    <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;"> 1, 2, 3,.... </td>
+   <td style="text-align:left;"> 210, 220.... </td>
    <td style="text-align:left;"> 0 </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> The classes in the `rstLCC` layer that are 'treed' and will therefore be run in Biomass_core. Defaults to forested classes in LCC2010 map. </td>
+   <td style="text-align:left;"> The classes in the `rstLCC` layer that are 'treed' and will therefore be run in Biomass_core. Defaults to forested classes in NTEMS map (210 = conif, 220 deciduous, 230 mixed) plus LandR-generated 240 class, which is recently disturbed forest. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> imputeBadAgeModel </td>
@@ -1077,7 +1077,7 @@ the model used to refit `deciduousCoverDiscount` in the supplied
   <tr>
    <td style="text-align:left;"> LCCClassesToReplaceNN </td>
    <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;">  </td>
+   <td style="text-align:left;"> 240 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> This will replace these classes on the landscape with the closest forest class `P(sim)$forestedLCCClasses`. If the user is using the LCC 2005 land-cover data product for `rstLCC`, then they may wish to include 36 (cities -- if running a historic range of variation project), and 34:35 (burns) Since this is about estimating parameters for growth, it doesn't make any sense to have unique estimates for transient classes in most cases. If no classes are to be replaced, pass `'LCCClassesToReplaceNN' = numeric(0)` when supplying parameters. </td>
