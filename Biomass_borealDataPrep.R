@@ -22,7 +22,7 @@ defineModule(sim, list(
                   # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
                   ## Excluded because loading is not necessary (just installation)
                   "PredictiveEcology/reproducible@development (>= 2.0.8.9005)", #for nested prepInputs
-                  "PredictiveEcology/LandR@development (>= 1.1.0.9054)",
+                  "PredictiveEcology/LandR@lccFix (>= 1.1.0.9082)",
                   "PredictiveEcology/SpaDES.core@development (>= 2.0.2.9004)",
                   "PredictiveEcology/SpaDES.project@transition (>= 0.0.8.9026)", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
@@ -83,8 +83,8 @@ defineModule(sim, list(
     ## -------------------------------------------------------------------------------------------
     defineParameter("dataYear", "numeric", 2001, NA, NA,
                     paste("Used to override the default 'sourceURL' of KNN datasets (species cover, stand biomass",
-                          "and stand age), which point to 2001 data, to fetch KNN data for another year.",
-                          "Currently, the only other possible year is 2011.")),
+                          "and stand age), which point to 2001 data, to fetch KNN data for another year. Currently,",
+                          "the only other possible year is 2011. Will also select NTEMS landcover from appropriate year.")),
     defineParameter("ecoregionLayerField", "character", NULL, NA, NA,
                     paste("the name of the field used to distinguish ecoregions, if supplying a polygon.",
                           "Defaults to `NULL` and tries to use  'ECODISTRIC' where available (for legacy reasons), or the row numbers of",
@@ -96,9 +96,10 @@ defineModule(sim, list(
                           "the user wants to investigate them further. Can be set to 'none' (no models are exported), 'all'",
                           "(both are exported), 'biomassModel' or 'coverModel'. BEWARE: because this is intended for posterior",
                           "model inspection, the models will be exported with data, which may mean very large simList(s)!")),
-    defineParameter("forestedLCCClasses", "numeric", 1:6, 0, NA,
+    defineParameter("forestedLCCClasses", "numeric", c(210, 220, 230, 240), 0, NA,
                     paste("The classes in the `rstLCC` layer that are 'treed' and will therefore be run in Biomass_core.",
-                          "Defaults to forested classes in LCC2010 map.")),
+                          "Defaults to forested classes in NTEMS map (210 = conif, 220 deciduous, 230 mixed) plus",
+                          "LandR-generated 240 class, which is recently disturbed forest.")),
     defineParameter("imputeBadAgeModel", "call",
                     quote(lme4::lmer(age ~ log(totalBiomass) * cover * speciesCode + (log(totalBiomass) | initialEcoregionCode))),
                     NA, NA,
@@ -106,7 +107,7 @@ defineModule(sim, list(
                           "biomass or cover. Specifically, if biomass or cover is 0, but age is not, or if age is missing (`NA`),",
                           "then age will be imputed. Note that this is independent from replacing ages inside fire perimeters",
                           "(see `P(sim)$overrideAgeInFires`)")),
-    defineParameter("LCCClassesToReplaceNN", "numeric", numeric(0), NA, NA,
+    defineParameter("LCCClassesToReplaceNN", "numeric", 240, NA, NA,
                     paste("This will replace these classes on the landscape with the closest forest class `P(sim)$forestedLCCClasses`.",
                           "If the user is using the LCC 2005 land-cover data product for `rstLCC`, then they may wish to",
                           "include 36 (cities -- if running a historic range of variation project), and 34:35 (burns)",
@@ -228,11 +229,11 @@ defineModule(sim, list(
                  sourceURL = "https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip"),
     expectsInput("imputedPixID", "integer",
                   desc = paste("A vector of pixel IDs - matching rasterMatch IDs - that suffered data imputation.",
-                               "Data imputation may be in age (to match last fire event post 1950s, or 0 cover), biomass (to match",
-                               "fire-related imputed ages, correct for missing values or for 0 age/cover), land cover (to convert",
-                               "non-forested classes into to nearest forested class).",
-                               "If standAgeMap had imputed data, then this is expected to be created at that time. It will",
-                               "be added as an attribute to `sim$standAgeMap`"),
+                               "Data imputation may be in age (to match last fire event post 1950s, or 0 cover),",
+                               "biomass (to match fire-related imputed ages; correct for missing values or for 0 age/cover),",
+                               "land cover (to convert non-forested classes into to nearest forested class).",
+                               "If `standAgeMap` had imputed data, then this is expected to be created at that time.",
+                               " It will be added as an attribute to `sim$standAgeMap`"),
                   sourceURL = NA),
     expectsInput("rstLCC", "SpatRaster",
                  desc = paste("A land classification map in study area. It must be 'corrected', in the sense that:\n",
@@ -433,12 +434,13 @@ createBiomass_coreInputs <- function(sim) {
   cacheTags <- c(currentModule(sim), "init")
 
   message(blue("Starting to createBiomass_coreInputs in Biomass_borealDataPrep: ", Sys.time()))
-  if (is.null(sim$speciesLayers))
+  if (is.null(sim$speciesLayers)) {
     stop(red(paste(
       "'speciesLayers' are missing in Biomass_borealDataPrep init event.\n",
       "This is likely due to the module producing 'speciesLayers' being scheduled after Biomass_borealDataPrep.\n",
       "Please check module order."
     )))
+  }
 
   if (!all(P(sim)$LCCClassesToReplaceNN %in% P(sim)$forestedLCCClasses)) {
     stop("All 'LCCClassesToReplaceNN' should be included in 'forestedLCCClasses'.")
@@ -1349,8 +1351,8 @@ plottingFn <- function(sim) {
   }
   Map(stk = seStacks, SEtype = names(seStacks),
       function(stk, SEtype) {
-        Plots(stk, fn = plotFn_speciesEcoregion, SEtype = SEtype,
-              filename = file.path(figurePath(sim), paste0("speciesEcoregion", "_", time(sim), "_", SEtype)))
+        f <- file.path(figurePath(sim), paste0("speciesEcoregion", "_", time(sim), "_", SEtype))
+        Plots(stk, fn = plotFn_speciesEcoregion, SEtype = SEtype, filename = f)
       }
   )
 }
@@ -1364,7 +1366,7 @@ Save <- function(sim) {
 
 .inputObjects <- function(sim) {
   cacheTags <- c(currentModule(sim), "otherFunctions:.inputObjects")
-  dPath <- asPath(getOption("reproducible.destinationPath", inputPath(sim)), 1)
+  dPath <- asPath(inputPath(sim), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
   # 1. test if all input objects are already present (e.g., from inputs, objects or another module)
@@ -1411,7 +1413,7 @@ Save <- function(sim) {
   studyArea <- st_as_sf(sim$studyArea)
   studyAreaLarge <- st_as_sf(sim$studyAreaLarge)
 
-  #this is necessary if studyArea and studyAreaLarge are multipolygon objects
+  ## this is necessary if studyArea and studyAreaLarge are multipolygon objects
   if (nrow(studyArea) > 1) {
     studyArea <- st_buffer(studyArea, 0) |> st_union()
   }
@@ -1420,9 +1422,10 @@ Save <- function(sim) {
     studyAreaLarge <- st_buffer(studyAreaLarge, 0) |> st_union()
   }
 
-  if (length(st_within(studyArea, studyAreaLarge))[[1]] == 0)
+  if (length(st_within(studyArea, studyAreaLarge))[[1]] == 0) {
     stop("studyArea is not fully within studyAreaLarge.
          Please check the aligment, projection and shapes of these polygons")
+  }
   rm(studyArea, studyAreaLarge)
 
   ## Raster(s) to match ------------------------------------------------
@@ -1503,33 +1506,19 @@ Save <- function(sim) {
     sim$studyAreaLarge <- projectInputs(sim$studyAreaLarge, crs(sim$rasterToMatchLarge))
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
-
   ## Land cover raster ------------------------------------------------
   if (!suppliedElsewhere("rstLCC", sim)) {
-    ## if using default LC source, year must be one of 2005, 2010 or 2015
-    if (is.na(P(sim)$rstLCCURL)) {
-      if (!P(sim)$rstLCCYear %in% c(2005, 2010, 2015)) {
-        stop("If using default 'P(sim)$rstLCCURL', 'P(sim)$rstLCCYear' must be one of:",
-             "\n 2005, 2010 or 2015")
-      }
-    }
-
-    ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
-    urlHere <- if (is.na(P(sim)$rstLCCURL)) NULL else P(sim)$rstLCCURL
-    sim$rstLCC <- Cache(prepInputsLCC,
-                        year = P(sim)$rstLCCYear,
-                        url = urlHere,
-                        # studyArea = sim$studyAreaLarge,
-                        # rasterToMatch = sim$rasterToMatchLarge,
-                        to = sim$rasterToMatchLarge,
+    sim$rstLCC <- Cache(prepInputs_NTEMS_LCC_FAO,
+                        year = P(sim)$dataYear,
                         maskTo = sim$studyAreaLarge,
+                        cropTo = sim$rasterToMatchLarge,
+                        projectTo = sim$rasterToMatchLarge,
+                        disturbedCode = 240,
                         destinationPath = dPath,
-                        writeTo = .suffix("rstLCC.tif", paste0("_", P(sim)$dataYear,
-                                                               "_", P(sim)$.studyAreaName)),
                         overwrite = TRUE,
+                        filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName, "_", P(sim)$dataYear)),
                         userTags = c("rstLCC", currentModule(sim),
-                                     P(sim)$rstLCCYear, P(sim)$.studyAreaName),
-                        omitArgs = c("destinationPath", "userTags", "writeTo", "overwrite"))
+                                     P(sim)$.studyAreaName, P(sim)$dataYear))
   }
 
   ## Ecodistrict ------------------------------------------------
@@ -1559,16 +1548,16 @@ Save <- function(sim) {
         aggregate(sim$studyAreaLarge)
       }
       sim$firePerimeters <- Cache(
-        prepInputsFireYear(destinationPath =  asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1),
-                           studyArea = sa,
-                           rasterToMatch = sim$rasterToMatchLarge,
-                           overwrite = TRUE,
-                           url = extractURL("firePerimeters"),
-                           fireField = "YEAR",
-                           omitArgs = "destinationPath"),
+        prepInputsFireYear,
+        destinationPath = dPath,
+        studyArea = sa,
+        rasterToMatch = sim$rasterToMatchLarge,
+        overwrite = TRUE,
+        url = extractURL("firePerimeters"),
+        fireField = "YEAR",
+        omitArgs = "destinationPath",
         userTags = c(cacheTags, "firePerimeters")
       )
-      # options(opt)
     }
   }
 
