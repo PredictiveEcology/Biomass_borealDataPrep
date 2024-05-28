@@ -1545,7 +1545,7 @@ Save <- function(sim) {
         aggregate(sim$studyAreaLarge, list(rep(1, nrow(sim$studyAreaLarge))),
                   FUN = function(x) x)
       } else {
-       aggregate(sim$studyAreaLarge)
+        aggregate(sim$studyAreaLarge)
       }
       sim$firePerimeters <- Cache(
         prepInputsFireYear,
