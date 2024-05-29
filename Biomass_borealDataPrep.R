@@ -18,12 +18,10 @@ defineModule(sim, list(
   loadOrder = list(after = c("Biomass_speciesData"),
                    before = c("Biomass_core")),
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2",
-                  "merTools", "plyr", "rasterVis", "sf", "SpaDES.tools (>= 2.0.0)", "terra",
-                  # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
-                  ## Excluded because loading is not necessary (just installation)
-                  "PredictiveEcology/reproducible@development (>= 2.0.8.9005)", #for nested prepInputs
+                  "merTools", "plyr", "rasterVis", "sf", "terra",
+                  "reproducible (>= 2.0.8.9005)",
+                  "SpaDES.core (>= 2.0.2.9004)", "SpaDES.tools (>= 2.0.0)",
                   "PredictiveEcology/LandR@development (>= 1.1.1)",
-                  "PredictiveEcology/SpaDES.core@development (>= 2.0.2.9004)",
                   "PredictiveEcology/SpaDES.project@transition (>= 0.0.8.9026)", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
