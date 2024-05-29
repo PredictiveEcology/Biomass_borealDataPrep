@@ -1147,7 +1147,7 @@ createBiomass_coreInputs <- function(sim) {
                          species = sim$species,
                          sppEquiv = sim$sppEquiv,
                          sppEquivCol = P(sim)$sppEquivCol,
-                         sppColorsVect = sim$sppColorsVect,
+                         sppColorVect = sim$sppColorVect,
                          paths = paths(sim),
                          currentModule = currentModule(sim),
                          modules = modules(sim), ## will also check modules in paths$moduelPath

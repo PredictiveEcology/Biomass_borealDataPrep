@@ -93,7 +93,7 @@ updateYoungBiomasses <- function(young, modelBiomass, ...) {
 #'                              This should correspond to the maximum age in pixelCohortData
 #' @param minRelativeB A minRelativeB object
 #' @param species A species table with species-level parameters
-#' @param sppColorsVect A sppColorsVect object (required, but not used)
+#' @param sppColorVect A sppColorVect object (required, but not used)
 #' @param paths A list of spades paths e.g., from paths(sim)
 #' @param currentModule A character string of the current module e.g., from currentModule(sim)
 #' @param modules A list of character strings of the modules in the sim, e.g., from modules(sim)
@@ -101,7 +101,7 @@ updateYoungBiomasses <- function(young, modelBiomass, ...) {
 spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
                           # rasterToMatch, speciesLayers,
                           minRelativeB, species, sppEquiv, sppEquivCol,
-                          sppColorsVect, paths, currentModule, modules) {
+                          sppColorVect, paths, currentModule, modules) {
   rng <- range(pixelCohortData$age)
   if (rng[1] <= 0) stop("This spinup is only tested with age > 0")
   if (rng[2] > maxAge) stop("This spinup is only tested with age <= maxAge")
@@ -151,7 +151,7 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
     ecoregionMap = ecoregionMap,
     sppEquiv = sppEquiv,
     sppEquivCol = sppEquivCol,
-    sppColorVect = sppColorsVect
+    sppColorVect = sppColorVect
   )
   opts <- options(
     "LandR.assertions" = FALSE,
