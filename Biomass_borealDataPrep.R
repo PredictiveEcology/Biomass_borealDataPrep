@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.5"),
+  version = list(Biomass_borealDataPrep = "1.5.6"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -458,7 +458,7 @@ createBiomass_coreInputs <- function(sim) {
                         to = sim$rasterToMatchLarge,
                         overwrite = TRUE)
   }
-  
+
   if (P(sim)$overrideAgeInFires) {
     if (!.compareRas(sim$firePerimeters, sim$rasterToMatchLarge, res = TRUE, stopOnError = FALSE)) {
       sim$firePerimeters <- Cache(postProcess,
