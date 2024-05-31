@@ -581,7 +581,8 @@ createBiomass_coreInputs <- function(sim) {
                              sum(!(as.vector(sim$rstLCC[]) %in% P(sim)$forestedLCCClasses)) -
                                tail(pixelFateDT$pixelsRemoved, 1))
   }
-  # The next function will remove the "zero" class on sim$ecoregionRst
+
+  ## The next function will remove the "zero" class on sim$ecoregionRst
   pixelFateDT <- pixelFate(pixelFateDT, "Removing 0 class in sim$ecoregionRst",
                            sum(as.vector(sim$ecoregionRst[])[!pixelsToRm] == 0, na.rm = TRUE))
   ecoregionFiles <- Cache(prepEcoregions,
@@ -1328,15 +1329,14 @@ createBiomass_coreInputs <- function(sim) {
 }
 
 plottingFn <- function(sim) {
-  # Step 1 make data
+  ## Step 1 make data
   seStacks <- Cache(LandR:::speciesEcoregionStack,
                     ecoregionMap = sim$ecoregionMap,
                     speciesEcoregion = sim$speciesEcoregion,
                     columns = c("establishprob", "maxB", "maxANPP"),
                     userTags = c("speciesEcoregionStks"))
 
-
-  # Step 2 make plots -- in this case up to 4 plots -- uses .plotInitialTime, .plots
+  ## Step 2 make plots -- in this case up to 4 plots -- uses .plotInitialTime, .plots
   if (!is.null(mod$plotWindow)) {
     dev(mod$plotWindow)
   }
