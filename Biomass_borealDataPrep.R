@@ -20,7 +20,7 @@ defineModule(sim, list(
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2",
                   "merTools", "plyr", "rasterVis", "sf", "terra",
                   "reproducible (>= 2.1.0)",
-                  "SpaDES.core (>= 2.0.2.9004)", "SpaDES.tools (>= 2.0.0)",
+                  "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
                   "PredictiveEcology/LandR@development (>= 1.1.1)",
                   "PredictiveEcology/SpaDES.project@transition (>= 0.0.8.9026)", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
@@ -1655,10 +1655,3 @@ Save <- function(sim) {
   return(invisible(sim))
 }
 
-## older versions of SpaDES.core don't have this function
-if (packageVersion("SpaDES.core") < "2.0.2.9001") {
-  figurePath <- function(sim) {
-    file.path(outputPath(sim), "figures", current(sim)[["moduleName"]]) |>
-      checkPath(create = TRUE)
-  }
-}
