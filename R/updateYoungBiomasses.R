@@ -162,6 +162,7 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
 
   ## TODO: make the following into a function to use across modules (e.g. B_sppFactorial)
   curModPath <- file.path(paths$modulePath, currentModule)
+  curModPath <- curModPath[dir.exists(curModPath)] # for multiple module paths
   submodulePath <- file.path(curModPath, "submodules") |> checkPath(create = TRUE)
   paths$outputPath <- file.path(submodulePath, "outputs", rndstr()) ## avoid race conditions
   on.exit(unlink(paths$outputPath, recursive = TRUE), add = TRUE)
@@ -171,20 +172,25 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
   modulesInProject <- list.dirs(paths$modulePath, full.names = TRUE, recursive = FALSE) |> as.list()
   names(modulesInProject) <- modulesInProject
   modulesInProject <- lapply(modulesInProject, basename)
-  modules <- modifyList(modules, modulesInProject)
-  if (!any("Biomass_core" %in% modulesInProject) ||
-      moduleVersion("Biomass_core", paths$modulePath) < bcVersion) {
-
+  Biomass_core_path <- paths$modulePath[dir.exists(file.path(paths$modulePath, "Biomass_core"))]
+  BCore_missingOrOld <- TRUE
+  if (length(Biomass_core_path) > 0) {
+    if (moduleVersion("Biomass_core", Biomass_core_path) >= bcVersion) {
+      ## trim unnecessary modules:
+      BCore_missingOrOld <- FALSE
+      # modules <- modules[modules == "Biomass_core"]
+    }
+  }
+  if (BCore_missingOrOld) {
     ## NOTE: don't install pkgs mid-stream; use module metadata to declare pkgs for installation
     moduleNameAndBranch <- paste0("PredictiveEcology/Biomass_core@development (>= ", bcVersion, ")")
     modules <- Require::extractPkgName(moduleNameAndBranch)
     paths$modulePath <- file.path(submodulePath, "Biomass_core")
     getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
   } else {
-    ## trim unnecessary modules:
     modules <- modules[modules == "Biomass_core"]
   }
-
+  
   outputs <- data.frame(expand.grid(objectName = "cohortData",
                                     saveTime = unique(seq(times$start, times$end, by = 1)),
                                     eventPriority = 1, fun = "qs::qsave",
