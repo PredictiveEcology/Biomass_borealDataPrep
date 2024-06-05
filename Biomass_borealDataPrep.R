@@ -22,7 +22,7 @@ defineModule(sim, list(
                   "reproducible (>= 2.1.0)",
                   "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
                   "PredictiveEcology/LandR (>= 1.1.1)",
-                  "PredictiveEcology/SpaDES.project@transition (>= 0.0.8.9026)", ## TODO: update this once merged
+                  "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
     ## maxB, maxANPP, SEP estimation section ------------------------------------------------
