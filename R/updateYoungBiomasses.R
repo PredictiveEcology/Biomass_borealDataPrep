@@ -124,6 +124,7 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
                         calcSummaryBGM = NULL,
                         .plots = NULL,
                         .maxMemory = 1e9,
+                        sppEquivCol = sppEquivCol,
                         .useCache = NULL,
                         successionTimestep = 10,
                         initialBiomassSource = "cohortData",
@@ -150,7 +151,6 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
     ecoregion = ecoregion,
     ecoregionMap = ecoregionMap,
     sppEquiv = sppEquiv,
-    sppEquivCol = sppEquivCol,
     sppColorVect = sppColorsVect
   )
   opts <- options(
