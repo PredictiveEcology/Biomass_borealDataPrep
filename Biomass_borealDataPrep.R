@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.6.9002"),
+  version = list(Biomass_borealDataPrep = "1.5.6.9003"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -219,13 +219,13 @@ defineModule(sim, list(
                               "which is used to rasterize to the study area."),
                  sourceURL = "https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip"),
     expectsInput("imputedPixID", "integer",
-                  desc = paste("A vector of pixel IDs - matching rasterMatch IDs - that suffered data imputation.",
-                               "Data imputation may be in age (to match last fire event post 1950s, or 0 cover),",
-                               "biomass (to match fire-related imputed ages; correct for missing values or for 0 age/cover),",
-                               "land cover (to convert non-forested classes into to nearest forested class).",
-                               "If `standAgeMap` had imputed data, then this is expected to be created at that time.",
-                               " It will be added as an attribute to `sim$standAgeMap`"),
-                  sourceURL = NA),
+                 desc = paste("A vector of pixel IDs - matching rasterMatch IDs - that suffered data imputation.",
+                              "Data imputation may be in age (to match last fire event post 1950s, or 0 cover),",
+                              "biomass (to match fire-related imputed ages; correct for missing values or for 0 age/cover),",
+                              "land cover (to convert non-forested classes into to nearest forested class).",
+                              "If `standAgeMap` had imputed data, then this is expected to be created at that time.",
+                              " It will be added as an attribute to `sim$standAgeMap`"),
+                 sourceURL = NA),
     expectsInput("rstLCC", "SpatRaster",
                  desc = paste("A land classification map in study area. It must be 'corrected', in the sense that:\n",
                               "1) Every class must not conflict with any other map in this module\n",
@@ -481,9 +481,9 @@ createBiomass_coreInputs <- function(sim) {
   message(blue("Prepare 'species' table, i.e., species level traits", Sys.time()))
 
   sim$species <- Cache(prepSpeciesTable(speciesTable = sim$speciesTable,
-                                  sppEquiv = sim$sppEquiv,
-                                  areas = P(sim)$speciesTableAreas,
-                                  sppEquivCol = P(sim)$sppEquivCol))
+                                        sppEquiv = sim$sppEquiv,
+                                        areas = P(sim)$speciesTableAreas,
+                                        sppEquivCol = P(sim)$sppEquivCol))
 
   ## override species table values -------------------------------
   if (!is.null(P(sim)$speciesUpdateFunction)) {
@@ -1552,7 +1552,7 @@ Save <- function(sim) {
     if (P(sim)$dataYear == 2001) {
       ageURL <- extractURL("standAgeMap")
     } else if (P(sim)$dataYear == 2011) {
-        ageURL <- extractURL("standAgeMap") |> gsub("2001", "2011", x = _)
+      ageURL <- extractURL("standAgeMap") |> gsub("2001", "2011", x = _)
     } else {
       stop("'P(sim)$dataYear' must be 2001 OR 2011")
     }
