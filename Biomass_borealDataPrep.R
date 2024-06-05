@@ -396,13 +396,8 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
       sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_borealDataPrep", "save")
 
       if (anyPlotting(P(sim)$.plots)) {
-        # override an NA value of `.plotInitialTime` -- not a valid mechanism now
-        whenToPlot <- if (is.na(P(sim)$.plotInitialTime)) start(sim) else P(sim)$.plotInitialTime
-        sim <- scheduleEvent(sim, whenToPlot, "Biomass_borealDataPrep", "plot")
+        plottingFn(sim)
       }
-    },
-    plot = {
-      plottingFn(sim)
     },
     save = {
       sim <- Save(sim)
