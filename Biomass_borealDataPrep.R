@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.5"),
+  version = list(Biomass_borealDataPrep = "1.5.6.9001"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -18,12 +18,10 @@ defineModule(sim, list(
   loadOrder = list(after = c("Biomass_speciesData"),
                    before = c("Biomass_core")),
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2",
-                  "merTools", "plyr", "rasterVis", "sf", "SpaDES.tools (>= 2.0.0)", "terra",
-                  # "curl", "httr", ## called directly by this module, but pulled in by LandR (Sep 6th 2022).
-                  ## Excluded because loading is not necessary (just installation)
-                  "PredictiveEcology/reproducible@development (>= 2.0.8.9005)", #for nested prepInputs
+                  "merTools", "plyr", "rasterVis", "sf", "terra",
+                  "reproducible (>= 2.1.0)",
+                  "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
                   "PredictiveEcology/LandR@development (>= 1.1.1)",
-                  "PredictiveEcology/SpaDES.core@development (>= 2.0.2.9004)",
                   "PredictiveEcology/SpaDES.project@transition (>= 0.0.8.9026)", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
@@ -1150,7 +1148,7 @@ createBiomass_coreInputs <- function(sim) {
                          species = sim$species,
                          sppEquiv = sim$sppEquiv,
                          sppEquivCol = P(sim)$sppEquivCol,
-                         sppColorsVect = sim$sppColorsVect,
+                         sppColorVect = sim$sppColorVect,
                          paths = paths(sim),
                          currentModule = currentModule(sim),
                          modules = modules(sim), ## will also check modules in paths$moduelPath
@@ -1657,10 +1655,3 @@ Save <- function(sim) {
   return(invisible(sim))
 }
 
-## older versions of SpaDES.core don't have this function
-if (packageVersion("SpaDES.core") < "2.0.2.9001") {
-  figurePath <- function(sim) {
-    file.path(outputPath(sim), "figures", current(sim)[["moduleName"]]) |>
-      checkPath(create = TRUE)
-  }
-}
