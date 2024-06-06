@@ -344,11 +344,11 @@ A next set of data inconsistencies in cohort age (`age`), biomass (`B`) and
 cover (`cover`) is looked for and solved in the following order:
 
 4.  if `cover > 0` and `age == 0`, `B` is set to 0 (and stand biomass
-    recalculated);
+recalculated);
 
 5.  if `cover == 0` and `age > 0`, or if `age == NA`, `age` is empirically
-    estimated using the remainder of the data to fit the model supplied by
-    `P(sim)$imputeBadAgeModel`, which defaults to:
+estimated using the remainder of the data to fit the model supplied by
+`P(sim)$imputeBadAgeModel`, which defaults to:
 
 ```{r imputeBadAgeModel, echo = FALSE, eval = TRUE, message = FALSE, tidy = TRUE, tidy.opts = list(width.cutoff = 60)}
 df_params <- SpaDES.core::moduleParams("Biomass_borealDataPrep", "..")
@@ -670,8 +670,8 @@ module calibrates several species traits that are first prepared by
 Briefly, *Biomass_speciesParameters*:
 
 1.  Uses \~41,000,000 hypothetical species' growth curves (generated with
-    *Biomass_core*), that cover a fully factorial combination of longevity,
-    ratio of `maxANPP` to `maxBiomass`, `growthcurve`, `mortalityshape`;
+*Biomass_core*), that cover a fully factorial combination of longevity,
+ratio of `maxANPP` to `maxBiomass`, `growthcurve`, `mortalityshape`;
 
 2.  Takes permanent and temporary sample plot (PSP) data in or near the study
     area for the target species, and finds which hypothetical species' growth
@@ -695,7 +695,7 @@ Briefly, *Biomass_speciesParameters*:
     empirically estimated `maxB`.
 
 4.  Estimates species-specific `maxANPP` by multiplying the final `maxB` above
-    by `mANPPproportion` (estimated in step 2).
+by `mANPPproportion` (estimated in step 2).
 
 In cases where there is insufficient PSP data to perform the above steps, `maxB`
 and `maxANPP` are left as estimated by *Biomass_borealDataPrep* (see [Maximum
@@ -946,18 +946,18 @@ The module runs only for one time step and contains The general flow of
 *Biomass_borealDataPrep* processes is:
 
 1.  Preparation of all necessary data and input objects that do not require
-    parameter fitting (e.g., invariant species traits table, creating
-    ecolocations);
+parameter fitting (e.g., invariant species traits table, creating
+ecolocations);
 
 2.  Fixing mismatched between raw cover, biomass and age data;
 
 3.  Imputing age values in pixels where mismatches exist or age data is missing;
 
 4.  Construction of an initial `data.table` of cohort biomass and age per pixel
-    (with ecolocation information);
+(with ecolocation information);
 
 5.  Sub-setting pixels in forested land-cover classes and (optional) converting
-    transient land-cover classes to forested classes;
+transient land-cover classes to forested classes;
 
 6.  Fitting `coverModel`;
 
