@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.6.9003"),
+  version = list(Biomass_borealDataPrep = "1.5.6.9004"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -1329,7 +1329,8 @@ plottingFn <- function(sim) {
                     ecoregionMap = sim$ecoregionMap,
                     speciesEcoregion = sim$speciesEcoregion,
                     columns = c("establishprob", "maxB", "maxANPP"),
-                    userTags = c("speciesEcoregionStks"))
+                    userTags = c("speciesEcoregionStks", P(sim)$.studyAreaName),
+                    .cacheExtra = P(sim)$.studyAreaName)
 
   ## Step 2 make plots -- in this case up to 4 plots -- uses .plotInitialTime, .plots
   if (!is.null(mod$plotWindow)) {
