@@ -61,10 +61,10 @@ updateYoungBiomasses <- function(young, modelBiomass, ...) {
     young[tooSmall == TRUE, newB := pred - 2*se]
   }
   if (sum(young$beyond) > 0)
-  message("Within the cohorts aged ", max(young$age)," and younger, ",
-          "there were ", sum(young$beyond), " cohorts whose biomass was way out of line for their ages. ",
-          "Their biomasses have been adjusted down if too high (or up if too low) ",
-          "to their predicted mean +1.96se (or - if too low) based on the fitted biomass model")
+    message("Within the cohorts aged ", max(young$age)," and younger, ",
+            "there were ", sum(young$beyond), " cohorts whose biomass was way out of line for their ages. ",
+            "Their biomasses have been adjusted down if too high (or up if too low) ",
+            "to their predicted mean +1.96se (or - if too low) based on the fitted biomass model")
   young[beyond == FALSE, newB := B]
   young[, B := asInteger(pmax(0, newB))]
   if (useRescaled) {
@@ -93,15 +93,15 @@ updateYoungBiomasses <- function(young, modelBiomass, ...) {
 #'                              This should correspond to the maximum age in pixelCohortData
 #' @param minRelativeB A minRelativeB object
 #' @param species A species table with species-level parameters
-#' @param sppColorsVect A sppColorsVect object (required, but not used)
+#' @param sppColorVect A sppColorVect object (required, but not used)
 #' @param paths A list of spades paths e.g., from paths(sim)
 #' @param currentModule A character string of the current module e.g., from currentModule(sim)
 #' @param modules A list of character strings of the modules in the sim, e.g., from modules(sim)
 #' @export
 spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
                           # rasterToMatch, speciesLayers,
-                          minRelativeB, species, sppColorsVect, paths,
-                          currentModule, modules) {
+                          minRelativeB, species, sppEquiv, sppEquivCol,
+                          sppColorVect, paths, currentModule, modules) {
   rng <- range(pixelCohortData$age)
   if (rng[1] <= 0) stop("This spinup is only tested with age > 0")
   if (rng[2] > maxAge) stop("This spinup is only tested with age <= maxAge")
@@ -109,8 +109,7 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
   cd[, `:=`(pixelGroup = as.integer(factor(pixelIndex)))]
   pixelGroupMap <- pixelGroupMapGenerate(cd)
   # Maps
-  studyArea <- as(extent(pixelGroupMap), 'SpatialPolygons')
-  crs(studyArea) <- crs(pixelGroupMap)
+  studyArea <- vect(ext(pixelGroupMap), crs(pixelGroupMap))
   rasterToMatch <- pixelGroupMap
   ecoregionMap <- pixelGroupMap
   levels(ecoregionMap) <- data.frame(ID = 1:max(cd$pixelGroup, na.rm = TRUE),
@@ -125,6 +124,7 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
                         calcSummaryBGM = NULL,
                         .plots = NULL,
                         .maxMemory = 1e9,
+                        sppEquivCol = sppEquivCol,
                         .useCache = NULL,
                         successionTimestep = 10,
                         initialBiomassSource = "cohortData",
@@ -150,8 +150,8 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
     minRelativeB = minRelativeB,
     ecoregion = ecoregion,
     ecoregionMap = ecoregionMap,
-    sppEquiv = data.table(),
-    sppColorVect = sppColorsVect
+    sppEquiv = sppEquiv,
+    sppColorVect = sppColorVect
   )
   opts <- options(
     "LandR.assertions" = FALSE,
@@ -162,28 +162,35 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
 
   ## TODO: make the following into a function to use across modules (e.g. B_sppFactorial)
   curModPath <- file.path(paths$modulePath, currentModule)
-  submodule <- "Biomass_coreSubModule"
-  paths$outputPath <- file.path(curModPath, submodule, "outputs", rndstr()) ## avoid race conditions
+  curModPath <- curModPath[dir.exists(curModPath)] # for multiple module paths
+  submodulePath <- file.path(curModPath, "submodules") |> checkPath(create = TRUE)
+  paths$outputPath <- file.path(submodulePath, "outputs", rndstr()) ## avoid race conditions
   on.exit(unlink(paths$outputPath, recursive = TRUE), add = TRUE)
 
-  if (!any(modules == "Biomass_core") ||
-      moduleVersion("Biomass_core", paths$modulePath) < "1.3.5") { # if Biomass_core doesn't exist in modulePath or is too old, then download it
-    ## check that SpaDES.install is available in the right version
-    if (!Require::Require("PredictiveEcology/SpaDES.project (>= 0.0.7)",
-                          require = FALSE, upgrade = FALSE, install = FALSE)) {
-      stop(paste("Please install SpaDES.project v0.0.7 or above using:",
-                 "Require('PredictiveEcology/SpaDES.project (>= 0.0.7)', require = FALSE)"))
+  bcVersion <- "1.3.10"
+  ## if Biomass_core doesn't exist in modulePath or is too old, then download it
+  modulesInProject <- list.dirs(paths$modulePath, full.names = TRUE, recursive = FALSE) |> as.list()
+  names(modulesInProject) <- modulesInProject
+  modulesInProject <- lapply(modulesInProject, basename)
+  Biomass_core_path <- paths$modulePath[dir.exists(file.path(paths$modulePath, "Biomass_core"))]
+  BCore_missingOrOld <- TRUE
+  if (length(Biomass_core_path) > 0) {
+    if (moduleVersion("Biomass_core", Biomass_core_path) >= bcVersion) {
+      ## trim unnecessary modules:
+      BCore_missingOrOld <- FALSE
+      # modules <- modules[modules == "Biomass_core"]
     }
-
-    paths$modulePath <- file.path(curModPath, submodule, "module")
-    moduleNameAndBranch <- c("Biomass_core@development (>= 1.3.9)")
-    modules <- list(gsub("@.+", "", moduleNameAndBranch))
-    SpaDES.project::getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
-  } else {
-  ## trim unnecessary modules:
-  modules <- modules[modules == "Biomass_core"]
   }
-
+  if (BCore_missingOrOld) {
+    ## NOTE: don't install pkgs mid-stream; use module metadata to declare pkgs for installation
+    moduleNameAndBranch <- paste0("PredictiveEcology/Biomass_core@development (>= ", bcVersion, ")")
+    modules <- Require::extractPkgName(moduleNameAndBranch)
+    paths$modulePath <- file.path(submodulePath, "Biomass_core")
+    getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
+  } else {
+    modules <- modules[modules == "Biomass_core"]
+  }
+  
   outputs <- data.frame(expand.grid(objectName = "cohortData",
                                     saveTime = unique(seq(times$start, times$end, by = 1)),
                                     eventPriority = 1, fun = "qs::qsave",
@@ -210,7 +217,7 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
 }
 
 pixelGroupMapGenerate <- function(cohortData) {
-  pixelGroupMap <- raster(res = c(1, 1))
+  pixelGroupMap <- rast(res = c(1, 1))
   nrow(pixelGroupMap) <- round(sqrt(max(cohortData$pixelGroup)), 0)
   ncol(pixelGroupMap) <- round(sqrt(max(cohortData$pixelGroup)), 0) + 1
   vals <- c(1:max(cohortData$pixelGroup), rep(NA, times = ncell(pixelGroupMap) - max(cohortData$pixelGroup)))
