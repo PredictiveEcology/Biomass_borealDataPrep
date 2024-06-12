@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.7.9001"),
+  version = list(Biomass_borealDataPrep = "1.5.7.9002"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -1188,7 +1188,7 @@ createBiomass_coreInputs <- function(sim) {
     }
   }
 
-  assertthat::assert_that(all(inRange(pixelCohortData$B, 0, round(maxRawB, -2)))) # should they all be below the initial biomass map?
+  assertthat::assert_that(all(inRange(na.omit(pixelCohortData$B), 0, round(maxRawB, -2)))) # should they all be below the initial biomass map?
 
   # Fill in any remaining B values that are still NA -- the previous chunk filled in B for young cohorts only
   if (anyNA(pixelCohortData$B)) {
