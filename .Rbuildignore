@@ -5,12 +5,14 @@
 .*\.toc$
 .*\.zip$
 ^\.lintr$
+
 CONTRIBUTING\.md
 cran-comments\.md
 ^docs$
 ^LICENSE$
 vignettes/.*_cache$
 vignettes/.*\.log$
+
 ^\.httr-oauth$
 ^revdep$
 ^\.github$
@@ -19,9 +21,8 @@ vignettes/.*\.log$
 ^data/*
 ^.git
 ^.gitignore
+
 ^.gitmodules
+    
 Biomass_borealDataPrep.*
-.*.zip
-
-
-
+.*zip

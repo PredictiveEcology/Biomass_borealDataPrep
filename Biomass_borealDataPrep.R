@@ -19,7 +19,7 @@ defineModule(sim, list(
                    before = c("Biomass_core")),
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2",
                   "merTools", "plyr", "rasterVis", "sf", "terra",
-                  "reproducible (>= 2.1.0)",
+                  "reproducible (>= 2.1.0)", "RCurl", "XML",
                   "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
                   "PredictiveEcology/LandR (>= 1.1.1)",
                   "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)", ## TODO: update this once merged

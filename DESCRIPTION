@@ -23,6 +23,8 @@ Imports:
     sf,
     terra,
     reproducible (>= 2.1.0),
+    RCurl,
+    XML,
     SpaDES.core (>= 2.1.0),
     SpaDES.tools (>= 2.0.0),
     LandR (>= 1.1.1),
