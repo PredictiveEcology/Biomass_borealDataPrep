@@ -17,22 +17,29 @@ Imports:
     dplyr,
     fasterize,
     ggplot2,
+    LandR (>= 1.1.1),
     merTools,
+    pemisc,
     plyr,
     rasterVis,
-    sf,
-    terra,
-    reproducible (>= 2.1.0),
     RCurl,
-    XML,
+    reproducible (>= 2.1.0),
+    sf,
     SpaDES.core (>= 2.1.0),
-    SpaDES.tools (>= 2.0.0),
-    LandR (>= 1.1.1),
     SpaDES.project (>= 0.0.8.9026),
-    pemisc
+    SpaDES.tools (>= 2.0.0),
+    terra,
+    XML
 Suggests:
     knitr,
-    rmarkdown
+    rmarkdown,
+    roxygen2,
+    testthat,
+    withr
+Remotes:
+    PredictiveEcology/LandR,
+    PredictiveEcology/pemisc@development,
+    PredictiveEcology/SpaDES.project@development
 Encoding: UTF-8
 License: GPL-3
 VignetteBuilder: knitr, rmarkdown
