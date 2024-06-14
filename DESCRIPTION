@@ -4,7 +4,7 @@ Title: Biomass_borealDataPrep
 Version: 1.5.7.9002
 Description: paste A data preparation module for parameterizing `Biomass_core` from open data sources, within the Boreal forest of Canada.
 Date: 2024-06-13
-Authors@R:  
+Authors@R: 
   c(person("Yong", "Luo", email = "Yong.Luo@gov.bc.ca", role = c("aut")),                
     person(c("Eliot", "J", "B"), "McIntire", email = "eliot.mcintire@nrcan-rncan.gc.ca", 
         role = c("aut", "cre")), person(c("Ceres"), "Barros",                            
@@ -22,20 +22,20 @@ Imports:
     pemisc,
     plyr,
     rasterVis,
-    RCurl,
     reproducible (>= 2.1.0),
     sf,
     SpaDES.core (>= 2.1.0),
     SpaDES.project (>= 0.0.8.9026),
     SpaDES.tools (>= 2.0.0),
-    terra,
-    XML
+    terra
 Suggests:
     knitr,
+    RCurl,
     rmarkdown,
     roxygen2,
     testthat,
-    withr
+    withr,
+    XML
 Remotes:
     PredictiveEcology/LandR,
     PredictiveEcology/pemisc@development,
@@ -45,3 +45,4 @@ License: GPL-3
 VignetteBuilder: knitr, rmarkdown
 ByteCompile: yes
 Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1

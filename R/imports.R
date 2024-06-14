@@ -27,22 +27,15 @@ NULL
 #' @import reproducible
 NULL
 
-#' @import RCurl
-NULL
-
-#' @import XML
-NULL
-
-
 #' @import SpaDES.core
 NULL
+
 
 #' @import SpaDES.tools
 NULL
 
 #' @import SpaDES.project
 NULL
-
 
 #' @import pemisc
 NULL

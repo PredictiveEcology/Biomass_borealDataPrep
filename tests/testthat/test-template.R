@@ -27,9 +27,7 @@ test_that("test Event1 and Event2", {
                                         modules = moduleName,
                                         times = list(start = 0, end = 1))
   )
-  browser()
   sa <- setupStudyArea(list(NAME_1 = "Alberta", "NAME_2" = "Division No. 17", level = 2))
-  terra
   expect_error(outFinal <- SpaDES.core::simInitAndSpades2(out), regexp = "Please provide a.*polygon")
   out$studyArea <- sa
   expect_error(outFinal <- SpaDES.core::simInitAndSpades2(out), regexp = "Please provide a.*Large.*polygon")

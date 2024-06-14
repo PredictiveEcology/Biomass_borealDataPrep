@@ -27,3 +27,5 @@ vignettes/.*\.log$
     
 Biomass_borealDataPrep.*
 .*zip
+citation.*
+figures
