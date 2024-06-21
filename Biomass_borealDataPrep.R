@@ -580,14 +580,16 @@ createBiomass_coreInputs <- function(sim) {
   ## The next function will remove the "zero" class on sim$ecoregionRst
   pixelFateDT <- pixelFate(pixelFateDT, "Removing 0 class in sim$ecoregionRst",
                            sum(as.vector(sim$ecoregionRst[])[!pixelsToRm] == 0, na.rm = TRUE))
-  ecoregionFiles <- Cache(prepEcoregions,
-                          ecoregionRst = sim$ecoregionRst,
-                          ecoregionLayer = sim$ecoregionLayer,
-                          ecoregionLayerField = P(sim)$ecoregionLayerField,
-                          rasterToMatchLarge = sim$rasterToMatchLarge,
-                          rstLCCAdj = rstLCCAdj,
-                          pixelsToRm = pixelsToRm,
-                          cacheTags = c(cacheTags, "prepEcoregionFiles"))
+  ecoregionFiles <- prepEcoregions(
+    ecoregionRst = sim$ecoregionRst,
+    ecoregionLayer = sim$ecoregionLayer,
+    ecoregionLayerField = P(sim)$ecoregionLayerField,
+    rasterToMatchLarge = sim$rasterToMatchLarge,
+    rstLCCAdj = rstLCCAdj,
+    pixelsToRm = pixelsToRm,
+    cacheTags = c(cacheTags, "prepEcoregionFiles")
+  ) |>
+    Cache()
 
   ## create pixelTable object ------------------------------------
   #  Round age to pixelGroupAgeClass
@@ -596,31 +598,28 @@ createBiomass_coreInputs <- function(sim) {
   opt <- options("reproducible.useMemoise" = FALSE)
   on.exit(try(options(opt), silent = TRUE), add = TRUE)
 
-  pixelTable <- Cache(makePixelTable,
-                      speciesLayers = sim$speciesLayers,
-                      # species = sim$species,
-                      standAgeMap = sim$standAgeMap,
-                      ecoregionFiles = ecoregionFiles,
-                      biomassMap = sim$rawBiomassMap,
-                      rasterToMatch = sim$rasterToMatchLarge,
-                      rstLCC = rstLCCAdj,
-                      # pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
-                      userTags = c(cacheTags, "pixelTable"),
-                      omitArgs = c("userTags"))
+  pixelTable <- makePixelTable(
+    speciesLayers = sim$speciesLayers,
+    standAgeMap = sim$standAgeMap,
+    ecoregionFiles = ecoregionFiles,
+    biomassMap = sim$rawBiomassMap,
+    rasterToMatch = sim$rasterToMatchLarge,
+    rstLCC = rstLCCAdj
+  ) |>
+    Cache(userTags = c(cacheTags, "pixelTable"), omitArgs = c("userTags"))
   options(opt)
   pixelTable[, rasterToMatch := NULL]
 
   ## create initial pixelCohortData table ---------------
   coverColNames <- paste0("cover.", sim$species$species)
-  pixelCohortData <- Cache(makeAndCleanInitialCohortData, pixelTable,
-                           sppColumns = coverColNames,
-                           imputeBadAgeModel = P(sim)$imputeBadAgeModel,
-                           #pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
-                           #pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
-                           minCoverThreshold = P(sim)$minCoverThreshold,
-                           doSubset = P(sim)$subsetDataAgeModel,
-                           userTags = c(cacheTags, "pixelCohortData"),
-                           omitArgs = c("userTags"))
+  pixelCohortData <- makeAndCleanInitialCohortData(
+    inputDataTable = pixelTable,
+    sppColumns = coverColNames,
+    imputeBadAgeModel = P(sim)$imputeBadAgeModel,
+    minCoverThreshold = P(sim)$minCoverThreshold,
+    doSubset = P(sim)$subsetDataAgeModel
+  ) |>
+    Cache(userTags = c(cacheTags, "pixelCohortData"), omitArgs = c("userTags"))
   assertCohortDataAttr(pixelCohortData)
 
   sim$imputedPixID <- unique(c(sim$imputedPixID, attr(pixelCohortData, "imputedPixID")))
