@@ -1337,8 +1337,11 @@ plottingFn <- function(sim) {
   }
   Map(stk = seStacks, SEtype = names(seStacks),
       function(stk, SEtype) {
-        f <- file.path(figurePath(sim), paste0("speciesEcoregion", "_", time(sim), "_", SEtype))
-        Plots(stk, fn = plotFn_speciesEcoregion, SEtype = SEtype, filename = f)
+        Plots(stk,
+              fn = plotFn_speciesEcoregion,
+              types = P(sim)$.plots,
+              filename = paste0("speciesEcoregion", "_", time(sim), "_", SEtype),
+              SEtype = SEtype)
       }
   )
 }

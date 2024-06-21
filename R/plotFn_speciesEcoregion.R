@@ -1,10 +1,8 @@
 plotFn_speciesEcoregion <- function(stk, SEtype) {
-  ggSpeciesEcoregion <-
-    ggplot(stk, maxpixels = 2e6) +
-    geom_tile(aes(fill = value)) +
-    facet_wrap(~ variable) +
-    scale_fill_distiller(palette = "YlGnBu", na.value = "white", direction = 1) +
+  ggplot() +
+    tidyterra::geom_spatraster(data = stk) +
+    facet_wrap(~ lyr) +
+    scale_fill_distiller(palette = "YlGnBu", direction = 1, na.value = "transparent") +
     theme_bw() +
-    coord_equal() +
     ggtitle(SEtype)
 }
