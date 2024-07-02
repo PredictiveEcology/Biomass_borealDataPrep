@@ -1026,19 +1026,16 @@ createBiomass_coreInputs <- function(sim) {
     rasterToMatchLarge <- sim$rasterToMatchLarge
     rasterToMatchLarge <- setValues(rasterToMatchLarge, seq(ncell(rasterToMatchLarge)))
 
-    useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
-    options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
     rasterToMatchLargeCropped <- Cache(postProcess,
                                        x = rasterToMatchLarge,
                                        to = sim$rasterToMatch,
-                                       writeTo = NULL,
                                        datatype = assessDataType(rasterToMatchLarge),
-                                       #useCache = "overwrite",
+                                       method = "near",
                                        userTags = c(cacheTags, "rasterToMatchLargeCropped"),
                                        omitArgs = c("userTags"))
-    options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
-
-    assertthat::assert_that(sum(is.na(as.vector(values(rasterToMatchLargeCropped)))) < ncell(rasterToMatchLargeCropped)) ## i.e., not all NA
+   
+    assertthat::assert_that(sum(is.na(as.vector(rasterToMatchLargeCropped))) < ncell(rasterToMatchLargeCropped)) 
+    ## i.e., not all NA
 
     if (!.compareRas(rasterToMatchLargeCropped, sim$rasterToMatch))
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.",
