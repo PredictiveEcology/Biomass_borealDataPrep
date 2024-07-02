@@ -1034,6 +1034,9 @@ createBiomass_coreInputs <- function(sim) {
                                        userTags = c(cacheTags, "rasterToMatchLargeCropped"),
                                        omitArgs = c("userTags"))
    
+    rtmlc_int <- LandR::asInt(rasterToMatchLargeCropped)
+    assertthat::assert_that(all(na.omit(as.vector(rasterToMatchLargeCropped - rtmlc_int)) == 0))
+    rm(rtmlc_int)
     assertthat::assert_that(sum(is.na(as.vector(rasterToMatchLargeCropped))) < ncell(rasterToMatchLargeCropped)) 
     ## i.e., not all NA
 
