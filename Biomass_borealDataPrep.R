@@ -21,7 +21,7 @@ defineModule(sim, list(
                   "merTools", "plyr", "rasterVis", "sf", "terra",
                   "reproducible (>= 2.1.0)",
                   "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
-                  "PredictiveEcology/LandR (>= 1.1.5.9013)",
+                  "PredictiveEcology/LandR@development (>= 1.1.5.9013)",
                   "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
@@ -196,8 +196,8 @@ defineModule(sim, list(
                  paste("The names of the columns in `cohortData` that define unique `pixelGroup`s.",
                        "Default is `c('ecoregionGroup', 'speciesCode', 'age')`;",
                        "see `?LandR::columnsForPixelGroups`).")),
-    expectsInput("ecoregionLayer", "sfc",
-                 desc = paste("A `sfc` polygon object that characterizes the unique ecological regions (`ecoregionGroup`) used to",
+    expectsInput("ecoregionLayer", "sf",
+                 desc = paste("A `sf` polygon object that characterizes the unique ecological regions (`ecoregionGroup`) used to",
                               "parameterize the biomass, cover, and species establishment probability models.",
                               "It will be overlaid with landcover to generate classes for every ecoregion/LCC combination.",
                               "It must have same extent and crs as `studyAreaLarge`.",
@@ -1027,23 +1027,24 @@ createBiomass_coreInputs <- function(sim) {
     rasterToMatchLarge <- sim$rasterToMatchLarge
     rasterToMatchLarge <- setValues(rasterToMatchLarge, seq(ncell(rasterToMatchLarge)))
 
-    useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
-    options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
     rasterToMatchLargeCropped <- Cache(postProcess,
                                        x = rasterToMatchLarge,
                                        to = sim$rasterToMatch,
-                                       writeTo = NULL,
                                        datatype = assessDataType(rasterToMatchLarge),
-                                       #useCache = "overwrite",
+                                       method = "near",
                                        userTags = c(cacheTags, "rasterToMatchLargeCropped"),
                                        omitArgs = c("userTags"))
-    options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
 
-    assertthat::assert_that(sum(is.na(as.vector(values(rasterToMatchLargeCropped)))) < ncell(rasterToMatchLargeCropped)) ## i.e., not all NA
+    rtmlc_int <- LandR::asInt(rasterToMatchLargeCropped)
+    assertthat::assert_that(all(na.omit(as.vector(rasterToMatchLargeCropped - rtmlc_int)) == 0))
+    rm(rtmlc_int)
+    assertthat::assert_that(sum(is.na(as.vector(rasterToMatchLargeCropped))) < ncell(rasterToMatchLargeCropped))
+    ## i.e., not all NA
 
-    if (!.compareRas(rasterToMatchLargeCropped, sim$rasterToMatch))
+    if (!.compareRas(rasterToMatchLargeCropped, sim$rasterToMatch)) {
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.",
            "Please debug Biomass_borealDataPrep::createBiomass_coreInputs().")
+    }
 
     ## subset pixels that are in studyArea/rasterToMatch only
     pixToKeep <- na.omit(as.vector(values(rasterToMatchLargeCropped))) # these are the old indices of RTML
@@ -1068,15 +1069,12 @@ createBiomass_coreInputs <- function(sim) {
   }
   ## subset ecoregionFiles$ecoregionMap to smaller area.
 
-  useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
-  # options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
   ecoregionFiles$ecoregionMap <- Cache(postProcess,
                                        x = ecoregionFiles$ecoregionMap,
                                        to = sim$rasterToMatch,
                                        writeTo = NULL,
                                        userTags = c(cacheTags, "ecoregionMap"),
                                        omitArgs = c("userTags"))
-  # options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
 
   if (is(P(sim)$minRelativeBFunction, "call")) {
     sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
@@ -1495,6 +1493,7 @@ Save <- function(sim) {
     sim$studyAreaLarge <- projectInputs(sim$studyAreaLarge, crs(sim$rasterToMatchLarge))
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
+
   ## Land cover raster ------------------------------------------------
   if (!suppliedElsewhere("rstLCC", sim)) {
     sim$rstLCC <- Cache(prepInputs_NTEMS_LCC_FAO,
@@ -1505,7 +1504,7 @@ Save <- function(sim) {
                         disturbedCode = 240,
                         destinationPath = dPath,
                         overwrite = TRUE,
-                        filename2 = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName, "_", P(sim)$dataYear)),
+                        writeTo = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName, "_", P(sim)$dataYear)),
                         userTags = c("rstLCC", currentModule(sim),
                                      P(sim)$.studyAreaName, P(sim)$dataYear))
   }
