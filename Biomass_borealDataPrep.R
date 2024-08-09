@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.7.9003"),
+  version = list(Biomass_borealDataPrep = "1.5.7.9004"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -21,7 +21,7 @@ defineModule(sim, list(
                   "merTools", "plyr", "rasterVis", "sf", "terra",
                   "reproducible (>= 2.1.0)",
                   "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
-                  "PredictiveEcology/LandR@development (>= 1.1.5.9013)",
+                  "PredictiveEcology/LandR@development (>= 1.1.5.9014)",
                   "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
