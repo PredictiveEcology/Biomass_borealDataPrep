@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.7.9002"),
+  version = list(Biomass_borealDataPrep = "1.5.7.9003"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -21,7 +21,7 @@ defineModule(sim, list(
                   "merTools", "plyr", "rasterVis", "sf", "terra",
                   "reproducible (>= 2.1.0)",
                   "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
-                  "PredictiveEcology/LandR (>= 1.1.1)",
+                  "PredictiveEcology/LandR (>= 1.1.5.9013)",
                   "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
@@ -193,8 +193,9 @@ defineModule(sim, list(
     expectsInput("cloudFolderID", "character",
                  "The google drive location where cloudCache will store large statistical objects"),
     expectsInput("columnsForPixelGroups", "character",
-                 paste("The names of the columns in `cohortData` that define unique pixelGroups.",
-                       "Default is c('ecoregionGroup', 'speciesCode', 'age', 'B') ")),
+                 paste("The names of the columns in `cohortData` that define unique `pixelGroup`s.",
+                       "Default is `c('ecoregionGroup', 'speciesCode', 'age')`;",
+                       "see `?LandR::columnsForPixelGroups`).")),
     expectsInput("ecoregionLayer", "sfc",
                  desc = paste("A `sfc` polygon object that characterizes the unique ecological regions (`ecoregionGroup`) used to",
                               "parameterize the biomass, cover, and species establishment probability models.",
@@ -1302,7 +1303,7 @@ createBiomass_coreInputs <- function(sim) {
   sim$speciesEcoregion$ecoregionGroup <- factor(as.character(sim$speciesEcoregion$ecoregionGroup))
 
   ## do assertions
-  message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", ")),
+  message(blue("Create pixelGroups based on: ", paste(sim$columnsForPixelGroups, collapse = ", ")),
           "\n", blue("Resulted in"), magenta(length(unique(sim$cohortData$pixelGroup))),
           "unique pixelGroup values")
   assertSpeciesEcoregionCohortDataMatch(sim$cohortData, sim$speciesEcoregion, doAssertion = TRUE)
@@ -1646,7 +1647,7 @@ Save <- function(sim) {
   }
 
   if (!suppliedElsewhere("columnsForPixelGroups", sim)) {
-    sim$columnsForPixelGroups <- LandR::columnsForPixelGroups
+    sim$columnsForPixelGroups <- LandR::columnsForPixelGroups()
   }
 
   return(invisible(sim))
