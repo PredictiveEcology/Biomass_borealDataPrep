@@ -116,16 +116,18 @@ defineModule(sim, list(
                     "Pixels with total cover that is equal to or below this number will be omitted from the dataset"),
     defineParameter("minRelativeBFunction", "call", quote(LandR::makeMinRelativeB(pixelCohortData)),
                     NA, NA,
-                    paste("A quoted function that makes the table of min. relative B determining",
-                          "a stand shade level for each ecoregionGroup. Using the internal object",
-                          "`pixelCohortData` is advisable to access/use the list of `ecoregionGroups`",
-                          "per pixel. The function must output a `data.frame` with 6 columns, named `ecoregionGroup`",
-                          "and 'X1' to 'X5', with one line per `ecoregionGroup` code, and",
-                          "the min. relative biomass for each stand shade level X1-5. The default function uses",
-                          "values from LANDIS-II available at:",
-                          paste0("https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/",
-                                 "biomass-succession-main-inputs_BSW_Baseline.txt"),
-                          "and applies them to all ecolocations (`ecoregionGroup` codes)")),
+                    paste(
+                      "A quoted function that makes the table of min. relative B determining",
+                      "a stand shade level for each `ecoregionGroup`. Using the internal object",
+                      "`pixelCohortData` is advisable to access/use the list of `ecoregionGroup`s per pixel.",
+                      "The function must output a `data.frame` with 6 columns, named `ecoregionGroup`",
+                      "and 'X1' to 'X5', with one line per `ecoregionGroup` code, and",
+                      "the min. relative biomass for each stand shade level X1-5.",
+                      "The default function uses values from LANDIS-II available at:",
+                      paste0("https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/",
+                             "LandisInputs/BSW/biomass-succession-main-inputs_BSW_Baseline.txt"),
+                      "and applies them to all ecolocations (`ecoregionGroup` codes)"
+                    )),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by `P(sim)$forestedLCCClasses`?"),
     defineParameter("overrideAgeInFires", "logical", TRUE, NA, NA,
@@ -1192,7 +1194,7 @@ createBiomass_coreInputs <- function(sim) {
     theNAsBiomass <- is.na(pixelCohortData$B)
     message(blue(" -- ", sum(theNAsBiomass),"cohort(s) has NA for Biomass: being replaced with model-derived estimates"))
     set(pixelCohortData, which(theNAsBiomass), "B",
-        asInteger(predict(modelBiomass$mod, newdata = pixelCohortData[theNAsBiomass], 
+        asInteger(predict(modelBiomass$mod, newdata = pixelCohortData[theNAsBiomass],
                           allow.new.levels = TRUE)))
     sim$imputedPixID <- unique(c(sim$imputedPixID, pixelCohortData[theNAsBiomass, pixelIndex]))
   }
