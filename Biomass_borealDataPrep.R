@@ -810,7 +810,7 @@ createBiomass_coreInputs <- function(sim) {
     FALSE
   }
 
-  # Remove all cases where there is 100% presence in an ecoregionGroup -- causes failures in binomial models
+  ## Remove all cases where there is 100% presence in an ecoregionGroup -- causes failures in binomial models
   cdsWh <- cohortDataShort$coverPres == cohortDataShort$coverNum
   cds <- Copy(cohortDataShort)
   cds <- cds[!cdsWh]
@@ -831,11 +831,14 @@ createBiomass_coreInputs <- function(sim) {
     omitArgs = c("showSimilar", "useCache", ".specialData", "useCloud", "cloudFolderID")
   )
   message(blue("  The rsquared is: "))
-  out <- lapply(capture.output(as.data.frame(round(modelCover$rsq, 4))), function(x) message(blue(x)))
+  out <- lapply(capture.output(as.data.frame(round(modelCover$rsq, 4))), function(x) {
+    message(blue(x))
+  })
 
   ## export model before overriding happens
-  if (any(P(sim)$exportModels %in% c("all", "coverModel")))
+  if (any(P(sim)$exportModels %in% c("all", "coverModel"))) {
     sim$modelCover <- modelCover
+  }
 
   if (isTRUE(any(cdsWh))) {
     cds[, pred := fitted(modelCover$mod, response = "response")]
@@ -849,10 +852,10 @@ createBiomass_coreInputs <- function(sim) {
   ### Subsample cases where there are more than 50 points in an ecoregionGroup * speciesCode
   totalBiomass <- sum(cohortDataNo34to36Biomass$B, na.rm = TRUE)
 
-  # There are several reasons why the modelBiomass can fail;
-  #   1) inappropriate sub-sample
-  #   2) fit algorithm
-  # Run 2 nested loops to do both of these things
+  ## There are several reasons why the modelBiomass can fail;
+  ##   1) inappropriate sub-sample
+  ##   2) fit algorithm
+  ## Run two nested loops to do both of these things
   modelBiomassTags <- c(cacheTags, "modelBiomass",
                         paste0("subsetSize:", P(sim)$subsetDataBiomassModel))
   maxDataSubsetTries <- P(sim)$subsetDataAttempts
@@ -950,10 +953,10 @@ createBiomass_coreInputs <- function(sim) {
                   " This will need more attention.")
         break
       }
-    } # End of tryBiomassModel
+    } ## End of tryBiomassModel
     if (!needRedo)
       break
-  } # End of tryBiomassData
+  } ## End of tryBiomassData
 
   if (!is.null(scaledVarsModelB)) {
     modelBiomass$scaledVarsModelB <- scaledVarsModelB
@@ -965,7 +968,9 @@ createBiomass_coreInputs <- function(sim) {
   }
 
   message(blue("  The rsquared is: "))
-  out <- lapply(capture.output(as.data.frame(round(modelBiomass$rsq, 4))), function(x) message(blue(x)))
+  out <- lapply(capture.output(as.data.frame(round(modelBiomass$rsq, 4))), function(x) {
+    message(blue(x))
+  })
 
   if (any(P(sim)$exportModels %in% c("all", "biomassModel")))
     sim$modelBiomass <- modelBiomass
@@ -1090,8 +1095,8 @@ createBiomass_coreInputs <- function(sim) {
   maxRawB <- max(values(sim$rawBiomassMap), na.rm = TRUE) * 100 ## match units in cohortData (t/ha ==> g/m^2)
   # maxRawB <- maxValue(sim$rawBiomassMap) * 100 ## match units in cohortData (t/ha ==> g/m^2)
 
-  # If this module used a fire database to extract better young ages, then we
-  #   can use those high quality younger ages to help with our biomass estimates
+  ## If this module used a fire database to extract better young ages, then we
+  ##   can use those high quality younger ages to help with our biomass estimates
 
   if (isTRUE(P(sim)$overrideBiomassInFires)) {
     if (isFALSE(P(sim)$overrideAgeInFires)) {
@@ -1118,7 +1123,7 @@ createBiomass_coreInputs <- function(sim) {
       ## or not following calendar year
 
       if (isTRUE(maxAgeHighQualityData >= 0)) {
-        # identify young in the pixelCohortData
+        ## identify young in the pixelCohortData
         youngRows <- pixelCohortData$age <= maxAgeHighQualityData
         young <- pixelCohortData[youngRows == TRUE]
 
@@ -1217,14 +1222,13 @@ createBiomass_coreInputs <- function(sim) {
   pixelCohortData <- cohortDataFiles$pixelCohortData
   pixelFateDT <- cohortDataFiles$pixelFateDT
 
-  # Need to rerun this because we may have lost an Ecoregion_Group in the spinup
+  ## Need to rerun this because we may have lost an Ecoregion_Group in the spinup
   if (is(P(sim)$minRelativeBFunction, "call")) {
     sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
   } else {
     stop("minRelativeBFunction should be a quoted function expression, using `pixelCohortData`, e.g.:\n",
          "    quote(LandR::makeMinRelativeB(pixelCohortData))")
   }
-
 
   rm(cohortDataFiles)
   assertthat::assert_that(NROW(pixelCohortData) > 0)
