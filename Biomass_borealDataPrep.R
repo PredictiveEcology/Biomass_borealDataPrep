@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.7"),
+  version = list(Biomass_borealDataPrep = "1.5.7.9004"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -21,7 +21,7 @@ defineModule(sim, list(
                   "merTools", "plyr", "rasterVis", "sf", "terra",
                   "reproducible (>= 2.1.0)",
                   "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
-                  "PredictiveEcology/LandR (>= 1.1.1)",
+                  "PredictiveEcology/LandR@development (>= 1.1.5.9014)",
                   "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)", ## TODO: update this once merged
                   "PredictiveEcology/pemisc@development"),
   parameters = rbind(
@@ -31,10 +31,10 @@ defineModule(sim, list(
                                        (logAge + cover | ecoregionGroup))),
                     NA, NA,
                     paste("Model and formula for estimating biomass (B) from `ecoregionGroup`",
-                          "(currently `ecoregionLayer` * LandCoverClass), `speciesCode`,",
+                          "(currently `ecoregionLayer` * `LandCoverClass`), `speciesCode`,",
                           "`logAge` (gives a downward curving relationship), and `cover`.",
                           "Defaults to a LMEM, which can be slow if dealing with very large datasets",
-                          "(e.g. 36 000 points take 20min).",
+                          "(e.g., 36,000 points takes 20 minutes).",
                           "For faster fitting try `P(sim)$subsetDataBiomassModel == TRUE`, or",
                           "`quote(RcppArmadillo::fastLm(formula = B ~ logAge * speciesCode * ecoregionGroup",
                           "+ cover * speciesCode * ecoregionGroup))`.",
@@ -116,16 +116,18 @@ defineModule(sim, list(
                     "Pixels with total cover that is equal to or below this number will be omitted from the dataset"),
     defineParameter("minRelativeBFunction", "call", quote(LandR::makeMinRelativeB(pixelCohortData)),
                     NA, NA,
-                    paste("A quoted function that makes the table of min. relative B determining",
-                          "a stand shade level for each ecoregionGroup. Using the internal object",
-                          "`pixelCohortData` is advisable to access/use the list of `ecoregionGroups`",
-                          "per pixel. The function must output a `data.frame` with 6 columns, named `ecoregionGroup`",
-                          "and 'X1' to 'X5', with one line per `ecoregionGroup` code, and",
-                          "the min. relative biomass for each stand shade level X1-5. The default function uses",
-                          "values from LANDIS-II available at:",
-                          paste0("https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/",
-                                 "biomass-succession-main-inputs_BSW_Baseline.txt"),
-                          "and applies them to all ecolocations (`ecoregionGroup` codes)")),
+                    paste(
+                      "A quoted function that makes the table of min. relative B determining",
+                      "a stand shade level for each `ecoregionGroup`. Using the internal object",
+                      "`pixelCohortData` is advisable to access/use the list of `ecoregionGroup`s per pixel.",
+                      "The function must output a `data.frame` with 6 columns, named `ecoregionGroup`",
+                      "and 'X1' to 'X5', with one line per `ecoregionGroup` code, and",
+                      "the min. relative biomass for each stand shade level X1-5.",
+                      "The default function uses values from LANDIS-II available at:",
+                      paste0("https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/",
+                             "LandisInputs/BSW/biomass-succession-main-inputs_BSW_Baseline.txt"),
+                      "and applies them to all ecolocations (`ecoregionGroup` codes)"
+                    )),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by `P(sim)$forestedLCCClasses`?"),
     defineParameter("overrideAgeInFires", "logical", TRUE, NA, NA,
@@ -193,10 +195,11 @@ defineModule(sim, list(
     expectsInput("cloudFolderID", "character",
                  "The google drive location where cloudCache will store large statistical objects"),
     expectsInput("columnsForPixelGroups", "character",
-                 paste("The names of the columns in `cohortData` that define unique pixelGroups.",
-                       "Default is c('ecoregionGroup', 'speciesCode', 'age', 'B') ")),
-    expectsInput("ecoregionLayer", "sfc",
-                 desc = paste("A `sfc` polygon object that characterizes the unique ecological regions (`ecoregionGroup`) used to",
+                 paste("The names of the columns in `cohortData` that define unique `pixelGroup`s.",
+                       "Default is `c('ecoregionGroup', 'speciesCode', 'age')`;",
+                       "see `?LandR::columnsForPixelGroups`).")),
+    expectsInput("ecoregionLayer", "sf",
+                 desc = paste("A `sf` polygon object that characterizes the unique ecological regions (`ecoregionGroup`) used to",
                               "parameterize the biomass, cover, and species establishment probability models.",
                               "It will be overlaid with landcover to generate classes for every ecoregion/LCC combination.",
                               "It must have same extent and crs as `studyAreaLarge`.",
@@ -302,75 +305,74 @@ defineModule(sim, list(
   ),
   outputObjects = bindrows(
     createsOutput("biomassMap", "SpatRaster",
-                  desc = paste("total biomass raster layer in study area,",
-                               "filtered for pixels covered by cohortData. Units in $g/m^2$")),
+                  paste("total biomass raster layer in study area,",
+                        "filtered for pixels covered by cohortData. Units in $g/m^2$")),
     createsOutput("cohortData", "data.table",
-                  desc = paste("initial community table, containing corrected biomass ($g/m^2$), age and",
-                               "species cover data, as well as ecolocation and `pixelGroup` information. This table defines",
-                               "the initial community composition and structure used by `Biomass_core`")),
+                  paste("initial community table, containing corrected biomass ($g/m^2$), age and",
+                        "species cover data, as well as ecolocation and `pixelGroup` information. This table defines",
+                        "the initial community composition and structure used by `Biomass_core`")),
     createsOutput("ecoregion", "data.table",
-                  desc = "`ecoregionGroup` look up table"),
+                  paste("`ecoregionGroup` look up table")),
     createsOutput("ecoregionMap", "SpatRaster",
-                  desc = "`ecoregionGroup` map that has mapcodes match `ecoregion` table and `speciesEcoregion` table"),
+                  paste("`ecoregionGroup` map that has mapcodes match `ecoregion` table and `speciesEcoregion` table")),
     createsOutput("firePerimeters", "SpatRaster",
-                  desc = paste("As the input object `firePerimeters`, but potentially cropped/masked/projected to match `rasterToMatchLarge`")),
+                  paste("As the input object `firePerimeters`, but potentially cropped/masked/projected to match `rasterToMatchLarge`")),
     createsOutput("imputedPixID", "integer",
-                  desc = paste("A vector of pixel IDs - matching rasterMatch IDs - that suffered data imputation.",
-                               "Data imputation may be in age (to match last fire event post 1950s, or 0 cover), biomass (to match",
-                               "fire-related imputed ages, correct for missing values or for 0 age/cover), land cover (to convert",
-                               "non-forested classes into to nearest forested class)")),
+                  paste("A vector of pixel IDs - matching rasterMatch IDs - that suffered data imputation.",
+                        "Data imputation may be in age (to match last fire event post 1950s, or 0 cover),",
+                        "biomass (to match fire-related imputed ages, correct for missing values or for 0 age/cover),",
+                        "land cover (to convert non-forested classes into to nearest forested class)")),
     createsOutput("pixelGroupMap", "SpatRaster",
-                  desc = "initial community map that has mapcodes (`pixelGroup` IDs) match `cohortData`"),
+                  "initial community map that has mapcodes (`pixelGroup` IDs) match `cohortData`"),
     createsOutput("pixelFateDT", "data.table",
-                  desc = paste("A small table that keeps track of the pixel removals and cause. This may help diagnose issues",
-                               "related to understanding the creation of `cohortData`")),
+                  paste("A small table that keeps track of the pixel removals and cause.",
+                        "This may help diagnose issues related to understanding the creation of `cohortData`.")),
     createsOutput("minRelativeB", "data.frame",
-                  desc = paste("minimum relative biomass thresholds that determine a shade level in each",
-                               "pixel. `X0-5` represent site shade classes from no-shade (0) to maximum shade (5).")),
+                  paste("minimum relative biomass thresholds that determine a shade level in each",
+                        "pixel. `X0-5` represent site shade classes from no-shade (0) to maximum shade (5).")),
     createsOutput("modelCover", "data.frame",
-                  desc = paste("If `P(sim)$exportModels` is 'all', or 'cover',",
-                               "fitted cover model, as defined by `P(sim)$coverModel`.")),
+                  paste("If `P(sim)$exportModels` is 'all', or 'cover',",
+                        "fitted cover model, as defined by `P(sim)$coverModel`.")),
     createsOutput("modelBiomass", "data.frame",
-                  desc = paste("If `P(sim)$exportModels` is 'all', or 'biomass',",
-                               "fitted biomass model, as defined by `P(sim)$biomassModel`")),
+                  paste("If `P(sim)$exportModels` is 'all', or 'biomass',",
+                        "fitted biomass model, as defined by `P(sim)$biomassModel`")),
     createsOutput("rawBiomassMap", "SpatRaster",
-                  desc = paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
-                               "Service, National Forest Inventory, kNN-derived total aboveground biomass map",
-                               "(in tonnes/ha) from 2001, unless `dataYear != 2001`.",
-                               "See <https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990>",
-                               "for metadata")),
+                  paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
+                        "Service, National Forest Inventory, kNN-derived total aboveground biomass map",
+                        "(in tonnes/ha) from 2001, unless `dataYear != 2001`.",
+                        "See <https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990>",
+                        "for metadata")),
     createsOutput("rstLCC", "SpatRaster",
-                  desc =  paste("As the input object `rstLCC`, but potentially cropped/projected/masked to match",
-                                "`rasterToMatchLarge`")),
+                  paste("As the input object `rstLCC`, but potentially cropped/projected/masked",
+                        "to match `rasterToMatchLarge`")),
     createsOutput("species", "data.table",
-                  desc = paste("a table that of invariant species traits.",
-                               "Will have the same traits as the input `speciesTable` with",
-                               "values adjusted where necessary")),
+                  paste("Table that of invariant species traits.",
+                        "Will have the same traits as the input `speciesTable`,",
+                        "with values adjusted where necessary.")),
     createsOutput("speciesLayers", "SpatRaster",
-                  desc = paste("cover percentage raster layers by species in Canada species map.",
-                               "Defaults to the Canadian Forestry Service, National Forest Inventory,",
-                               "kNN-derived species cover maps from 2001 using a cover threshold of 10 -",
-                               "see https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata")),
+                  paste("cover percentage raster layers by species in Canada species map.",
+                        "Defaults to the Canadian Forestry Service, National Forest Inventory,",
+                        "kNN-derived species cover maps from 2001 using a cover threshold of 10 -",
+                        "see <https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990>",
+                        "for metadata.")),
     createsOutput("speciesEcoregion", "data.table",
-                  desc = paste("table of spatially-varying species traits (`maxB`, `maxANPP`,",
-                               "`establishprob`), defined by species and `ecoregionGroup` (i.e. ecolocation)")),
-    # createsOutput("studyArea", "sfc",
-    #               desc = paste("Polygon to use as the study area corrected for any spatial properties' mismatches with respect to",
-    #                            "`studyAreaLarge`.")),
+                  paste("table of spatially-varying species traits (`maxB`, `maxANPP`, `establishprob`),",
+                        "defined by species and `ecoregionGroup` (i.e. ecolocation)")),
     createsOutput("standAgeMap", "SpatRaster",
-                  desc =  paste("As the input object `standAgeMap`, but potentially cropped/projected/masked to match",
-                                "`rasterToMatchLarge`")),
+                  paste("As the input object `standAgeMap`, but potentially cropped, projected,",
+                        "masked to match `rasterToMatchLarge`.")),
     createsOutput("studyArea", "sfc",
-                  desc = paste("As the input object `studyArea`, but potentially projected to match `rasterToMatch` CRS")),
+                  paste("As the input object `studyArea`, but potentially projected to match `rasterToMatch` CRS.")),
     createsOutput("studyAreaLarge", "sfc",
-                  desc = paste("As the input object `studyAreaLarge`, but potentially projected to match `studyArea`",
-                               "and `rasterToMatch` CRS")),
+                  paste("As the input object `studyAreaLarge`, but potentially projected to match `studyArea`",
+                        "and `rasterToMatch` CRS.")),
     createsOutput("sufficientLight", "data.frame",
-                  desc = paste("Probability of germination for species shade tolerance (in `species`) and shade level`(defined by `minRelativeB`)",
-                               "combinations. Table values follow LANDIS-II test traits available at: ",
-                               paste0("https://raw.githubusercontent.com/LANDIS-II-Foundation/",
-                                      "Extensions-Succession/master/biomass-succession-archive/",
-                                      "trunk/tests/v6.0-2.0/biomass-succession_test.txt")))
+                  paste("Probability of germination for species shade tolerance (in `species`)",
+                        "and shade level`(defined by `minRelativeB`) combinations.",
+                        "Table values follow LANDIS-II test traits available at:",
+                        paste0("<https://raw.githubusercontent.com/LANDIS-II-Foundation/",
+                               "Extensions-Succession/master/biomass-succession-archive/",
+                               "trunk/tests/v6.0-2.0/biomass-succession_test.txt>")))
   )
 ))
 
@@ -580,14 +582,16 @@ createBiomass_coreInputs <- function(sim) {
   ## The next function will remove the "zero" class on sim$ecoregionRst
   pixelFateDT <- pixelFate(pixelFateDT, "Removing 0 class in sim$ecoregionRst",
                            sum(as.vector(sim$ecoregionRst[])[!pixelsToRm] == 0, na.rm = TRUE))
-  ecoregionFiles <- Cache(prepEcoregions,
-                          ecoregionRst = sim$ecoregionRst,
-                          ecoregionLayer = sim$ecoregionLayer,
-                          ecoregionLayerField = P(sim)$ecoregionLayerField,
-                          rasterToMatchLarge = sim$rasterToMatchLarge,
-                          rstLCCAdj = rstLCCAdj,
-                          pixelsToRm = pixelsToRm,
-                          cacheTags = c(cacheTags, "prepEcoregionFiles"))
+  ecoregionFiles <- prepEcoregions(
+    ecoregionRst = sim$ecoregionRst,
+    ecoregionLayer = sim$ecoregionLayer,
+    ecoregionLayerField = P(sim)$ecoregionLayerField,
+    rasterToMatchLarge = sim$rasterToMatchLarge,
+    rstLCCAdj = rstLCCAdj,
+    pixelsToRm = pixelsToRm,
+    cacheTags = c(cacheTags, "prepEcoregionFiles")
+  ) |>
+    Cache()
 
   ## create pixelTable object ------------------------------------
   #  Round age to pixelGroupAgeClass
@@ -596,31 +600,28 @@ createBiomass_coreInputs <- function(sim) {
   opt <- options("reproducible.useMemoise" = FALSE)
   on.exit(try(options(opt), silent = TRUE), add = TRUE)
 
-  pixelTable <- Cache(makePixelTable,
-                      speciesLayers = sim$speciesLayers,
-                      # species = sim$species,
-                      standAgeMap = sim$standAgeMap,
-                      ecoregionFiles = ecoregionFiles,
-                      biomassMap = sim$rawBiomassMap,
-                      rasterToMatch = sim$rasterToMatchLarge,
-                      rstLCC = rstLCCAdj,
-                      # pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
-                      userTags = c(cacheTags, "pixelTable"),
-                      omitArgs = c("userTags"))
+  pixelTable <- makePixelTable(
+    speciesLayers = sim$speciesLayers,
+    standAgeMap = sim$standAgeMap,
+    ecoregionFiles = ecoregionFiles,
+    biomassMap = sim$rawBiomassMap,
+    rasterToMatch = sim$rasterToMatchLarge,
+    rstLCC = rstLCCAdj
+  ) |>
+    Cache(userTags = c(cacheTags, "pixelTable"), omitArgs = c("userTags"))
   options(opt)
   pixelTable[, rasterToMatch := NULL]
 
   ## create initial pixelCohortData table ---------------
   coverColNames <- paste0("cover.", sim$species$species)
-  pixelCohortData <- Cache(makeAndCleanInitialCohortData, pixelTable,
-                           sppColumns = coverColNames,
-                           imputeBadAgeModel = P(sim)$imputeBadAgeModel,
-                           #pixelGroupBiomassClass = P(sim)$pixelGroupBiomassClass,
-                           #pixelGroupAgeClass = P(sim)$pixelGroupAgeClass,
-                           minCoverThreshold = P(sim)$minCoverThreshold,
-                           doSubset = P(sim)$subsetDataAgeModel,
-                           userTags = c(cacheTags, "pixelCohortData"),
-                           omitArgs = c("userTags"))
+  pixelCohortData <- makeAndCleanInitialCohortData(
+    inputDataTable = pixelTable,
+    sppColumns = coverColNames,
+    imputeBadAgeModel = P(sim)$imputeBadAgeModel,
+    minCoverThreshold = P(sim)$minCoverThreshold,
+    doSubset = P(sim)$subsetDataAgeModel
+  ) |>
+    Cache(userTags = c(cacheTags, "pixelCohortData"), omitArgs = c("userTags"))
   assertCohortDataAttr(pixelCohortData)
 
   sim$imputedPixID <- unique(c(sim$imputedPixID, attr(pixelCohortData, "imputedPixID")))
@@ -809,7 +810,7 @@ createBiomass_coreInputs <- function(sim) {
     FALSE
   }
 
-  # Remove all cases where there is 100% presence in an ecoregionGroup -- causes failures in binomial models
+  ## Remove all cases where there is 100% presence in an ecoregionGroup -- causes failures in binomial models
   cdsWh <- cohortDataShort$coverPres == cohortDataShort$coverNum
   cds <- Copy(cohortDataShort)
   cds <- cds[!cdsWh]
@@ -830,11 +831,14 @@ createBiomass_coreInputs <- function(sim) {
     omitArgs = c("showSimilar", "useCache", ".specialData", "useCloud", "cloudFolderID")
   )
   message(blue("  The rsquared is: "))
-  out <- lapply(capture.output(as.data.frame(round(modelCover$rsq, 4))), function(x) message(blue(x)))
+  out <- lapply(capture.output(as.data.frame(round(modelCover$rsq, 4))), function(x) {
+    message(blue(x))
+  })
 
   ## export model before overriding happens
-  if (any(P(sim)$exportModels %in% c("all", "coverModel")))
+  if (any(P(sim)$exportModels %in% c("all", "coverModel"))) {
     sim$modelCover <- modelCover
+  }
 
   if (isTRUE(any(cdsWh))) {
     cds[, pred := fitted(modelCover$mod, response = "response")]
@@ -848,10 +852,10 @@ createBiomass_coreInputs <- function(sim) {
   ### Subsample cases where there are more than 50 points in an ecoregionGroup * speciesCode
   totalBiomass <- sum(cohortDataNo34to36Biomass$B, na.rm = TRUE)
 
-  # There are several reasons why the modelBiomass can fail;
-  #   1) inappropriate sub-sample
-  #   2) fit algorithm
-  # Run 2 nested loops to do both of these things
+  ## There are several reasons why the modelBiomass can fail;
+  ##   1) inappropriate sub-sample
+  ##   2) fit algorithm
+  ## Run two nested loops to do both of these things
   modelBiomassTags <- c(cacheTags, "modelBiomass",
                         paste0("subsetSize:", P(sim)$subsetDataBiomassModel))
   maxDataSubsetTries <- P(sim)$subsetDataAttempts
@@ -949,10 +953,10 @@ createBiomass_coreInputs <- function(sim) {
                   " This will need more attention.")
         break
       }
-    } # End of tryBiomassModel
+    } ## End of tryBiomassModel
     if (!needRedo)
       break
-  } # End of tryBiomassData
+  } ## End of tryBiomassData
 
   if (!is.null(scaledVarsModelB)) {
     modelBiomass$scaledVarsModelB <- scaledVarsModelB
@@ -964,7 +968,9 @@ createBiomass_coreInputs <- function(sim) {
   }
 
   message(blue("  The rsquared is: "))
-  out <- lapply(capture.output(as.data.frame(round(modelBiomass$rsq, 4))), function(x) message(blue(x)))
+  out <- lapply(capture.output(as.data.frame(round(modelBiomass$rsq, 4))), function(x) {
+    message(blue(x))
+  })
 
   if (any(P(sim)$exportModels %in% c("all", "biomassModel")))
     sim$modelBiomass <- modelBiomass
@@ -1028,23 +1034,24 @@ createBiomass_coreInputs <- function(sim) {
     rasterToMatchLarge <- sim$rasterToMatchLarge
     rasterToMatchLarge <- setValues(rasterToMatchLarge, seq(ncell(rasterToMatchLarge)))
 
-    useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
-    options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
     rasterToMatchLargeCropped <- Cache(postProcess,
                                        x = rasterToMatchLarge,
                                        to = sim$rasterToMatch,
-                                       writeTo = NULL,
                                        datatype = assessDataType(rasterToMatchLarge),
-                                       #useCache = "overwrite",
+                                       method = "near",
                                        userTags = c(cacheTags, "rasterToMatchLargeCropped"),
                                        omitArgs = c("userTags"))
-    options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
 
-    assertthat::assert_that(sum(is.na(as.vector(values(rasterToMatchLargeCropped)))) < ncell(rasterToMatchLargeCropped)) ## i.e., not all NA
+    rtmlc_int <- LandR::asInt(rasterToMatchLargeCropped)
+    assertthat::assert_that(all(na.omit(as.vector(rasterToMatchLargeCropped - rtmlc_int)) == 0))
+    rm(rtmlc_int)
+    assertthat::assert_that(sum(is.na(as.vector(rasterToMatchLargeCropped))) < ncell(rasterToMatchLargeCropped))
+    ## i.e., not all NA
 
-    if (!.compareRas(rasterToMatchLargeCropped, sim$rasterToMatch))
+    if (!.compareRas(rasterToMatchLargeCropped, sim$rasterToMatch)) {
       stop("Downsizing to rasterToMatch after estimating parameters didn't work.",
            "Please debug Biomass_borealDataPrep::createBiomass_coreInputs().")
+    }
 
     ## subset pixels that are in studyArea/rasterToMatch only
     pixToKeep <- na.omit(as.vector(values(rasterToMatchLargeCropped))) # these are the old indices of RTML
@@ -1069,15 +1076,12 @@ createBiomass_coreInputs <- function(sim) {
   }
   ## subset ecoregionFiles$ecoregionMap to smaller area.
 
-  useTerra <- getOption("reproducible.useTerra") ## TODO: reproducible#242
-  # options(reproducible.useTerra = FALSE) ## TODO: reproducible#242
   ecoregionFiles$ecoregionMap <- Cache(postProcess,
                                        x = ecoregionFiles$ecoregionMap,
                                        to = sim$rasterToMatch,
                                        writeTo = NULL,
                                        userTags = c(cacheTags, "ecoregionMap"),
                                        omitArgs = c("userTags"))
-  # options(reproducible.useTerra = useTerra) ## TODO: reproducible#242
 
   if (is(P(sim)$minRelativeBFunction, "call")) {
     sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
@@ -1091,8 +1095,8 @@ createBiomass_coreInputs <- function(sim) {
   maxRawB <- max(values(sim$rawBiomassMap), na.rm = TRUE) * 100 ## match units in cohortData (t/ha ==> g/m^2)
   # maxRawB <- maxValue(sim$rawBiomassMap) * 100 ## match units in cohortData (t/ha ==> g/m^2)
 
-  # If this module used a fire database to extract better young ages, then we
-  #   can use those high quality younger ages to help with our biomass estimates
+  ## If this module used a fire database to extract better young ages, then we
+  ##   can use those high quality younger ages to help with our biomass estimates
 
   if (isTRUE(P(sim)$overrideBiomassInFires)) {
     if (isFALSE(P(sim)$overrideAgeInFires)) {
@@ -1119,7 +1123,7 @@ createBiomass_coreInputs <- function(sim) {
       ## or not following calendar year
 
       if (isTRUE(maxAgeHighQualityData >= 0)) {
-        # identify young in the pixelCohortData
+        ## identify young in the pixelCohortData
         youngRows <- pixelCohortData$age <= maxAgeHighQualityData
         young <- pixelCohortData[youngRows == TRUE]
 
@@ -1177,7 +1181,7 @@ createBiomass_coreInputs <- function(sim) {
 
         ## TODO: reassess 2.8x multiplier; it's high, but needed in RoF_shield
         assertthat::assert_that(
-          all(inRange(young$B, 0, 2.8 * maxRawB / min(sim$species$longevity/maxAgeHighQualityData)))
+          all(inRange(na.omit(young$B), 0, 2.8 * maxRawB / min(sim$species$longevity/maxAgeHighQualityData)))
         ) # /4 is too strong -- 25 years is a lot of time
       } else {
         ## return maxAgeHighQualityData to -1
@@ -1188,14 +1192,15 @@ createBiomass_coreInputs <- function(sim) {
     }
   }
 
-  assertthat::assert_that(all(inRange(pixelCohortData$B, 0, round(maxRawB, -2)))) # should they all be below the initial biomass map?
+  assertthat::assert_that(all(inRange(na.omit(pixelCohortData$B), 0, round(maxRawB, -2)))) # should they all be below the initial biomass map?
 
   # Fill in any remaining B values that are still NA -- the previous chunk filled in B for young cohorts only
   if (anyNA(pixelCohortData$B)) {
     theNAsBiomass <- is.na(pixelCohortData$B)
     message(blue(" -- ", sum(theNAsBiomass),"cohort(s) has NA for Biomass: being replaced with model-derived estimates"))
     set(pixelCohortData, which(theNAsBiomass), "B",
-        asInteger(predict(modelBiomass$mod, newdata = pixelCohortData[theNAsBiomass])))
+        asInteger(predict(modelBiomass$mod, newdata = pixelCohortData[theNAsBiomass],
+                          allow.new.levels = TRUE)))
     sim$imputedPixID <- unique(c(sim$imputedPixID, pixelCohortData[theNAsBiomass, pixelIndex]))
   }
 
@@ -1217,14 +1222,13 @@ createBiomass_coreInputs <- function(sim) {
   pixelCohortData <- cohortDataFiles$pixelCohortData
   pixelFateDT <- cohortDataFiles$pixelFateDT
 
-  # Need to rerun this because we may have lost an Ecoregion_Group in the spinup
+  ## Need to rerun this because we may have lost an Ecoregion_Group in the spinup
   if (is(P(sim)$minRelativeBFunction, "call")) {
     sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
   } else {
     stop("minRelativeBFunction should be a quoted function expression, using `pixelCohortData`, e.g.:\n",
          "    quote(LandR::makeMinRelativeB(pixelCohortData))")
   }
-
 
   rm(cohortDataFiles)
   assertthat::assert_that(NROW(pixelCohortData) > 0)
@@ -1304,7 +1308,7 @@ createBiomass_coreInputs <- function(sim) {
   sim$speciesEcoregion$ecoregionGroup <- factor(as.character(sim$speciesEcoregion$ecoregionGroup))
 
   ## do assertions
-  message(blue("Create pixelGroups based on: ", paste(columnsForPixelGroups, collapse = ", ")),
+  message(blue("Create pixelGroups based on: ", paste(sim$columnsForPixelGroups, collapse = ", ")),
           "\n", blue("Resulted in"), magenta(length(unique(sim$cohortData$pixelGroup))),
           "unique pixelGroup values")
   assertSpeciesEcoregionCohortDataMatch(sim$cohortData, sim$speciesEcoregion, doAssertion = TRUE)
@@ -1329,7 +1333,8 @@ plottingFn <- function(sim) {
                     ecoregionMap = sim$ecoregionMap,
                     speciesEcoregion = sim$speciesEcoregion,
                     columns = c("establishprob", "maxB", "maxANPP"),
-                    userTags = c("speciesEcoregionStks"))
+                    userTags = c("speciesEcoregionStks", P(sim)$.studyAreaName),
+                    .cacheExtra = P(sim)$.studyAreaName)
 
   ## Step 2 make plots -- in this case up to 4 plots -- uses .plotInitialTime, .plots
   if (!is.null(mod$plotWindow)) {
@@ -1337,8 +1342,11 @@ plottingFn <- function(sim) {
   }
   Map(stk = seStacks, SEtype = names(seStacks),
       function(stk, SEtype) {
-        f <- file.path(figurePath(sim), paste0("speciesEcoregion", "_", time(sim), "_", SEtype))
-        Plots(stk, fn = plotFn_speciesEcoregion, SEtype = SEtype, filename = f)
+        Plots(stk,
+              fn = plotFn_speciesEcoregion,
+              types = P(sim)$.plots,
+              filename = paste0("speciesEcoregion", "_", time(sim), "_", SEtype),
+              SEtype = SEtype)
       }
   )
 }
@@ -1492,6 +1500,7 @@ Save <- function(sim) {
     sim$studyAreaLarge <- projectInputs(sim$studyAreaLarge, crs(sim$rasterToMatchLarge))
     sim$studyAreaLarge <- fixErrors(sim$studyAreaLarge)
   }
+
   ## Land cover raster ------------------------------------------------
   if (!suppliedElsewhere("rstLCC", sim)) {
     sim$rstLCC <- Cache(prepInputs_NTEMS_LCC_FAO,
@@ -1644,7 +1653,7 @@ Save <- function(sim) {
   }
 
   if (!suppliedElsewhere("columnsForPixelGroups", sim)) {
-    sim$columnsForPixelGroups <- LandR::columnsForPixelGroups
+    sim$columnsForPixelGroups <- LandR::columnsForPixelGroups()
   }
 
   return(invisible(sim))

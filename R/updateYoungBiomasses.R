@@ -188,7 +188,7 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
     paths$modulePath <- file.path(submodulePath, "Biomass_core")
     getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
   } else {
-    modules <- modules[modules == "Biomass_core"]
+    modules <- "Biomass_core"
   }
   
   outputs <- data.frame(expand.grid(objectName = "cohortData",
