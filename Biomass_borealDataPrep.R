@@ -858,7 +858,8 @@ createBiomass_coreInputs <- function(sim) {
   ## Run two nested loops to do both of these things
   modelBiomassTags <- c(cacheTags, "modelBiomass",
                         paste0("subsetSize:", P(sim)$subsetDataBiomassModel))
-  maxDataSubsetTries <- P(sim)$subsetDataAttempts
+  maxDataSubsetTries <- ifelse(isTRUE(P(sim)$subsetDataBiomassModel > 0),
+                               P(sim)$subsetDataAttempts, 1)
   for (tryBiomassDataSubset in 1:maxDataSubsetTries) {
     cohortDataNo34to36BiomassSubset <- subsetDT(cohortDataNo34to36Biomass,
                                                 by = c("ecoregionGroup", "speciesCode"),
