@@ -1433,12 +1433,7 @@ Save <- function(sim) {
     if (!suppliedElsewhere("rasterToMatchLarge", sim)) { ## Eliot changed this -- case where RTM was supplied, this broke that --> NOT TRUE --> if one is not provided, redo both (safer?)
       needRTML <- TRUE
       message("There is no rasterToMatchLarge supplied; will use rasterToMatch")
-    } # else {
-    #   stop("rasterToMatch/rasterToMatchLarge is going to be supplied, but ", currentModule(sim), " requires it ",
-    #        "as part of its .inputObjects. Please make it accessible to ", currentModule(sim),
-    #        " in the .inputObjects by passing it in as an object in simInit(objects = list(rasterToMatch = aRaster)",
-    #        " or in a module that gets loaded prior to ", currentModule(sim))
-    # }
+    }
   }
 
   ## biomass map
@@ -1512,7 +1507,7 @@ Save <- function(sim) {
                         disturbedCode = 240,
                         destinationPath = dPath,
                         overwrite = TRUE,
-                        writeTo = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName, "_", P(sim)$dataYear)),
+                        # writeTo = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName, "_", P(sim)$dataYear)),
                         userTags = c("rstLCC", currentModule(sim),
                                      P(sim)$.studyAreaName, P(sim)$dataYear))
   }
