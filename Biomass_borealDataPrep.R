@@ -465,7 +465,6 @@ createBiomass_coreInputs <- function(sim) {
     }
   }
   # options(opt)
-
   if (!.compareRas(sim$speciesLayers, sim$rasterToMatchLarge, res = TRUE)) {
     sim$speciesLayers <- Cache(postProcessTerra,
                                sim$speciesLayers,
@@ -1577,7 +1576,7 @@ Save <- function(sim) {
                                ageURL = ageURL,
                                studyArea = sa,
                                rasterToMatch = sim$rasterToMatchLarge,
-                               writeTo = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
+                               # writeTo = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
                                overwrite = TRUE,
                                useCache = FALSE, ### for now due to attributes being lost on retrieval
                                firePerimeters = if (P(sim)$overrideAgeInFires) sim$firePerimeters else NULL,
