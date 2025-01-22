@@ -336,12 +336,12 @@ defineModule(sim, list(
     createsOutput("modelBiomass", "data.frame",
                   paste("If `P(sim)$exportModels` is 'all', or 'biomass',",
                         "fitted biomass model, as defined by `P(sim)$biomassModel`")),
-    createsOutput("rawBiomassMap", "SpatRaster",
-                  paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
-                        "Service, National Forest Inventory, kNN-derived total aboveground biomass map",
-                        "(in tonnes/ha) from 2001, unless `dataYear != 2001`.",
-                        "See <https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990>",
-                        "for metadata")),
+    # createsOutput("rawBiomassMap", "SpatRaster",
+    #               paste("total biomass raster layer in study area. Defaults to the Canadian Forestry",
+    #                     "Service, National Forest Inventory, kNN-derived total aboveground biomass map",
+    #                     "(in tonnes/ha) from 2001, unless `dataYear != 2001`.",
+    #                     "See <https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990>",
+    #                     "for metadata")),
     createsOutput("rstLCC", "SpatRaster",
                   paste("As the input object `rstLCC`, but potentially cropped/projected/masked",
                         "to match `rasterToMatchLarge`")),
@@ -465,7 +465,6 @@ createBiomass_coreInputs <- function(sim) {
     }
   }
   # options(opt)
-
   if (!.compareRas(sim$speciesLayers, sim$rasterToMatchLarge, res = TRUE)) {
     sim$speciesLayers <- Cache(postProcessTerra,
                                sim$speciesLayers,
@@ -1310,8 +1309,8 @@ createBiomass_coreInputs <- function(sim) {
 
   ## do assertions
   message(blue("Create pixelGroups based on: ", paste(sim$columnsForPixelGroups, collapse = ", ")),
-          "\n", blue("Resulted in"), magenta(length(unique(sim$cohortData$pixelGroup))),
-          "unique pixelGroup values")
+          "\n", blue("Resulted in "), magenta(length(unique(sim$cohortData$pixelGroup))),
+          " unique pixelGroup values")
   assertSpeciesEcoregionCohortDataMatch(sim$cohortData, sim$speciesEcoregion, doAssertion = TRUE)
 
   # LandR::assertERGs(sim$ecoregionMap, cohortData = sim$cohortData,
@@ -1433,12 +1432,7 @@ Save <- function(sim) {
     if (!suppliedElsewhere("rasterToMatchLarge", sim)) { ## Eliot changed this -- case where RTM was supplied, this broke that --> NOT TRUE --> if one is not provided, redo both (safer?)
       needRTML <- TRUE
       message("There is no rasterToMatchLarge supplied; will use rasterToMatch")
-    } # else {
-    #   stop("rasterToMatch/rasterToMatchLarge is going to be supplied, but ", currentModule(sim), " requires it ",
-    #        "as part of its .inputObjects. Please make it accessible to ", currentModule(sim),
-    #        " in the .inputObjects by passing it in as an object in simInit(objects = list(rasterToMatch = aRaster)",
-    #        " or in a module that gets loaded prior to ", currentModule(sim))
-    # }
+    }
   }
 
   ## biomass map
@@ -1512,7 +1506,7 @@ Save <- function(sim) {
                         disturbedCode = 240,
                         destinationPath = dPath,
                         overwrite = TRUE,
-                        writeTo = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName, "_", P(sim)$dataYear)),
+                        # writeTo = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName, "_", P(sim)$dataYear)),
                         userTags = c("rstLCC", currentModule(sim),
                                      P(sim)$.studyAreaName, P(sim)$dataYear))
   }
@@ -1582,7 +1576,7 @@ Save <- function(sim) {
                                ageURL = ageURL,
                                studyArea = sa,
                                rasterToMatch = sim$rasterToMatchLarge,
-                               writeTo = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
+                               # writeTo = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
                                overwrite = TRUE,
                                useCache = FALSE, ### for now due to attributes being lost on retrieval
                                firePerimeters = if (P(sim)$overrideAgeInFires) sim$firePerimeters else NULL,
