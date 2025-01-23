@@ -1,6 +1,6 @@
 ---
 title: "LandR _Biomass_borealDataPrep_ Manual"
-date: "Last updated: 2024-06-07"
+date: "Last updated: 2025-01-23"
 output:
   bookdown::html_document2:
     toc: true
@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep997c7e3d03e08bce8949c258b3b93f12764f3d01)
+[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep8f802ee93265dd408a1993af1b4338711652adf2)
 
 [![Issues-badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -803,13 +803,13 @@ and *Biomass_core* manual for further detail about these columns.
   <tr>
    <td style="text-align:left;"> columnsForPixelGroups </td>
    <td style="text-align:left;"> character </td>
-   <td style="text-align:left;"> The names of the columns in `cohortData` that define unique pixelGroups. Default is c('ecoregionGroup', 'speciesCode', 'age', 'B') </td>
+   <td style="text-align:left;"> The names of the columns in `cohortData` that define unique `pixelGroup`s. Default is `c('ecoregionGroup', 'speciesCode', 'age')`; see `?LandR::columnsForPixelGroups`). </td>
    <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
    <td style="text-align:left;"> ecoregionLayer </td>
-   <td style="text-align:left;"> sfc </td>
-   <td style="text-align:left;"> A `sfc` polygon object that characterizes the unique ecological regions (`ecoregionGroup`) used to parameterize the biomass, cover, and species establishment probability models. It will be overlaid with landcover to generate classes for every ecoregion/LCC combination. It must have same extent and crs as `studyAreaLarge`. It is superseded by `sim$ecoregionRst` if that object is supplied by the user </td>
+   <td style="text-align:left;"> sf </td>
+   <td style="text-align:left;"> A `sf` polygon object that characterizes the unique ecological regions (`ecoregionGroup`) used to parameterize the biomass, cover, and species establishment probability models. It will be overlaid with landcover to generate classes for every ecoregion/LCC combination. It must have same extent and crs as `studyAreaLarge`. It is superseded by `sim$ecoregionRst` if that object is supplied by the user </td>
    <td style="text-align:left;"> https://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip </td>
   </tr>
   <tr>
@@ -976,7 +976,7 @@ the model used to refit `deciduousCoverDiscount` in the supplied
    <td style="text-align:left;"> lme4::lm.... </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Model and formula for estimating biomass (B) from `ecoregionGroup` (currently `ecoregionLayer` LandCoverClass), `speciesCode`, `logAge` (gives a downward curving relationship), and `cover`. Defaults to a LMEM, which can be slow if dealing with very large datasets (e.g. 36 000 points take 20min). For faster fitting try `P(sim)$subsetDataBiomassModel == TRUE`, or `quote(RcppArmadillo::fastLm(formula = B ~ logAge speciesCode ecoregionGroup + cover speciesCode ecoregionGroup))`. A custom model call can also be provided, as long as the 'data' argument is NOT included. </td>
+   <td style="text-align:left;"> Model and formula for estimating biomass (B) from `ecoregionGroup` (currently `ecoregionLayer` `LandCoverClass`), `speciesCode`, `logAge` (gives a downward curving relationship), and `cover`. Defaults to a LMEM, which can be slow if dealing with very large datasets (e.g., 36,000 points takes 20 minutes). For faster fitting try `P(sim)$subsetDataBiomassModel == TRUE`, or `quote(RcppArmadillo::fastLm(formula = B ~ logAge speciesCode ecoregionGroup + cover speciesCode ecoregionGroup))`. A custom model call can also be provided, as long as the 'data' argument is NOT included. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> coverModel </td>
@@ -1096,7 +1096,7 @@ the model used to refit `deciduousCoverDiscount` in the supplied
    <td style="text-align:left;"> LandR::m.... </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> A quoted function that makes the table of min. relative B determining a stand shade level for each ecoregionGroup. Using the internal object `pixelCohortData` is advisable to access/use the list of `ecoregionGroups` per pixel. The function must output a `data.frame` with 6 columns, named `ecoregionGroup` and 'X1' to 'X5', with one line per `ecoregionGroup` code, and the min. relative biomass for each stand shade level X1-5. The default function uses values from LANDIS-II available at: https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/biomass-succession-main-inputs_BSW_Baseline.txt and applies them to all ecolocations (`ecoregionGroup` codes) </td>
+   <td style="text-align:left;"> A quoted function that makes the table of min. relative B determining a stand shade level for each `ecoregionGroup`. Using the internal object `pixelCohortData` is advisable to access/use the list of `ecoregionGroup`s per pixel. The function must output a `data.frame` with 6 columns, named `ecoregionGroup` and 'X1' to 'X5', with one line per `ecoregionGroup` code, and the min. relative biomass for each stand shade level X1-5. The default function uses values from LANDIS-II available at: https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/biomass-succession-main-inputs_BSW_Baseline.txt and applies them to all ecolocations (`ecoregionGroup` codes) </td>
   </tr>
   <tr>
    <td style="text-align:left;"> omitNonTreedPixels </td>
@@ -1367,7 +1367,7 @@ The module produces the following outputs (Table
   <tr>
    <td style="text-align:left;"> pixelFateDT </td>
    <td style="text-align:left;"> data.table </td>
-   <td style="text-align:left;"> A small table that keeps track of the pixel removals and cause. This may help diagnose issues related to understanding the creation of `cohortData` </td>
+   <td style="text-align:left;"> A small table that keeps track of the pixel removals and cause. This may help diagnose issues related to understanding the creation of `cohortData`. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> minRelativeB </td>
@@ -1385,11 +1385,6 @@ The module produces the following outputs (Table
    <td style="text-align:left;"> If `P(sim)$exportModels` is 'all', or 'biomass', fitted biomass model, as defined by `P(sim)$biomassModel` </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> rawBiomassMap </td>
-   <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> total biomass raster layer in study area. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived total aboveground biomass map (in tonnes/ha) from 2001, unless `dataYear != 2001`. See &lt;https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990&gt; for metadata </td>
-  </tr>
-  <tr>
    <td style="text-align:left;"> rstLCC </td>
    <td style="text-align:left;"> SpatRaster </td>
    <td style="text-align:left;"> As the input object `rstLCC`, but potentially cropped/projected/masked to match `rasterToMatchLarge` </td>
@@ -1397,12 +1392,12 @@ The module produces the following outputs (Table
   <tr>
    <td style="text-align:left;"> species </td>
    <td style="text-align:left;"> data.table </td>
-   <td style="text-align:left;"> a table that of invariant species traits. Will have the same traits as the input `speciesTable` with values adjusted where necessary </td>
+   <td style="text-align:left;"> Table that of invariant species traits. Will have the same traits as the input `speciesTable`, with values adjusted where necessary. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> speciesLayers </td>
    <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> cover percentage raster layers by species in Canada species map. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived species cover maps from 2001 using a cover threshold of 10 - see https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata </td>
+   <td style="text-align:left;"> cover percentage raster layers by species in Canada species map. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived species cover maps from 2001 using a cover threshold of 10 - see &lt;https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990&gt; for metadata. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> speciesEcoregion </td>
@@ -1412,22 +1407,22 @@ The module produces the following outputs (Table
   <tr>
    <td style="text-align:left;"> standAgeMap </td>
    <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> As the input object `standAgeMap`, but potentially cropped/projected/masked to match `rasterToMatchLarge` </td>
+   <td style="text-align:left;"> As the input object `standAgeMap`, but potentially cropped, projected, masked to match `rasterToMatchLarge`. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> studyArea </td>
    <td style="text-align:left;"> sfc </td>
-   <td style="text-align:left;"> As the input object `studyArea`, but potentially projected to match `rasterToMatch` CRS </td>
+   <td style="text-align:left;"> As the input object `studyArea`, but potentially projected to match `rasterToMatch` CRS. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> studyAreaLarge </td>
    <td style="text-align:left;"> sfc </td>
-   <td style="text-align:left;"> As the input object `studyAreaLarge`, but potentially projected to match `studyArea` and `rasterToMatch` CRS </td>
+   <td style="text-align:left;"> As the input object `studyAreaLarge`, but potentially projected to match `studyArea` and `rasterToMatch` CRS. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> sufficientLight </td>
    <td style="text-align:left;"> data.frame </td>
-   <td style="text-align:left;"> Probability of germination for species shade tolerance (in `species`) and shade level`(defined by `minRelativeB`) combinations. Table values follow LANDIS-II test traits available at: https://raw.githubusercontent.com/LANDIS-II-Foundation/Extensions-Succession/master/biomass-succession-archive/trunk/tests/v6.0-2.0/biomass-succession_test.txt </td>
+   <td style="text-align:left;"> Probability of germination for species shade tolerance (in `species`) and shade level`(defined by `minRelativeB`) combinations. Table values follow LANDIS-II test traits available at: &lt;https://raw.githubusercontent.com/LANDIS-II-Foundation/Extensions-Succession/master/biomass-succession-archive/trunk/tests/v6.0-2.0/biomass-succession_test.txt&gt; </td>
   </tr>
 </tbody>
 </table>
