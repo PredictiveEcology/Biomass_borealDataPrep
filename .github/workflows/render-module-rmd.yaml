@@ -53,10 +53,11 @@ jobs:
 
       - uses: PredictiveEcology/actions/install-Rmd-pkgs@v0.2
 
-      - name: Install module package dependencies
+      - name: Install module package and other dependencies
         run: |
           pkgs <- SpaDES.core::packages(modules = "[[name]]", paths = "..")[[1]]
           Require::Require(pkgs[[1]])
+          Require::Require(c("PredictiveEcology/LandR@development"), require = FALSE)
         shell: Rscript {0}
 
       - name: Render module Rmd
