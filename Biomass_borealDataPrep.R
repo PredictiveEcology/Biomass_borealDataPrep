@@ -94,7 +94,7 @@ defineModule(sim, list(
                           "the user wants to investigate them further. Can be set to 'none' (no models are exported), 'all'",
                           "(both are exported), 'biomassModel' or 'coverModel'. BEWARE: because this is intended for posterior",
                           "model inspection, the models will be exported with data, which may mean very large simList(s)!")),
-    defineParameter("forestedLCCClasses", "numeric", c(210, 220, 230, 240), 0, NA,
+    defineParameter("forestedLCCClasses", "numeric", c(81, 210, 220, 230, 240), 0, NA,
                     paste("The classes in the `rstLCC` layer that are 'treed' and will therefore be run in Biomass_core.",
                           "Defaults to forested classes in NTEMS map (210 = conif, 220 deciduous, 230 mixed) plus",
                           "LandR-generated 240 class, which is recently disturbed forest.")),
