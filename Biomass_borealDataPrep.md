@@ -1,6 +1,6 @@
 ---
 title: "LandR _Biomass_borealDataPrep_ Manual"
-date: "Last updated: 2025-01-23"
+date: "Last updated: 2025-01-31"
 output:
   bookdown::html_document2:
     toc: true
@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep8f802ee93265dd408a1993af1b4338711652adf2)
+[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep050d1447991d784b5f1aeec727c76cbccdf3777d)
 
 [![Issues-badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -1061,7 +1061,7 @@ the model used to refit `deciduousCoverDiscount` in the supplied
   <tr>
    <td style="text-align:left;"> forestedLCCClasses </td>
    <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;"> 210, 220.... </td>
+   <td style="text-align:left;"> 81, 210,.... </td>
    <td style="text-align:left;"> 0 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> The classes in the `rstLCC` layer that are 'treed' and will therefore be run in Biomass_core. Defaults to forested classes in NTEMS map (210 = conif, 220 deciduous, 230 mixed) plus LandR-generated 240 class, which is recently disturbed forest. </td>
