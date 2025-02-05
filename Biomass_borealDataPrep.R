@@ -18,7 +18,7 @@ defineModule(sim, list(
   loadOrder = list(after = c("Biomass_speciesData"),
                    before = c("Biomass_core")),
   reqdPkgs = list("assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2",
-                  "merTools", "plyr", "rasterVis", "sf", "terra",
+                  "merTools", "plyr", "rasterVis", "sf", "terra", "Require",
                   "reproducible (>= 2.1.0)",
                   "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
                   "PredictiveEcology/LandR@development (>= 1.1.5.9025)",
@@ -1351,6 +1351,13 @@ plottingFn <- function(sim) {
   )
 }
 
+#' Save files
+#'
+#' Generic function using `saveFiles`
+#'
+#' @return For side effect, saved files as per sim
+#'
+#' @param sim A simList
 Save <- function(sim) {
   sim <- saveFiles(sim)
   return(invisible(sim))
