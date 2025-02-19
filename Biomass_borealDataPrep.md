@@ -1,6 +1,6 @@
 ---
 title: "LandR _Biomass_borealDataPrep_ Manual"
-date: "Last updated: 2025-01-31"
+date: "Last updated: 2025-02-19"
 output:
   bookdown::html_document2:
     toc: true
@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep050d1447991d784b5f1aeec727c76cbccdf3777d)
+[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep485ccaa6bbaac58003627fa26f1e1209d6ed5034)
 
 [![Issues-badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -680,18 +680,6 @@ group). To do so, the name of the species group in `sppEquivCol` column of the
    <td style="text-align:left;font-style: italic;"> Abies lasiocarpa </td>
   </tr>
   <tr>
-   <td style="text-align:left;font-style: italic;"> Picea engelmannii x glauca </td>
-   <td style="text-align:left;"> Pice_Eng_Gla </td>
-   <td style="text-align:left;"> Pice_Spp </td>
-   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;font-style: italic;"> Picea engelmannii x glauca </td>
-   <td style="text-align:left;"> Pice_Eng_Gla </td>
-   <td style="text-align:left;"> Pice_Spp </td>
-   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
-  </tr>
-  <tr>
    <td style="text-align:left;font-style: italic;"> Picea engelmannii </td>
    <td style="text-align:left;"> Pice_Eng </td>
    <td style="text-align:left;"> Pice_Spp </td>
@@ -706,6 +694,18 @@ group). To do so, the name of the species group in `sppEquivCol` column of the
   <tr>
    <td style="text-align:left;font-style: italic;"> Picea mariana </td>
    <td style="text-align:left;"> Pice_Mar </td>
+   <td style="text-align:left;"> Pice_Spp </td>
+   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;font-style: italic;"> Picea engelmannii x glauca </td>
+   <td style="text-align:left;"> Pice_Eng_Gla </td>
+   <td style="text-align:left;"> Pice_Spp </td>
+   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;font-style: italic;"> Picea engelmannii x glauca </td>
+   <td style="text-align:left;"> Pice_Eng_Gla </td>
    <td style="text-align:left;"> Pice_Spp </td>
    <td style="text-align:left;font-style: italic;"> Picea spp. </td>
   </tr>
@@ -1157,7 +1157,7 @@ the model used to refit `deciduousCoverDiscount` in the supplied
   <tr>
    <td style="text-align:left;"> sppEquivCol </td>
    <td style="text-align:left;"> character </td>
-   <td style="text-align:left;"> Boreal </td>
+   <td style="text-align:left;"> LandR </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> The column in `sim$speciesEquivalency` data.table to use as a naming convention. </td>
