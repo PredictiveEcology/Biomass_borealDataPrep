@@ -153,7 +153,7 @@ defineModule(sim, list(
                           "ecoprovinces (see `?LandR::speciesTableUpdate` for details). Set to `NULL` if default trait values from",
                           "`speciesTable` are to be kept instead. The user can supply other or additional functions to change",
                           "trait values (see `LandR::updateSpeciesTable`)")),
-    defineParameter("sppEquivCol", "character", "Boreal", NA, NA,
+    defineParameter("sppEquivCol", "character", "LandR", NA, NA,
                     "The column in `sim$speciesEquivalency` data.table to use as a naming convention."),
     defineParameter("speciesTableAreas", "character", c("BSW", "BP", "MC"), NA, NA,
                     paste("One or more of the Ecoprovince short forms that are in the `speciesTable` file,",
