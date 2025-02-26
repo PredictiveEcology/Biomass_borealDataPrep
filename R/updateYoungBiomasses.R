@@ -1,3 +1,5 @@
+#' Update young biomasses
+#'
 #' @param young data.table not unlinke `cohortData`
 #' @param modelBiomass named list with items "mod", "pred", "rsq", "scaledVarsModelB".
 #' @param ... For anything, used for Cache. Not used internally here.
@@ -190,7 +192,7 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
   } else {
     modules <- "Biomass_core"
   }
-  
+
   outputs <- data.frame(expand.grid(objectName = "cohortData",
                                     saveTime = unique(seq(times$start, times$end, by = 1)),
                                     eventPriority = 1, fun = "qs::qsave",
