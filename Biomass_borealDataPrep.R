@@ -1044,7 +1044,7 @@ createBiomass_coreInputs <- function(sim) {
                                        method = "near",
                                        userTags = c(cacheTags, "rasterToMatchLargeCropped"),
                                        omitArgs = c("userTags"))
-    options(opts)
+    options(opt)
     on.exit()
 
     rtmlc_int <- LandR::asInt(rasterToMatchLargeCropped)
