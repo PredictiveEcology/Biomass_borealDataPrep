@@ -86,6 +86,10 @@ defineModule(sim, list(
                     paste("Used to override the default 'sourceURL' of KNN datasets (species cover, stand biomass",
                           "and stand age), which point to 2001 data, to fetch KNN data for another year. Currently,",
                           "the only other possible year is 2011. Will also select NTEMS landcover from appropriate year.")),
+    defineParameter("dataSource", "character", "KNN", NA, NA,
+                    paste("Used to override the default 'sourceURL' of input datasets (species cover, stand biomass",
+                          "and stand age), which point to KNN data. Currently KNN is the only possible source for all,",
+                          "datasets.")),
     defineParameter("ecoregionLayerField", "character", NULL, NA, NA,
                     paste("the name of the field used to distinguish ecoregions, if supplying a polygon.",
                           "Defaults to `NULL` and tries to use  'ECODISTRIC' where available (for legacy reasons), or the row numbers of",
@@ -1482,16 +1486,15 @@ Save <- function(sim) {
   ## biomass map
   if (!suppliedElsewhere("rawBiomassMap", sim)) {
     if (!P(sim)$dataYear %in% c(2001, 2011, 2015, 2020)) {
-        stop("'P(sim)$dataYear' must be one of 2001, 2011, 2015, 2020")
+      stop("'P(sim)$dataYear' must be one of 2001, 2011, 2015, 2020")
     }
 
     sim$rawBiomassMap <- prepRawBiomassMap(
-      dataSource = "KNN",
+      dataSource = P(sim)$dataSource,
       dataYear = P(sim)$dataYear,
-      studyAreaName = P(sim)$.studyAreaName,
-      cacheTags = cacheTags,
       to =  sim$rasterToMatch_biomassParam,
-      destinationPath = dPath)
+      destinationPath = dPath,
+      writeTo = .suffix("biomass.tif", paste0("_", P(sim)$.studyAreaName, "_", P(sim)$dataYear, "_", P(sim)$dataSource)))
   }
 
   ## Land cover raster ------------------------------------------------
