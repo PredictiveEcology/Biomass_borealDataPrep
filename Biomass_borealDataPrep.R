@@ -10,14 +10,14 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.8"),
+  version = list(Biomass_borealDataPrep = "1.5.9"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "Biomass_borealDataPrep.Rmd"),
   loadOrder = list(after = c("Biomass_speciesData"),
                    before = c("Biomass_core")),
-  reqdPkgs = list("archive", "assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2",
+  reqdPkgs = list("archive", "assertthat", "crayon", "data.table", "dplyr", "fasterize",  "ggplot2", "httr2",
                   "merTools", "plyr", "rasterVis", "sf", "terra",
                   "reproducible (>= 2.1.0)",
                   "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
@@ -446,32 +446,29 @@ createBiomass_coreInputs <- function(sim) {
   if (!.compareRas(sim$standAgeMap, sim$rasterToMatch_biomassParam, res = TRUE)) {
     ## note that extents may never align if the resolution and projection do not allow for it
     ## this is not working, need to use projectRaster
-    sim$standAgeMap <- Cache(postProcess,
+    sim$standAgeMap <- postProcess(
                              sim$standAgeMap,
                              to = sim$rasterToMatch_biomassParam,
-                             overwrite = TRUE)
+                             overwrite = TRUE) |> Cache(.functionName = "postProcessStandAgeMap")
     attr(sim$standAgeMap, "imputedPixID") <- sim$imputedPixID
   }
 
   if (!.compareRas(sim$rstLCC, sim$rasterToMatch_biomassParam, res = TRUE)) {
-    sim$rstLCC <- Cache(postProcess,
-                        sim$rstLCC,
-                        to = sim$rasterToMatch_biomassParam,
-                        overwrite = TRUE)
+    sim$rstLCC <- postProcess(sim$rstLCC,
+                              to = sim$rasterToMatch_biomassParam,
+                              overwrite = TRUE) |> Cache(.functionName = "postProcessRstLCC")
   }
 
   if (P(sim)$overrideAgeInFires) {
-    sim$firePerimeters <- Cache(postProcess,
-                                sim$firePerimeters,
-                                to = sim$rasterToMatch_biomassParam,
-                                overwrite = TRUE)
+    sim$firePerimeters <- postProcess(sim$firePerimeters,
+                                      to = sim$rasterToMatch_biomassParam,
+                                      overwrite = TRUE) |> Cache(.functionName = "postProcessFirePerimeters")
   }
   # options(opt)
   if (!.compareRas(sim$speciesLayers, sim$rasterToMatch_biomassParam, res = TRUE)) {
-    sim$speciesLayers <- Cache(postProcessTerra,
-                               sim$speciesLayers,
-                               to = sim$rasterToMatch_biomassParam,
-                               overwrite = TRUE)
+    sim$speciesLayers <- postProcessTerra(sim$speciesLayers,
+                                          to = sim$rasterToMatch_biomassParam,
+                                          overwrite = TRUE) |> Cache(.functionName = "postProcessSpeciesLayers")
   }
 
   if (!.compareRas(sim$rasterToMatch_biomassParam, sim$rawBiomassMap, sim$rstLCC,
@@ -483,10 +480,10 @@ createBiomass_coreInputs <- function(sim) {
   ## species traits inputs ---------------------------------------
   message(blue("Prepare 'species' table, i.e., species level traits", Sys.time()))
 
-  sim$species <- Cache(prepSpeciesTable(speciesTable = sim$speciesTable,
-                                        sppEquiv = sim$sppEquiv,
-                                        areas = P(sim)$speciesTableAreas,
-                                        sppEquivCol = P(sim)$sppEquivCol))
+  sim$species <- prepSpeciesTable(speciesTable = sim$speciesTable,
+                                  sppEquiv = sim$sppEquiv,
+                                  areas = P(sim)$speciesTableAreas,
+                                  sppEquivCol = P(sim)$sppEquivCol) |> Cache()
 
   ## override species table values -------------------------------
   if (!is.null(P(sim)$speciesUpdateFunction)) {
@@ -640,49 +637,6 @@ createBiomass_coreInputs <- function(sim) {
   if (isTRUE(P(sim)$fitDeciduousCoverDiscount)) {
     message(magenta(paste0(format(P(sim)$coverPctToBiomassPctModel, appendLF = FALSE))))
 
-    # pixelCohortData[, lcc := as.factor(lcc)]
-    #
-    # plot.it <- FALSE
-    # sam <- subsetDT(pixelCohortData, by = c("speciesCode", "lcc"),
-    #                 doSubset = P(sim)$subsetDataAgeModel,
-    #                 indices = TRUE)
-    # pi <- unique(pixelCohortData[sam]$pixelIndex)
-    # sam <- which(pixelCohortData$pixelIndex %in% pi)
-    #
-    # system.time({
-    #   out <- optimize(interval = c(0.1, 1), f = coverOptimFn, bm = P(sim)$coverPctToBiomassPctModel,
-    #                   pixelCohortData = pixelCohortData, subset = sam, maximum = FALSE)
-    # })
-    # params(sim)$Biomass_borealDataPrep$deciduousCoverDiscount <- out$minimum
-    #
-    # if (plot.it) {
-    #   cover2BiomassModel <- coverOptimFn(out$minimum, pixelCohortData, P(sim)$subsetDataAgeModel,
-    #                                      P(sim)$coverPctToBiomassPctModel, returnAIC = FALSE)
-    #   sam1 <- sample(NROW(pixelCohortData), 1e5)
-    #   dev()
-    #   par(mfrow = c(1,2))
-    #   plot(predict(cover2BiomassModel$modelBiomass1$mod,
-    #                newdata = cover2BiomassModel$pixelCohortData[sam1]),
-    #        log(cover2BiomassModel$pixelCohortData$B / 100)[sam1], pch = ".")
-    #   abline(a = 0, b = 1)
-    #
-    #   cover2BiomassModel1 <- coverOptimFn(1, pixelCohortData, P(sim)$subsetDataAgeModel,
-    #                                       P(sim)$coverPctToBiomassPctModel,
-    #                                       returnAIC = FALSE)
-    #   dev()
-    #   plot(predict(cover2BiomassModel1$modelBiomass1$mod,
-    #                newdata = cover2BiomassModel1$pixelCohortData[sam1]),
-    #        log(cover2BiomassModel1$pixelCohortData$B / 100)[sam1], pch = ".")
-    #   abline(a = 0, b = 1)
-    #
-    #   pcd <- pixelCohortData
-    #   bb <- pcd[sample(sam)]
-    #   cc <- bb[, cover3 := cover * c(1, out$minimum)[decid + 1]][
-    #     , actualX := cover3 / sum(cover3) / (cover / 100), by = "pixelIndex"]
-    #   setkey(cc, pixelIndex)
-    #   mean(cc[speciesCode == "Popu_Tre"]$actualX)
-    # }
-
     params(sim)$Biomass_borealDataPrep$deciduousCoverDiscount <- Cache(deciduousCoverDiscountFun,
                                                                        pixelCohortData = pixelCohortData,
                                                                        coverPctToBiomassPctModel = P(sim)$coverPctToBiomassPctModel,
@@ -696,7 +650,11 @@ createBiomass_coreInputs <- function(sim) {
                  round(P(sim)$deciduousCoverDiscount, 3)))
   }
 
-  pixelCohortData <- Cache(partitionBiomass(x = P(sim)$deciduousCoverDiscount, pixelCohortData))
+  # Cache here, uses the previously digested object that was used to create the pixelCohortData; it hasn't
+  #   changed in the code above since its creation just above
+  pixelCohortData <- partitionBiomass(x = P(sim)$deciduousCoverDiscount, pixelCohortData) |>
+    Cache(omitArgs = "pixelCohortData", .cacheExtra = attr(pixelCohortData, "tags"))
+
   set(pixelCohortData, NULL, "B", asInteger(pixelCohortData$B/P(sim)$pixelGroupBiomassClass) *
         P(sim)$pixelGroupBiomassClass)
   set(pixelCohortData, NULL, "cover", asInteger(pixelCohortData$cover))
@@ -754,10 +712,17 @@ createBiomass_coreInputs <- function(sim) {
         }
 
         ncharToPad <- max(nchar(pixelTable$lcc))
+
+        # Eliot added this after many failed assertions WAY below: Sep 5, 2025
+        #   assert_that(all(is.na(values(mat = FALSE, sim$ecoregionMap)) == is.na(values(mat = FALSE, sim$pixelGroupMap))))
+        #   The newLcc
+        pixelTable <- pixelTable[!newLcc %in% 0] # These are pixels that turned to zero i.e., need to be removed
+
         pixelTable[!is.na(newLcc), lcc := newLcc]
         pixelTable[!is.na(newLcc),  initialEcoregionCode :=
                      paste0(initialEcoregionCode2, "_",
                             paddedFloatToChar(newLcc, ncharToPad))]
+
         set(pixelTable, NULL, c("newLcc", "initialEcoregionCode2"), NULL)
         rstLCCAdj[pixelsToRm2] <- NA
         rm(pixelsToRm2, pixelsToRm3, pixelsToRm4)
@@ -1139,12 +1104,11 @@ createBiomass_coreInputs <- function(sim) {
   }
   ## subset ecoregionFiles$ecoregionMap to smaller area.
 
-  ecoregionFiles$ecoregionMap <- Cache(postProcess,
-                                       x = ecoregionFiles$ecoregionMap,
+  ecoregionFiles$ecoregionMap <- postProcess(x = ecoregionFiles$ecoregionMap,
                                        to = sim$rasterToMatch,
-                                       writeTo = NULL,
-                                       userTags = c(cacheTags, "ecoregionMap"),
-                                       omitArgs = c("userTags"))
+                                       writeTo = NULL) |> Cache(.functionName = "postProcessEcoregionMap",
+                                                                userTags = c(cacheTags, "ecoregionMap"),
+                                                                omitArgs = c("userTags"))
 
   if (is(P(sim)$minRelativeBFunction, "call")) {
     sim$minRelativeB <- eval(P(sim)$minRelativeBFunction)
@@ -1333,7 +1297,7 @@ createBiomass_coreInputs <- function(sim) {
   sim$pixelGroupMap <- makePixelGroupMap(pixelCohortData, sim$rasterToMatch)
   #initialize with disturbed (i.e. empty) pixels as pixelGroup 0
   sim$pixelGroupMap[is.na(sim$pixelGroupMap[]) & !is.na(sim$ecoregionMap[])] <- 0 #
-  assert_that(all(is.na(as.vector(sim$ecoregionMap[])) == is.na(as.vector(sim$pixelGroupMap[]))))
+  assert_that(all(is.na(values(mat = FALSE, sim$ecoregionMap)) == is.na(values(mat = FALSE, sim$pixelGroupMap))))
 
 
   ## make sure speciesLayers match RTM (since that's what is used downstream in simulations)
@@ -1661,8 +1625,8 @@ Save <- function(sim) {
 #' Probe NTEMS NFI web page to find the final year available
 #'
 #' Starts searching
-# `paste0("https://opendata.nfis.org/downloads/forest_change/CA_forest_VLCE2_", lastYrOnNTEMS, ".zip")`
-#' at current year (Sys.Date()), and subtract one year, try, subtract a year, try etc.
+#' `paste0("https://opendata.nfis.org/downloads/forest_change/CA_forest_VLCE2_", lastYrOnNTEMS, ".zip")`
+#' at current year (`Sys.Date()`), and subtract one year, try, subtract a year, try etc.
 #'
 #' @param timeout Numeric, in seconds, for how long to allow a download to happen
 #'   before interrupting it and declaring, "that worked, use that year".

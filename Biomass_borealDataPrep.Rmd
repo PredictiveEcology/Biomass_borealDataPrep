@@ -153,8 +153,8 @@ germination and initial conditions necessary to run *Biomass_core*. For this,
 data[^biomass_borealdataprep-1].
 
 [^biomass_borealdataprep-1]: Raw data layers downloaded by the module are saved
-    in \`dataPath(sim)\`, which can be controlled via
-    \`options(reproducible.destinationPath = ...)\`.
+    in `dataPath(sim)`, which can be controlled via
+    `options(reproducible.destinationPath = ...)`.
 
 We advise future users to run *Biomass_borealDataPrep* with defaults and inspect
 the resulting input objects are like before supplying alternative data (or data
@@ -538,13 +538,13 @@ during the first years of the simulation (Fig. \@ref(fig:fig-simBLogBtest)).
 ```{r fig-biomassModelLogBtest, eval=TRUE, echo=FALSE, fig.align = 'center', out.width = ifelse(knitr::is_latex_output(), "100%", "70%"), fig.cap = "Modelling biomass as a linear vs. exponential relationship. a) `modelBiomass` as `B ~ logAge * speciesCode + cover * speciesCode + (logAge + cover | ecoregionGroup)`. b) `modelBiomass` as `logB ~ logAge * speciesCode + cover * speciesCode + (logAge + cover | ecoregionGroup)`. Blue dots are marginal mean B values (back-transformed in b) cross ages with confidence intervals as the bars."}
 ## make sure all include_graphics have wd attached to figure path
 ## this is necessary to knit to pdf using child Rmds - see https://stackoverflow.com/questions/61065560/cant-compile-rmarkdown-pdf-with-image-in-child-rmd-latex-error-image-file
-knitr::include_graphics(normPath(c("figures/biomassModel_logBtest.png")))
+knitr::include_graphics(normPath("figures/biomassModel_logBtest.png"))
 ```
 
 ```{r fig-simBLogBtest, eval=TRUE, echo=FALSE, fig.align = 'center', out.width = ifelse(knitr::is_latex_output(), "100%", "70%"),  fig.cap = "Thirty years of simulation with `maxB` values estimated from a `logB ~ ...` `biomassModel` (see Fig. \\@ref(fig:fig-biomassModelLogBtest)). The steep increase in such little time is abnormal."}
 ## make sure all include_graphics have wd attached to figure path
 ## this is necessary to knit to pdf using child Rmds - see https://stackoverflow.com/questions/61065560/cant-compile-rmarkdown-pdf-with-image-in-child-rmd-latex-error-image-file
-knitr::include_graphics(normPath(c("figures/simulatedB_logBtest.png")))
+knitr::include_graphics(normPath("figures/simulatedB_logBtest.png"))
 ```
 
 After the biomass model is fit, `maxB` is predicted by species and ecolocation
@@ -984,3 +984,4 @@ repository](https://github.com/CeresBarros/LandRBiomass_publication) and in
 @Barros2023.
 
 ## References {#bboreal-refs}
+
