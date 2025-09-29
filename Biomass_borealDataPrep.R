@@ -312,8 +312,8 @@ defineModule(sim, list(
                               "can be larger than the actual study area used for LandR simulations (e.g,",
                               "larger than `studyArea` in LandR Biomass_core)."))
   ),
-    outputObjects = bindrows(
-      createsOutput("biomassMap", "SpatRaster",
+  outputObjects = bindrows(
+    createsOutput("biomassMap", "SpatRaster",
                   paste("total biomass raster layer in study area,",
                         "filtered for pixels covered by `cohortData`. Units in $g/m^2$")),
     createsOutput("cohortData", "data.table",
@@ -447,9 +447,11 @@ createBiomass_coreInputs <- function(sim) {
     ## note that extents may never align if the resolution and projection do not allow for it
     ## this is not working, need to use projectRaster
     sim$standAgeMap <- postProcess(
-                             sim$standAgeMap,
-                             to = sim$rasterToMatch_biomassParam,
-                             overwrite = TRUE) |> Cache(.functionName = "postProcessStandAgeMap")
+      sim$standAgeMap,
+      to = sim$rasterToMatch_biomassParam,
+      overwrite = TRUE
+    ) |>
+      Cache(.functionName = "postProcessStandAgeMap")
     attr(sim$standAgeMap, "imputedPixID") <- sim$imputedPixID
   }
 
