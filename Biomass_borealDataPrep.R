@@ -1560,7 +1560,6 @@ Save <- function(sim) {
         dataYear = P(sim)$dataYear,
         ageFun = getOption("reproducible.rasterRead", "terra::rast"), ## backwards compatible default
         destinationPath = dPath,
-        ageURL = ageURL,
         rasterToMatch = sim$rasterToMatch_biomassParam,
         # writeTo = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
         overwrite = TRUE,
