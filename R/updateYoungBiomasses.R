@@ -34,12 +34,12 @@ updateYoungBiomasses <- function(young, modelBiomass, ...) {
     young2 <- unique(young, by = columns)
     message(green("  -- Calculating bootstrap estimates around B; will replace B in young data if it is beyond 95% CI"))
     message(green("     This will take some time."))
-    PI.time <- system.time({
-      PI <- predictInterval(merMod = modelBiomass$mod, newdata = young2,
-                            level = 0.95, n.sims = 15,
-                            stat = "median", type = "linear.prediction",
-                            include.resid.var = TRUE)
-    })
+    ## Not wrapped in system.time(): it defaults to gcFirst = TRUE, so this forced a
+    ## full garbage collection every call, and `PI.time` was never read.
+    PI <- predictInterval(merMod = modelBiomass$mod, newdata = young2,
+                          level = 0.95, n.sims = 15,
+                          stat = "median", type = "linear.prediction",
+                          include.resid.var = TRUE)
     PI <- setDT(PI)
     young2 <- cbind(PI, young2)
     setnames(young2, old = "fit", new = "pred")

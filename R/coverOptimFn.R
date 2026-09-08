@@ -14,10 +14,10 @@ deciduousCoverDiscountFun <- function(pixelCohortData,
   pi <- unique(pixelCohortData[sam]$pixelIndex)
   sam <- which(pixelCohortData$pixelIndex %in% pi)
 
-  system.time({
-    out <- optimize(interval = c(0.1, 1), f = coverOptimFn, bm = coverPctToBiomassPctModel,
-                    pixelCohortData = pixelCohortData, subset = sam, maximum = FALSE)
-  })
+  ## Not wrapped in system.time(): it defaults to gcFirst = TRUE, so this forced a
+  ## full garbage collection every call, and the result was discarded.
+  out <- optimize(interval = c(0.1, 1), f = coverOptimFn, bm = coverPctToBiomassPctModel,
+                  pixelCohortData = pixelCohortData, subset = sam, maximum = FALSE)
 
   if (plot.it) {
     cover2BiomassModel <- coverOptimFn(out$minimum, pixelCohortData, subsetDataAgeModel,
