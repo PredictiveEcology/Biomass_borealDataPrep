@@ -1589,7 +1589,6 @@ Save <- function(sim) {
       projectTo = sim$rasterToMatch_biomassParam,
       disturbedCode = 240,
       destinationPath = dPath,
-      overwrite = TRUE,
       writeTo = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName, "_", P(sim)$dataYear))
     ) |>
       Cache(userTags = c("rstLCC", currentModule(sim), P(sim)$.studyAreaName, P(sim)$dataYear))
@@ -1606,8 +1605,7 @@ Save <- function(sim) {
       destinationPath = dPath,
       writeTo = NULL,
       to = sim$studyArea_biomassParam,
-      fun = getOption("reproducible.shapefileRead"),
-      overwrite = TRUE
+      fun = getOption("reproducible.shapefileRead")
     ) |>
       Cache(
         .functionName = "prepInputs_forEcoregionLayer",
@@ -1627,7 +1625,6 @@ Save <- function(sim) {
         destinationPath = dPath,
         studyArea = sa,
         rasterToMatch = sim$rasterToMatch_biomassParam,
-        overwrite = TRUE,
         url = extractURL("firePerimeters"),
         fireField = "YEAR"
       ) |>
@@ -1665,7 +1662,6 @@ Save <- function(sim) {
         destinationPath = dPath,
         rasterToMatch = sim$rasterToMatch_biomassParam,
         # writeTo = .suffix("standAgeMap.tif", paste0("_", P(sim)$.studyAreaName)),
-        overwrite = TRUE,
         useCache = FALSE, ## TODO: temporary FALSE due to attributes being lost on retrieval
         firePerimeters = if (P(sim)$overrideAgeInFires) sim$firePerimeters else NULL,
         fireURL = if (P(sim)$overrideAgeInFires) extractURL("firePerimeters") else NULL
