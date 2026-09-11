@@ -614,19 +614,20 @@ createBiomass_coreInputs <- function(sim) {
   pixelsToRmDueToNAs <- nonForestedPixels(sim$speciesLayers, omitNonTreedPixels = FALSE)
   pixelFateDT <- pixelFate(fate = "Total number pixels", runningPixelTotal = ncell(sim$speciesLayers))
   pixelFateDT <- pixelFate(pixelFateDT, "NAs on sim$speciesLayers", sum(pixelsToRmDueToNAs))
-  if (P(sim)$omitNonTreedPixels) {
-    checkNonforest <- sum(!(as.vector(sim$rstLCC[]) %in% P(sim)$forestedLCCClasses)) -
-      tail(pixelFateDT$pixelsRemoved, 1)
-    if (checkNonforest < 0) browser() ## TODO: remove browser
-    pixelFateDT <- pixelFate(pixelFateDT, "Non forested pixels (based on LCC classes)", checkNonforest)
-  }
   pixelsToRmDueToNAsAndNonForest <- nonForestedPixels(
     sim$speciesLayers,
     P(sim)$omitNonTreedPixels,
     P(sim)$forestedLCCClasses,
     sim$rstLCC
   )
-  
+  if (P(sim)$omitNonTreedPixels) {
+    ## Only the non-forested pixels not already removed as NAs. Subtracting the NA count from
+    ## all non-forested pixels assumed every NA pixel is non-forested; where the LCC calls some
+    ## of them forest, that undercounted, and went negative when enough of them did.
+    pixelFateDT <- pixelFate(pixelFateDT, "Non forested pixels (based on LCC classes)",
+                             sum(pixelsToRmDueToNAsAndNonForest) - sum(pixelsToRmDueToNAs))
+  }
+
   ## The next function will remove the "zero" class on sim$ecoregionRst
   pixelFateDT <- pixelFate(pixelFateDT, "Removing 0 class in sim$ecoregionRst",
                            sum(as.vector(sim$ecoregionRst[])[!pixelsToRmDueToNAsAndNonForest] == 0, na.rm = TRUE))
