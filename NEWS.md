@@ -1,5 +1,15 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
+version 1.5.14
+=============
+
+## bug fixes
+* `dataYear` can be any year SCANFI V2 provides (1985-2025, every 5 years), not only 2000, 2010 or 2020.
+  The module no longer stops on other years; `LandR::prepRawBiomassMap()` checks the year for the data
+  source. Needed for fireSense's `dataYears = c(1985, 1990, 2000, 2010, 2020)`.
+* `SCANFIfinalYearForLCC()` is removed. It listed the SCANFI V1 Google Drive folder to find the last year
+  for filling "disturbed" (240) pixels. The fill keeps its 2000, 2010, 2020 order until #110 is decided.
+
 version 1.5.13
 =============
 

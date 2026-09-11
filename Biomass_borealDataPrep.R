@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.13"),
+  version = list(Biomass_borealDataPrep = "1.5.14"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -95,13 +95,14 @@ defineModule(sim, list(
     defineParameter("dataSource", "character", "SCANFI", NA, NA,
                     paste(
                       "Source for species cover, biomass, age, and landcover data used to initialize cohorts.",
-                      "Currently, only kNN (2001, 2011) and SCANFI (2020) provide all necesarry layers.",
+                      "kNN (2001, 2011) and SCANFI (V2: every 5 years, 1985-2025) provide all necessary layers.",
                       "Mixing multiple datasets requires additonal raster geoprocessing and is not recommended."
                     )),
     defineParameter("dataYear", "numeric", 2020, NA, NA,
                     paste(
-                      "the year for which SCANFI data wil be fetched for use with the module.",
-                      "One of 2000, 2010, or 2020, but note that only 2020 is currently supported." ## TODO
+                      "the year for which `dataSource` data will be fetched for use with the module.",
+                      "For SCANFI, any year from 1985 to 2025 in steps of 5; `LandR::prepRawBiomassMap()`",
+                      "stops on a year the source does not provide."
                     )),
     defineParameter("ecoregionLayerField", "character", NULL, NA, NA,
                     paste("the name of the field used to distinguish ecoregions, if supplying a polygon.",
@@ -767,9 +768,8 @@ createBiomass_coreInputs <- function(sim) {
     availableCombinations <- unique(pixelCohortData[, .(speciesCode, initialEcoregionCode, pixelIndex)])
     
     freqsUpdates <- startFinishLCC <- list()
-    lastYrOnSCANFI <- SCANFIfinalYearForLCC(timeout = 10) |> Cache()
-    
-    SCANFILCCyears <- seq(2000, lastYrOnSCANFI, by = 10)
+    ## which SCANFI years should fill these pixels for a given dataYear is under discussion (#110)
+    SCANFILCCyears <- c(2000, 2010, 2020)
     
     for (yr in SCANFILCCyears) {
       freqs <- freq(rstLCCAdj)
@@ -1566,8 +1566,6 @@ Save <- function(sim) {
   
   ## biomass map
   if (!suppliedElsewhere("rawBiomassMap", sim)) {
-    stopifnot("dataYear must be one of 2000, 2010, 2020" = P(sim)$dataYear %in% c(2000, 2010, 2020))
-    
     sim$rawBiomassMap <- prepRawBiomassMap(
       dataSource = P(sim)$dataSource,
       dataYear = P(sim)$dataYear,
@@ -1733,46 +1731,4 @@ Save <- function(sim) {
   }
   
   return(invisible(sim))
-}
-
-#' Probe SCANFI LCC hosted on Google Drive to find the final year available
-#'
-#' Starts searching
-#' `https://drive.google.com/drive/folders/1zLYV-wcDjJfSflH1VkXG6sosqZZF4SYc`
-#' for most recent year with LCC data.
-#'
-#' @param timeout Numeric, in seconds, for how long to allow a download to happen
-#'   before interrupting it and declaring, "that worked, use that year".
-SCANFIfinalYearForLCC <- function(timeout = 5) {
-  
-  url <- "https://drive.google.com/drive/folders/1zLYV-wcDjJfSflH1VkXG6sosqZZF4SYc"
-  
-  driveFiles <- as.data.table(googledrive::with_drive_quiet(googledrive::drive_ls(url)))
-  driveFiles <- driveFiles[nchar(driveFiles$name) == 4, ]
-  driveFiles$Year <- as.numeric(driveFiles$name)
-  
-  years <- sort(unique(driveFiles$Year), decreasing = TRUE)
-  
-  lastYrOnSCANFI <- NULL
-  for (y in years) {
-    id <- driveFiles$id[driveFiles$Year == y]
-    yearURL <- paste0("https://drive.google.com/drive/folders/", id)
-    yearFiles <- as.data.table(googledrive::with_drive_quiet(googledrive::drive_ls(yearURL)))
-    LCC <- yearFiles[grepl("nfiLandCover_CanadaLCCclassCodes", yearFiles$name), ]
-    
-    if (nrow(LCC) > 0) {
-      lastYrOnSCANFI <- LCC
-      lastYrOnSCANFI$year <- y
-      break
-    }
-  }
-  
-  if (is.null(lastYrOnSCANFI)) {
-    message("No data for any year.")
-  } else {
-    message("Using year: ", unique(lastYrOnSCANFI$year))
-    lastYrOnSCANFI <- regmatches(lastYrOnSCANFI$name, regexpr("\\d{4}", lastYrOnSCANFI$name))
-  }
-  
-  as.numeric(lastYrOnSCANFI)
 }
