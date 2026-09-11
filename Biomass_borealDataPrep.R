@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.12"),
+  version = list(Biomass_borealDataPrep = "1.5.13"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -948,43 +948,41 @@ createBiomass_coreInputs <- function(sim) {
     FALSE
   }
   
-  ## Remove all cases where there is 100% presence in an ecoregionGroup -- causes failures in binomial models
-  cdsWh <- cohortDataShort$coverPres == cohortDataShort$coverNum
-  cds <- Copy(cohortDataShort)
-  cds <- cds[!cdsWh]
-  
-  modelCover <- Cache(
-    statsModel,
-    modelFn = P(sim)$coverModel,
-    # modelFn = cm,
-    uniqueEcoregionGroups = .sortDotsUnderscoreFirst(as.character(unique(cohortDataShort$ecoregionGroup))),
-    sumResponse = sum(cohortDataShort$coverPres, cohortDataShort$coverNum, na.rm = TRUE),
-    .specialData = cds,
-    .cacheExtra = levels(cohortDataShort$speciesCode), ## in case sppEquivCol changes # nolint: conflicting_fn_unqualified
-    useCloud = useCloud,
-    cloudFolderID = sim$cloudFolderID,
-    # useCache = "overwrite",
-    showSimilar = getOption("reproducible.showSimilar", FALSE),
-    userTags = c(cacheTags, "modelCover"),
-    omitArgs = c("showSimilar", "useCache", ".specialData", "useCloud", "cloudFolderID")
-  )
-  message(cli::col_blue("  The rsquared is: "))
-  out <- lapply(capture.output(as.data.frame(round(modelCover$rsq, 4))), function(x) {
-    message(cli::col_blue(x))
+  ## Rows with 100% presence in an ecoregionGroup cause failures in binomial models: estimateCoverModel()
+  ## leaves them out of the fit and gives them probability 1 (every row, with no fit, if none is left)
+  cover <- estimateCoverModel(cohortDataShort, fitCover = function(cds) {
+    Cache(
+      statsModel,
+      modelFn = P(sim)$coverModel,
+      # modelFn = cm,
+      uniqueEcoregionGroups = .sortDotsUnderscoreFirst(as.character(unique(cohortDataShort$ecoregionGroup))),
+      sumResponse = sum(cohortDataShort$coverPres, cohortDataShort$coverNum, na.rm = TRUE),
+      .specialData = cds,
+      .cacheExtra = levels(cohortDataShort$speciesCode), ## in case sppEquivCol changes # nolint: conflicting_fn_unqualified
+      useCloud = useCloud,
+      cloudFolderID = sim$cloudFolderID,
+      # useCache = "overwrite",
+      showSimilar = getOption("reproducible.showSimilar", FALSE),
+      userTags = c(cacheTags, "modelCover"),
+      omitArgs = c("showSimilar", "useCache", ".specialData", "useCloud", "cloudFolderID")
+    )
   })
-  
-  ## export model before overriding happens
-  if (any(P(sim)$exportModels %in% c("all", "coverModel"))) {
-    sim$modelCover <- modelCover
+  if (is.null(cover$model)) {
+    message(cli::col_blue("  Every species is present in every pixel of its ecoregionGroup, so establishment ",
+                          "probability is 1 everywhere and coverModel was not fitted"))
+  } else {
+    message(cli::col_blue("  The rsquared is: "))
+    out <- lapply(capture.output(as.data.frame(round(cover$model$rsq, 4))), function(x) {
+      message(cli::col_blue(x))
+    })
+
+    ## export model before overriding happens
+    if (any(P(sim)$exportModels %in% c("all", "coverModel"))) {
+      sim$modelCover <- cover$model
+    }
   }
-  
-  if (isTRUE(any(cdsWh))) {
-    cds[, pred := fitted(modelCover$mod, response = "response")]
-    cohortDataShort <- cds[, -c("coverPres", "coverNum")][cohortDataShort,
-                                                          on = c("ecoregionGroup", "speciesCode"), nomatch = NA]
-    cohortDataShort[is.na(pred), pred := 1]
-    modelCover <- cohortDataShort$pred
-  }
+  modelCover <- cover$modelCover
+  cohortDataShort <- cover$cohortDataShort
   
   ## For biomass
   ### Subsample cases where there are more than 50 points in an ecoregionGroup * speciesCode

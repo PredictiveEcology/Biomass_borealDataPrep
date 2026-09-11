@@ -1,5 +1,16 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
+version 1.5.13
+=============
+
+## bug fixes
+* A study area in which every species is present in every pixel of its `ecoregionGroup` (e.g., one
+  tree species, cover 100 everywhere) no longer stops with "contrasts can be applied only to factors
+  with 2 or more levels". Rows with 100% presence are left out of `coverModel` and given probability
+  1; when that was every row, the model was fitted to an empty table. The cover model is now skipped
+  in that case and every row gets probability 1, as those rows already did. The step is in
+  `estimateCoverModel()` (`R/estimateCoverModel.R`), with tests.
+
 version 1.5.12
 =============
 
