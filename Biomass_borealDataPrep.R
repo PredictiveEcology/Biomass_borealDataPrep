@@ -439,8 +439,8 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
       # schedule future event(s)
       sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_borealDataPrep", "save")
       
-      ## plottingFn maps speciesEcoregion, which a no-species run does not produce
-      if (anyPlotting(P(sim)$.plots) && nlyr(sim$speciesLayers) > 0L) {
+      ## plottingFn maps speciesEcoregion, which a no-species run (speciesLayers NULL) does not produce
+      if (anyPlotting(P(sim)$.plots) && !is.null(sim$speciesLayers)) {
         plottingFn(sim)
       }
     },
