@@ -532,6 +532,19 @@ createBiomass_coreInputs <- function(sim) {
     noSpp <- noSpeciesCoreInputs(sim$rasterToMatch)
     sim$cohortData <- noSpp$cohortData
     sim$pixelGroupMap <- noSpp$pixelGroupMap
+    ## empty but present: suppliedElsewhere() sees this module DECLARE these, so downstream
+    ## fallbacks (e.g. Biomass_regeneration .inputObjects) are suppressed and would read NULL
+    sim$sufficientLight <- noSpp$sufficientLight
+    sim$speciesEcoregion <- noSpp$speciesEcoregion
+    ## the same call as the with-species path below: with a 0-row sppEquiv it returns the
+    ## 0-row species table with the full column set
+    sim$species <- prepSpeciesTable(
+      speciesTable = sim$speciesTable,
+      sppEquiv = sim$sppEquiv,
+      areas = P(sim)$speciesTableAreas,
+      sppEquivCol = P(sim)$sppEquivCol
+    ) |>
+      Cache()
     
     message(cli::col_blue("Done Biomass_borealDataPrep (no tree species): ", Sys.time()))
     return(invisible(sim))

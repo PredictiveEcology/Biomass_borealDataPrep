@@ -71,11 +71,32 @@ test_that("createBiomass_coreInputs takes the no-species branch and skips the tr
   e$sim <- sim
   e$nlyr <- terra::nlyr
   e$noSpeciesCoreInputs <- noSpeciesCoreInputs
+  ## prepSpeciesTable() with a 0-row sppEquiv is LandR's; here it is stubbed to what it returns
+  e$prepSpeciesTable <- function(...) data.table::data.table(species = character(0))
+  e$Cache <- identity
+  e$P <- function(sim) list(speciesTableAreas = "BSW", sppEquivCol = "LandR")
   expect_no_error(withCallingHandlers(eval(branch[[1]], e), message = function(m) invokeRestart("muffleMessage")))
 
   expect_identical(nrow(sim$cohortData), 0L)
   expect_s4_class(sim$pixelGroupMap, "SpatRaster")
   expect_true(terra::compareGeom(sim$pixelGroupMap, rtm))
+  ## declared outputs must be assigned, not left NULL (see the last test)
+  expect_identical(nrow(sim$species), 0L)
+  expect_identical(nrow(sim$sufficientLight), 5L)
+  expect_identical(nrow(sim$speciesEcoregion), 0L)
+})
+
+test_that("the no-species branch builds species with the same call as the with-species path", {
+  bod <- as.list(moduleFunctionBody("createBiomass_coreInputs"))
+  branch <- Filter(function(x) is.call(x) && identical(x[[1]], as.name("if")) &&
+                     identical(deparse(x[[2]]), "nlyr(sim$speciesLayers) == 0L"), bod)[[1]]
+  isSpeciesAssign <- function(x) is.call(x) && identical(x[[1]], as.name("<-")) &&
+    identical(deparse(x[[2]]), "sim$species")
+  inBranch <- Filter(isSpeciesAssign, as.list(branch[[3]]))
+  atTopLevel <- Filter(isSpeciesAssign, bod)
+  expect_length(inBranch, 1L)
+  expect_gte(length(atTopLevel), 1L)
+  expect_identical(inBranch[[1]][[3]], atTopLevel[[1]][[3]])
 })
 
 test_that("a NULL speciesLayers still stops, and layers that exist are not diverted", {
@@ -95,4 +116,26 @@ test_that("a NULL speciesLayers still stops, and layers that exist are not diver
   e2$sim <- list(speciesLayers = c(rtm, rtm))
   e2$nlyr <- terra::nlyr
   expect_false(eval(quote(nlyr(sim$speciesLayers) == 0L), e2))
+})
+
+## sufficientLight and speciesEcoregion are empty (or constant) but MUST be present:
+## suppliedElsewhere() reports TRUE for anything this module declares in createsOutput(), so
+## Biomass_regeneration's .inputObjects fallbacks are suppressed and it reads
+## sim$species / sufficientLight / speciesEcoregion unguarded (Biomass_regeneration.R:249-252).
+
+test_that("the no-species branch also supplies sufficientLight and speciesEcoregion", {
+  out <- noSpeciesCoreInputs(testRasterToMatch())
+
+  expect_named(out, c("cohortData", "pixelGroupMap", "sufficientLight", "speciesEcoregion"))
+
+  ## the columns makeSpeciesEcoregion() returns, with no rows
+  expect_identical(nrow(out$speciesEcoregion), 0L)
+  expect_identical(names(out$speciesEcoregion),
+                   c("ecoregionGroup", "speciesCode", "establishprob", "maxB", "maxANPP", "year"))
+
+  ## sufficientLight is not species-dependent: it is the full LANDIS-test table, not empty
+  expect_identical(nrow(out$sufficientLight), 5L)
+  expect_identical(out$sufficientLight$speciesshadetolerance, 1:5)
+
+  expect_false(any(vapply(out, is.null, logical(1))))
 })
