@@ -466,7 +466,11 @@ createBiomass_coreInputs <- function(sim) {
   cacheTags <- c(currentModule(sim), "init")
   
   message(cli::col_blue("Starting to createBiomass_coreInputs in Biomass_borealDataPrep: ", Sys.time()))
-  if (is.null(sim$speciesLayers)) {
+  ## Some ecological land units have no tree species at all. `sppEquiv` is where that is
+  ## established (fireSense_ELFs), and the species-layer producer then supplies NULL, so a
+  ## NULL `speciesLayers` is only a mis-ordering error when there ARE species to produce.
+  noSpecies <- is.data.frame(sim$sppEquiv) && nrow(sim$sppEquiv) == 0L
+  if (is.null(sim$speciesLayers) && !noSpecies) {
     stop(cli::col_red(paste(
       "'speciesLayers' are missing in Biomass_borealDataPrep init event.\n",
       "This is likely due to the module producing 'speciesLayers' being scheduled after Biomass_borealDataPrep.\n",
@@ -508,27 +512,11 @@ createBiomass_coreInputs <- function(sim) {
     ) |>
       Cache(.functionName = "postProcessFirePerimeters")
   }
-  # options(opt)
-  if (!.compareRas(sim$speciesLayers, sim$rasterToMatch_biomassParam, res = TRUE)) {
-    sim$speciesLayers <- postProcessTerra(
-      sim$speciesLayers,
-      to = sim$rasterToMatch_biomassParam,
-      overwrite = TRUE
-    ) |>
-      Cache(.functionName = "postProcessSpeciesLayers")
-  }
-  
-  if (!.compareRas(sim$rasterToMatch_biomassParam, sim$rawBiomassMap, sim$rstLCC,
-                   sim$speciesLayers, sim$standAgeMap, res = TRUE)) {
-    stop(paste("sim$rasterToMatch_biomassParam, sim$rawBiomassMap, sim$rstLCC",
-               "sim$speciesLayers, sim$standAgeMap properties do not match"))
-  }
-  
   ## no tree species ---------------------------------------------
-  ## Some ecological land units have no tree species at all, so `speciesLayers` has zero layers --
-  ## a valid state, unlike the NULL checked above. Everything below estimates tree traits from
-  ## species cover, so with no species there is nothing to estimate: hand back empty outputs.
-  if (nlyr(sim$speciesLayers) == 0L) {
+  ## Everything below estimates tree traits from species cover, so with no species there is
+  ## nothing to estimate: hand back empty outputs. Sits after the standAgeMap/rstLCC alignment
+  ## (the nested fireSense run reads standAgeMap) and before anything that touches speciesLayers.
+  if (noSpecies) {
     noSpp <- noSpeciesCoreInputs(sim$rasterToMatch)
     sim$cohortData <- noSpp$cohortData
     sim$pixelGroupMap <- noSpp$pixelGroupMap
@@ -548,6 +536,22 @@ createBiomass_coreInputs <- function(sim) {
     
     message(cli::col_blue("Done Biomass_borealDataPrep (no tree species): ", Sys.time()))
     return(invisible(sim))
+  }
+  
+  # options(opt)
+  if (!.compareRas(sim$speciesLayers, sim$rasterToMatch_biomassParam, res = TRUE)) {
+    sim$speciesLayers <- postProcessTerra(
+      sim$speciesLayers,
+      to = sim$rasterToMatch_biomassParam,
+      overwrite = TRUE
+    ) |>
+      Cache(.functionName = "postProcessSpeciesLayers")
+  }
+  
+  if (!.compareRas(sim$rasterToMatch_biomassParam, sim$rawBiomassMap, sim$rstLCC,
+                   sim$speciesLayers, sim$standAgeMap, res = TRUE)) {
+    stop(paste("sim$rasterToMatch_biomassParam, sim$rawBiomassMap, sim$rstLCC",
+               "sim$speciesLayers, sim$standAgeMap properties do not match"))
   }
   
   ## species traits inputs ---------------------------------------
