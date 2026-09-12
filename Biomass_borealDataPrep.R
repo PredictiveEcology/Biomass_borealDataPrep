@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.14"),
+  version = list(Biomass_borealDataPrep = "1.5.15"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -439,7 +439,8 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
       # schedule future event(s)
       sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_borealDataPrep", "save")
       
-      if (anyPlotting(P(sim)$.plots)) {
+      ## plottingFn maps speciesEcoregion, which a no-species run does not produce
+      if (anyPlotting(P(sim)$.plots) && nlyr(sim$speciesLayers) > 0L) {
         plottingFn(sim)
       }
     },
@@ -521,6 +522,19 @@ createBiomass_coreInputs <- function(sim) {
                    sim$speciesLayers, sim$standAgeMap, res = TRUE)) {
     stop(paste("sim$rasterToMatch_biomassParam, sim$rawBiomassMap, sim$rstLCC",
                "sim$speciesLayers, sim$standAgeMap properties do not match"))
+  }
+  
+  ## no tree species ---------------------------------------------
+  ## Some ecological land units have no tree species at all, so `speciesLayers` has zero layers --
+  ## a valid state, unlike the NULL checked above. Everything below estimates tree traits from
+  ## species cover, so with no species there is nothing to estimate: hand back empty outputs.
+  if (nlyr(sim$speciesLayers) == 0L) {
+    noSpp <- noSpeciesCoreInputs(sim$rasterToMatch)
+    sim$cohortData <- noSpp$cohortData
+    sim$pixelGroupMap <- noSpp$pixelGroupMap
+    
+    message(cli::col_blue("Done Biomass_borealDataPrep (no tree species): ", Sys.time()))
+    return(invisible(sim))
   }
   
   ## species traits inputs ---------------------------------------
