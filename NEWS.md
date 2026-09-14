@@ -1,5 +1,15 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
+version 1.5.15
+=============
+
+## enhancements
+* study areas with no tree species are supported: a zero-layer `speciesLayers` (a valid state, unlike
+  `NULL`, which still stops as a module-ordering error) takes `createBiomass_coreInputs()` down a
+  no-species path that returns a 0-row `cohortData` with the full column set and a `pixelGroupMap`
+  with `rasterToMatch`'s geometry and no tree pixel groups. Previously such a run died in the trait
+  check with "No trait values were found for .".
+
 version 1.5.14
 =============
 

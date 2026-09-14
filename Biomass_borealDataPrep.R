@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.14"),
+  version = list(Biomass_borealDataPrep = "1.5.15"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -23,7 +23,7 @@ defineModule(sim, list(
     "archive", "assertthat", "cli", "data.table", "dplyr", "ggplot2", "httr2",
     "merTools", "plyr", "qs2", "rasterVis", "sf", "terra", "googledrive",
     "reproducible (>= 2.1.0)", "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
-    "PredictiveEcology/LandR@development (>= 1.2.0.9005)",
+    "PredictiveEcology/LandR@development (>= 1.2.0.9015)",
     "PredictiveEcology/pemisc@development",
     "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)"
   ),
@@ -439,7 +439,8 @@ doEvent.Biomass_borealDataPrep <- function(sim, eventTime, eventType, debug = FA
       # schedule future event(s)
       sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, "Biomass_borealDataPrep", "save")
       
-      if (anyPlotting(P(sim)$.plots)) {
+      ## plottingFn maps speciesEcoregion, which a no-species run (speciesLayers NULL) does not produce
+      if (anyPlotting(P(sim)$.plots) && !is.null(sim$speciesLayers)) {
         plottingFn(sim)
       }
     },
@@ -465,7 +466,11 @@ createBiomass_coreInputs <- function(sim) {
   cacheTags <- c(currentModule(sim), "init")
   
   message(cli::col_blue("Starting to createBiomass_coreInputs in Biomass_borealDataPrep: ", Sys.time()))
-  if (is.null(sim$speciesLayers)) {
+  ## Some ecological land units have no tree species at all. `sppEquiv` is where that is
+  ## established (fireSense_ELFs), and the species-layer producer then supplies NULL, so a
+  ## NULL `speciesLayers` is only a mis-ordering error when there ARE species to produce.
+  noSpecies <- is.data.frame(sim$sppEquiv) && nrow(sim$sppEquiv) == 0L
+  if (is.null(sim$speciesLayers) && !noSpecies) {
     stop(cli::col_red(paste(
       "'speciesLayers' are missing in Biomass_borealDataPrep init event.\n",
       "This is likely due to the module producing 'speciesLayers' being scheduled after Biomass_borealDataPrep.\n",
@@ -507,6 +512,32 @@ createBiomass_coreInputs <- function(sim) {
     ) |>
       Cache(.functionName = "postProcessFirePerimeters")
   }
+  ## no tree species ---------------------------------------------
+  ## Everything below estimates tree traits from species cover, so with no species there is
+  ## nothing to estimate: hand back empty outputs. Sits after the standAgeMap/rstLCC alignment
+  ## (the nested fireSense run reads standAgeMap) and before anything that touches speciesLayers.
+  if (noSpecies) {
+    noSpp <- noSpeciesCoreInputs(sim$rasterToMatch)
+    sim$cohortData <- noSpp$cohortData
+    sim$pixelGroupMap <- noSpp$pixelGroupMap
+    ## empty but present: suppliedElsewhere() sees this module DECLARE these, so downstream
+    ## fallbacks (e.g. Biomass_regeneration .inputObjects) are suppressed and would read NULL
+    sim$sufficientLight <- noSpp$sufficientLight
+    sim$speciesEcoregion <- noSpp$speciesEcoregion
+    ## the same call as the with-species path below: with a 0-row sppEquiv it returns the
+    ## 0-row species table with the full column set
+    sim$species <- prepSpeciesTable(
+      speciesTable = sim$speciesTable,
+      sppEquiv = sim$sppEquiv,
+      areas = P(sim)$speciesTableAreas,
+      sppEquivCol = P(sim)$sppEquivCol
+    ) |>
+      Cache()
+    
+    message(cli::col_blue("Done Biomass_borealDataPrep (no tree species): ", Sys.time()))
+    return(invisible(sim))
+  }
+  
   # options(opt)
   if (!.compareRas(sim$speciesLayers, sim$rasterToMatch_biomassParam, res = TRUE)) {
     sim$speciesLayers <- postProcessTerra(
