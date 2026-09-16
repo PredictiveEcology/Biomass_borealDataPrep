@@ -858,7 +858,8 @@ createBiomass_coreInputs <- function(sim) {
         isWet <- !is.na(fillVals) & fillVals %in% c(80, 81)
         fromSpecies <- speciesLeadingClass(
           pixelTable[whUpdate], sppEquiv = sim$sppEquiv, sppEquivCol = P(sim)$sppEquivCol,
-          vegLeadingProportion = P(sim)$vegLeadingProportion
+          vegLeadingProportion = P(sim)$vegLeadingProportion,
+          deciduousCoverDiscount = P(sim)$deciduousCoverDiscount
         )
         newVals <- fifelse(isWet, fillVals, fifelse(is.na(fromSpecies), fillVals, fromSpecies))
         message(cli::col_blue(

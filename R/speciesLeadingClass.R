@@ -20,9 +20,17 @@
 ## Returns an integer vector, one per row: 210, 220, 230, or NA where the pixel has no tree
 ## cover at all and therefore nothing to infer from -- those pixels are left for the caller's
 ## fallback rather than being forced into a class.
+## `deciduousCoverDiscount` makes deciduous cover comparable with coniferous before the ratio
+## is taken: hardwoods carry a much wider canopy than softwoods, so the same crown cover is
+## less stem for a deciduous species. `partitionBiomass()` applies it the same way -- deciduous
+## cover is MULTIPLIED by the discount (`cover * c(1, x)[decid + 1]`), which shrinks it; equal
+## 50/50 cover then yields conifer/deciduous biomass of 1.1878 = 1/0.8419. Dividing would
+## inflate deciduous instead.
 speciesLeadingClass <- function(coverDT, sppEquiv, sppEquivCol = "LandR",
-                                vegLeadingProportion = 0.8) {
-  stopifnot(vegLeadingProportion > 0.5, vegLeadingProportion <= 1)
+                                vegLeadingProportion = 0.8,
+                                deciduousCoverDiscount = 1) {
+  stopifnot(vegLeadingProportion > 0.5, vegLeadingProportion <= 1,
+            deciduousCoverDiscount > 0, deciduousCoverDiscount <= 1)
 
   sppCols <- grep("^cover\\.", colnames(coverDT), value = TRUE)
   bare <- if (length(sppCols)) sub("^cover\\.", "", sppCols) else colnames(coverDT)
@@ -46,6 +54,7 @@ speciesLeadingClass <- function(coverDT, sppEquiv, sppEquivCol = "LandR",
   m[is.na(m)] <- 0
   conCover <- if (any(isConifer)) rowSums(m[, isConifer, drop = FALSE]) else rep(0, nrow(m))
   decCover <- if (any(isDecid)) rowSums(m[, isDecid, drop = FALSE]) else rep(0, nrow(m))
+  decCover <- decCover * deciduousCoverDiscount   ## conifer-equivalent; see the note above
   total <- conCover + decCover
 
   out <- rep(NA_integer_, nrow(m))

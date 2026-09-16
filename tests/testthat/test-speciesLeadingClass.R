@@ -90,3 +90,25 @@ test_that("it agrees with vegTypeMapGenerator on the same splits", {
   }, integer(1))
   expect_identical(mine, theirs)
 })
+
+## `deciduousCoverDiscount` makes deciduous cover conifer-equivalent before the ratio is taken.
+## partitionBiomass() applies it as `cover * c(1, x)[decid + 1]` -- deciduous is MULTIPLIED, i.e.
+## shrunk -- which was checked directly: equal 50/50 cover gives conifer/deciduous biomass of
+## 1.1878 = 1/0.8419. Dividing would inflate deciduous instead.
+test_that("the deciduous discount shrinks deciduous cover, pushing the conifer share up", {
+  withr::local_package("data.table")
+  disc <- 0.8418911
+  ## 45 conifer / 55 deciduous: raw share 0.45 (mixed); discounted 45/(45+46.3) = 0.493, still mixed
+  cov <- data.table(Pice_mar = 45, Popu_tre = 55)
+  expect_identical(speciesLeadingClass(cov, sppEq), 230L)
+  expect_identical(speciesLeadingClass(cov, sppEq, deciduousCoverDiscount = disc), 230L)
+
+  ## a pixel just below the conifer threshold on raw cover crosses it once deciduous is shrunk
+  cov2 <- data.table(Pice_mar = 78, Popu_tre = 22)          ## raw 0.780 -> mixed
+  expect_identical(speciesLeadingClass(cov2, sppEq), 230L)
+  expect_identical(speciesLeadingClass(cov2, sppEq, deciduousCoverDiscount = disc), 210L)
+
+  ## the default is a no-op
+  expect_identical(speciesLeadingClass(cov2, sppEq, deciduousCoverDiscount = 1),
+                   speciesLeadingClass(cov2, sppEq))
+})
