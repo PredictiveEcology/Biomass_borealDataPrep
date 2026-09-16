@@ -1,9 +1,15 @@
 ## Composition of a class-240 pixel comes from its species cover, not from another year's land
-## cover or a neighbour's class. Thresholds mirror LandR::vegTypeMapGenerator() with
-## vegLeadingProportion = 0.8 and mixedType = 2, measured against it directly:
-##   conifer share of tree cover >= 0.8 -> conifer leading
-##                              <= 0.2 -> deciduous leading
-##                          in between -> mixed
+## cover or a neighbour's class:
+##   conifer share of tree cover >= threshold  -> conifer leading
+##                              <= 1 - threshold -> deciduous leading
+##                                in between   -> mixed
+##
+## The DEFAULT threshold is 0.75, which is NTEMS' own: EOSD (Wulder & Nelson 2003) defines
+## coniferous/broadleaf as 75% or more of total basal area and mixed wood as neither reaching
+## 75%. The rule has the same shape as LandR::vegTypeMapGenerator(mixedType = 2), and the
+## cross-check below measures that agreement directly -- but at 0.8, which is what
+## vegTypeMapGenerator means by leading vegetation. Tests that exercise the boundary therefore
+## pass `vegLeadingProportion` explicitly; a test that omits it is testing the 0.75 default.
 
 sppEq <- data.table::data.table(
   LandR = c("Pice_mar", "Pice_gla", "Pinu_ban", "Abie_bal", "Lari_lar", "Betu_pap", "Popu_tre"),
@@ -18,7 +24,7 @@ test_that("conifer, deciduous and mixed are separated at the 0.8 / 0.2 threshold
     Popu_tre = c(0, 10, 20, 30, 50, 70, 80, 90, 100)
   )
   expect_identical(
-    speciesLeadingClass(cov, sppEq),
+    speciesLeadingClass(cov, sppEq, vegLeadingProportion = 0.8),
     c(210L, 210L, 210L, 230L, 230L, 230L, 220L, 220L, 220L)
   )
 })
@@ -32,7 +38,7 @@ test_that("both thresholds are inclusive, and survive floating point", {
     Popu_tre = c(19, 20, 21, 79, 80, 81)
   )
   expect_identical(
-    speciesLeadingClass(cov, sppEq),
+    speciesLeadingClass(cov, sppEq, vegLeadingProportion = 0.8),
     c(210L, 210L, 230L, 230L, 220L, 220L)
   )
 })
@@ -74,8 +80,11 @@ test_that("it agrees with vegTypeMapGenerator on the same splits", {
   withr::local_package("data.table")
   withr::local_package("terra")
   fracs <- c(1.0, 0.9, 0.81, 0.8, 0.79, 0.7, 0.5, 0.3, 0.21, 0.2, 0.19, 0.1, 0.0)
+  ## 0.8 explicitly: this measures that the RULE matches vegTypeMapGenerator, which means
+  ## leading vegetation at 0.8. The 0.75 default is a separate claim, tested on its own below.
   mine <- speciesLeadingClass(
-    data.table(Pice_mar = fracs * 100, Popu_tre = (1 - fracs) * 100), sppEq
+    data.table(Pice_mar = fracs * 100, Popu_tre = (1 - fracs) * 100), sppEq,
+    vegLeadingProportion = 0.8
   )
   pgm <- terra::rast(nrows = 1, ncols = 1, vals = 1L)
   theirs <- vapply(fracs, function(f) {
@@ -103,12 +112,32 @@ test_that("the deciduous discount shrinks deciduous cover, pushing the conifer s
   expect_identical(speciesLeadingClass(cov, sppEq), 230L)
   expect_identical(speciesLeadingClass(cov, sppEq, deciduousCoverDiscount = disc), 230L)
 
-  ## a pixel just below the conifer threshold on raw cover crosses it once deciduous is shrunk
-  cov2 <- data.table(Pice_mar = 78, Popu_tre = 22)          ## raw 0.780 -> mixed
-  expect_identical(speciesLeadingClass(cov2, sppEq), 230L)
-  expect_identical(speciesLeadingClass(cov2, sppEq, deciduousCoverDiscount = disc), 210L)
+  ## A pixel just below the conifer threshold on raw cover crosses it once deciduous is shrunk.
+  ## Pinned at 0.8 so the demonstration is about the discount, not about the default threshold:
+  ## raw 0.780 is already conifer-leading under the 0.75 default.
+  cov2 <- data.table(Pice_mar = 78, Popu_tre = 22)          ## raw 0.780 -> mixed at 0.8
+  expect_identical(speciesLeadingClass(cov2, sppEq, vegLeadingProportion = 0.8), 230L)
+  expect_identical(
+    speciesLeadingClass(cov2, sppEq, vegLeadingProportion = 0.8, deciduousCoverDiscount = disc),
+    210L
+  )
 
-  ## the default is a no-op
-  expect_identical(speciesLeadingClass(cov2, sppEq, deciduousCoverDiscount = 1),
-                   speciesLeadingClass(cov2, sppEq))
+  ## the default discount is a no-op
+  expect_identical(
+    speciesLeadingClass(cov2, sppEq, vegLeadingProportion = 0.8, deciduousCoverDiscount = 1),
+    speciesLeadingClass(cov2, sppEq, vegLeadingProportion = 0.8)
+  )
+})
+
+## The default is the product's own threshold, not LandR's. Guards against it drifting back to
+## 0.8 silently: 0.78 conifer is mixed wood to vegTypeMapGenerator but coniferous to NTEMS.
+test_that("the default threshold is NTEMS' 0.75, not vegTypeMapGenerator's 0.8", {
+  withr::local_package("data.table")
+  expect_identical(formals(speciesLeadingClass)$vegLeadingProportion, 0.75)
+
+  ## conifer share 0.78 and 0.74, and their deciduous mirrors
+  cov <- data.table(Pice_mar = c(78, 74, 26, 22), Popu_tre = c(22, 26, 74, 78))
+  expect_identical(speciesLeadingClass(cov, sppEq), c(210L, 230L, 230L, 220L))
+  expect_identical(speciesLeadingClass(cov, sppEq, vegLeadingProportion = 0.8),
+                   c(230L, 230L, 230L, 230L))
 })

@@ -856,9 +856,13 @@ createBiomass_coreInputs <- function(sim) {
         ## class and, if that is still 240, `convertUnwantedLCC()` resolves it as before.
         fillVals <- startFinishLCC[[yrChar]][cellsToUpdate][[1]]
         isWet <- !is.na(fillVals) & fillVals %in% c(80, 81)
+        ## The threshold is NTEMS' own 0.75, the helper's default, not `vegLeadingProportion`.
+        ## We are assigning an NTEMS legend code here, and EOSD (Wulder & Nelson 2003) defines
+        ## 210/220 as 75% or more of total basal area and 230 as neither reaching 75%.
+        ## `vegLeadingProportion` answers the different question of what LandR calls leading
+        ## vegetation, and is checked for agreement across modules, so it is left alone.
         fromSpecies <- speciesLeadingClass(
           pixelTable[whUpdate], sppEquiv = sim$sppEquiv, sppEquivCol = P(sim)$sppEquivCol,
-          vegLeadingProportion = P(sim)$vegLeadingProportion,
           deciduousCoverDiscount = P(sim)$deciduousCoverDiscount
         )
         newVals <- fifelse(isWet, fillVals, fifelse(is.na(fromSpecies), fillVals, fromSpecies))

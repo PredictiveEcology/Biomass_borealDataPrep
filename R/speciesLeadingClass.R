@@ -9,9 +9,12 @@
 ## no amount of species cover expresses it; the caller keeps site from the land-cover record
 ## and uses this only to choose the composition class within an upland pixel.
 ##
-## Thresholds match `LandR::vegTypeMapGenerator(vegLeadingProportion = 0.8, mixedType = 2)`,
-## measured directly: conifer share of tree cover >= 0.8 is conifer-leading, <= 0.2 is
-## deciduous-leading, and anything between is mixed.
+## The rule has the same shape as `LandR::vegTypeMapGenerator(mixedType = 2)` -- conifer share
+## of tree cover at or above the threshold is conifer-leading, at or below its complement is
+## deciduous-leading, anything between is mixed -- and the tests verify that agreement directly
+## at 0.8. The DEFAULT here is 0.75 rather than 0.8, because this function answers a different
+## question: which NTEMS legend code does this pixel carry, not which LandR vegetation type is
+## it. See the provenance below.
 ##
 ## NTEMS itself drew the line at 75%, not 80%, and on a different quantity. Hermosilla et al.
 ## (2018) build the VLCE classes on the NFI land-cover scheme via the EOSD legend (Wulder &
@@ -22,9 +25,15 @@
 ## and the NFI Photo Plot Data Dictionary (v5.2 and v6.1, identical wording) says the same for
 ## TC/TB/TM on total tree VOLUME, with >= 10% crown cover to be treed at all. Crown closure in
 ## EOSD is a separate axis (dense >60%, open 26-60%, sparse 10-25%) -- it sets density, never
-## composition. So the class we are inferring was never defined on crown cover: 0.8 here keeps
-## this consistent with the rest of the LandR pipeline, at the cost of being stricter than the
-## product whose codes we are writing. `vegLeadingProportion` is the knob if that is revisited.
+## composition.
+##
+## So the default is 0.75, matching the product whose codes we write. It deliberately does NOT
+## track the module's `vegLeadingProportion` parameter: that one is shared across modules and
+## `paramCheckOtherMods(sim, "vegLeadingProportion", ifSetButDifferent = "error")` makes it an
+## error for two modules to disagree on it, so it cannot be bent to 0.75 without changing what
+## every other module means by leading vegetation. Composition on crown cover is still not the
+## basal area / volume the definition is written on; `deciduousCoverDiscount` closes part of
+## that gap by making deciduous cover conifer-equivalent before the ratio is taken.
 ##
 ## `coverDT` has one row per pixel and one numeric column per species, in percent. Column names
 ## are species codes in the `sppEquivCol` convention, optionally prefixed "cover." as
@@ -40,7 +49,7 @@
 ## 50/50 cover then yields conifer/deciduous biomass of 1.1878 = 1/0.8419. Dividing would
 ## inflate deciduous instead.
 speciesLeadingClass <- function(coverDT, sppEquiv, sppEquivCol = "LandR",
-                                vegLeadingProportion = 0.8,
+                                vegLeadingProportion = 0.75,
                                 deciduousCoverDiscount = 1) {
   stopifnot(vegLeadingProportion > 0.5, vegLeadingProportion <= 1,
             deciduousCoverDiscount > 0, deciduousCoverDiscount <= 1)
