@@ -13,6 +13,19 @@
 ## measured directly: conifer share of tree cover >= 0.8 is conifer-leading, <= 0.2 is
 ## deciduous-leading, and anything between is mixed.
 ##
+## NTEMS itself drew the line at 75%, not 80%, and on a different quantity. Hermosilla et al.
+## (2018) build the VLCE classes on the NFI land-cover scheme via the EOSD legend (Wulder &
+## Nelson 2003), which defines them as:
+##   Coniferous  coniferous trees are 75% or more of total basal area
+##   Broadleaf   broadleaf trees are 75% or more of total basal area
+##   Mixed Wood  neither coniferous nor broadleaf accounts for 75% or more of total basal area
+## and the NFI Photo Plot Data Dictionary (v5.2 and v6.1, identical wording) says the same for
+## TC/TB/TM on total tree VOLUME, with >= 10% crown cover to be treed at all. Crown closure in
+## EOSD is a separate axis (dense >60%, open 26-60%, sparse 10-25%) -- it sets density, never
+## composition. So the class we are inferring was never defined on crown cover: 0.8 here keeps
+## this consistent with the rest of the LandR pipeline, at the cost of being stricter than the
+## product whose codes we are writing. `vegLeadingProportion` is the knob if that is revisited.
+##
 ## `coverDT` has one row per pixel and one numeric column per species, in percent. Column names
 ## are species codes in the `sppEquivCol` convention, optionally prefixed "cover." as
 ## `makePixelTable()` leaves them. Species absent from `sppEquiv` are ignored.
