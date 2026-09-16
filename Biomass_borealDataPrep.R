@@ -826,6 +826,16 @@ createBiomass_coreInputs <- function(sim) {
           Cache(
             userTags = c("rstLCC", yr, "_", currentModule(sim), P(sim)$.studyAreaName, P(sim)$dataYear)
           )
+
+        ## Drop the category table. `prepInputs_NTEMS_LCC_FAO()` attaches one
+        ## (prepInputs_NTEMS.R:126) whereas `prepInputs_SCANFI_LCC_FAO()` returns plain numeric
+        ## codes, and indexing a categorical SpatRaster with `[cells]` yields the class LABELS
+        ## ("wetland_treed", "mixedwood", ...) rather than the codes. Those labels then flow into
+        ## the raster assignment just below -- "Not compatible with requested type:
+        ## [type=character; target=double]" -- and, further down, into
+        ## `paddedFloatToChar(newLcc, ...)`, which stops with "x%%1: non-numeric argument".
+        levels(startFinishLCC[[yrChar]]) <- NULL
+
         pixelTable <- copy(pixelTable) ## avoid super annoying warning
         cellsToUpdate <- which(rstLCCAdj[] == P(sim)$LCCClassesToReplaceNN)
         rstLCCAdj[cellsToUpdate] <- startFinishLCC[[yrChar]][cellsToUpdate]

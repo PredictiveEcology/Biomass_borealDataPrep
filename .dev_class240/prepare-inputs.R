@@ -72,7 +72,12 @@ options(
   spades.moduleCodeChecks = FALSE,
   reproducible.verbose = 1,
   reproducible.useMemoise = FALSE,
-  reproducible.destinationPath = file.path(ROOT, "inputs")
+  reproducible.destinationPath = file.path(ROOT, "inputs"),
+  ## `loadkNNSpeciesLayers()` (LandR maps.R:1096-1099) falls back to this option when no
+  ## `cachePath` is in its dots, then calls `basename()` on it unguarded (:1207, :1214). In a
+  ## fresh Rscript session the option is NULL, so the species step dies with
+  ## "basename(cachePath): a character vector argument expected".
+  reproducible.cachePath = file.path(ROOT, "cache")
 )
 
 dir.create(file.path(ROOT, "inputs"), recursive = TRUE, showWarnings = FALSE)
@@ -117,11 +122,25 @@ makeStudyArea <- function(side) {
   sf::st_as_sf(terra::as.polygons(e, crs = terra::crs(ref)))
 }
 
+## Rasters are written as real GeoTIFFs, not `wrap()`ed into .rds.
+##
+## `terra::wrap()` embeds cell values only while the raster is small enough to sit in memory.
+## With `todisk = TRUE` (set above, to keep this job inside its memory budget) every computed
+## raster spills to a file under `tempdir()`, and `wrap()` then stores a ~3 KB *reference* to
+## that file. The .rds looks fine, weighs nothing, and is unusable the moment the session's
+## temp directory is gone -- which is exactly how an earlier snapshot produced fixtures whose
+## `readRDS` failed with "[rast] file does not exist: /tmp/Rtmp.../spat_....tif".
+##
+## A GeoTIFF beside the manifest has none of that fragility, and can be inspected with gdalinfo.
 saveObj <- function(obj, path) {
   if (inherits(obj, "SpatRaster")) {
-    saveRDS(terra::wrap(obj), path)   ## wrap(): a SpatRaster does not survive a plain saveRDS
+    tif <- sub("\\.rds$", ".tif", path)
+    terra::writeRaster(obj, tif, overwrite = TRUE,
+                       gdal = c("COMPRESS=ZSTD", "TILED=YES"))
+    tif
   } else {
     saveRDS(obj, path)
+    path
   }
 }
 
@@ -211,8 +230,7 @@ prepareOne <- function(areaLabel) {
       message("    - ", nm, ": absent, skipped")
       return(NULL)
     }
-    f <- file.path(outDir, paste0(nm, ".rds"))
-    saveObj(obj, f)
+    f <- saveObj(obj, file.path(outDir, paste0(nm, ".rds")))
     data.table(object = nm, class = class(obj)[1], file = basename(f),
                bytes = file.size(f), sha256 = digest::digest(file = f, algo = "sha256"))
   }))

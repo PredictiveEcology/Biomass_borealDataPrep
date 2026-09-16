@@ -44,7 +44,12 @@ message("LandR   : ", landrPath, "  (", landrVersion, ")")
 message("module  : ", modulePath)
 message("area    : ", areaLabel, "   label: ", label)
 
+## Rasters are GeoTIFFs beside the manifest; everything else is an .rds. See the note in
+## prepare-inputs.R: `wrap()` + `saveRDS` silently stores a reference to a temp file once a
+## raster is disk-backed, and the fixture is dead as soon as that temp directory is.
 readObj <- function(nm) {
+  tif <- file.path(fixDir, paste0(nm, ".tif"))
+  if (file.exists(tif)) return(terra::rast(tif))
   f <- file.path(fixDir, paste0(nm, ".rds"))
   if (!file.exists(f)) return(NULL)
   obj <- readRDS(f)
@@ -73,6 +78,21 @@ message("rstLCC  : NTEMS ", ntemsYear,
         if (hasForestLand) paste0(" | forestLandFrom=", lccArgs$forestLandFrom,
                                   " faoYear=", lccArgs$faoYear) else " | baseline rule (FAO 2019 code 2)")
 objects$rstLCC <- do.call(LandR::prepInputs_NTEMS_LCC_FAO, lccArgs)
+
+## Strip the category table. `prepInputs_NTEMS_LCC_FAO()` attaches one (prepInputs_NTEMS.R:126,
+## `levels(out) <- cls`) while `prepInputs_SCANFI_LCC_FAO()` returns plain numeric codes, and
+## `ecoregionProducer()` branches on `is.factor()` (LandR ecoregions.R:66) into
+## `raster::factorValues()`, which errors on a terra-native categorical raster. The land-cover
+## half of `ecoregion_lcc` then comes back NA and every group collapses to `<ecoregion>_NA`,
+## i.e. the module silently estimates maxB / maxANPP per ecoregion with no LCC stratum at all.
+## Stripping the levels hands over exactly what the SCANFI path would have.
+## `levels(x) <- NULL` restores the land-cover CODES (20, 81, 230, 240 ...).
+## Not `terra::catalyze()`: that returns a layer named "label" holding the category INDICES
+## (1, 2, 3, 4), which is numeric and so passes the `is.factor()` branch, but then feeds wrong
+## values into `ecoregionProducer()` -- `paddedFloatToChar()` stopped with
+## "x%%1: non-numeric argument to binary operator". The replacement form is not exported under
+## a qualified name, hence `library(terra)` at the top of this script.
+levels(objects$rstLCC) <- NULL
 saveRDS(terra::wrap(objects$rstLCC), file.path(outDir, "rstLCC-input.rds"))
 
 t0 <- Sys.time()
