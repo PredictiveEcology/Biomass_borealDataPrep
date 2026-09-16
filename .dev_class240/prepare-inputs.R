@@ -77,6 +77,12 @@ options(
 
 dir.create(file.path(ROOT, "inputs"), recursive = TRUE, showWarnings = FALSE)
 
+## Cap terra's memory. This machine is shared with long-running simulations, and an earlier
+## attempt was killed by the OOM reclaim while cropping national 250 m species rasters. The
+## work is a sequence of windowed reads, so it needs very little resident memory; LandR's own
+## `prepInputs_NTEMS_LCC_FAO()` sets the same knobs for the same reason.
+terra::terraOptions(memmax = as.numeric(Sys.getenv("CLASS240_MEMMAX_GB", "4")), todisk = TRUE)
+
 ## Objects the module would otherwise derive itself; each is snapshotted.
 ##
 ## `rstLCC` is deliberately NOT here. It is built by `prepInputs_*_LCC_FAO()`, which is the
@@ -153,9 +159,11 @@ prepareOne <- function(areaLabel) {
   ## all four objects are supplied together so the module uses exactly what the layers were
   ## built from.
   sppOuts <- LandR::sppHarmonize(
-    sppEquiv = NULL, sppNameVector = NULL, sppEquivCol = SPP_EQUIV_COL,
-    sppColorVect = NULL, vegLeadingProportion = 0.8, studyArea = sa
+    sppEquiv = NULL, sppNameVector = SPP_NAMES, sppEquivCol = SPP_EQUIV_COL,
+    sppColorVect = NULL, vegLeadingProportion = 0.8, studyArea = sa,
+    dPath = file.path(ROOT, "inputs")
   )
+  message("    species: ", paste(sppOuts$sppNameVector, collapse = ", "))
   speciesLayersTmp <- LandR::prepSpeciesLayers_KNN(
     destinationPath = file.path(ROOT, "inputs"),
     outputPath = file.path(ROOT, "inputs"),
