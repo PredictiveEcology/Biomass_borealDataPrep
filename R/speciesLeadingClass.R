@@ -49,7 +49,10 @@
 ## 50/50 cover then yields conifer/deciduous biomass of 1.1878 = 1/0.8419. Dividing would
 ## inflate deciduous instead.
 speciesLeadingClass <- function(coverDT, sppEquiv, sppEquivCol = "LandR",
-                                vegLeadingProportion = 0.75,
+                                vegLeadingProportion = getOption(
+                                  "NTEMS.mixedwoodProp",
+                                  getOption("LandR.lccLeadingProportion", 0.75)
+                                ),
                                 deciduousCoverDiscount = 1) {
   stopifnot(vegLeadingProportion > 0.5, vegLeadingProportion <= 1,
             deciduousCoverDiscount > 0, deciduousCoverDiscount <= 1)

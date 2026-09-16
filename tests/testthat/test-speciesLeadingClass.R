@@ -133,11 +133,25 @@ test_that("the deciduous discount shrinks deciduous cover, pushing the conifer s
 ## 0.8 silently: 0.78 conifer is mixed wood to vegTypeMapGenerator but coniferous to NTEMS.
 test_that("the default threshold is NTEMS' 0.75, not vegTypeMapGenerator's 0.8", {
   withr::local_package("data.table")
-  expect_identical(formals(speciesLeadingClass)$vegLeadingProportion, 0.75)
+  ## Pinned, so this tests the fallthrough rather than whatever the session happens to have
+  ## set. The default is a call now -- getOption nested over getOption -- so it needs eval().
+  withr::local_options(list(NTEMS.mixedwoodProp = NULL, LandR.lccLeadingProportion = NULL))
+  expect_identical(eval(formals(speciesLeadingClass)$vegLeadingProportion), 0.75)
 
   ## conifer share 0.78 and 0.74, and their deciduous mirrors
   cov <- data.table(Pice_mar = c(78, 74, 26, 22), Popu_tre = c(22, 26, 74, 78))
   expect_identical(speciesLeadingClass(cov, sppEq), c(210L, 230L, 230L, 220L))
   expect_identical(speciesLeadingClass(cov, sppEq, vegLeadingProportion = 0.8),
                    c(230L, 230L, 230L, 230L))
+})
+
+## The module helper honours the same one-knob option as LandR, so a user who re-points the
+## ecosystem does not have to remember this function separately.
+test_that("NTEMS.mixedwoodProp re-points the fill without touching the call site", {
+  withr::local_package("data.table")
+  cov <- data.table(Pice_mar = 74, Popu_tre = 26)          ## 0.74: mixed under the 0.75 default
+  withr::with_options(list(NTEMS.mixedwoodProp = NULL, LandR.lccLeadingProportion = NULL),
+                      expect_identical(speciesLeadingClass(cov, sppEq), 230L))
+  withr::with_options(list(NTEMS.mixedwoodProp = 0.7),
+                      expect_identical(speciesLeadingClass(cov, sppEq), 210L))
 })
