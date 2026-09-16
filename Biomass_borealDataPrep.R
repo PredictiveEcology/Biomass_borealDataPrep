@@ -838,9 +838,37 @@ createBiomass_coreInputs <- function(sim) {
 
         pixelTable <- copy(pixelTable) ## avoid super annoying warning
         cellsToUpdate <- which(rstLCCAdj[] == P(sim)$LCCClassesToReplaceNN)
-        rstLCCAdj[cellsToUpdate] <- startFinishLCC[[yrChar]][cellsToUpdate]
         whUpdate <- match(cellsToUpdate, pixelTable$pixelIndex)
-        pixelTable[whUpdate, newLcc := startFinishLCC[[yrChar]][cellsToUpdate]]
+
+        ## Composition from species cover; site from the land-cover record.
+        ##
+        ## 210/220/230 say what a pixel is made of, and species cover can decide that: a pixel
+        ## cannot be pine-dominated and carry a broadleaf class. Copying another year's class,
+        ## or drawing one from a neighbour, cannot -- `convertUnwantedLCC()` picks at random
+        ## among locally available classes, so two runs disagree about the same pixel.
+        ##
+        ## Wetness is different. It is a property of the ground, not of the trees standing on
+        ## it, and no amount of species cover expresses it, so 80/81 in the fill layer is kept
+        ## as-is. That keeps the wet/dry axis intact -- two thirds of the pixels the #221 rule
+        ## newly recognises land in 81 -- while composition stops being guessed.
+        ##
+        ## A pixel with no tree cover has nothing to infer from; it keeps the fill layer's
+        ## class and, if that is still 240, `convertUnwantedLCC()` resolves it as before.
+        fillVals <- startFinishLCC[[yrChar]][cellsToUpdate][[1]]
+        isWet <- !is.na(fillVals) & fillVals %in% c(80, 81)
+        fromSpecies <- speciesLeadingClass(
+          pixelTable[whUpdate], sppEquiv = sim$sppEquiv, sppEquivCol = P(sim)$sppEquivCol,
+          vegLeadingProportion = P(sim)$vegLeadingProportion
+        )
+        newVals <- fifelse(isWet, fillVals, fifelse(is.na(fromSpecies), fillVals, fromSpecies))
+        message(cli::col_blue(
+          "  Class ", paste(P(sim)$LCCClassesToReplaceNN, collapse = ", "), " composition from ",
+          sum(!isWet & !is.na(fromSpecies)), " species-typed, ", sum(isWet), " kept wet (80/81), ",
+          sum(!isWet & is.na(fromSpecies)), " with no cover left to the land-cover record"
+        ))
+
+        rstLCCAdj[cellsToUpdate] <- newVals
+        pixelTable[whUpdate, newLcc := newVals]
         pixelTable[whUpdate, initialEcoregionCode2 := gsub("_.+", "", initialEcoregionCode)]
         pixelsToRm2 <- nonForestedPixels(rstLCCAdj, P(sim)$omitNonTreedPixels,
                                          P(sim)$forestedLCCClasses, rstLCCAdj)
