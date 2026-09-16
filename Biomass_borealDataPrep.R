@@ -800,21 +800,28 @@ createBiomass_coreInputs <- function(sim) {
     availableCombinations <- unique(pixelCohortData[, .(speciesCode, initialEcoregionCode, pixelIndex)])
     
     freqsUpdates <- startFinishLCC <- list()
-    ## which SCANFI years should fill these pixels for a given dataYear is under discussion (#110)
-    SCANFILCCyears <- c(2000, 2010, 2020)
-    
-    for (yr in SCANFILCCyears) {
+    ## which years should fill these pixels for a given dataYear is under discussion (#110).
+    ##
+    ## NTEMS rather than SCANFI: every SCANFI land-cover Drive id currently 404s, so the SCANFI
+    ## route cannot fill anything at all. NTEMS also keeps classes 80/81 (wetland, treed
+    ## wetland), which SCANFI's 8-class recode drops -- and losing treed wetland is losing the
+    ## wet/dry distinction this fill is supposed to respect.
+    ##
+    ## Years later than `dataYear` match the stated intent above: the class a disturbed pixel
+    ## "might become", i.e. what it recovered to, rather than what it was.
+    LCCfillYears <- c(2010, 2020)
+
+    for (yr in LCCfillYears) {
       freqs <- freq(rstLCCAdj)
       num2replace <- freqs$count[freqs$value %in% P(sim)$LCCClassesToReplaceNN]
       if ((length(num2replace) > 0) && (num2replace > 1000)) {
         yrChar <- as.character(yr)
         startFinishLCC[[yrChar]] <-
-          prepInputs_SCANFI_LCC_FAO(
+          prepInputs_NTEMS_LCC_FAO(
             year = yr,
             to = sim$rstLCC,
             disturbedCode = 240,
-            destinationPath = inputPath(sim),
-            overwrite = TRUE
+            destinationPath = inputPath(sim)
           ) |>
           Cache(
             userTags = c("rstLCC", yr, "_", currentModule(sim), P(sim)$.studyAreaName, P(sim)$dataYear)
