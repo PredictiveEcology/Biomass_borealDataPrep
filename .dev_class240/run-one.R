@@ -56,6 +56,25 @@ objects <- setNames(lapply(manifest$object, readObj), manifest$object)
 objects <- objects[!vapply(objects, is.null, logical(1))]
 message("inputs  : ", paste(names(objects), collapse = ", "))
 
+## `rstLCC` is built HERE, by the LandR build under test, not read from the fixtures: for the
+## #221 arms it is the treatment, since the rule lives in `prepInputs_*_LCC_FAO()`. NTEMS is
+## used rather than SCANFI because the SCANFI land-cover ids are not publicly retrievable, and
+## because NTEMS keeps classes 80/81. Arguments that exist only on the #221 branch are passed
+## only when that build has them, so one script drives every arm.
+ntemsYear <- as.integer(Sys.getenv("CLASS240_NTEMS_YEAR", "2000"))
+lccArgs <- list(year = ntemsYear, to = objects$rasterToMatch, disturbedCode = 240,
+                destinationPath = file.path(ROOT, "inputs"))
+hasForestLand <- "forestLandFrom" %in% names(formals(LandR::prepInputs_NTEMS_LCC_FAO))
+if (hasForestLand) {
+  lccArgs$forestLandFrom <- Sys.getenv("CLASS240_FORESTLAND_FROM", "both")
+  lccArgs$faoYear <- as.integer(Sys.getenv("CLASS240_FAO_YEAR", "2022"))
+}
+message("rstLCC  : NTEMS ", ntemsYear,
+        if (hasForestLand) paste0(" | forestLandFrom=", lccArgs$forestLandFrom,
+                                  " faoYear=", lccArgs$faoYear) else " | baseline rule (FAO 2019 code 2)")
+objects$rstLCC <- do.call(LandR::prepInputs_NTEMS_LCC_FAO, lccArgs)
+saveRDS(terra::wrap(objects$rstLCC), file.path(outDir, "rstLCC-input.rds"))
+
 t0 <- Sys.time()
 sim <- SpaDES.core::simInit(
   times = list(start = 0, end = 1),
@@ -68,6 +87,12 @@ sim <- SpaDES.core::simInit(
   ),
   objects = objects,
   params = list(Biomass_borealDataPrep = list(
+    ## Same source as the fixtures were built from. Every input is supplied, so nothing should
+    ## be fetched here, but leaving these at the SCANFI default would let any unsupplied input
+    ## reach for Drive ids that 404.
+    dataSource = Sys.getenv("CLASS240_DATA_SOURCE", "KNN"),
+    dataYear = as.integer(Sys.getenv("CLASS240_DATA_YEAR", "2001")),
+    sppEquivCol = Sys.getenv("CLASS240_SPP_EQUIV_COL", "LandR"),
     .studyAreaName = paste0("class240_", areaLabel),
     .plots = NA,
     .useCache = FALSE,
