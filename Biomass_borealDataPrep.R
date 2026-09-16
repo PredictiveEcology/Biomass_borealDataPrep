@@ -1739,7 +1739,11 @@ Save <- function(sim) {
         sppEquiv = sim$sppEquiv,
         sppEquivCol = P(sim)$sppEquivCol,
         thresh = 10,
-        year = P(sim)$dataYear
+        ## `dataYear`, not `year`: prepSpeciesLayers_SCANFI()'s formal is `dataYear`, and
+        ## "year" is not a prefix of it, so `year =` fell into `...` and was discarded --
+        ## species cover was always the 2020 set while biomass and age honoured dataYear.
+        ## Same fix as Biomass_speciesData#47; this module was missed at the time.
+        dataYear = P(sim)$dataYear
       ) |>
         Cache(
           userTags = c(cacheTags, "speciesLayers"),
