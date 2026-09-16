@@ -1069,7 +1069,17 @@ createBiomass_coreInputs <- function(sim) {
         omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
       )
       
-      modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
+      ## `statsModel()` drops the random effect and refits with `stats::glm` when the grouping
+      ## variable has only one level ("Grouping variable only has one level. Formula changed
+      ## to `stats::glm`(...)"), which happens whenever a study area falls inside a single
+      ## ecoregion group. A glm has no `@optinfo`, so reading it unconditionally stopped with
+      ## "no applicable method for `@` applied to an object of class \"glm\"". There are no
+      ## lme4 convergence messages to act on in that case.
+      modMessages <- if (isS4(modelBiomass$mod) && methods::.hasSlot(modelBiomass$mod, "optinfo")) {
+        modelBiomass$mod@optinfo$conv$lme4$messages
+      } else {
+        character(0)
+      }
       needRedo <- (length(modMessages) > 0 & fixModelBiomass)
       if (needRedo && (!tryControl || !needRescaleModelB)) {
         modCallChar <- paste(deparse(P(sim)$biomassModel), collapse = "")
