@@ -1,6 +1,6 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
-version 1.6.2
+version 1.6.4
 =============
 
 * **The model subsamples are 10x larger: 500 rows per group, was 50.** `subsetDataBiomassModel`
