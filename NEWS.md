@@ -1,5 +1,14 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
+version 1.6.3
+=============
+
+* `vegLeadingProportion` now defaults to `LandR::leadingSpeciesProp()` (option
+  `LandR.leadingSpeciesProp`, which takes `LandR.mixedwoodProp`, 0.75, unless set), so the
+  leading-species threshold is set once for every module and LandR function instead of being
+  hard-coded per module. **The default changes from 0.8 to 0.75**, which changes vegetation type
+  maps. Requires LandR >= 1.2.0.9024 (PredictiveEcology/LandR#234).
+
 version 1.6.1
 =============
 
@@ -42,13 +51,6 @@ version 1.6.0
 
 version 1.5.15
 =============
-
-## enhancements
-* `vegLeadingProportion` now defaults to `LandR::leadingSpeciesProp()` (option
-  `LandR.leadingSpeciesProp`, which takes `LandR.mixedwoodProp`, 0.75, unless set), so the
-  leading-species threshold is set once for every module and LandR function instead of being
-  hard-coded per module. **The default changes from 0.8 to 0.75**, which changes vegetation type
-  maps. Requires LandR >= 1.2.0.9024 (PredictiveEcology/LandR#234).
 
 ## bug fixes
 * `noSpeciesCoreInputs()` declares `@importFrom data.table data.table`. The package rendition the
