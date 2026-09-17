@@ -1,12 +1,52 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
-development version
-===================
+version 1.6.2
+=============
 
 * The SCANFI species layers are requested with LandR's `*to` family (`cropTo`, `projectTo`,
   `maskTo`) instead of the legacy `studyArea` + `rasterToMatch` pair, which LandR is retiring.
   Requires LandR >= 1.2.0.9017 (PredictiveEcology/LandR#227), which also fixed the legacy pair:
   when both were given, the mask had been taken from the raster instead of the study area.
+
+version 1.6.1
+=============
+
+* **A maxB clamped to 0 is replaced by the 95th percentile of observed biomass** (new parameter
+  `floorMaxBAtObserved`, default `TRUE`). maxB is predicted from the biomass model and a negative
+  prediction is clamped to 0, so where a species is rare the model could say it cannot grow at all --
+  on a 60 km boreal test window white birch got maxB = 0 on wet ground. Such rows now take the 95th
+  percentile of the biomass the species was observed at in that `ecoregionGroup`, and `maxANPP`
+  follows (`maxB / 30`). A percentile rather than the maximum, so one freak cohort cannot set the
+  ceiling; this matches the module's `quantile(age, 0.99)` longevity rule and LandR's maxB quantile
+  summaries. Fitted values are never changed: flooring every row overrode genuine fits (black spruce
+  upland 5,541 -> 10,800).
+* **Establishment denominator counts pixels.** `coverNum`, the number of pixels in an
+  `ecoregionGroup` that the cover-presence (establishment) model divides by, counted cohort rows:
+  a pixel with three species counted three times, so presence probabilities were deflated by
+  roughly the number of species per pixel. Through `establishprob = 1 - (1 - p)^successionTimestep`
+  this barely moves common species but understates less common ones substantially (jack pine
+  0.147 -> 0.278 on a 60 km boreal test window). `coverNumByGroup()` now counts each pixel once.
+
+version 1.6.0
+=============
+
+* **Wetland site layer.** New input `rstWetland` (default: Canadian Wetland Inventory Map v3A via
+  `LandR::prepInputs_CWIM()`, parameter `wetlandSource`). SCANFI land cover has no wetland classes,
+  so treed wetland could not be told from upland forest; `rstLCC` now carries NTEMS classes 80 and
+  81 from it (wet and treed, including 240, is 81; wet otherwise is 80).
+* **Class 240 is resolved without NTEMS.** The year-fill loop, its NTEMS download and its
+  1000-pixel threshold are gone. A class-240 pixel takes its composition from species cover
+  (`speciesLeadingClass()`, NTEMS' 0.75 threshold after the deciduous cover discount) and its site
+  from `rstWetland`; only pixels with no species cover go to `convertUnwantedLCC()`.
+* **One "inferred" flag.** Every former class-240 pixel is now left out of parameter estimation
+  and added to `imputedPixID`. Previously only the pixels `convertUnwantedLCC()` handled were; the
+  ones the year-fill loop re-typed went into every fit unrecorded. `coverNum` now counts
+  estimation pixels only, matching `coverPres`. This changes estimates wherever class 240 occurs.
+* **New stratification** `stratumType = "siteComposition"`: ecoregion x site x composition, so a
+  species on upland and on wet ground gets separate maxB, maxANPP and establishment probability.
+  Codes stay three digits (upland 210/220/230, wet 810/820/830); strata with fewer than
+  `stratumMinPixels` estimation pixels pool composition first (290/890), then site (990). The
+  default, `"landcover"`, keeps one land-cover axis, now with 80/81.
 
 version 1.5.15
 =============

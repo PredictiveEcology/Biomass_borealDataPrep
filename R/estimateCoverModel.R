@@ -31,3 +31,14 @@ estimateCoverModel <- function(cohortDataShort, fitCover) {
   }
   list(modelCover = modelCover, model = model, cohortDataShort = cohortDataShort)
 }
+
+## Number of estimation pixels in each ecoregionGroup: the binomial denominator for
+## `coverPres` (pixels in the group where the species has cover). `cohortData` has a row per
+## pixel x species, so pixels are made unique first -- counting its rows counts cohorts, which
+## deflated every presence probability by roughly the number of species per pixel.
+coverNumByGroup <- function(cohortData, pixelTable) {
+  px <- unique(cohortData[, list(pixelIndex, ecoregionGroup = as.character(ecoregionGroup))])
+  px <- px[pixelIndex %in% pixelTable$pixelIndex & !is.na(ecoregionGroup)]
+  out <- px[, list(coverNum = .N), by = "ecoregionGroup"]
+  out[order(ecoregionGroup)]
+}
