@@ -1,12 +1,29 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
-development version
-===================
+version 1.6.0
+=============
 
 * The SCANFI species layers are requested with LandR's `*to` family (`cropTo`, `projectTo`,
   `maskTo`) instead of the legacy `studyArea` + `rasterToMatch` pair, which LandR is retiring.
   Requires LandR >= 1.2.0.9017 (PredictiveEcology/LandR#227), which also fixed the legacy pair:
   when both were given, the mask had been taken from the raster instead of the study area.
+* **Wetland site layer.** New input `rstWetland` (default: Canadian Wetland Inventory Map v3A via
+  `LandR::prepInputs_CWIM()`, parameter `wetlandSource`). SCANFI land cover has no wetland classes,
+  so treed wetland could not be told from upland forest; `rstLCC` now carries NTEMS classes 80 and
+  81 from it (wet and treed, including 240, is 81; wet otherwise is 80).
+* **Class 240 is resolved without NTEMS.** The year-fill loop, its NTEMS download and its
+  1000-pixel threshold are gone. A class-240 pixel takes its composition from species cover
+  (`speciesLeadingClass()`, NTEMS' 0.75 threshold after the deciduous cover discount) and its site
+  from `rstWetland`; only pixels with no species cover go to `convertUnwantedLCC()`.
+* **One "inferred" flag.** Every former class-240 pixel is now left out of parameter estimation
+  and added to `imputedPixID`. Previously only the pixels `convertUnwantedLCC()` handled were; the
+  ones the year-fill loop re-typed went into every fit unrecorded. `coverNum` now counts
+  estimation pixels only, matching `coverPres`. This changes estimates wherever class 240 occurs.
+* **New stratification** `stratumType = "siteComposition"`: ecoregion x site x composition, so a
+  species on upland and on wet ground gets separate maxB, maxANPP and establishment probability.
+  Codes stay three digits (upland 210/220/230, wet 810/820/830); strata with fewer than
+  `stratumMinPixels` estimation pixels pool composition first (290/890), then site (990). The
+  default, `"landcover"`, keeps one land-cover axis, now with 80/81.
 
 version 1.5.15
 =============
