@@ -12,6 +12,12 @@ version 1.6.1
   ceiling; this matches the module's `quantile(age, 0.99)` longevity rule and LandR's maxB quantile
   summaries. Fitted values are never changed: flooring every row overrode genuine fits (black spruce
   upland 5,541 -> 10,800).
+* **Establishment denominator counts pixels.** `coverNum`, the number of pixels in an
+  `ecoregionGroup` that the cover-presence (establishment) model divides by, counted cohort rows:
+  a pixel with three species counted three times, so presence probabilities were deflated by
+  roughly the number of species per pixel. Through `establishprob = 1 - (1 - p)^successionTimestep`
+  this barely moves common species but understates less common ones substantially (jack pine
+  0.147 -> 0.278 on a 60 km boreal test window). `coverNumByGroup()` now counts each pixel once.
 
 version 1.6.0
 =============

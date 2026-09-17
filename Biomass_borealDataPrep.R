@@ -999,13 +999,12 @@ createBiomass_coreInputs <- function(sim) {
   cohortDataShortNoCover <-
     (function(x) {
       ## Estimation pixels only, like `coverPres` above: inferred pixels are left out of the
-      ## numerator and the denominator alike.
+      ## numerator and the denominator alike. And one row per PIXEL: the cohort table has a row
+      ## per pixel x species, and joining it onto pixelTable counted cohort rows, so a species
+      ## present in every pixel came out near 1 / (species per pixel) instead of 1.
       tempDT <- cohortDataOnlyForestLCC[, .(pixelIndex, ecoregionGroup)]
-      pixelTable <- tempDT[pixelTable, on = .(pixelIndex)]
-      
-      aa <- table(as.character(pixelTable$ecoregionGroup)) ## as.character avoids counting levels that don't exist anymore
-      
-      dt1 <- data.table(ecoregionGroup = factor(names(aa)), coverNum = as.integer(unname(aa)))
+      aa <- coverNumByGroup(tempDT, pixelTable)
+      dt1 <- data.table(ecoregionGroup = factor(aa$ecoregionGroup), coverNum = aa$coverNum)
       allCombos <- expand.grid(ecoregionGroup = dt1$ecoregionGroup, speciesCode = unique(cohortDataShort$speciesCode))
       setDT(allCombos)
       dt1 <- dt1[allCombos, on = "ecoregionGroup", nomatch = 0]
