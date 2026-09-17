@@ -10,6 +10,12 @@ version 1.5.15
   with `rasterToMatch`'s geometry and no tree pixel groups. Previously such a run died in the trait
   check with "No trait values were found for .".
 
+## bug fixes
+* `noSpeciesCoreInputs()` declares `@importFrom data.table data.table`. The package rendition the
+  testthat-module CI builds imports `data.table` only through the module's explicit `@importFrom`
+  tags (an explicit `importFrom` suppresses the blanket `@import`), so the bare `data.table()` call
+  was not found and `test-noSpeciesCoreInputs.R` failed on CI.
+
 version 1.5.14
 =============
 
