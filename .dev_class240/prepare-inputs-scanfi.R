@@ -42,16 +42,21 @@ SPP_NAMES <- strsplit(Sys.getenv(
 ), ",")[[1]]
 
 ## Same squares as the kNN fixtures, so the two editions are directly comparable.
-AREAS <- list(big_s2020 = 60000, small_s2020 = 25000)
+## CLASS240_FIXTURE_SUFFIX keeps a new fixture set beside an old one (e.g. "_int").
+.sfx <- Sys.getenv("CLASS240_FIXTURE_SUFFIX", "")
+AREAS <- setNames(list(60000, 25000), paste0(c("big_s2020", "small_s2020"), .sfx))
 
 ## The ids this edition depends on. Checked up front so a stale manifest fails here, loudly,
 ## rather than as an anonymous Drive 404 an hour into the run.
-remapTable <- utils::read.csv(path.expand(MANIFEST))
+## An empty CLASS240_REMAP_MANIFEST sets no remap here, so a LandR that installs its own SCANFI
+## mirror on load (LandR#230) is what serves the files.
+useManifest <- nzchar(MANIFEST)
+remapTable <- if (useManifest) utils::read.csv(path.expand(MANIFEST)) else data.frame(id = character())
 needIds <- c(landcover2020 = "1EGp7LUA7cXMR6KpXDmu617xsjwGM6aIx",
              age2020 = "1nXPS3bpFUESYieNfXO25OKlZJEgqtRnD",
              speciesDir2020 = "15T4HIFeqzwp0TuOuxmYoexuXdLFnCZBi")
 missingIds <- needIds[!needIds %in% remapTable$id]
-if (length(missingIds)) {
+if (useManifest && length(missingIds)) {
   stop("remap manifest lacks: ", paste(names(missingIds), collapse = ", "), " (", MANIFEST, ")")
 }
 
@@ -62,7 +67,7 @@ options(
   reproducible.useMemoise = FALSE,
   reproducible.destinationPath = file.path(ROOT, "inputs"),
   reproducible.cachePath = file.path(ROOT, "cache-s2020"),
-  reproducible.urlRemap = reproducible::makeUrlRemap(remapTable),
+  reproducible.urlRemap = if (useManifest) reproducible::makeUrlRemap(remapTable),
   reproducible.useCOG = FALSE,
   ## With the remap every id the module asks for is served by arbutus; never prompt for a login.
   reproducible.gdriveNoAuth = TRUE

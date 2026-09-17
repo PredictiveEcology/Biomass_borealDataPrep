@@ -41,7 +41,8 @@ options(
   reproducible.useMemoise = FALSE,
   reproducible.verbose = 0,
   reproducible.destinationPath = file.path(ROOT, "inputs"),
-  reproducible.urlRemap = reproducible::makeUrlRemap(utils::read.csv(path.expand(MANIFEST))),
+  ## empty manifest: no remap here, so the LandR build under test must supply its own
+  reproducible.urlRemap = if (nzchar(MANIFEST)) reproducible::makeUrlRemap(utils::read.csv(path.expand(MANIFEST))),
   reproducible.useCOG = FALSE,
   reproducible.gdriveNoAuth = TRUE,
   LandR.assertions = TRUE
