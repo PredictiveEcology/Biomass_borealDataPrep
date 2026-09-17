@@ -9,6 +9,16 @@ version 1.6.3
   hard-coded per module. **The default changes from 0.8 to 0.75**, which changes vegetation type
   maps. Requires LandR >= 1.2.0.9024 (PredictiveEcology/LandR#234).
 
+
+version 1.6.2
+=============
+
+* The SCANFI species layers are requested with LandR's `*to` family (`cropTo`, `projectTo`,
+  `maskTo`) instead of the legacy `studyArea` + `rasterToMatch` pair, which LandR is retiring.
+  Requires LandR >= 1.2.0.9017 (PredictiveEcology/LandR#227), which also fixed the legacy pair:
+  when both were given, the mask had been taken from the raster instead of the study area.
+
+
 version 1.6.1
 =============
 

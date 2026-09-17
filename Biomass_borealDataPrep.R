@@ -1832,9 +1832,12 @@ Save <- function(sim) {
       sim$speciesLayers <- prepSpeciesLayers_SCANFI(
         destinationPath = dPath,
         outputPath = dPath,
-        studyArea = sim$studyArea_biomassParam,
+        ## the *to family (LandR >= 1.2.0.9017): the raster sets the grid, the polygon the mask --
+        ## exactly what the legacy studyArea + rasterToMatch pair meant, now stated directly
+        cropTo = sim$rasterToMatch_biomassParam,
+        projectTo = sim$rasterToMatch_biomassParam,
+        maskTo = sim$studyArea_biomassParam,
         studyAreaName = P(sim)$.studyAreaName,
-        rasterToMatch = sim$rasterToMatch_biomassParam,
         sppEquiv = sim$sppEquiv,
         sppEquivCol = P(sim)$sppEquivCol,
         thresh = 10,
