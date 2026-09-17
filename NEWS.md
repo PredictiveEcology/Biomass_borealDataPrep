@@ -1,7 +1,7 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
-development version
-===================
+version 1.6.1
+=============
 
 * **Establishment denominator counts pixels.** `coverNum`, the number of pixels in an
   `ecoregionGroup` that the cover-presence (establishment) model divides by, counted cohort rows:
@@ -9,6 +9,27 @@ development version
   roughly the number of species per pixel. Through `establishprob = 1 - (1 - p)^successionTimestep`
   this barely moves common species but understates less common ones substantially (jack pine
   0.147 -> 0.278 on a 60 km boreal test window). `coverNumByGroup()` now counts each pixel once.
+
+version 1.6.0
+=============
+
+* **Wetland site layer.** New input `rstWetland` (default: Canadian Wetland Inventory Map v3A via
+  `LandR::prepInputs_CWIM()`, parameter `wetlandSource`). SCANFI land cover has no wetland classes,
+  so treed wetland could not be told from upland forest; `rstLCC` now carries NTEMS classes 80 and
+  81 from it (wet and treed, including 240, is 81; wet otherwise is 80).
+* **Class 240 is resolved without NTEMS.** The year-fill loop, its NTEMS download and its
+  1000-pixel threshold are gone. A class-240 pixel takes its composition from species cover
+  (`speciesLeadingClass()`, NTEMS' 0.75 threshold after the deciduous cover discount) and its site
+  from `rstWetland`; only pixels with no species cover go to `convertUnwantedLCC()`.
+* **One "inferred" flag.** Every former class-240 pixel is now left out of parameter estimation
+  and added to `imputedPixID`. Previously only the pixels `convertUnwantedLCC()` handled were; the
+  ones the year-fill loop re-typed went into every fit unrecorded. `coverNum` now counts
+  estimation pixels only, matching `coverPres`. This changes estimates wherever class 240 occurs.
+* **New stratification** `stratumType = "siteComposition"`: ecoregion x site x composition, so a
+  species on upland and on wet ground gets separate maxB, maxANPP and establishment probability.
+  Codes stay three digits (upland 210/220/230, wet 810/820/830); strata with fewer than
+  `stratumMinPixels` estimation pixels pool composition first (290/890), then site (990). The
+  default, `"landcover"`, keeps one land-cover axis, now with 80/81.
 
 version 1.5.15
 =============
@@ -19,6 +40,12 @@ version 1.5.15
   no-species path that returns a 0-row `cohortData` with the full column set and a `pixelGroupMap`
   with `rasterToMatch`'s geometry and no tree pixel groups. Previously such a run died in the trait
   check with "No trait values were found for .".
+
+## bug fixes
+* `noSpeciesCoreInputs()` declares `@importFrom data.table data.table`. The package rendition the
+  testthat-module CI builds imports `data.table` only through the module's explicit `@importFrom`
+  tags (an explicit `importFrom` suppresses the blanket `@import`), so the bare `data.table()` call
+  was not found and `test-noSpeciesCoreInputs.R` failed on CI.
 
 version 1.5.14
 =============
