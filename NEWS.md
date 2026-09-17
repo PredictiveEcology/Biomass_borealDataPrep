@@ -1,5 +1,15 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
+development version
+===================
+
+* **Reproducible parameter estimation** (new parameter `subsetSeed`, default `1L`). The subsamples
+  drawn for the biomass and age-imputation models were unseeded, so maxB changed between identical
+  runs -- median CV 10%, up to 62%, across species x ecoregionGroup on a 60 km boreal test window.
+  They are now drawn with `subsetSeed` (plus the attempt number on biomass-model retries), and the
+  random number state is restored afterwards, so other draws such as `nearestRandom` still vary
+  between replicates. `subsetSeed = NA` restores the old behaviour.
+
 version 1.5.15
 =============
 

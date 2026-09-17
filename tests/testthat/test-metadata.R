@@ -79,6 +79,7 @@ test_that("parameters are the expected names", {
            "pixelGroupAgeClass", "pixelGroupBiomassClass", "rmImputedPix",
            "speciesTableAreas", "speciesUpdateFunction", "sppEquivCol",
            "subsetDataAgeModel", "subsetDataAttempts", "subsetDataBiomassModel",
-           "successionTimestep", "useCloudCacheForStats", "vegLeadingProportion"))
+           "successionTimestep", "useCloudCacheForStats", "vegLeadingProportion",
+           "subsetSeed"))
   )
 })
