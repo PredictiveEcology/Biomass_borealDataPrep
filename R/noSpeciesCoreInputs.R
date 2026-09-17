@@ -18,6 +18,8 @@
 #'
 #' @return a named list of the outputs `createBiomass_coreInputs()` would otherwise build:
 #'   `cohortData`, `pixelGroupMap`, `sufficientLight` and `speciesEcoregion`
+#'
+#' @importFrom data.table data.table
 noSpeciesCoreInputs <- function(rasterToMatch) {
   cohortData <- data.table(
     pixelGroup = integer(0),
