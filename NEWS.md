@@ -1,5 +1,15 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
+development version
+===================
+
+* **Establishment denominator counts pixels.** `coverNum`, the number of pixels in an
+  `ecoregionGroup` that the cover-presence (establishment) model divides by, counted cohort rows:
+  a pixel with three species counted three times, so presence probabilities were deflated by
+  roughly the number of species per pixel. Through `establishprob = 1 - (1 - p)^successionTimestep`
+  this barely moves common species but understates less common ones substantially (jack pine
+  0.147 -> 0.278 on a 60 km boreal test window). `coverNumByGroup()` now counts each pixel once.
+
 version 1.5.15
 =============
 
