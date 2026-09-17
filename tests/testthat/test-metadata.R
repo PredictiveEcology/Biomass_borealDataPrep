@@ -82,6 +82,6 @@ test_that("parameters are the expected names", {
            "stratumType",
            "subsetDataAgeModel", "subsetDataAttempts", "subsetDataBiomassModel",
            "successionTimestep", "useCloudCacheForStats", "vegLeadingProportion",
-           "wetlandSource"))
+           "floorMaxBAtObserved", "wetlandSource"))
   )
 })

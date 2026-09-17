@@ -115,6 +115,12 @@ defineModule(sim, list(
                           "the user wants to investigate them further. Can be set to 'none' (no models are exported), 'all'",
                           "(both are exported), 'biomassModel' or 'coverModel'. BEWARE: because this is intended for posterior",
                           "model inspection, the models will be exported with data, which may mean very large simList(s)!")),
+    defineParameter("floorMaxBAtObserved", "logical", TRUE, NA, NA,
+                    paste("If `TRUE`, a `maxB` that the fit clamped to 0 is replaced by the 95th percentile of",
+                          "the biomass the species was observed at in that `ecoregionGroup`: a negative fit would",
+                          "otherwise stop a species growing where it demonstrably grows. A percentile rather than",
+                          "the maximum, so one freak cohort cannot set the ceiling. Fitted (positive) values are",
+                          "never changed. `maxANPP` is recomputed for any replaced row (`maxB / 30`).")),
     defineParameter("forestedLCCClasses", "numeric", c(81, 210, 220, 230, 240), 0, NA,
                     paste("The classes in the `rstLCC` layer that are 'treed' and will therefore be run in `Biomass_core`.",
                           "Defaults to forested classes in NTEMS map (210 conif, 220 deciduous, 230 mixed) plus",
@@ -1235,6 +1241,14 @@ createBiomass_coreInputs <- function(sim) {
                                            modelBiomass = modelBiomass,
                                            successionTimestep = P(sim)$successionTimestep,
                                            currentYear = time(sim))
+  if (isTRUE(P(sim)$floorMaxBAtObserved)) {
+    speciesEcoregion <- floorMaxBAtObserved(speciesEcoregion, cohortDataOnlyForestLCCBiomass)
+    nRaised <- attr(speciesEcoregion, "nRaised")
+    if (nRaised > 0) {
+      message(cli::col_blue("  maxB clamped to 0 by the fit replaced by the observed maximum for ",
+                            nRaised, " of ", nrow(speciesEcoregion), " species x ecoregionGroup rows"))
+    }
+  }
   
   if (length(P(sim)$LCCClassesToReplaceNN)) {
     assert2(speciesEcoregion, classesToReplace = classesToReplace)

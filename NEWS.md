@@ -3,6 +3,15 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 version 1.6.1
 =============
 
+* **A maxB clamped to 0 is replaced by the 95th percentile of observed biomass** (new parameter
+  `floorMaxBAtObserved`, default `TRUE`). maxB is predicted from the biomass model and a negative
+  prediction is clamped to 0, so where a species is rare the model could say it cannot grow at all --
+  on a 60 km boreal test window white birch got maxB = 0 on wet ground. Such rows now take the 95th
+  percentile of the biomass the species was observed at in that `ecoregionGroup`, and `maxANPP`
+  follows (`maxB / 30`). A percentile rather than the maximum, so one freak cohort cannot set the
+  ceiling; this matches the module's `quantile(age, 0.99)` longevity rule and LandR's maxB quantile
+  summaries. Fitted values are never changed: flooring every row overrode genuine fits (black spruce
+  upland 5,541 -> 10,800).
 * **Establishment denominator counts pixels.** `coverNum`, the number of pixels in an
   `ecoregionGroup` that the cover-presence (establishment) model divides by, counted cohort rows:
   a pixel with three species counted three times, so presence probabilities were deflated by
