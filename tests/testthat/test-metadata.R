@@ -27,6 +27,7 @@ test_that("inputs are the expected names and classes", {
       rasterToMatch_biomassParam = "SpatRaster",
       rawBiomassMap              = "SpatRaster",
       rstLCC                     = "SpatRaster",
+      rstWetland                 = "SpatRaster",
       speciesLayers              = "SpatRaster",
       speciesTable               = "data.table",
       sppColorVect               = "character",
@@ -77,8 +78,10 @@ test_that("parameters are the expected names", {
            "LCCClassesToReplaceNNMethod", "minCoverThreshold", "minRelativeBFunction",
            "omitNonTreedPixels", "overrideAgeInFires", "overrideBiomassInFires",
            "pixelGroupAgeClass", "pixelGroupBiomassClass", "rmImputedPix",
-           "speciesTableAreas", "speciesUpdateFunction", "sppEquivCol",
+           "speciesTableAreas", "speciesUpdateFunction", "sppEquivCol", "stratumMinPixels",
+           "stratumType",
            "subsetDataAgeModel", "subsetDataAttempts", "subsetDataBiomassModel",
-           "successionTimestep", "useCloudCacheForStats", "vegLeadingProportion"))
+           "successionTimestep", "useCloudCacheForStats", "vegLeadingProportion",
+           "wetlandSource"))
   )
 })
