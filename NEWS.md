@@ -1,5 +1,17 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
+version 1.6.2
+=============
+
+* **The model subsamples are 10x larger: 500 rows per group, was 50.** `subsetDataBiomassModel`
+  and `subsetDataAgeModel` now default to `LandR::subsetDataSize()` (option
+  `LandR.subsetDataSize`), so the number lives in one place and a project can move it once for
+  every module. 50 was chosen years ago when these fits were computationally expensive. It was
+  small enough to show: repeated runs of one simulation gave a median `maxB` coefficient of
+  variation of 10% across ecoregion x species, up to 62%, on a 60 km boreal test window. Fits
+  take longer, and parameters change. Requires LandR >= 1.2.0.9024
+  (PredictiveEcology/LandR#234).
+
 version 1.6.1
 =============
 
