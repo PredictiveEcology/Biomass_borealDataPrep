@@ -122,7 +122,9 @@ par <- rbindlist(lapply(have, function(a) {
   if (is.null(se)) return(NULL)
   se <- as.data.table(se)
   se[, code := as.integer(sub(".*_", "", as.character(ecoregionGroup)))]
-  se[, site := fifelse(code >= 800 | code == 81, "wet", "upland")]
+  ## 810-890 and 81 are wet; 990 pools across sites, so it is neither
+  se[, site := fifelse(code %in% c(81, 810, 820, 830, 840, 890), "wet",
+                       fifelse(code == 990, "pooled (any site)", "upland"))]
   se[, arm := a]
   se[, .(arm, speciesCode, site, maxB, maxANPP, establishprob)]
 }))
@@ -139,7 +141,7 @@ if (NROW(par)) {
   tbl(w)
   out("## maxB by species and site (arms that distinguish site)\n")
   s2 <- par[, .(maxB = mean(maxB), groups = .N), by = .(arm, speciesCode, site)]
-  s2 <- s2[arm %in% s2[site == "wet", unique(arm)]]
+  s2 <- s2[arm %in% s2[site != "upland", unique(arm)]]
   if (nrow(s2)) {
     tbl(dcast(s2, speciesCode + site ~ arm, value.var = "maxB")[order(speciesCode, site)])
   } else {

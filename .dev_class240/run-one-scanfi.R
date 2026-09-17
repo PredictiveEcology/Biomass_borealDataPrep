@@ -102,6 +102,19 @@ modParams <- list(
   .useCache = FALSE,
   exportModels = "none"
 )
+## Deterministic mode. Three things draw random numbers in this module: the 50-per-group
+## subsample for the biomass model, the same for the age-imputation model, and
+## convertUnwantedLCC()'s "nearestRandom". Unseeded, maxB varies run to run with a median CV of
+## 10% (up to 62%) on the 60 km window, which swamps most between-arm differences. Seeding alone
+## does not fix a comparison, because different arms subsample different data; so use all rows,
+## and the deterministic neighbour rule.
+deterministic <- identical(Sys.getenv("CLASS240_DETERMINISTIC", "0"), "1")
+if (deterministic) {
+  modParams$subsetDataBiomassModel <- 100000L
+  modParams$subsetDataAgeModel <- 100000L
+  modParams$LCCClassesToReplaceNNMethod <- "nearestWeighted"
+  set.seed(1)
+}
 if (nzchar(stratum)) modParams$stratumType <- stratum
 if (!useWetland && nzchar(stratum)) modParams$wetlandSource <- "none"
 
@@ -150,7 +163,7 @@ meta <- data.table(label = label, area = areaLabel, landrPath = landrPath,
                    landrSha = system(paste("git -C", shQuote(landrPath), "rev-parse --short HEAD"), intern = TRUE),
                    modulePath = moduleDir,
                    moduleSha = system(paste("git -C", shQuote(moduleDir), "rev-parse --short HEAD"), intern = TRUE),
-                   stratum = stratum, wetland = useWetland,
+                   stratum = stratum, wetland = useWetland, deterministic = deterministic,
                    elapsedMin = round(elapsed, 2), when = format(Sys.time()))
 fwrite(outManifest, file.path(outDir, "manifest.csv"))
 fwrite(meta, file.path(outDir, "meta.csv"))
