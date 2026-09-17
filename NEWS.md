@@ -1,5 +1,14 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
+development version
+===================
+
+* **maxB is floored at the observed maximum** (new parameter `floorMaxBAtObserved`, default `TRUE`).
+  maxB is predicted from the biomass model and a negative prediction is clamped to 0, so where a
+  species is rare the model could say it cannot grow at all -- on a 60 km boreal test window white
+  birch got maxB = 0 on wet ground. maxB is now never below the largest biomass the species was
+  observed at in that `ecoregionGroup`, and `maxANPP` follows (`maxB / 30`).
+
 version 1.5.15
 =============
 
