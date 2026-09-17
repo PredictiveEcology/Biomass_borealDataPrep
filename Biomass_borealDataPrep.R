@@ -23,7 +23,7 @@ defineModule(sim, list(
     "archive", "assertthat", "cli", "data.table", "dplyr", "ggplot2", "httr2",
     "merTools", "plyr", "qs2", "rasterVis", "sf", "terra", "googledrive",
     "reproducible (>= 2.1.0)", "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
-    "PredictiveEcology/LandR@development (>= 1.2.0.9015)",
+    "PredictiveEcology/LandR@development (>= 1.2.0.9017)",
     "PredictiveEcology/pemisc@development",
     "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)"
   ),
@@ -1733,9 +1733,12 @@ Save <- function(sim) {
       sim$speciesLayers <- prepSpeciesLayers_SCANFI(
         destinationPath = dPath,
         outputPath = dPath,
-        studyArea = sim$studyArea_biomassParam,
+        ## the *to family (LandR >= 1.2.0.9017): the raster sets the grid, the polygon the mask --
+        ## exactly what the legacy studyArea + rasterToMatch pair meant, now stated directly
+        cropTo = sim$rasterToMatch_biomassParam,
+        projectTo = sim$rasterToMatch_biomassParam,
+        maskTo = sim$studyArea_biomassParam,
         studyAreaName = P(sim)$.studyAreaName,
-        rasterToMatch = sim$rasterToMatch_biomassParam,
         sppEquiv = sim$sppEquiv,
         sppEquivCol = P(sim)$sppEquivCol,
         thresh = 10,
