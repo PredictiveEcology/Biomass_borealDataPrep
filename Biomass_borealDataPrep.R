@@ -116,10 +116,10 @@ defineModule(sim, list(
                           "(both are exported), 'biomassModel' or 'coverModel'. BEWARE: because this is intended for posterior",
                           "model inspection, the models will be exported with data, which may mean very large simList(s)!")),
     defineParameter("floorMaxBAtObserved", "logical", TRUE, NA, NA,
-                    paste("If `TRUE`, `maxB` for a species in an `ecoregionGroup` is never below the largest",
-                          "biomass that species was observed at there. The fitted value can fall below it, and a",
-                          "negative fit is clamped to 0, which would stop a species growing where it demonstrably",
-                          "grows. `maxANPP` is recomputed for any raised row with the same rule (`maxB / 30`).")),
+                    paste("If `TRUE`, a `maxB` that the fit clamped to 0 is replaced by the largest biomass the",
+                          "species was observed at in that `ecoregionGroup`: a negative fit would otherwise stop a",
+                          "species growing where it demonstrably grows. Fitted (positive) values are never",
+                          "changed. `maxANPP` is recomputed for any replaced row with the same rule (`maxB / 30`).")),
     defineParameter("forestedLCCClasses", "numeric", c(81, 210, 220, 230, 240), 0, NA,
                     paste("The classes in the `rstLCC` layer that are 'treed' and will therefore be run in `Biomass_core`.",
                           "Defaults to forested classes in NTEMS map (210 conif, 220 deciduous, 230 mixed) plus",
@@ -1170,8 +1170,8 @@ createBiomass_coreInputs <- function(sim) {
     speciesEcoregion <- floorMaxBAtObserved(speciesEcoregion, cohortDataOnlyForestLCCBiomass)
     nRaised <- attr(speciesEcoregion, "nRaised")
     if (nRaised > 0) {
-      message(cli::col_blue("  maxB raised to the observed maximum for ", nRaised, " of ",
-                            nrow(speciesEcoregion), " species x ecoregionGroup rows"))
+      message(cli::col_blue("  maxB clamped to 0 by the fit replaced by the observed maximum for ",
+                            nRaised, " of ", nrow(speciesEcoregion), " species x ecoregionGroup rows"))
     }
   }
   

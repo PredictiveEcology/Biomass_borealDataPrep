@@ -1,9 +1,13 @@
-## maxB can be no lower than the biomass a species was actually observed at in that group.
+## A clamped maxB is replaced by the largest biomass the species was observed at in its group.
 ##
 ## makeSpeciesEcoregion() predicts maxB from the biomass model at `cover = 100` and old age, and
-## clamps a negative prediction to 0. A model that under-predicts -- typically a group where a
-## species is rare -- then says the species cannot grow where it demonstrably grows. The largest
-## observed cohort biomass is a lower bound on what the species reaches there, so use it.
+## clamps a negative prediction to 0. Where a species is rare the fit can go negative, and the
+## clamp then says the species cannot grow where it demonstrably grows. Only those rows -- maxB
+## of 0 for a species that was observed in the group -- are changed.
+##
+## Deliberately NOT a floor on every row: the largest of thousands of observed cohorts is an
+## outlier statistic, and flooring every row at it overrode genuine fits (black spruce upland
+## 5,541 -> 10,800 on a 60 km test window). A fitted value is kept whatever it is.
 ##
 ## `cohortData` is the estimation data (all rows, not the model's subsample), with `B`,
 ## `speciesCode` and `ecoregionGroup`. maxANPP is recomputed for raised rows with the rule
@@ -15,7 +19,7 @@ floorMaxBAtObserved <- function(speciesEcoregion, cohortData) {
   se <- data.table::copy(data.table::as.data.table(speciesEcoregion))
   se[, `:=`(eg = as.character(ecoregionGroup), sc = as.character(speciesCode))]
   se[obs, obsMaxB := i.obsMaxB, on = c("eg", "sc")]
-  raise <- which(!is.na(se$obsMaxB) & se$maxB < se$obsMaxB)
+  raise <- which(!is.na(se$obsMaxB) & se$obsMaxB > 0 & se$maxB <= 0)
   if (length(raise)) {
     newMaxB <- se$obsMaxB[raise]
     if (is.integer(se$maxB)) newMaxB <- as.integer(newMaxB)
