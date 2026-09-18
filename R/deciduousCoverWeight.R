@@ -40,8 +40,9 @@
 ## Returns `NA_real_` when the landscape cannot identify it (too few deciduous pixels), and the
 ## caller keeps `P(sim)$deciduousCoverWeight`.
 
-#' @importFrom data.table as.data.table setDT
-#' @importFrom stats as.formula model.matrix optimize qr qr.resid
+#' @importFrom data.table as.data.table
+#' @importFrom stats as.formula model.matrix optimize
+#' @importFrom utils data
 deciduousCoverWeightFn <- function(pixelCohortData, canopyHeight, canopyClosure,
                                    interval = c(0.05, 5),
                                    minDeciduousPixels = 500L,
