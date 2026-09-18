@@ -425,23 +425,38 @@ cover. Initial `B` is estimated for each species in each pixel by multiplying
 `standB` by species (ref:percent) cover. Because the default cover layers are
 satellite-derived, the relationship between relative cover and relative biomass
 of broadleaf and conifer species needs to be adjusted to reflect their different
-canopy architectures (using `P(sim)$deciduousCoverDiscount`).
+canopy architectures (using `P(sim)$deciduousCoverWeight`).
 
-By default, *Biomass_borealDataPrep* uses a previously estimated
-`P(sim)$deciduousCoverDiscount` based on Northwest Territories data. However,
-the user can chose to re-estimate it by setting
-`P(sim)$fitDeciduousCoverDiscount == TRUE`. In this case, by default
-*Biomass_borealDataPrep* will fit the the following model:
+`P(sim)$deciduousCoverWeight` is how much biomass a unit of deciduous cover
+carries relative to a unit of conifer cover. Broadleaf crowns are wider per unit
+of wood, so it is expected below 1.
 
-```{r coverPctToBiomassPctModel, echo = FALSE, eval = TRUE, message = FALSE, tidy = TRUE, tidy.opts = list(width.cutoff = 60)}
-df_params[df_params$paramName == "coverPctToBiomassPctModel", "default"]
-```
+By default (`P(sim)$fitDeciduousCoverWeight == TRUE`) it is **estimated from
+`studyArea_biomassParam`** rather than taken from the parameter, because it is
+not a universal constant: on 100 km of Alberta boreal mixedwood the fit gives
+0.90, and per ecoregion inside that one window it ranges 0.80 to 1.11.
 
-which relates the estimated biomass (`B`) with an interaction term between
-log-age (`logAge`), `standB` ('totalBiomass'), `speciesCode` (i.e. species ID)
-and land cover ('lcc'). The model is fitted to the `standB` and species cover on
-`studyArea_biomassParam`, using an optimization routine that searches for the best
-conversion factor between broadleaf species cover and `B` by minimizing AIC.
+`partitionBiomass()` splits a pixel's `standB` among its cohorts and so says
+nothing about the total it divides; what identifies the weight is a statement
+about the total,
+
+$$standB_p = k_p \times (C_p + w \times D_p)$$
+
+where $C_p$ and $D_p$ are the pixel's total conifer and deciduous cover. What
+$k$ is decides what is estimated. Held constant within an ecoregion, $w$ absorbs
+site quality -- in the boreal, broadleaf grows on richer, better-drained ground
+than black spruce, so the estimate comes back **above** 1 and has credited the
+site to the species. Made a function of the pixel's own canopy height and
+closure (`sim$rstCanopyHeight`, `sim$rstCanopyClosure`, SCANFI's own layers),
+it compares composition between stands carrying the *same* amount of structure,
+which is the canopy-architecture difference the parameter is for. That is what
+the module fits, by profiling $w$ with $k$ concentrated out; the design matrix
+does not depend on $w$, so the whole search costs a few seconds.
+
+Where the study area cannot identify it -- too little deciduous cover, no canopy
+height and closure layers (only SCANFI publishes them), or an estimate sitting on
+the search bound -- the module says so and keeps `P(sim)$deciduousCoverWeight`.
+Set `P(sim)$fitDeciduousCoverWeight == FALSE` to always use the parameter.
 
 #### Maximum biomass and maximum aboveground net primary productivity {#bboreal-maxB-maxANPP}
 
@@ -832,11 +847,11 @@ Of these parameters, the following are particularly important:
     classes in `rstLCC` are forested and which should be reclassified to
     forested classes, respectively.
 
--   `deciduousCoverDiscount`, `coverPctToBiomassPctModel` and
-    `fitDeciduousCoverDiscount` -- the first is the adjustment factor for
-    broadleaf species cover to biomass relationships; the second and third are
-the model used to refit `deciduousCoverDiscount` in the supplied
-`studyArea_biomassParam` and whether refitting should be attempted (respectively).
+-   `deciduousCoverWeight` and `fitDeciduousCoverWeight` -- the first is the
+    adjustment factor for broadleaf species cover to biomass relationships; the
+    second decides whether it is estimated from `studyArea_biomassParam` (the
+    default) instead, in which case the first is only the fallback for a study
+    area that cannot identify it.
 
 \newpage
 \blandscape

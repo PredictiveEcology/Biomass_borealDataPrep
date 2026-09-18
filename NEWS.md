@@ -1,5 +1,39 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
+version 1.7.0
+=============
+
+* **`deciduousCoverDiscount` is now `deciduousCoverWeight`, and it is estimated rather than
+  hardcoded.** `fitDeciduousCoverWeight` defaults to `TRUE`: the weight is fit from
+  `studyArea_biomassParam` on every run. The parameter's number (still 0.8418911, from NWT data in
+  March 2020) is now only the fallback for a study area that cannot identify it. It is not a
+  universal constant -- on 100 km of Alberta boreal mixedwood the fit gives 0.90, and per
+  ecoregion inside that window it ranges 0.80 to 1.11.
+
+* **The old estimator is gone**, and with it the `coverPctToBiomassPctModel` parameter and
+  `R/coverOptimFn.R`. It searched `optimize(interval = c(0.1, 1))` for the x minimising the AIC of
+  `glm(log(B/100) ~ logAge * log(totalBiomass/100) * speciesCode * lcc)`. Two problems, both
+  measured:
+  - `B` is the response and `B` is built from x, so every candidate was scored on a different
+    response vector; those AICs are not comparable likelihoods. (Returning the R-squared it already
+    computed does not fix this -- R-squared rises monotonically to whichever search bound.)
+  - the `c(0.1, 1)` cap was binding. On a study area with enough deciduous cover to identify
+    anything, that estimator's own objective wants 1.2 and the cap returned 0.9999.
+  It also cost 200-400 s per study area, against about 5 s for the new fit.
+
+* **New: `rstCanopyHeight` and `rstCanopyClosure` inputs**, defaulting to SCANFI's own layers via
+  `LandR::prepInputs_SCANFI_structure()` when the weight is being fit on SCANFI data. They are what
+  separate canopy architecture from site quality: broadleaf grows on richer ground than black
+  spruce, so comparing composition between pixels without controlling for structure credits the
+  site to the species -- uncontrolled, the same Alberta window returns 1.74 instead of 0.90.
+  kNN and NTEMS publish no equivalent pair, so on those sources the fit is skipped and the
+  parameter kept.
+
+* `speciesLeadingClass()`'s `deciduousCoverDiscount` argument is renamed to `deciduousCoverWeight`
+  and is no longer required to be <= 1.
+
+* Requires LandR >= 1.2.0.9025.
+
 version 1.6.3
 =============
 

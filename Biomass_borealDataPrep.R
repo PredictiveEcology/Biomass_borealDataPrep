@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.6.3"),
+  version = list(Biomass_borealDataPrep = "1.7.0"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -23,7 +23,7 @@ defineModule(sim, list(
     "archive", "assertthat", "cli", "data.table", "dplyr", "ggplot2", "httr2",
     "merTools", "plyr", "qs2", "rasterVis", "sf", "terra", "googledrive",
     "reproducible (>= 2.1.0)", "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
-    "PredictiveEcology/LandR@development (>= 1.2.0.9024)",
+    "PredictiveEcology/LandR@development (>= 1.2.0.9025)",
     "PredictiveEcology/pemisc@development",
     "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)"
   ),
@@ -68,24 +68,23 @@ defineModule(sim, list(
                           "Can be `TRUE`/`FALSE`/`NULL` or numeric; if `TRUE`, uses 50, the default.",
                           "If `FALSE`/`NULL` no subsetting is done.")),
     ## deciduous cover to biomass cover section ------------------------------------------------
-    defineParameter("coverPctToBiomassPctModel", "call",
-                    quote(glm(I(log(B/100)) ~ logAge * I(log(totalBiomass/100)) * speciesCode * lcc)),
-                    NA, NA,
-                    paste(
-                      "Model to estimate the relationship between % cover and % biomass, referred to as",
-                      "`P(sim)$fitDeciduousCoverDiscount`. It is a number between 0 and 1 that translates % cover,",
-                      "as provided in several databases, to % biomass. It is assumed that all hardwoods",
-                      "are equivalent and all softwoods are equivalent and that % cover of hardwoods will",
-                      "be an overestimate of the % biomass of hardwoods. E.g., 30% cover of hardwoods",
-                      "might translate to 20% biomass of hardwoods. The reason this discount exists is",
-                      "because hardwoods in Canada have a much wider canopy than softwoods."
-                    )),
-    defineParameter("deciduousCoverDiscount", "numeric", 0.8418911, NA, NA,
-                    paste("This was estimated with data from NWT on March 18, 2020 and may or may not be universal.",
-                          "Will not be used if `P(sim)$fitDeciduousCoverDiscount == TRUE`")),
-    defineParameter("fitDeciduousCoverDiscount", "logical", FALSE, NA, NA,
-                    paste("If TRUE, this will re-estimate `P(sim)$fitDeciduousCoverDiscount` This may be unstable and",
-                          "is not recommended currently. If `FALSE`, will use the current default")),
+    defineParameter("deciduousCoverWeight", "numeric", 0.8418911, NA, NA,
+                    paste("How much biomass a unit of deciduous cover carries, relative to a unit of conifer",
+                          "cover: the weight `LandR::partitionBiomass()` applies to deciduous cover before it",
+                          "splits a pixel's `totalBiomass` among its cohorts. Broadleaf crowns are wider per",
+                          "unit of wood, so this is expected below 1. **This default is only a fallback.**",
+                          "With `fitDeciduousCoverWeight = TRUE` (the default) it is estimated from the study",
+                          "area and this value is not used; it is kept for landscapes that cannot identify it",
+                          "-- too little deciduous cover, or no canopy height/closure layers. The number is the",
+                          "one estimated from NWT data on 2020-03-18 and is not universal: on 100 km of Alberta",
+                          "boreal mixedwood the fit gives 0.90, and per ecoregion inside that window it ranges",
+                          "0.80 to 1.11.")),
+    defineParameter("fitDeciduousCoverWeight", "logical", TRUE, NA, NA,
+                    paste("If `TRUE` (default), estimate `P(sim)$deciduousCoverWeight` from this study area",
+                          "rather than using the parameter's value. Needs `sim$rstCanopyHeight` and",
+                          "`sim$rstCanopyClosure`, which default to SCANFI's own layers; without them, or",
+                          "where there is too little deciduous cover to identify it, the parameter value is",
+                          "kept and a message says so. The fit costs a few seconds.")),
     ## -------------------------------------------------------------------------------------------
     defineParameter("adjustAgeAndLongevity", "logical", FALSE, NA, NA,
                     paste("Adjust species longevity to the ages observed on the landscape.",
@@ -214,7 +213,7 @@ defineModule(sim, list(
                           "ground get separate parameters. Codes: upland 210/220/230, wet 810/820/830; pooled",
                           "290/890/990 (see `stratumMinPixels`); class-240 pixels with no species cover 240/840.")),
     defineParameter("subsetDataAgeModel", "numeric", 50, NA, NA,
-                    paste("the number of samples to use when subsampling the age data model and when fitting `coverPctToBiomassPctModel`;",
+                    paste("the number of samples to use when subsampling the age data model;",
                           "Can be `TRUE`/`FALSE`/`NULL` or numeric; if `TRUE`, uses 50, the default.",
                           "If `FALSE`/`NULL` no subsetting is done.")),
     defineParameter("successionTimestep", "numeric", 10, NA, NA, "defines the simulation time step, default is 10 years"),
@@ -326,6 +325,17 @@ defineModule(sim, list(
                        "site axis of `P(sim)$stratumType = 'siteComposition'`. If not supplied and",
                        "`P(sim)$wetlandSource` is `'CWIM'`, built from the Canadian Wetland Inventory Map v3A",
                        "(bog, fen, marsh and swamp are wet)."),
+                 sourceURL = NA),
+    expectsInput("rstCanopyHeight", "SpatRaster",
+                 paste("Canopy height (m) on `rasterToMatch_biomassParam`. Used only to estimate",
+                       "`P(sim)$deciduousCoverWeight`, as one of the two structural controls that let",
+                       "composition be compared between stands carrying the same amount of structure.",
+                       "Defaults to SCANFI's own height layer for `P(sim)$dataYear` when",
+                       "`P(sim)$fitDeciduousCoverWeight` is `TRUE` and `P(sim)$dataSource` is SCANFI."),
+                 sourceURL = NA),
+    expectsInput("rstCanopyClosure", "SpatRaster",
+                 paste("Canopy closure (percent) on `rasterToMatch_biomassParam`. The other structural",
+                       "control for `P(sim)$deciduousCoverWeight`; see `rstCanopyHeight`."),
                  sourceURL = NA),
     expectsInput("rasterToMatch", "SpatRaster",
                  desc = paste("A raster of the `studyArea` in the same resolution and projection as `rawBiomassMap`.",
@@ -749,7 +759,9 @@ createBiomass_coreInputs <- function(sim) {
       fromSpecies <- speciesLeadingClass(
         as.data.table(sim$speciesLayers[inferredCells]),
         sppEquiv = sim$sppEquiv, sppEquivCol = P(sim)$sppEquivCol,
-        deciduousCoverDiscount = P(sim)$deciduousCoverDiscount
+        ## the parameter, not the fitted value: this runs before `pixelCohortData` exists, and
+        ## the fit needs it. The two differ only when `fitDeciduousCoverWeight` is on.
+        deciduousCoverWeight = P(sim)$deciduousCoverWeight
       )
       compV[inferredCells] <- fifelse(is.na(fromSpecies), lccV[inferredCells],
                                       as.numeric(fromSpecies))
@@ -847,27 +859,36 @@ createBiomass_coreInputs <- function(sim) {
                              NROW(unique(pixelCohortData$pixelIndex)))
   
   ## partition totalBiomass into individual species B -----------------------------------------
-  ## via estimating how %cover and %biomass are related
-  message(cli::col_blue("Partitioning totalBiomass per pixel into cohort B as:"))
-  if (isTRUE(P(sim)$fitDeciduousCoverDiscount)) {
-    message(cli::col_magenta(paste0(format(P(sim)$coverPctToBiomassPctModel, appendLF = FALSE))))
-    
-    params(sim)$Biomass_borealDataPrep$deciduousCoverDiscount <- deciduousCoverDiscountFun(
-      pixelCohortData = pixelCohortData,
-      coverPctToBiomassPctModel = P(sim)$coverPctToBiomassPctModel,
-      subsetDataAgeModel = P(sim)$subsetDataAgeModel
-    ) |>
-      Cache(userTags = c(cacheTags, "decidCoverDisc"), omitArgs = c("userTags"))
-    
+  ## The split weights deciduous cover by `deciduousCoverWeight`; see R/deciduousCoverWeight.R for
+  ## what it means and how it is identified.
+  message(cli::col_blue("Partitioning totalBiomass per pixel into cohort B"))
+  if (isTRUE(P(sim)$fitDeciduousCoverWeight)) {
+    fitted <- if (is.null(sim$rstCanopyHeight) || is.null(sim$rstCanopyClosure)) {
+      message(cli::col_yellow(
+        "  no canopy height/closure layers, so the deciduous cover weight cannot be fit here"))
+      NA_real_
+    } else {
+      deciduousCoverWeightFn(
+        pixelCohortData = pixelCohortData,
+        canopyHeight = sim$rstCanopyHeight,
+        canopyClosure = sim$rstCanopyClosure
+      ) |>
+        Cache(userTags = c(cacheTags, "deciduousCoverWeight"), omitArgs = c("userTags"))
+    }
+    if (is.na(fitted)) {
+      message(cli::col_blue("  keeping P(sim)$deciduousCoverWeight = ",
+                            round(P(sim)$deciduousCoverWeight, 4)))
+    } else {
+      params(sim)$Biomass_borealDataPrep$deciduousCoverWeight <- fitted
+    }
   } else {
-    message(cli::col_magenta(paste0(format(P(sim)$coverPctToBiomassPctModel, appendLF = FALSE))))
-    message(cli::col_blue("using previously estimated deciduousCoverDiscount:",
-                          round(P(sim)$deciduousCoverDiscount, 3)))
+    message(cli::col_blue("  using the supplied deciduousCoverWeight: ",
+                          round(P(sim)$deciduousCoverWeight, 4)))
   }
   
   ## Cache here, uses the previously digested object that was used to create the pixelCohortData; it hasn't
   ##   changed in the code above since its creation just above
-  pixelCohortData <- partitionBiomass(x = P(sim)$deciduousCoverDiscount, pixelCohortData) |>
+  pixelCohortData <- partitionBiomass(x = P(sim)$deciduousCoverWeight, pixelCohortData) |>
     Cache(omitArgs = "pixelCohortData", .cacheExtra = attr(pixelCohortData, "tags"))
   
   set(pixelCohortData, NULL, "B", asInteger(pixelCohortData$B/P(sim)$pixelGroupBiomassClass) *
@@ -1719,6 +1740,26 @@ Save <- function(sim) {
   if (!suppliedElsewhere("rstWetland", sim) && identical(P(sim)$wetlandSource, "CWIM")) {
     sim$rstWetland <- LandR::prepInputs_CWIM(to = sim$rasterToMatch_biomassParam) |>
       Cache(userTags = c("rstWetland", currentModule(sim), P(sim)$.studyAreaName))
+  }
+
+  ## Canopy structure (for the deciduous cover weight) -------------------
+  ## Only fetched when the weight is actually being fit, and only from SCANFI: these are two more
+  ## national rasters to pull, and nothing else in the module uses them. kNN and NTEMS publish no
+  ## equivalent pair, so on those sources the fit falls back to `P(sim)$deciduousCoverWeight`.
+  if (isTRUE(P(sim)$fitDeciduousCoverWeight) && identical(P(sim)$dataSource, "SCANFI")) {
+    structureObjs <- c(height = "rstCanopyHeight", closure = "rstCanopyClosure")
+    for (att in names(structureObjs)) {
+      objName <- structureObjs[[att]]
+      if (!suppliedElsewhere(objName, sim)) {
+        sim[[objName]] <- LandR::prepInputs_SCANFI_structure(
+          attribute = att,
+          year = P(sim)$dataYear,
+          to = sim$rasterToMatch_biomassParam,
+          destinationPath = dPath
+        ) |>
+          Cache(userTags = c(objName, currentModule(sim), P(sim)$.studyAreaName, P(sim)$dataYear))
+      }
+    }
   }
 
   ## Ecodistrict ------------------------------------------------
