@@ -28,6 +28,15 @@
 ## candidate w costs one `qr.resid()`. ~5 s on 158,000 pixels, against ~200 s for the AIC search
 ## this replaced -- cheap enough to run every time rather than carry a hardcoded number.
 ##
+## CAVEAT on which structure layers are used. SCANFI's biomass and its height/closure come out of
+## the same imputation, and it shows: on 100 km of Alberta mixedwood, SCANFI biomass regressed on
+## SCANFI height, closure, age and ecoregion has R2 = 0.957 and a residual SD of 0.09 in log space.
+## Conditioning on structure therefore leaves very little variance for composition to explain, and
+## what is left is partly the internal structure of that one product. Feeding the same fit an
+## independent biomass layer -- NTEMS 2015, same window, same SCANFI structure controls, R2 = 0.746
+## and residual SD 0.38 -- gives 0.65 rather than 0.97. Both are below 1, so the sign is robust, but
+## the size is not settled, and the SCANFI-on-SCANFI number is the more circular of the two.
+##
 ## Returns `NA_real_` when the landscape cannot identify it (too few deciduous pixels), and the
 ## caller keeps `P(sim)$deciduousCoverWeight`.
 
