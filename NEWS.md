@@ -1,5 +1,18 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
+version 1.7.1
+
+* **The deciduous cover weight fit now declines on landscapes that cannot identify it.** What
+  identifies the weight is how much the deciduous share of cover varies *between pixels*, not how
+  much deciduous there is: a uniformly deciduous landscape is as uninformative as one with none.
+  The existing guards only set a floor on the mean, so e.g. ELF 10.1 (Manitoba parkland, ~100%
+  deciduous everywhere) returned a meaningless 1.12 -- with a bootstrap SD of 0.004, so precision
+  did not flag it either. New `deciduousCoverWeightFn(minDeciduousShareSD = 0.1)`: below that
+  between-pixel SD the fit returns `NA` and the parameter value is used, with a message.
+
+* **`deciduousCoverWeight` default 0.8418911 -> 0.93**, the mean fit on the three landscapes tested
+  that can identify it (0.90, 1.00, 0.91). Provisional: more landscapes are being tested.
+
 version 1.7.0
 
 * **`deciduousCoverDiscount` is now `deciduousCoverWeight`, and it is estimated rather than

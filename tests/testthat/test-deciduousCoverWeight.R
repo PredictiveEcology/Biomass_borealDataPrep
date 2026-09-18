@@ -6,9 +6,10 @@
 ## `k` is deliberately made to depend on structure AND to be correlated with deciduous cover --
 ## that correlation is the site-quality confound the structural controls exist to remove, and an
 ## estimator without them returns something well above `w` on exactly this data (verified below).
-makeDecidLandscape <- function(w, n = 4000L, sd = 0.05, siteConfound = 1.0, seed = 42L) {
+makeDecidLandscape <- function(w, n = 4000L, sd = 0.05, siteConfound = 1.0, seed = 42L,
+                               dRange = c(0, 1)) {
   set.seed(seed)
-  d <- stats::runif(n)                        ## deciduous share of cover
+  d <- stats::runif(n, dRange[1L], dRange[2L])  ## deciduous share of cover
   ## richer sites carry more deciduous: structure rises with d
   height  <- pmin(26, pmax(2.5, 6 + 14 * siteConfound * d + stats::rnorm(n, 0, 2)))
   closure <- pmin(90, pmax(6, 35 + 35 * siteConfound * d + stats::rnorm(n, 0, 6)))
@@ -71,6 +72,18 @@ test_that("it declines to answer when the landscape cannot identify it", {
   expect_message(
     est <- deciduousCoverWeightFn(L$pcd, L$height, L$closure, minDeciduousPixels = 100L),
     "not enough deciduous cover"
+  )
+  expect_true(is.na(est))
+})
+
+test_that("it declines when every pixel has nearly the same deciduous share", {
+  ## plenty of deciduous -- every pixel is 95-100% -- but no contrast between pixels, so the
+  ## weight is absorbed by the intercept. ELF 10.1 (Manitoba parkland) is this case.
+  skip_if_not_installed("terra")
+  L <- makeDecidLandscape(0.85, dRange = c(0.95, 1))
+  expect_message(
+    est <- deciduousCoverWeightFn(L$pcd, L$height, L$closure, minDeciduousPixels = 100L),
+    "barely varies between pixels"
   )
   expect_true(is.na(est))
 })

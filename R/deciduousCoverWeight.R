@@ -37,16 +37,28 @@
 ## and residual SD 0.38 -- gives 0.65 rather than 0.97. Both are below 1, so the sign is robust, but
 ## the size is not settled, and the SCANFI-on-SCANFI number is the more circular of the two.
 ##
-## Returns `NA_real_` when the landscape cannot identify it (too few deciduous pixels), and the
-## caller keeps `P(sim)$deciduousCoverWeight`.
+## IDENTIFIABILITY. The model contributes `log1p((w - 1) * d)` per pixel, `d` the deciduous share
+## of cover. If `d` is nearly the same in every pixel that term is nearly constant, the intercept
+## absorbs it, and `w` is unidentified however many pixels there are -- a uniformly deciduous
+## landscape is as uninformative as one with no deciduous at all. What identifies `w` is how much
+## `d` varies between pixels, `sd(d)`, not how much deciduous there is. Neither the number of
+## pixels nor a bootstrap catches this: across seven ELFs and windows (2026-09-18) the landscapes
+## with sd(d) of 0.033-0.036 returned 0.63, 0.85 and 1.12 with bootstrap SDs of 0.001-0.012,
+## i.e. precisely wrong, while those with sd(d) of 0.30-0.38 all returned 0.90-1.00.
+## `minDeciduousShareSD = 0.1` sits in that gap (on a log scale, midway between 0.036 and 0.30).
+##
+## Returns `NA_real_` when the landscape cannot identify it (too few deciduous pixels, too little
+## between-pixel variation in deciduous share, or an estimate on the search bound), and the caller
+## keeps `P(sim)$deciduousCoverWeight`.
 
 #' @importFrom data.table as.data.table
-#' @importFrom stats as.formula model.matrix optimize
+#' @importFrom stats as.formula model.matrix optimize sd
 #' @importFrom utils data
 deciduousCoverWeightFn <- function(pixelCohortData, canopyHeight, canopyClosure,
                                    interval = c(0.05, 5),
                                    minDeciduousPixels = 500L,
                                    minDeciduousCover = 0.02,
+                                   minDeciduousShareSD = 0.1,
                                    minHeight = 2, minClosure = 5,
                                    dfStruct = 5L) {
   pcd <- as.data.table(pixelCohortData)
@@ -78,6 +90,14 @@ deciduousCoverWeightFn <- function(pixelCohortData, canopyHeight, canopyClosure,
     message(cli::col_yellow(
       "  not enough deciduous cover to estimate the deciduous cover weight (",
       nDecid, " pixels with any, mean cover share ", round(mean(pix$d) * 100, 2), "%)"))
+    return(NA_real_)
+  }
+  sdD <- stats::sd(pix$d)
+  if (sdD < minDeciduousShareSD) {
+    message(cli::col_yellow(
+      "  deciduous share of cover barely varies between pixels (sd ", round(sdD, 3), " < ",
+      minDeciduousShareSD, ", mean ", round(mean(pix$d) * 100, 1), "%), so the deciduous cover ",
+      "weight cannot be identified here"))
     return(NA_real_)
   }
 
