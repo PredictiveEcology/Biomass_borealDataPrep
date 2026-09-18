@@ -1,7 +1,6 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
 version 1.6.4
-=============
 
 * **The model subsamples are 10x larger: 500 rows per group, was 50.** `subsetDataBiomassModel`
   and `subsetDataAgeModel` now default to `LandR::subsetDataSize()` (option
@@ -11,6 +10,22 @@ version 1.6.4
   variation of 10% across ecoregion x species, up to 62%, on a 60 km boreal test window. Fits
   take longer, and parameters change. Requires LandR >= 1.2.0.9024
   (PredictiveEcology/LandR#234).
+version 1.6.3
+
+* `vegLeadingProportion` now defaults to `LandR::leadingSpeciesProp()` (option
+  `LandR.leadingSpeciesProp`, which takes `LandR.mixedwoodProp`, 0.75, unless set), so the
+  leading-species threshold is set once for every module and LandR function instead of being
+  hard-coded per module. **The default changes from 0.8 to 0.75**, which changes vegetation type
+  maps. Requires LandR >= 1.2.0.9024 (PredictiveEcology/LandR#234).
+
+
+version 1.6.2
+
+* The SCANFI species layers are requested with LandR's `*to` family (`cropTo`, `projectTo`,
+  `maskTo`) instead of the legacy `studyArea` + `rasterToMatch` pair, which LandR is retiring.
+  Requires LandR >= 1.2.0.9017 (PredictiveEcology/LandR#227), which also fixed the legacy pair:
+  when both were given, the mask had been taken from the raster instead of the study area.
+
 
 version 1.6.1
 =============
@@ -54,13 +69,6 @@ version 1.6.0
 
 version 1.5.15
 =============
-
-## enhancements
-* study areas with no tree species are supported: a zero-layer `speciesLayers` (a valid state, unlike
-  `NULL`, which still stops as a module-ordering error) takes `createBiomass_coreInputs()` down a
-  no-species path that returns a 0-row `cohortData` with the full column set and a `pixelGroupMap`
-  with `rasterToMatch`'s geometry and no tree pixel groups. Previously such a run died in the trait
-  check with "No trait values were found for .".
 
 ## bug fixes
 * `noSpeciesCoreInputs()` declares `@importFrom data.table data.table`. The package rendition the
