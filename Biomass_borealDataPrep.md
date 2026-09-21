@@ -1,6 +1,6 @@
 ---
 title: "LandR _Biomass_borealDataPrep_ Manual"
-date: "Last updated: 2026-09-18"
+date: "Last updated: 2026-09-21"
 output:
   bookdown::html_document2:
     toc: true
@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrepce8de7ad5588767afed4d903097b274268ea5c26)
+[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrepde4f47e072369acf783be71135210ed72daa06c9)
 
 [![Issues-badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -250,9 +250,9 @@ It first searches for mismatches between stand age (`standAge`), stand biomass (
 
 Then, species is assigned one cohort per pixel according to the corrected stand
 age, stand biomass and (ref:percent) cover values. Cohort age is assumed to be
-the same as stand age and biomass is the product of stand biomass and species
-(ref:percent) cover. Before doing so, stand cover is rescaled to vary between 0
-and 100(ref:percent).
+the same as stand age and biomass is the product of stand biomass and
+species (ref:percent) cover. Before doing so, stand cover is rescaled to vary
+between 0 and 100(ref:percent).
 
 A next set of data inconsistencies in cohort age (`age`), biomass (`B`) and
 cover (`cover`) is looked for and solved in the following order:
