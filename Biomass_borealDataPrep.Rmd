@@ -318,9 +318,9 @@ It first searches for mismatches between stand age (`standAge`), stand biomass (
 
 Then, species is assigned one cohort per pixel according to the corrected stand
 age, stand biomass and (ref:percent) cover values. Cohort age is assumed to be
-the same as stand age and biomass is the product of stand biomass and species
-(ref:percent) cover. Before doing so, stand cover is rescaled to vary between 0
-and 100(ref:percent).
+the same as stand age and biomass is the product of stand biomass and
+species (ref:percent) cover. Before doing so, stand cover is rescaled to vary
+between 0 and 100(ref:percent).
 
 A next set of data inconsistencies in cohort age (`age`), biomass (`B`) and
 cover (`cover`) is looked for and solved in the following order:
