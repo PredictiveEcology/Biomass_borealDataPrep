@@ -96,7 +96,7 @@ badgeURL <- if (!is_detached(modulePath)) {
 }
 badgeURL <- sub(".*github[.]com:", "https://github.com/", badgeURL)
 
-badgePath <- normPath("figures/moduleVersionBadge.png")
+badgePath <- SpaDES.docs::stageFigure("figures/moduleVersionBadge.png")
 
 ## make string of markdown code to be executed as-is
 cat(paste0("[![module-version-Badge](", badgePath, ")](", badgeURL, ")"))
@@ -104,7 +104,7 @@ cat(paste0("[![module-version-Badge](", badgePath, ")](", badgeURL, ")"))
 
 ```{r issuesBadge-Biomass-borealDataPrep, echo = FALSE, eval = TRUE, cache = FALSE, results = "asis"}
 badgeURL <- "https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues"
-badgePath <- normPath("figures/issuesBadge.png")
+badgePath <- SpaDES.docs::stageFigure("figures/issuesBadge.png")
 
 ## make string of markdown code to be executed as-is
 cat(paste0("[![Issues-badge](", badgePath, ")](", badgeURL,")"))
@@ -519,15 +519,13 @@ because it will wrongly assume an *exponential* relationship between
 during the first years of the simulation (Fig. \@ref(fig:fig-simBLogBtest)).
 
 ```{r fig-biomassModelLogBtest, eval=TRUE, echo=FALSE, fig.align = 'center', out.width = ifelse(knitr::is_latex_output(), "100%", "70%"), fig.cap = "Modelling biomass as a linear vs. exponential relationship. a) `modelBiomass` as `B ~ logAge * speciesCode + cover * speciesCode + (logAge + cover | ecoregionGroup)`. b) `modelBiomass` as `logB ~ logAge * speciesCode + cover * speciesCode + (logAge + cover | ecoregionGroup)`. Blue dots are marginal mean B values (back-transformed in b) cross ages with confidence intervals as the bars."}
-## make sure all include_graphics have wd attached to figure path
-## this is necessary to knit to pdf using child Rmds - see https://stackoverflow.com/questions/61065560/cant-compile-rmarkdown-pdf-with-image-in-child-rmd-latex-error-image-file
-knitr::include_graphics(normPath("figures/biomassModel_logBtest.png"))
+## includeFigure(): a path that works standalone and when staged into a manual
+SpaDES.docs::includeFigure("figures/biomassModel_logBtest.png")
 ```
 
 ```{r fig-simBLogBtest, eval=TRUE, echo=FALSE, fig.align = 'center', out.width = ifelse(knitr::is_latex_output(), "100%", "70%"),  fig.cap = "Thirty years of simulation with `maxB` values estimated from a `logB ~ ...` `biomassModel` (see Fig. \\@ref(fig:fig-biomassModelLogBtest)). The steep increase in such little time is abnormal."}
-## make sure all include_graphics have wd attached to figure path
-## this is necessary to knit to pdf using child Rmds - see https://stackoverflow.com/questions/61065560/cant-compile-rmarkdown-pdf-with-image-in-child-rmd-latex-error-image-file
-knitr::include_graphics(normPath("figures/simulatedB_logBtest.png"))
+## includeFigure(): a path that works standalone and when staged into a manual
+SpaDES.docs::includeFigure("figures/simulatedB_logBtest.png")
 ```
 
 After the biomass model is fit, `maxB` is predicted by species and ecolocation
