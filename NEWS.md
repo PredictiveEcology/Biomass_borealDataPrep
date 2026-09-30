@@ -1,5 +1,9 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
+version 1.7.1.9000
+
+* `reqdPkgs` now lists `crayon`, `curl`, `httr`, `lme4`, `Require` and `tidyterra`, which the module's code uses.
+
 version 1.7.1
 
 * **The deciduous cover weight fit now declines on landscapes that cannot identify it.** What
