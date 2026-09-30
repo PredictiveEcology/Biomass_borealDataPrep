@@ -1,5 +1,9 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
+version 1.7.1.9001
+
+* `reqdPkgs` no longer lists `curl`, `httr`, `lme4`, `Require` and `tidyterra`. The module calls them only as `pkg::fun()`, which resolves whether or not the package is attached or imported into the module, and LandR already installs each of them as a hard dependency; listed, they were attached for every module in a simulation under the default `spades.reqdPkgsAttach = TRUE`. `crayon` stays: `green()` is called unqualified in `R/updateYoungBiomasses.R`.
+
 version 1.7.1.9000
 
 * `reqdPkgs` now lists `crayon`, `curl`, `httr`, `lme4`, `Require` and `tidyterra`, which the module's code uses.
