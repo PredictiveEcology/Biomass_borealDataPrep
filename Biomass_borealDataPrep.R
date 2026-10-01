@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.5.15"),
+  version = list(Biomass_borealDataPrep = "1.7.1.9000"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -20,10 +20,10 @@ defineModule(sim, list(
     before = c("Biomass_core")
   ),
   reqdPkgs = list(
-    "archive", "assertthat", "cli", "data.table", "dplyr", "ggplot2", "httr2",
-    "merTools", "plyr", "qs2", "rasterVis", "sf", "terra", "googledrive",
+    "archive", "assertthat", "cli", "crayon", "curl", "data.table", "dplyr", "ggplot2", "httr", "httr2",
+    "lme4", "merTools", "plyr", "qs2", "rasterVis", "Require", "sf", "terra", "tidyterra", "googledrive",
     "reproducible (>= 2.1.0)", "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
-    "PredictiveEcology/LandR@development (>= 1.2.0.9015)",
+    "PredictiveEcology/LandR@development (>= 1.2.0.9025)",
     "PredictiveEcology/pemisc@development",
     "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)"
   ),
@@ -63,29 +63,31 @@ defineModule(sim, list(
                           "and the model re-fit with the original data, scaled variables and/or a different optimizer",
                           "if `fixModelBiomass = TRUE`. Model refiting with original data, rescaled variables and/or a new",
                           "optimizer occurs up to three times for each data subset, regardless of this parameter's value.")),
-    defineParameter("subsetDataBiomassModel", "integer", 50L, NA_integer_, NA_integer_,
-                    paste("the number of samples to use when subsampling the biomass data model (`biomassModel`);",
-                          "Can be `TRUE`/`FALSE`/`NULL` or numeric; if `TRUE`, uses 50, the default.",
-                          "If `FALSE`/`NULL` no subsetting is done.")),
+    defineParameter("subsetDataBiomassModel", "integer", LandR::subsetDataSize(),
+                    NA_integer_, NA_integer_,
+                    paste("the number of samples per `ecoregionGroup` x `speciesCode` to use when subsampling",
+                          "the biomass data model (`biomassModel`). Can be `TRUE`/`FALSE`/`NULL` or numeric;",
+                          "if `TRUE`, uses `LandR::subsetDataSize()`. If `FALSE`/`NULL` no subsetting is done.",
+                          "Default: `LandR::subsetDataSize()`, i.e. option `LandR.subsetDataSize` (500).")),
     ## deciduous cover to biomass cover section ------------------------------------------------
-    defineParameter("coverPctToBiomassPctModel", "call",
-                    quote(glm(I(log(B/100)) ~ logAge * I(log(totalBiomass/100)) * speciesCode * lcc)),
-                    NA, NA,
-                    paste(
-                      "Model to estimate the relationship between % cover and % biomass, referred to as",
-                      "`P(sim)$fitDeciduousCoverDiscount`. It is a number between 0 and 1 that translates % cover,",
-                      "as provided in several databases, to % biomass. It is assumed that all hardwoods",
-                      "are equivalent and all softwoods are equivalent and that % cover of hardwoods will",
-                      "be an overestimate of the % biomass of hardwoods. E.g., 30% cover of hardwoods",
-                      "might translate to 20% biomass of hardwoods. The reason this discount exists is",
-                      "because hardwoods in Canada have a much wider canopy than softwoods."
-                    )),
-    defineParameter("deciduousCoverDiscount", "numeric", 0.8418911, NA, NA,
-                    paste("This was estimated with data from NWT on March 18, 2020 and may or may not be universal.",
-                          "Will not be used if `P(sim)$fitDeciduousCoverDiscount == TRUE`")),
-    defineParameter("fitDeciduousCoverDiscount", "logical", FALSE, NA, NA,
-                    paste("If TRUE, this will re-estimate `P(sim)$fitDeciduousCoverDiscount` This may be unstable and",
-                          "is not recommended currently. If `FALSE`, will use the current default")),
+    defineParameter("deciduousCoverWeight", "numeric", 0.93, NA, NA,
+                    paste("How much biomass a unit of deciduous cover carries, relative to a unit of conifer",
+                          "cover: the weight `LandR::partitionBiomass()` applies to deciduous cover before it",
+                          "splits a pixel's `totalBiomass` among its cohorts. Broadleaf crowns are wider per",
+                          "unit of wood, so this is expected below 1. **This default is only a fallback.**",
+                          "With `fitDeciduousCoverWeight = TRUE` (the default) it is estimated from the study",
+                          "area and this value is not used; it is kept for landscapes that cannot identify it",
+                          "-- too little deciduous cover, too little variation in deciduous share between",
+                          "pixels, or no canopy height/closure layers. 0.93 is the mean of the fit on the three",
+                          "landscapes tested so far that can identify it (two Alberta boreal mixedwood areas",
+                          "and NW Ontario boreal shield: 0.90, 1.00, 0.91); it replaces 0.8418911, estimated",
+                          "from NWT data on 2020-03-18 by an estimator since removed.")),
+    defineParameter("fitDeciduousCoverWeight", "logical", TRUE, NA, NA,
+                    paste("If `TRUE` (default), estimate `P(sim)$deciduousCoverWeight` from this study area",
+                          "rather than using the parameter's value. Needs `sim$rstCanopyHeight` and",
+                          "`sim$rstCanopyClosure`, which default to SCANFI's own layers; without them, or",
+                          "where there is too little deciduous cover to identify it, the parameter value is",
+                          "kept and a message says so. The fit costs a few seconds.")),
     ## -------------------------------------------------------------------------------------------
     defineParameter("adjustAgeAndLongevity", "logical", FALSE, NA, NA,
                     paste("Adjust species longevity to the ages observed on the landscape.",
@@ -115,6 +117,12 @@ defineModule(sim, list(
                           "the user wants to investigate them further. Can be set to 'none' (no models are exported), 'all'",
                           "(both are exported), 'biomassModel' or 'coverModel'. BEWARE: because this is intended for posterior",
                           "model inspection, the models will be exported with data, which may mean very large simList(s)!")),
+    defineParameter("floorMaxBAtObserved", "logical", TRUE, NA, NA,
+                    paste("If `TRUE`, a `maxB` that the fit clamped to 0 is replaced by the 95th percentile of",
+                          "the biomass the species was observed at in that `ecoregionGroup`: a negative fit would",
+                          "otherwise stop a species growing where it demonstrably grows. A percentile rather than",
+                          "the maximum, so one freak cohort cannot set the ceiling. Fitted (positive) values are",
+                          "never changed. `maxANPP` is recomputed for any replaced row (`maxB / 30`).")),
     defineParameter("forestedLCCClasses", "numeric", c(81, 210, 220, 230, 240), 0, NA,
                     paste("The classes in the `rstLCC` layer that are 'treed' and will therefore be run in `Biomass_core`.",
                           "Defaults to forested classes in NTEMS map (210 conif, 220 deciduous, 230 mixed) plus",
@@ -195,16 +203,38 @@ defineModule(sim, list(
     defineParameter("speciesTableAreas", "character", c("BSW", "BP", "MC"), NA, NA,
                     paste("One or more of the Ecoprovince short forms that are in the `speciesTable` file,",
                           "e.g., BSW, MC etc. Default is good for Alberta and other places in the western Canadian boreal forests.")),
-    defineParameter("subsetDataAgeModel", "numeric", 50, NA, NA,
-                    paste("the number of samples to use when subsampling the age data model and when fitting `coverPctToBiomassPctModel`;",
-                          "Can be `TRUE`/`FALSE`/`NULL` or numeric; if `TRUE`, uses 50, the default.",
-                          "If `FALSE`/`NULL` no subsetting is done.")),
+    defineParameter("stratumMinPixels", "numeric", 100, 0, NA,
+                    paste("Under `stratumType = 'siteComposition'`, the minimum number of estimation pixels an",
+                          "ecoregion x site x composition stratum needs to keep its own parameters. A thinner",
+                          "stratum loses its composition first (pooled codes 290 upland, 890 wet) and, if that",
+                          "pool is still thin, its site too (990). `0` pools nothing.")),
+    defineParameter("stratumType", "character", "landcover", NA, NA,
+                    paste("How pixels are grouped (`ecoregionGroup`) for estimating maxB, maxANPP and",
+                          "establishment probability. `'landcover'`: ecoregion x land-cover class, with the NTEMS",
+                          "wetland classes 80/81 added from `rstWetland` -- one axis, as NTEMS has it.",
+                          "`'siteComposition'`: ecoregion x site x composition, so a species on upland and on wet",
+                          "ground get separate parameters. Codes: upland 210/220/230, wet 810/820/830; pooled",
+                          "290/890/990 (see `stratumMinPixels`); class-240 pixels with no species cover 240/840.")),
+    defineParameter("subsetDataAgeModel", "numeric", LandR::subsetDataSize(), NA, NA,
+                    paste("the number of samples per group to use when subsampling the age data model.",
+                          "Can be `TRUE`/`FALSE`/`NULL` or numeric; if",
+                          "`TRUE`, uses `LandR::subsetDataSize()`. If `FALSE`/`NULL` no subsetting is done.",
+                          "Default: `LandR::subsetDataSize()`, i.e. option `LandR.subsetDataSize` (500).")),
     defineParameter("successionTimestep", "numeric", 10, NA, NA, "defines the simulation time step, default is 10 years"),
     defineParameter("useCloudCacheForStats", "logical", TRUE, NA, NA,
                     paste("Some of the statistical models take long (at least 30 minutes, likely longer).",
                           "If this is `TRUE`, then it will try to get previous cached runs from googledrive.")),
-    defineParameter("vegLeadingProportion", "numeric", 0.8, 0, 1,
-                    "a number that defines whether a species is leading for a given pixel"),
+    defineParameter("vegLeadingProportion", "numeric", LandR::leadingSpeciesProp(),
+                    0, 1,
+                    desc = paste("a number that defines whether a species is leading for a given pixel.",
+                                 "Default: `LandR::leadingSpeciesProp()`, i.e. option `LandR.leadingSpeciesProp`,",
+                                 "which takes `LandR.mixedwoodProp` (0.75) unless set. Setting it in one place",
+                                 "moves every module and LandR function together.")),
+    defineParameter("wetlandSource", "character", "CWIM", NA, NA,
+                    paste("Where `rstWetland` comes from when it is not supplied. `'CWIM'`: the Canadian Wetland",
+                          "Inventory Map v3A via `LandR::prepInputs_CWIM()` -- SCANFI land cover has no wetland",
+                          "classes, so without it treed wetland cannot be told from upland forest. `'none'`: no",
+                          "site layer; every pixel is treated as upland.")),
     defineParameter(".plotInitialTime", "numeric", start(sim), NA, NA,
                     "This is here for backwards compatibility. Please use `.plots`"),
     defineParameter(".plots", "character", NA, NA, NA,
@@ -293,6 +323,24 @@ defineModule(sim, list(
                    "See <https://open.canada.ca/data/en/dataset/18e6a919-53fd-41ce-b4e2-44a9707c52dc> for SCANFI metadata.",
                    "The metadata (res, proj, ext, origin) need to match `rasterToMatch_biomassParam`."),
                  sourceURL = NA), ## uses P(sim)$rstLCCYear and LandR::prepInputsLCC() defaults
+    expectsInput("rstWetland", "SpatRaster",
+                 paste("Site layer on `rasterToMatch_biomassParam`: non-zero where the ground is wetland.",
+                       "Used to add NTEMS classes 80 (wetland) and 81 (treed wetland) to `rstLCC`, and as the",
+                       "site axis of `P(sim)$stratumType = 'siteComposition'`. If not supplied and",
+                       "`P(sim)$wetlandSource` is `'CWIM'`, built from the Canadian Wetland Inventory Map v3A",
+                       "(bog, fen, marsh and swamp are wet)."),
+                 sourceURL = NA),
+    expectsInput("rstCanopyHeight", "SpatRaster",
+                 paste("Canopy height (m) on `rasterToMatch_biomassParam`. Used only to estimate",
+                       "`P(sim)$deciduousCoverWeight`, as one of the two structural controls that let",
+                       "composition be compared between stands carrying the same amount of structure.",
+                       "Defaults to SCANFI's own height layer for `P(sim)$dataYear` when",
+                       "`P(sim)$fitDeciduousCoverWeight` is `TRUE` and `P(sim)$dataSource` is SCANFI."),
+                 sourceURL = NA),
+    expectsInput("rstCanopyClosure", "SpatRaster",
+                 paste("Canopy closure (percent) on `rasterToMatch_biomassParam`. The other structural",
+                       "control for `P(sim)$deciduousCoverWeight`; see `rstCanopyHeight`."),
+                 sourceURL = NA),
     expectsInput("rasterToMatch", "SpatRaster",
                  desc = paste("A raster of the `studyArea` in the same resolution and projection as `rawBiomassMap`.",
                               "This is the scale used for all *outputs* for use in the simulation.",
@@ -503,6 +551,12 @@ createBiomass_coreInputs <- function(sim) {
     sim$rstLCC <- postProcess(sim$rstLCC, to = sim$rasterToMatch_biomassParam, overwrite = TRUE) |>
       Cache(.functionName = "postProcessRstLCC")
   }
+  if (!is.null(sim$rstWetland) &&
+      !.compareRas(sim$rstWetland, sim$rasterToMatch_biomassParam, res = TRUE)) {
+    sim$rstWetland <- postProcess(sim$rstWetland, to = sim$rasterToMatch_biomassParam,
+                                  method = "near", overwrite = TRUE) |>
+      Cache(.functionName = "postProcessRstWetland")
+  }
   
   if (P(sim)$overrideAgeInFires) {
     sim$firePerimeters <- postProcess(
@@ -674,7 +728,62 @@ createBiomass_coreInputs <- function(sim) {
     forestedClasses <- P(sim)$forestedLCCClasses
     rstLCCAdj <- terra::classify(rstLCCAdj, cbind(forestedClasses, forestedClasses[1L]))
   }
-  
+
+  ## Site and composition -------------------------------------------------------------------
+  ## `rstLCC` says what grows; `rstWetland` says what the ground is. Class 240 (forest land
+  ## not currently stocked) has no composition, so it is typed here from species cover:
+  ## 210/220/230 say what a pixel is made of, which species cover can decide, whereas copying
+  ## another year's class or a neighbour's cannot -- and a map from another source brings its
+  ## own composition rule with it. Site is never inferred from composition, or the reverse.
+  ## A pixel with no species cover stays 240 (840 if wet) for convertUnwantedLCC() below.
+  ##
+  ## Everything is resolved on the raster, before the ecoregion groups are built, so the
+  ## pixel and cohort tables are made once with the codes they keep.
+  stratumType <- P(sim)$stratumType
+  classesToReplace <- unresolvedClasses(P(sim)$LCCClassesToReplaceNN, stratumType)
+  inferredCells <- integer(0)
+  lccCodes <- c(0, 20, 30, 31, 32, 33, 40, 50, 80, 81, 100, 210, 220, 230,
+                P(sim)$LCCClassesToReplaceNN)
+  resolveHere <- !isTRUE(P(sim)$landis) && length(P(sim)$LCCClassesToReplaceNN) > 0 &&
+    all(na.omit(as.vector(sim$rstLCC)) %in% lccCodes)
+  if (resolveHere) {
+    lccV <- as.vector(terra::values(rstLCCAdj, mat = FALSE))
+    wetV <- if (is.null(sim$rstWetland)) {
+      rep(0L, length(lccV))
+    } else {
+      as.vector(terra::values(sim$rstWetland, mat = FALSE))
+    }
+    inferredCells <- which(lccV %in% P(sim)$LCCClassesToReplaceNN)
+    compV <- lccV
+    nTyped <- 0L
+    if (length(inferredCells)) {
+      ## NTEMS' own 0.75 threshold (the helper's default), not `vegLeadingProportion`: this
+      ## assigns an NTEMS legend code, and EOSD (Wulder & Nelson 2003) defines 210/220 as 75%
+      ## or more of total basal area.
+      fromSpecies <- speciesLeadingClass(
+        as.data.table(sim$speciesLayers[inferredCells]),
+        sppEquiv = sim$sppEquiv, sppEquivCol = P(sim)$sppEquivCol,
+        ## the parameter, not the fitted value: this runs before `pixelCohortData` exists, and
+        ## the fit needs it. The two differ only when `fitDeciduousCoverWeight` is on.
+        deciduousCoverWeight = P(sim)$deciduousCoverWeight
+      )
+      compV[inferredCells] <- fifelse(is.na(fromSpecies), lccV[inferredCells],
+                                      as.numeric(fromSpecies))
+      nTyped <- sum(!is.na(fromSpecies))
+    }
+    rstLCCAdj <- terra::setValues(rstLCCAdj, siteCompositionCodes(compV, wetV, stratumType))
+    message(cli::col_blue(
+      "  Class ", paste(P(sim)$LCCClassesToReplaceNN, collapse = ", "), ": ",
+      length(inferredCells), " pixels, ", nTyped, " typed from species cover, ",
+      length(inferredCells) - nTyped, " left to their neighbours; ",
+      sum(wetV[inferredCells] %in% 1), " on wet ground. Strata: ", stratumType
+    ))
+    ## The output land cover carries the NTEMS wetland classes too.
+    if (!is.null(sim$rstWetland)) {
+      sim$rstLCC <- LandR::wetlandToLCC(sim$rstLCC, sim$rstWetland)
+    }
+  }
+
   ## make initial ecoregionFiles - some of these may have LCC that get replaced
   ecoregionFiles <- prepEcoregions(
     ecoregionRst = sim$ecoregionRst,
@@ -754,155 +863,143 @@ createBiomass_coreInputs <- function(sim) {
                              NROW(unique(pixelCohortData$pixelIndex)))
   
   ## partition totalBiomass into individual species B -----------------------------------------
-  ## via estimating how %cover and %biomass are related
-  message(cli::col_blue("Partitioning totalBiomass per pixel into cohort B as:"))
-  if (isTRUE(P(sim)$fitDeciduousCoverDiscount)) {
-    message(cli::col_magenta(paste0(format(P(sim)$coverPctToBiomassPctModel, appendLF = FALSE))))
-    
-    params(sim)$Biomass_borealDataPrep$deciduousCoverDiscount <- deciduousCoverDiscountFun(
-      pixelCohortData = pixelCohortData,
-      coverPctToBiomassPctModel = P(sim)$coverPctToBiomassPctModel,
-      subsetDataAgeModel = P(sim)$subsetDataAgeModel
-    ) |>
-      Cache(userTags = c(cacheTags, "decidCoverDisc"), omitArgs = c("userTags"))
-    
+  ## The split weights deciduous cover by `deciduousCoverWeight`; see R/deciduousCoverWeight.R for
+  ## what it means and how it is identified.
+  message(cli::col_blue("Partitioning totalBiomass per pixel into cohort B"))
+  if (isTRUE(P(sim)$fitDeciduousCoverWeight)) {
+    fitted <- if (is.null(sim$rstCanopyHeight) || is.null(sim$rstCanopyClosure)) {
+      message(cli::col_yellow(
+        "  no canopy height/closure layers, so the deciduous cover weight cannot be fit here"))
+      NA_real_
+    } else {
+      deciduousCoverWeightFn(
+        pixelCohortData = pixelCohortData,
+        canopyHeight = sim$rstCanopyHeight,
+        canopyClosure = sim$rstCanopyClosure
+      ) |>
+        Cache(userTags = c(cacheTags, "deciduousCoverWeight"), omitArgs = c("userTags"))
+    }
+    if (is.na(fitted)) {
+      message(cli::col_blue("  keeping P(sim)$deciduousCoverWeight = ",
+                            round(P(sim)$deciduousCoverWeight, 4)))
+    } else {
+      params(sim)$Biomass_borealDataPrep$deciduousCoverWeight <- fitted
+    }
   } else {
-    message(cli::col_magenta(paste0(format(P(sim)$coverPctToBiomassPctModel, appendLF = FALSE))))
-    message(cli::col_blue("using previously estimated deciduousCoverDiscount:",
-                          round(P(sim)$deciduousCoverDiscount, 3)))
+    message(cli::col_blue("  using the supplied deciduousCoverWeight: ",
+                          round(P(sim)$deciduousCoverWeight, 4)))
   }
   
   ## Cache here, uses the previously digested object that was used to create the pixelCohortData; it hasn't
   ##   changed in the code above since its creation just above
-  pixelCohortData <- partitionBiomass(x = P(sim)$deciduousCoverDiscount, pixelCohortData) |>
+  pixelCohortData <- partitionBiomass(x = P(sim)$deciduousCoverWeight, pixelCohortData) |>
     Cache(omitArgs = "pixelCohortData", .cacheExtra = attr(pixelCohortData, "tags"))
   
   set(pixelCohortData, NULL, "B", asInteger(pixelCohortData$B/P(sim)$pixelGroupBiomassClass) *
         P(sim)$pixelGroupBiomassClass)
   set(pixelCohortData, NULL, "cover", asInteger(pixelCohortData$cover))
   
-  ## replace unwanted LCC classes to a neighbour class *that exists*.------------------------------------
-  ## Originally 34/36 (hence the name) values from 2005 LCC, which were burns and cities.
-  ## We need to have a spatial estimate of maxBiomass everywhere there is forest; can't have gaps.
-  ## The LCC that are unwanted are places for which we don't want
-  ## maxBiomass associated with their LCC ... i.e., we don't want a maximum
-  ## biomass associated with disturbed forest because those classes are transient.
-  ## They will transition to another class before they arrive at a tree maximum biomass.
-  ## However, we need to give them a "forest class" that they might "become"
-  ## The ecoregion map must be updated to reflect this new class.
-  lccCodes <- c(0, 20, 30, 31, 32, 33, 40, 50, 80, 81, 100, 210, 220, 230, P(sim)$LCCClassesToReplaceNN)
-  ## unclassified, water, snow/ice, rock/rubble, exposed/barren,
-  ## bryoids, shrubs, wetland, wetland-treed, herbs, coniferous,
-  ## broadleaf, mixedwood, disturbed)
-  if (length(P(sim)$LCCClassesToReplaceNN) && all(na.omit(as.vector(sim$rstLCC)) %in% lccCodes)) {
-    uwc <- P(sim)$LCCClassesToReplaceNN
-    message("Replace ", paste(uwc, collapse = ", "), " values to a neighbour class *that exists*")
-    availableCombinations <- unique(pixelCohortData[, .(speciesCode, initialEcoregionCode, pixelIndex)])
-    
-    freqsUpdates <- startFinishLCC <- list()
-    ## which SCANFI years should fill these pixels for a given dataYear is under discussion (#110)
-    SCANFILCCyears <- c(2000, 2010, 2020)
-    
-    for (yr in SCANFILCCyears) {
-      freqs <- freq(rstLCCAdj)
-      num2replace <- freqs$count[freqs$value %in% P(sim)$LCCClassesToReplaceNN]
-      if ((length(num2replace) > 0) && (num2replace > 1000)) {
-        yrChar <- as.character(yr)
-        startFinishLCC[[yrChar]] <-
-          prepInputs_SCANFI_LCC_FAO(
-            year = yr,
-            to = sim$rstLCC,
-            disturbedCode = 240,
-            destinationPath = inputPath(sim),
-            overwrite = TRUE
-          ) |>
-          Cache(
-            userTags = c("rstLCC", yr, "_", currentModule(sim), P(sim)$.studyAreaName, P(sim)$dataYear)
-          )
-        pixelTable <- copy(pixelTable) ## avoid super annoying warning
-        cellsToUpdate <- which(rstLCCAdj[] == P(sim)$LCCClassesToReplaceNN)
-        rstLCCAdj[cellsToUpdate] <- startFinishLCC[[yrChar]][cellsToUpdate]
-        whUpdate <- match(cellsToUpdate, pixelTable$pixelIndex)
-        pixelTable[whUpdate, newLcc := startFinishLCC[[yrChar]][cellsToUpdate]]
-        pixelTable[whUpdate, initialEcoregionCode2 := gsub("_.+", "", initialEcoregionCode)]
-        pixelsToRm2 <- nonForestedPixels(rstLCCAdj, P(sim)$omitNonTreedPixels,
-                                         P(sim)$forestedLCCClasses, rstLCCAdj)
-        pixelsToRm3 <- which(pixelsToRm2)
-        pixelsToRm4 <- na.omit(match(pixelsToRm3, pixelTable$pixelIndex))
-        if (length(pixelsToRm4)) {
-          ## are there any new ones that are not forestedLCCClasses?
-          pixelTable <- pixelTable[-pixelsToRm4]
-        }
-        
-        ncharToPad <- max(nchar(pixelTable$lcc))
-        
-        ## Eliot added this after many failed assertions WAY below: Sep 5, 2025
-        ##   assert_that(all(is.na(values(mat = FALSE, sim$ecoregionMap)) == is.na(values(mat = FALSE, sim$pixelGroupMap))))
-        ##   The newLcc
-        pixelTable <- pixelTable[!newLcc %in% 0] # These are pixels that turned to zero i.e., need to be removed
-        
-        pixelTable[!is.na(newLcc), lcc := newLcc]
-        pixelTable[!is.na(newLcc),  initialEcoregionCode :=
-                     paste0(initialEcoregionCode2, "_",
-                            paddedFloatToChar(newLcc, ncharToPad))]
-        
-        set(pixelTable, NULL, c("newLcc", "initialEcoregionCode2"), NULL)
-        rstLCCAdj[pixelsToRm2] <- NA
-        rm(pixelsToRm2, pixelsToRm3, pixelsToRm4)
-      }
+  ## Class-240 pixels: finish them, and flag them ------------------------------------------
+  ## Their composition was typed from species cover and their site taken from `rstWetland`
+  ## before the ecoregion groups were built (see "Site and composition" above). What is left:
+  ##  1. Every pixel that was class 240 is *inferred*: its forest state comes from the
+  ##     forest-land rule, not from what was mapped growing there. All of them are kept out of
+  ##     estimation below -- previously only the ones convertUnwantedLCC() handled were, while
+  ##     the pixels the year-fill loop re-typed went into every fit unrecorded.
+  ##  2. Under "siteComposition", strata too thin to estimate from are pooled (composition
+  ##     first, then site), and every inferred pixel gets a stratum that estimation pixels
+  ##     populate -- or goes back to the unresolved code.
+  ##  3. Pixels still unresolved take a neighbour class that exists, as before.
+  ## The year-fill loop is gone, and with it the NTEMS download and the 1000-pixel threshold.
+  inferredPix <- intersect(unique(pixelCohortData$pixelIndex), inferredCells)
+  newLCCClasses <- data.table(pixelIndex = numeric(), ecoregionGroup = character())
+  if (resolveHere) {
+    siteComp <- identical(stratumType, "siteComposition")
+    pixStrata <- unique(pixelCohortData[, list(pixelIndex, lcc,
+                                               iec = as.character(initialEcoregionCode))])
+    pixStrata[, eco := gsub("_.*", "", iec)]
+    pixStrata[, inferred := pixelIndex %in% inferredPix]
+    estStrata <- if (siteComp) {
+      c(.treedComposition, .treedComposition + .wetOffset)
+    } else {
+      unique(pixStrata$lcc)
     }
-    
-    ## create initial pixelCohortData table ---------------
-    ## Might already have cover. in the names
-    coverColNames <- colnames(pixelTable)[match(sim$species$species,
-                                                gsub("cover.(.+)", "\\1", colnames(pixelTable)))]
-    # coverColNames <- paste0("cover.", coverColNames)
-    
-    pixelCohortData <- makeAndCleanInitialCohortData(
-      inputDataTable = pixelTable,
-      sppColumns = coverColNames,
-      imputeBadAgeModel = P(sim)$imputeBadAgeModel,
-      minCoverThreshold = P(sim)$minCoverThreshold,
-      doSubset = P(sim)$subsetDataAgeModel
-    ) |>
-      Cache(userTags = c(cacheTags, "pixelCohortData"), omitArgs = c("userTags"))
-    assertCohortDataAttr(pixelCohortData)
-    pixelCohortData <- partitionBiomass(x = P(sim)$deciduousCoverDiscount, pixelCohortData) |> Cache()
-    set(pixelCohortData, NULL, "B", asInteger(pixelCohortData$B / P(sim)$pixelGroupBiomassClass) *
-          P(sim)$pixelGroupBiomassClass)
-    set(pixelCohortData, NULL, "cover", asInteger(pixelCohortData$cover))
-    pixelCohortData <- pixelCohortData[!is.na(pixelCohortData$lcc)]
-    availableCombinations2 <- unique(pixelCohortData[, .(speciesCode, initialEcoregionCode, pixelIndex)])
-    
-    newLCCClasses <- convertUnwantedLCC(
-      classesToReplace = P(sim)$LCCClassesToReplaceNN,
-      rstLCC = rstLCCAdj,
-      availableERC_by_Sp = availableCombinations2,
-      method = P(sim)$LCCClassesToReplaceNNMethod
-    ) |>
-      Cache(userTags = c(cacheTags, "newLCCClasses", "stable"))
-    
-    ## adjust rstLCCAdj so that ecoregionMap will contain the last set of updated LCCClassesToReplaceNN
-    if (nrow(newLCCClasses)) {
-      if (!is.null(newLCCClasses$newPossLCC)) {
-        ## LandR versions prior to 1.1.5.9045 do not have this, and 1.2.0.9004 dropped it
-        ## again -- where this guard silently stopped firing, leaving rstLCCAdj (and so
-        ## ecoregionMap) showing the un-replaced classes. reqdPkgs now floors LandR at
-        ## 1.2.0.9005, which restored it.
+    counts <- pixStrata[inferred == FALSE & lcc %in% estStrata,
+                        list(N = .N), by = list(eco, stratum = lcc)]
+    mapping <- if (siteComp) {
+      collapseThinStrata(counts, P(sim)$stratumMinPixels)
+    } else {
+      counts[, newStratum := as.integer(stratum)][]
+    }
+
+    pixStrata[, newStratum := as.integer(lcc)]
+    hit <- match(paste(pixStrata$eco, pixStrata$lcc), paste(mapping$eco, mapping$stratum))
+    est <- !pixStrata$inferred & !is.na(hit)
+    pixStrata[est, newStratum := mapping$newStratum[hit[est]]]
+    typed <- pixStrata$inferred & !pixStrata$lcc %in% classesToReplace
+    pixStrata[typed, newStratum := stratumForInferred(
+      eco, as.integer(lcc), mapping, allowPooling = siteComp,
+      unresolved = as.integer(P(sim)$LCCClassesToReplaceNN[1L])
+    )]
+
+    changed <- pixStrata[newStratum != lcc]
+    if (nrow(changed)) {
+      padTo <- max(nchar(gsub(".*_", "", pixStrata$iec)), na.rm = TRUE)
+      changed[, iecNew := paste0(eco, "_", paddedFloatToChar(newStratum, padTo))]
+      relabel <- function(dt) {
+        wasFactor <- is.factor(dt$initialEcoregionCode)
+        if (wasFactor) dt[, initialEcoregionCode := as.character(initialEcoregionCode)]
+        dt[changed, on = "pixelIndex", `:=`(lcc = i.newStratum, initialEcoregionCode = i.iecNew)]
+        if (wasFactor) dt[, initialEcoregionCode := factor(initialEcoregionCode)]
+        invisible(dt)
+      }
+      pixelTable <- copy(pixelTable) ## avoid the invalid .internal.selfref warning
+      relabel(pixelCohortData)
+      relabel(pixelTable)
+      rstLCCAdj[changed$pixelIndex] <- changed$newStratum
+      message(cli::col_blue(
+        "  Strata: ", sum(!changed$inferred), " estimation pixels pooled into a coarser stratum; ",
+        sum(changed$inferred & changed$newStratum %in% classesToReplace),
+        " inferred pixels have no populated stratum and go to their neighbours"
+      ))
+    }
+
+    unresolvedRows <- gsub(".*_", "", as.character(pixelCohortData$initialEcoregionCode)) %in%
+      as.character(classesToReplace)
+    ## Guarded: convertUnwantedLCC() drops its "unwanted" rows with `x[-which(...)]`, which
+    ## selects nothing at all when there are none.
+    if (any(unresolvedRows)) {
+      ## Offer only strata that estimation pixels populate, plus the unresolved pixels
+      ## themselves -- convertUnwantedLCC() needs their species to choose among those strata.
+      availableCombinations2 <- unique(
+        pixelCohortData[!(pixelIndex %in% inferredPix) | unresolvedRows,
+                        list(speciesCode, initialEcoregionCode, pixelIndex)]
+      )
+      newLCCClasses <- convertUnwantedLCC(
+        classesToReplace = classesToReplace,
+        rstLCC = rstLCCAdj,
+        availableERC_by_Sp = availableCombinations2,
+        method = P(sim)$LCCClassesToReplaceNNMethod
+      ) |>
+        Cache(userTags = c(cacheTags, "newLCCClasses", "stable"))
+      if (nrow(newLCCClasses) && !is.null(newLCCClasses$newPossLCC)) {
         rstLCCAdj[newLCCClasses$pixelIndex] <- newLCCClasses$newPossLCC
       }
     }
-  } else {
-    newLCCClasses <- data.table(pixelIndex = numeric(), ecoregionGroup = numeric())
   }
   
-  sim$imputedPixID <- unique(c(sim$imputedPixID, newLCCClasses$pixelIndex))
-  ## split pixelCohortData into 2 parts -- one with the former P(sim)$LCCClassesToReplaceNN pixels, one without
-  ##   The one without P(sim)$LCCClassesToReplaceNN can be used for statistical estimation, but not the one with
-  cohortDataOnlyNonForestLCC <- pixelCohortData[pixelIndex %in% newLCCClasses$pixelIndex]
-  cohortDataOnlyNonForestLCC <- merge(newLCCClasses, cohortDataOnlyNonForestLCC, all.x = TRUE,
-                                      all.y = FALSE, by = "pixelIndex")
-  cohortDataOnlyForestLCC <- pixelCohortData[!pixelIndex %in% newLCCClasses$pixelIndex]
+  ## Split pixelCohortData: inferred pixels (every former class-240 pixel, however its class
+  ## was settled) are not used for estimation, and are recorded as imputed. The rest are.
+  nonEstPix <- unique(c(inferredPix, newLCCClasses$pixelIndex))
+  sim$imputedPixID <- unique(c(sim$imputedPixID, nonEstPix))
+  cohortDataOnlyNonForestLCC <- pixelCohortData[pixelIndex %in% nonEstPix]
+  cohortDataOnlyNonForestLCC[, ecoregionGroup := as.character(initialEcoregionCode)]
+  if (nrow(newLCCClasses)) {
+    m <- match(cohortDataOnlyNonForestLCC$pixelIndex, newLCCClasses$pixelIndex)
+    cohortDataOnlyNonForestLCC[!is.na(m),
+                               ecoregionGroup := as.character(newLCCClasses$ecoregionGroup[m[!is.na(m)]])]
+  }
+  cohortDataOnlyForestLCC <- pixelCohortData[!pixelIndex %in% nonEstPix]
   if (!length(P(sim)$LCCClassesToReplaceNN)) {
     if (!all.equal(cohortDataOnlyForestLCC, pixelCohortData, check.attributes = FALSE))
       stop("No LCC classes were listed for replacement, but some pixels may have been lost")
@@ -916,9 +1013,11 @@ createBiomass_coreInputs <- function(sim) {
   ## make sure ecoregionGroups match
   ## remember to match rmZeroBiomassQuote the rule used to filter `availableCombinations` (NULL if none)
   if (length(P(sim)$LCCClassesToReplaceNN)) {
-    assert1(cohortDataOnlyNonForestLCC, pixelCohortData, rmZeroBiomassQuote = NULL,
-            classesToReplace = P(sim)$LCCClassesToReplaceNN)
-    assert2(cohortDataOnlyForestLCC, classesToReplace = P(sim)$LCCClassesToReplaceNN)
+    ## assert1 is about the pixels convertUnwantedLCC() replaced; species-typed pixels already
+    ## carry their final class and would fail its "still _240" check by design.
+    assert1(cohortDataOnlyNonForestLCC[pixelIndex %in% newLCCClasses$pixelIndex], pixelCohortData,
+            rmZeroBiomassQuote = NULL, classesToReplace = classesToReplace)
+    assert2(cohortDataOnlyForestLCC, classesToReplace = classesToReplace)
   }
   
   ## Statistical estimation of establishprob, maxB and maxANPP ----------------------
@@ -928,13 +1027,13 @@ createBiomass_coreInputs <- function(sim) {
   ## add new ecoregions to pixelTable, before calc. table
   cohortDataShortNoCover <-
     (function(x) {
-      tempDT <- rbind(cohortDataOnlyNonForestLCC[, .(pixelIndex, ecoregionGroup)],
-                      cohortDataOnlyForestLCC[, .(pixelIndex, ecoregionGroup)])
-      pixelTable <- tempDT[pixelTable, on = .(pixelIndex)]
-      
-      aa <- table(as.character(pixelTable$ecoregionGroup)) ## as.character avoids counting levels that don't exist anymore
-      
-      dt1 <- data.table(ecoregionGroup = factor(names(aa)), coverNum = as.integer(unname(aa)))
+      ## Estimation pixels only, like `coverPres` above: inferred pixels are left out of the
+      ## numerator and the denominator alike. And one row per PIXEL: the cohort table has a row
+      ## per pixel x species, and joining it onto pixelTable counted cohort rows, so a species
+      ## present in every pixel came out near 1 / (species per pixel) instead of 1.
+      tempDT <- cohortDataOnlyForestLCC[, .(pixelIndex, ecoregionGroup)]
+      aa <- coverNumByGroup(tempDT, pixelTable)
+      dt1 <- data.table(ecoregionGroup = factor(aa$ecoregionGroup), coverNum = aa$coverNum)
       allCombos <- expand.grid(ecoregionGroup = dt1$ecoregionGroup, speciesCode = unique(cohortDataShort$speciesCode))
       setDT(allCombos)
       dt1 <- dt1[allCombos, on = "ecoregionGroup", nomatch = 0]
@@ -955,8 +1054,8 @@ createBiomass_coreInputs <- function(sim) {
   ##  will be added back as establishprob = 0
   
   if (length(P(sim)$LCCClassesToReplaceNN)) {
-    assert2(cohortDataShort, classesToReplace = P(sim)$LCCClassesToReplaceNN)
-    assert2(cohortDataShortNoCover, classesToReplace = P(sim)$LCCClassesToReplaceNN)
+    assert2(cohortDataShort, classesToReplace = classesToReplace)
+    assert2(cohortDataShortNoCover, classesToReplace = classesToReplace)
     
     ## rebuild ecoregionFiles with updated rstLCC
     ecoregionFiles <- prepEcoregions(
@@ -1069,7 +1168,17 @@ createBiomass_coreInputs <- function(sim) {
         omitArgs = c("showSimilar", ".specialData", "useCloud", "cloudFolderID", "useCache")
       )
       
-      modMessages <- modelBiomass$mod@optinfo$conv$lme4$messages
+      ## `statsModel()` drops the random effect and refits with `stats::glm` when the grouping
+      ## variable has only one level ("Grouping variable only has one level. Formula changed
+      ## to `stats::glm`(...)"), which happens whenever a study area falls inside a single
+      ## ecoregion group. A glm has no `@optinfo`, so reading it unconditionally stopped with
+      ## "no applicable method for `@` applied to an object of class \"glm\"". There are no
+      ## lme4 convergence messages to act on in that case.
+      modMessages <- if (isS4(modelBiomass$mod) && methods::.hasSlot(modelBiomass$mod, "optinfo")) {
+        modelBiomass$mod@optinfo$conv$lme4$messages
+      } else {
+        character(0)
+      }
       needRedo <- (length(modMessages) > 0 & fixModelBiomass)
       if (needRedo && (!tryControl || !needRescaleModelB)) {
         modCallChar <- paste(deparse(P(sim)$biomassModel), collapse = "")
@@ -1161,9 +1270,17 @@ createBiomass_coreInputs <- function(sim) {
                                            modelBiomass = modelBiomass,
                                            successionTimestep = P(sim)$successionTimestep,
                                            currentYear = time(sim))
+  if (isTRUE(P(sim)$floorMaxBAtObserved)) {
+    speciesEcoregion <- floorMaxBAtObserved(speciesEcoregion, cohortDataOnlyForestLCCBiomass)
+    nRaised <- attr(speciesEcoregion, "nRaised")
+    if (nRaised > 0) {
+      message(cli::col_blue("  maxB clamped to 0 by the fit replaced by the observed maximum for ",
+                            nRaised, " of ", nrow(speciesEcoregion), " species x ecoregionGroup rows"))
+    }
+  }
   
   if (length(P(sim)$LCCClassesToReplaceNN)) {
-    assert2(speciesEcoregion, classesToReplace = P(sim)$LCCClassesToReplaceNN)
+    assert2(speciesEcoregion, classesToReplace = classesToReplace)
   }
   
   ## check that all species have maxB/maxANPP
@@ -1390,8 +1507,8 @@ createBiomass_coreInputs <- function(sim) {
   rm(cohortDataFiles)
   assertthat::assert_that(NROW(pixelCohortData) > 0)
   if (length(P(sim)$LCCClassesToReplaceNN)) {
-    assert2(pixelCohortData, classesToReplace = P(sim)$LCCClassesToReplaceNN)
-    assert2(sim$cohortData, classesToReplace = P(sim)$LCCClassesToReplaceNN)
+    assert2(pixelCohortData, classesToReplace = classesToReplace)
+    assert2(sim$cohortData, classesToReplace = classesToReplace)
   }
   
   ## make a table of available active and inactive (no biomass) ecoregions
@@ -1621,7 +1738,34 @@ Save <- function(sim) {
     ) |>
       Cache(userTags = c("rstLCC", currentModule(sim), P(sim)$.studyAreaName, P(sim)$dataYear))
   }
-  
+
+  ## Wetland (site) layer -----------------------------------------------
+  ## SCANFI land cover has no wetland classes; CWIM3A says which ground is wet.
+  if (!suppliedElsewhere("rstWetland", sim) && identical(P(sim)$wetlandSource, "CWIM")) {
+    sim$rstWetland <- LandR::prepInputs_CWIM(to = sim$rasterToMatch_biomassParam) |>
+      Cache(userTags = c("rstWetland", currentModule(sim), P(sim)$.studyAreaName))
+  }
+
+  ## Canopy structure (for the deciduous cover weight) -------------------
+  ## Only fetched when the weight is actually being fit, and only from SCANFI: these are two more
+  ## national rasters to pull, and nothing else in the module uses them. kNN and NTEMS publish no
+  ## equivalent pair, so on those sources the fit falls back to `P(sim)$deciduousCoverWeight`.
+  if (isTRUE(P(sim)$fitDeciduousCoverWeight) && identical(P(sim)$dataSource, "SCANFI")) {
+    structureObjs <- c(height = "rstCanopyHeight", closure = "rstCanopyClosure")
+    for (att in names(structureObjs)) {
+      objName <- structureObjs[[att]]
+      if (!suppliedElsewhere(objName, sim)) {
+        sim[[objName]] <- LandR::prepInputs_SCANFI_structure(
+          attribute = att,
+          year = P(sim)$dataYear,
+          to = sim$rasterToMatch_biomassParam,
+          destinationPath = dPath
+        ) |>
+          Cache(userTags = c(objName, currentModule(sim), P(sim)$.studyAreaName, P(sim)$dataYear))
+      }
+    }
+  }
+
   ## Ecodistrict ------------------------------------------------
   if (!suppliedElsewhere("ecoregionLayer", sim)) {
     ## Ceres: makePixel table needs same no. pixels for this, RTM rawBiomassMap, LCC.. etc
@@ -1733,13 +1877,20 @@ Save <- function(sim) {
       sim$speciesLayers <- prepSpeciesLayers_SCANFI(
         destinationPath = dPath,
         outputPath = dPath,
-        studyArea = sim$studyArea_biomassParam,
+        ## the *to family (LandR >= 1.2.0.9017): the raster sets the grid, the polygon the mask --
+        ## exactly what the legacy studyArea + rasterToMatch pair meant, now stated directly
+        cropTo = sim$rasterToMatch_biomassParam,
+        projectTo = sim$rasterToMatch_biomassParam,
+        maskTo = sim$studyArea_biomassParam,
         studyAreaName = P(sim)$.studyAreaName,
-        rasterToMatch = sim$rasterToMatch_biomassParam,
         sppEquiv = sim$sppEquiv,
         sppEquivCol = P(sim)$sppEquivCol,
         thresh = 10,
-        year = P(sim)$dataYear
+        ## `dataYear`, not `year`: prepSpeciesLayers_SCANFI()'s formal is `dataYear`, and
+        ## "year" is not a prefix of it, so `year =` fell into `...` and was discarded --
+        ## species cover was always the 2020 set while biomass and age honoured dataYear.
+        ## Same fix as Biomass_speciesData#47; this module was missed at the time.
+        dataYear = P(sim)$dataYear
       ) |>
         Cache(
           userTags = c(cacheTags, "speciesLayers"),

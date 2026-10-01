@@ -1,14 +1,130 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
+version 1.7.1.9000
+
+* `reqdPkgs` now lists `crayon`, `curl`, `httr`, `lme4`, `Require` and `tidyterra`, which the module's code uses.
+
+version 1.7.1
+
+* **The deciduous cover weight fit now declines on landscapes that cannot identify it.** What
+  identifies the weight is how much the deciduous share of cover varies *between pixels*, not how
+  much deciduous there is: a uniformly deciduous landscape is as uninformative as one with none.
+  The existing guards only set a floor on the mean, so e.g. ELF 10.1 (Manitoba parkland, ~100%
+  deciduous everywhere) returned a meaningless 1.12 -- with a bootstrap SD of 0.004, so precision
+  did not flag it either. New `deciduousCoverWeightFn(minDeciduousShareSD = 0.1)`: below that
+  between-pixel SD the fit returns `NA` and the parameter value is used, with a message.
+
+* **`deciduousCoverWeight` default 0.8418911 -> 0.93**, the mean fit on the three landscapes tested
+  that can identify it (0.90, 1.00, 0.91). Provisional: more landscapes are being tested.
+
+version 1.7.0
+
+* **`deciduousCoverDiscount` is now `deciduousCoverWeight`, and it is estimated rather than
+  hardcoded.** `fitDeciduousCoverWeight` defaults to `TRUE`: the weight is fit from
+  `studyArea_biomassParam` on every run. The parameter's number (still 0.8418911, from NWT data in
+  March 2020) is now only the fallback for a study area that cannot identify it. It is not a
+  universal constant -- on 100 km of Alberta boreal mixedwood the fit gives 0.90, and per
+  ecoregion inside that window it ranges 0.80 to 1.11.
+
+* **The old estimator is gone**, and with it the `coverPctToBiomassPctModel` parameter and
+  `R/coverOptimFn.R`. It searched `optimize(interval = c(0.1, 1))` for the x minimising the AIC of
+  `glm(log(B/100) ~ logAge * log(totalBiomass/100) * speciesCode * lcc)`. Two problems, both
+  measured:
+  - `B` is the response and `B` is built from x, so every candidate was scored on a different
+    response vector; those AICs are not comparable likelihoods. (Returning the R-squared it already
+    computed does not fix this -- R-squared rises monotonically to whichever search bound.)
+  - the `c(0.1, 1)` cap was binding. On a study area with enough deciduous cover to identify
+    anything, that estimator's own objective wants 1.2 and the cap returned 0.9999.
+  It also cost 200-400 s per study area, against about 5 s for the new fit.
+
+* **New: `rstCanopyHeight` and `rstCanopyClosure` inputs**, defaulting to SCANFI's own layers via
+  `LandR::prepInputs_SCANFI_structure()` when the weight is being fit on SCANFI data. They are what
+  separate canopy architecture from site quality: broadleaf grows on richer ground than black
+  spruce, so comparing composition between pixels without controlling for structure credits the
+  site to the species -- uncontrolled, the same Alberta window returns 1.74 instead of 0.90.
+  kNN and NTEMS publish no equivalent pair, so on those sources the fit is skipped and the
+  parameter kept.
+
+* `speciesLeadingClass()`'s `deciduousCoverDiscount` argument is renamed to `deciduousCoverWeight`
+  and is no longer required to be <= 1.
+
+* Requires LandR >= 1.2.0.9025.
+
+version 1.6.4
+
+* **The model subsamples are 10x larger: 500 rows per group, was 50.** `subsetDataBiomassModel`
+  and `subsetDataAgeModel` now default to `LandR::subsetDataSize()` (option
+  `LandR.subsetDataSize`), so the number lives in one place and a project can move it once for
+  every module. 50 was chosen years ago when these fits were computationally expensive. It was
+  small enough to show: repeated runs of one simulation gave a median `maxB` coefficient of
+  variation of 10% across ecoregion x species, up to 62%, on a 60 km boreal test window. Fits
+  take longer, and parameters change. Requires LandR >= 1.2.0.9024
+  (PredictiveEcology/LandR#234).
+version 1.6.3
+
+* `vegLeadingProportion` now defaults to `LandR::leadingSpeciesProp()` (option
+  `LandR.leadingSpeciesProp`, which takes `LandR.mixedwoodProp`, 0.75, unless set), so the
+  leading-species threshold is set once for every module and LandR function instead of being
+  hard-coded per module. **The default changes from 0.8 to 0.75**, which changes vegetation type
+  maps. Requires LandR >= 1.2.0.9024 (PredictiveEcology/LandR#234).
+
+
+version 1.6.2
+
+* The SCANFI species layers are requested with LandR's `*to` family (`cropTo`, `projectTo`,
+  `maskTo`) instead of the legacy `studyArea` + `rasterToMatch` pair, which LandR is retiring.
+  Requires LandR >= 1.2.0.9017 (PredictiveEcology/LandR#227), which also fixed the legacy pair:
+  when both were given, the mask had been taken from the raster instead of the study area.
+
+
+version 1.6.1
+=============
+
+* **A maxB clamped to 0 is replaced by the 95th percentile of observed biomass** (new parameter
+  `floorMaxBAtObserved`, default `TRUE`). maxB is predicted from the biomass model and a negative
+  prediction is clamped to 0, so where a species is rare the model could say it cannot grow at all --
+  on a 60 km boreal test window white birch got maxB = 0 on wet ground. Such rows now take the 95th
+  percentile of the biomass the species was observed at in that `ecoregionGroup`, and `maxANPP`
+  follows (`maxB / 30`). A percentile rather than the maximum, so one freak cohort cannot set the
+  ceiling; this matches the module's `quantile(age, 0.99)` longevity rule and LandR's maxB quantile
+  summaries. Fitted values are never changed: flooring every row overrode genuine fits (black spruce
+  upland 5,541 -> 10,800).
+* **Establishment denominator counts pixels.** `coverNum`, the number of pixels in an
+  `ecoregionGroup` that the cover-presence (establishment) model divides by, counted cohort rows:
+  a pixel with three species counted three times, so presence probabilities were deflated by
+  roughly the number of species per pixel. Through `establishprob = 1 - (1 - p)^successionTimestep`
+  this barely moves common species but understates less common ones substantially (jack pine
+  0.147 -> 0.278 on a 60 km boreal test window). `coverNumByGroup()` now counts each pixel once.
+
+version 1.6.0
+=============
+
+* **Wetland site layer.** New input `rstWetland` (default: Canadian Wetland Inventory Map v3A via
+  `LandR::prepInputs_CWIM()`, parameter `wetlandSource`). SCANFI land cover has no wetland classes,
+  so treed wetland could not be told from upland forest; `rstLCC` now carries NTEMS classes 80 and
+  81 from it (wet and treed, including 240, is 81; wet otherwise is 80).
+* **Class 240 is resolved without NTEMS.** The year-fill loop, its NTEMS download and its
+  1000-pixel threshold are gone. A class-240 pixel takes its composition from species cover
+  (`speciesLeadingClass()`, NTEMS' 0.75 threshold after the deciduous cover discount) and its site
+  from `rstWetland`; only pixels with no species cover go to `convertUnwantedLCC()`.
+* **One "inferred" flag.** Every former class-240 pixel is now left out of parameter estimation
+  and added to `imputedPixID`. Previously only the pixels `convertUnwantedLCC()` handled were; the
+  ones the year-fill loop re-typed went into every fit unrecorded. `coverNum` now counts
+  estimation pixels only, matching `coverPres`. This changes estimates wherever class 240 occurs.
+* **New stratification** `stratumType = "siteComposition"`: ecoregion x site x composition, so a
+  species on upland and on wet ground gets separate maxB, maxANPP and establishment probability.
+  Codes stay three digits (upland 210/220/230, wet 810/820/830); strata with fewer than
+  `stratumMinPixels` estimation pixels pool composition first (290/890), then site (990). The
+  default, `"landcover"`, keeps one land-cover axis, now with 80/81.
+
 version 1.5.15
 =============
 
-## enhancements
-* study areas with no tree species are supported: a zero-layer `speciesLayers` (a valid state, unlike
-  `NULL`, which still stops as a module-ordering error) takes `createBiomass_coreInputs()` down a
-  no-species path that returns a 0-row `cohortData` with the full column set and a `pixelGroupMap`
-  with `rasterToMatch`'s geometry and no tree pixel groups. Previously such a run died in the trait
-  check with "No trait values were found for .".
+## bug fixes
+* `noSpeciesCoreInputs()` declares `@importFrom data.table data.table`. The package rendition the
+  testthat-module CI builds imports `data.table` only through the module's explicit `@importFrom`
+  tags (an explicit `importFrom` suppresses the blanket `@import`), so the bare `data.table()` call
+  was not found and `test-noSpeciesCoreInputs.R` failed on CI.
 
 version 1.5.14
 =============
