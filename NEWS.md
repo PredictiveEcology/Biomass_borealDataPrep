@@ -3,6 +3,14 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 version 1.7.1.9000
 
 * `reqdPkgs` now lists `crayon`, `curl`, `httr`, `lme4`, `Require` and `tidyterra`, which the module's code uses.
+version 1.7.2
+
+* **`imputeBadAgeModel` now defaults to `LandR::imputeBadAgeModelDefault()`** instead of
+  duplicating the formula here. The old default fit age directly, so `predict()` could return a
+  negative value for a young, high-cover, low-biomass stand; that got clamped to age 0 while
+  biomass/cover stayed positive, which `CBMutils::cumPoolsCreateAGB()` rejects (#131). The new
+  default fits `log(age)`, so an imputed age can no longer be negative. Requires
+  `LandR@development (>= 1.2.0.9039)`.
 
 version 1.7.1
 
