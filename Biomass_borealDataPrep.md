@@ -1,6 +1,6 @@
 ---
 title: "LandR _Biomass_borealDataPrep_ Manual"
-date: "Last updated: 2026-09-30"
+date: "Last updated: 2026-10-02"
 output:
   bookdown::html_document2:
     toc: true
@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep18b4230c4524453eb91869d743e20d68c23f23b9)
+[![module-version-Badge](figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrepd84f3eb27b884977fed03c89a70a97e3492aa496)
 
 [![Issues-badge](figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -267,8 +267,8 @@ estimated using the remainder of the data to fit the model supplied by
 
 ```
 ## [[1]]
-## lme4::lmer(age ~ log(totalBiomass) * cover * speciesCode + (log(totalBiomass) | 
-##     initialEcoregionCode))
+## lme4::lmer(log(age) ~ log(totalBiomass) * cover * speciesCode + 
+##     (log(totalBiomass) | initialEcoregionCode))
 ```
 
 Cohort biomass is then adjusted to reflect the different cover to biomass
@@ -1100,7 +1100,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> lme4::lm.... </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Model and formula used for imputing ages that are either missing or do not match well with biomass or cover. Specifically, if biomass or cover is 0, but age is not, or if age is missing (`NA`), then age will be imputed. Note that this is independent from replacing ages inside fire perimeters (see `P(sim)$overrideAgeInFires`) </td>
+   <td style="text-align:left;"> Model and formula used for imputing ages that are either missing or do not match well with biomass or cover. Specifically, if biomass or cover is 0, but age is not, or if age is missing (`NA`), then age will be imputed. Note that this is independent from replacing ages inside fire perimeters (see `P(sim)$overrideAgeInFires`). Defaults to `LandR::imputeBadAgeModelDefault()`, whose response is `log(age)`, so an imputed age can never come back negative and be clamped to 0. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> landis </td>
