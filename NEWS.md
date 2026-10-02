@@ -7,7 +7,7 @@ version 1.7.1.9001
   negative value for a young, high-cover, low-biomass stand; that got clamped to age 0 while
   biomass/cover stayed positive, which `CBMutils::cumPoolsCreateAGB()` rejects (#131). The new
   default fits `log(age)`, so an imputed age can no longer be negative. Requires
-  `LandR@development (>= 1.2.0.9039)`.
+  `LandR@development (>= 1.2.0.9043)`.
 
 version 1.7.1.9000
 
