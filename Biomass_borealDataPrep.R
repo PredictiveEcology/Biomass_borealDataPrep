@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.7.1.9000"),
+  version = list(Biomass_borealDataPrep = "1.7.1.9001"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -23,7 +23,7 @@ defineModule(sim, list(
     "archive", "assertthat", "cli", "crayon", "curl", "data.table", "dplyr", "ggplot2", "httr", "httr2",
     "lme4", "merTools", "plyr", "qs2", "rasterVis", "Require", "sf", "terra", "tidyterra", "googledrive",
     "reproducible (>= 2.1.0)", "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
-    "PredictiveEcology/LandR@development (>= 1.2.0.9039)",
+    "PredictiveEcology/LandR@development (>= 1.2.0.9043)",
     "PredictiveEcology/pemisc@development",
     "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)"
   ),

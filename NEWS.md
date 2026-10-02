@@ -4,6 +4,7 @@ version 1.7.1.9000
 
 * `reqdPkgs` now lists `crayon`, `curl`, `httr`, `lme4`, `Require` and `tidyterra`, which the module's code uses.
 version 1.7.2
+version 1.7.1.9001
 
 * **`imputeBadAgeModel` now defaults to `LandR::imputeBadAgeModelDefault()`** instead of
   duplicating the formula here. The old default fit age directly, so `predict()` could return a
@@ -11,6 +12,11 @@ version 1.7.2
   biomass/cover stayed positive, which `CBMutils::cumPoolsCreateAGB()` rejects (#131). The new
   default fits `log(age)`, so an imputed age can no longer be negative. Requires
   `LandR@development (>= 1.2.0.9039)`.
+  `LandR@development (>= 1.2.0.9043)`.
+
+version 1.7.1.9000
+
+* `reqdPkgs` now lists `crayon`, `curl`, `httr`, `lme4`, `Require` and `tidyterra`, which the module's code uses.
 
 version 1.7.1
 
