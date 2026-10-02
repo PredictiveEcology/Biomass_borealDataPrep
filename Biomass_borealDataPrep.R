@@ -23,7 +23,7 @@ defineModule(sim, list(
     "archive", "assertthat", "cli", "crayon", "curl", "data.table", "dplyr", "ggplot2", "httr", "httr2",
     "lme4", "merTools", "plyr", "qs2", "rasterVis", "Require", "sf", "terra", "tidyterra", "googledrive",
     "reproducible (>= 2.1.0)", "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
-    "PredictiveEcology/LandR@development (>= 1.2.0.9043)",
+    "PredictiveEcology/LandR@development (>= 1.2.0.9046)", # makeAndCleanInitialCohortData(minSpeciesEcoregionShare), LandR#264
     "PredictiveEcology/pemisc@development",
     "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)"
   ),
@@ -160,6 +160,13 @@ defineModule(sim, list(
                           "the study area as on the full extent. See `?LandR::convertUnwantedLCC`.")),
     defineParameter("minCoverThreshold", "numeric", 5, 0, 100,
                     "Pixels with total cover that is equal to or below this number will be omitted from the dataset"),
+    defineParameter("minSpeciesEcoregionShare", "numeric", 0.05, 0, 1,
+                    paste("Minimum share of an ecoregion's pixels in which a species must have cover above",
+                          "`minCoverThreshold` to be kept in that ecoregion. Below it, the species is removed",
+                          "from every pixel of the ecoregion (its cover goes to the other species), so it also",
+                          "gets `establishprob = 0` and no `maxB`/`maxANPP` there. 0.05 removes western redcedar",
+                          "from the mountain hemlock (3.3%) and ESSF (0.23%) zones of the BC South Coast,",
+                          "and keeps it in CWH (47%) and CDF (5.5%). 0 turns it off.")),
     defineParameter("minRelativeBFunction", "call", quote(LandR::makeMinRelativeB(pixelCohortData)),
                     NA, NA,
                     paste(
@@ -823,7 +830,8 @@ createBiomass_coreInputs <- function(sim) {
     sppColumns = coverColNames,
     imputeBadAgeModel = P(sim)$imputeBadAgeModel,
     minCoverThreshold = P(sim)$minCoverThreshold,
-    doSubset = P(sim)$subsetDataAgeModel
+    doSubset = P(sim)$subsetDataAgeModel,
+    minSpeciesEcoregionShare = P(sim)$minSpeciesEcoregionShare
   ) |>
     Cache(userTags = c(cacheTags, "pixelCohortData"))
   assertCohortDataAttr(pixelCohortData)
