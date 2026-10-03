@@ -23,7 +23,7 @@ defineModule(sim, list(
     "archive", "assertthat", "cli", "crayon", "curl", "data.table", "dplyr", "ggplot2", "httr", "httr2",
     "lme4", "merTools", "plyr", "qs2", "rasterVis", "Require", "sf", "terra", "tidyterra", "googledrive",
     "reproducible (>= 2.1.0)", "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
-    "PredictiveEcology/LandR@development (>= 1.2.0.9043)",
+    "PredictiveEcology/LandR@development (>= 1.2.0.9046)", # makeAndCleanInitialCohortData(minSpeciesEcoregionShare), LandR#264
     "PredictiveEcology/pemisc@development",
     "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)"
   ),
@@ -160,6 +160,14 @@ defineModule(sim, list(
                           "the study area as on the full extent. See `?LandR::convertUnwantedLCC`.")),
     defineParameter("minCoverThreshold", "numeric", 5, 0, 100,
                     "Pixels with total cover that is equal to or below this number will be omitted from the dataset"),
+    defineParameter("minSpeciesEcoregionShare", "numeric", 0.07, 0, 1,
+                    paste("Minimum share of an ecoregion's vegetated pixels in which a species must have cover",
+                          "above `minCoverThreshold` to be kept in that ecoregion, within studyArea_biomassParam.",
+                          "Below it, the species is removed from every pixel of the ecoregion (its cover goes to",
+                          "the other species), so it also gets `establishprob = 0` and no `maxB`/`maxANPP` there.",
+                          "0.07 removes western redcedar from the BC mountain hemlock (MH) zone in every ELF",
+                          "(highest: 6.7%) and from ESSF (highest: 2.2%), and keeps it in CWH and in ICH",
+                          "(lowest kept: 7.3%). 0 turns it off.")),
     defineParameter("minRelativeBFunction", "call", quote(LandR::makeMinRelativeB(pixelCohortData)),
                     NA, NA,
                     paste(
@@ -823,7 +831,8 @@ createBiomass_coreInputs <- function(sim) {
     sppColumns = coverColNames,
     imputeBadAgeModel = P(sim)$imputeBadAgeModel,
     minCoverThreshold = P(sim)$minCoverThreshold,
-    doSubset = P(sim)$subsetDataAgeModel
+    doSubset = P(sim)$subsetDataAgeModel,
+    minSpeciesEcoregionShare = P(sim)$minSpeciesEcoregionShare
   ) |>
     Cache(userTags = c(cacheTags, "pixelCohortData"))
   assertCohortDataAttr(pixelCohortData)
