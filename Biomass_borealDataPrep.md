@@ -1,6 +1,6 @@
 ---
 title: "LandR _Biomass_borealDataPrep_ Manual"
-date: "Last updated: 2026-10-02"
+date: "Last updated: 2026-10-03"
 output:
   bookdown::html_document2:
     toc: true
@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrepd84f3eb27b884977fed03c89a70a97e3492aa496)
+[![module-version-Badge](figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep46c7f7a0a864f5841324d57d2f4efe7d1255f146)
 
 [![Issues-badge](figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -1133,6 +1133,14 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> 0 </td>
    <td style="text-align:left;"> 100 </td>
    <td style="text-align:left;"> Pixels with total cover that is equal to or below this number will be omitted from the dataset </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> minSpeciesEcoregionShare </td>
+   <td style="text-align:left;"> numeric </td>
+   <td style="text-align:left;"> 0.07 </td>
+   <td style="text-align:left;"> 0 </td>
+   <td style="text-align:left;"> 1 </td>
+   <td style="text-align:left;"> Minimum share of an ecoregion's vegetated pixels in which a species must have cover above `minCoverThreshold` to be kept in that ecoregion, within studyArea_biomassParam. Below it, the species is removed from every pixel of the ecoregion (its cover goes to the other species), so it also gets `establishprob = 0` and no `maxB`/`maxANPP` there. 0.07 removes western redcedar from the BC mountain hemlock (MH) zone in every ELF (highest: 6.7%) and from ESSF (highest: 2.2%), and keeps it in CWH and in ICH (lowest kept: 7.3%). 0 turns it off. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> minRelativeBFunction </td>
