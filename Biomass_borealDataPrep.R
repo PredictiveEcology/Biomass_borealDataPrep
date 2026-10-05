@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.7.1.9001"),
+  version = list(Biomass_borealDataPrep = "1.7.1.9002"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -23,7 +23,7 @@ defineModule(sim, list(
     "archive", "assertthat", "cli", "crayon", "data.table", "dplyr", "ggplot2", "httr2",
     "merTools", "plyr", "qs2", "rasterVis", "sf", "terra", "googledrive",
     "reproducible (>= 2.1.0)", "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
-    "PredictiveEcology/LandR@development (>= 1.2.0.9025)",
+    "PredictiveEcology/LandR@development (>= 1.2.0.9046)", # makeAndCleanInitialCohortData(minSpeciesEcoregionShare), LandR#264
     "PredictiveEcology/pemisc@development",
     "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)"
   ),
@@ -128,12 +128,13 @@ defineModule(sim, list(
                           "Defaults to forested classes in NTEMS map (210 conif, 220 deciduous, 230 mixed) plus",
                           "LandR-generated 240 class, which is recently disturbed forest.")),
     defineParameter("imputeBadAgeModel", "call",
-                    quote(lme4::lmer(age ~ log(totalBiomass) * cover * speciesCode + (log(totalBiomass) | initialEcoregionCode))),
+                    LandR::imputeBadAgeModelDefault(),
                     NA, NA,
                     paste("Model and formula used for imputing ages that are either missing or do not match well with",
                           "biomass or cover. Specifically, if biomass or cover is 0, but age is not, or if age is missing (`NA`),",
                           "then age will be imputed. Note that this is independent from replacing ages inside fire perimeters",
-                          "(see `P(sim)$overrideAgeInFires`)")),
+                          "(see `P(sim)$overrideAgeInFires`). Defaults to `LandR::imputeBadAgeModelDefault()`, whose response is",
+                          "`log(age)`, so an imputed age can never come back negative and be clamped to 0.")),
     defineParameter("landis", "logical", FALSE, NA, NA,
                     paste("If `TRUE`, run in 'LANDIS mode': collapse the forested land-cover (`rstLCC`) classes",
                           "(`P(sim)$forestedLCCClasses`) to a single class so that `ecoregionGroup` is defined by",
@@ -159,6 +160,14 @@ defineModule(sim, list(
                           "the study area as on the full extent. See `?LandR::convertUnwantedLCC`.")),
     defineParameter("minCoverThreshold", "numeric", 5, 0, 100,
                     "Pixels with total cover that is equal to or below this number will be omitted from the dataset"),
+    defineParameter("minSpeciesEcoregionShare", "numeric", 0.07, 0, 1,
+                    paste("Minimum share of an ecoregion's vegetated pixels in which a species must have cover",
+                          "above `minCoverThreshold` to be kept in that ecoregion, within studyArea_biomassParam.",
+                          "Below it, the species is removed from every pixel of the ecoregion (its cover goes to",
+                          "the other species), so it also gets `establishprob = 0` and no `maxB`/`maxANPP` there.",
+                          "0.07 removes western redcedar from the BC mountain hemlock (MH) zone in every ELF",
+                          "(highest: 6.7%) and from ESSF (highest: 2.2%), and keeps it in CWH and in ICH",
+                          "(lowest kept: 7.3%). 0 turns it off.")),
     defineParameter("minRelativeBFunction", "call", quote(LandR::makeMinRelativeB(pixelCohortData)),
                     NA, NA,
                     paste(
@@ -822,7 +831,8 @@ createBiomass_coreInputs <- function(sim) {
     sppColumns = coverColNames,
     imputeBadAgeModel = P(sim)$imputeBadAgeModel,
     minCoverThreshold = P(sim)$minCoverThreshold,
-    doSubset = P(sim)$subsetDataAgeModel
+    doSubset = P(sim)$subsetDataAgeModel,
+    minSpeciesEcoregionShare = P(sim)$minSpeciesEcoregionShare
   ) |>
     Cache(userTags = c(cacheTags, "pixelCohortData"))
   assertCohortDataAttr(pixelCohortData)
