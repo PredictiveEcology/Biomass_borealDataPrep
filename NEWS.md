@@ -2,6 +2,8 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 
 # Biomass_borealDataPrep (development version)
 
+* The message for an unset `.studyAreaName` comes from `reproducible::studyAreaName(notSupplied = ".studyAreaName")` (PredictiveEcology/reproducible#638), so it reads the same in every module that uses it: "`.studyAreaName` not supplied; using a hash of `<object>`: <hash>". With an older reproducible the name is the same and there is no message.
+
 * **`imputeBadAgeModel` now defaults to `LandR::imputeBadAgeModelDefault()`** instead of
   duplicating the formula here. The old default fit age directly, so `predict()` could return a
   negative value for a young, high-cover, low-biomass stand; that got clamped to age 0 while

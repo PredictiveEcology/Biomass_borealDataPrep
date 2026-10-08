@@ -1676,11 +1676,9 @@ Save <- function(sim) {
     }
   }
   
-  if (is.na(P(sim)$.studyAreaName)) {
-    params(sim)[[currentModule(sim)]][[".studyAreaName"]] <- reproducible::studyAreaName(sim$studyArea_biomassParam)
-    message("The .studyAreaName is not supplied; derived name from sim$studyArea_biomassParam: ",
-            params(sim)[[currentModule(sim)]][[".studyAreaName"]])
-  }
+  if (is.null(P(sim)$.studyAreaName) || is.na(P(sim)$.studyAreaName))
+    P(sim)$.studyAreaName <- reproducible::studyAreaName(sim$studyArea_biomassParam,
+                                                         notSupplied = ".studyAreaName")
   
   studyArea <- sf::st_as_sf(sim$studyArea)
   studyArea_biomassParam <- sf::st_as_sf(sim$studyArea_biomassParam)
