@@ -1,6 +1,6 @@
 ---
 title: "LandR _Biomass_borealDataPrep_ Manual"
-date: "Last updated: 2025-02-19"
+date: "Last updated: 2026-10-08"
 output:
   bookdown::html_document2:
     toc: true
@@ -38,9 +38,9 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep485ccaa6bbaac58003627fa26f1e1209d6ed5034)
+[![module-version-Badge](figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep708cf8dcaafa59059693a72e0ad05401e3ee7552)
 
-[![Issues-badge](/home/runner/work/Biomass_borealDataPrep/Biomass_borealDataPrep/figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
+[![Issues-badge](figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
 <!-- if knitting to pdf remember to add the pandoc_args: ["--extract-media", "."] option to yml in order to get the badge images -->
 
@@ -85,8 +85,8 @@ germination and initial conditions necessary to run *Biomass_core*. For this,
 data[^biomass_borealdataprep-1].
 
 [^biomass_borealdataprep-1]: Raw data layers downloaded by the module are saved
-    in \`dataPath(sim)\`, which can be controlled via
-    \`options(reproducible.destinationPath = ...)\`.
+    in `dataPath(sim)`, which can be controlled via
+    `options(reproducible.destinationPath = ...)`.
 
 We advise future users to run *Biomass_borealDataPrep* with defaults and inspect
 the resulting input objects are like before supplying alternative data (or data
@@ -177,7 +177,7 @@ prepares all inputs and estimates parameters in pixels within forested
 land-cover classes (see [Defining simulation pixels and
 ecolocations](#bboreal-forestedPix-ecolocations)).
 
-If a `studyAreaLarge` is supplied, the module uses it for parameter estimation
+If a `studyArea_biomassParam` is supplied, the module uses it for parameter estimation
 to account for larger spatial variability.
 
 In the next sections, we describe in greater detail the various data processing
@@ -185,42 +185,29 @@ and parameter estimation steps carried out by *Biomass_borealDataPrep*.
 
 ### Data acquisition and treatment {#bboreal-dataprep}
 
-The only two objects that the user must supply are shapefiles that define the
-study area used to derive parameters (`studyAreaLarge`) and the study area where
-the simulation will happen (`studyArea`). The two objects can be identical if
-the user chooses to parametrise and run the simulations in the same area. If not
-identical, `studyArea` must be fully within `studyAreaLarge`. If
-`studyAreaLarge` and `studyArea` are in Canada, the module can automatically
-estimate and prepare all input parameters and objects for *Biomass_core*, as the
-default raw data are FAIR data [*sensu* @WilkinsonEtAl2016] at the
-national-scale.
+The only two objects that the user must supply are spatial polygons that define the study area used to derive parameters (`studyArea_biomassParam`), and the study area where the simulation will happen (`studyArea`).
+The two objects can be identical if the user chooses to parametrise and run the simulations in the same area.
+If not identical, `studyArea` must be fully within `studyArea_biomassParam`.
+If `studyArea_biomassParam` and `studyArea` are in Canada, the module can automatically estimate and prepare all input parameters and objects for *Biomass_core*.
+Best attempts are made to use FAIR data [*sensu* @WilkinsonEtAl2016] at the national-scale; however, the default SCANFI 2020 datasets are unpublished, and not yet publicly available.
+The previous default using the Canadian National Forest Inventory (NFI) forest attributes kNN dataset [`KNN`; @BeaudoinEtAl2014, @BeaudoinEtAl2017] for `dataYear = 2001` or `2011` is still available.
 
 If no other inputs are supplied, *Biomass_borealDataPrep* will create raster
-layer versions `studyAreaLarge` and `studyArea` (`rasterToMatchLarge` and
-`rasterToMatch`, respectively), using the stand biomass map layer
-(`rawBiomassMap`) as a template (i.e., the source of information for spatial
-resolution).
+layer versions `studyArea_biomassParam` and `studyArea` (`rasterToMatch_biomassParam` and `rasterToMatch`.
 
 #### Defining simulation pixels and ecolocations {#bboreal-forestedPix-ecolocations}
 
 *Biomass_borealDataPrep* uses land-cover data to define and assign parameter
 values to the pixels where forest dynamics will be simulated (forested pixels).
-By default it uses land-cover classes from the [Land Cover of Canada 2010 v1
-map](http://www.cec.org/north-american-environmental-atlas/land-cover-2010-modis-250m/),
-a raster-based database that distinguishes several forest and non-forest
-land-cover types. Pixels with classes 1 to 6 are included as forested pixels
-(see parameter `forestedLCCClasses`).
+By default it uses land-cover classes derived from the Spatialized Canadian National Forest Inventory [`SCANFI`; @Guindon2023, @Guindon2024], a raster-based database that distinguishes several forest and non-forest land-cover types.
+The original SCANFI LCC codes are substituted with their corresponding values according to the National Terrestrial Ecosystem Monitoring System for Canada Land Cover [`NTEMS`; @Hermosilla2022] classification.
+Pixels with classes 81, 210, 220, 230, and 240 are included as forested pixels (see parameter `forestedLCCClasses`).
 
 When the land-cover raster (`rstLCC`) includes transient cover types (e.g.,
-recent burns) the user may pass a vector of transient class IDs (via the
-parameter `LCCClassesToReplaceNN`) that will be reclassified into a "stable"
-forested class (defined via the parameter `forestedLCCClasses`). The
-reclassification is done by searching the focal neighbourhood for a replacement
-forested cover class (up to a radius of 1250m from the focal cell). If no
-forested class is found within this perimeter, the pixel is not used to simulate
-forest dynamics. Reclassified pixels are omitted from the fitting of statistical
-models used for parameter estimation, but are assigned predicted values from
-these models.
+recently disturbed) the user may pass a vector of transient class IDs (via the parameter `LCCClassesToReplaceNN`) that will be reclassified into a "stable" forested class (defined via the parameter `forestedLCCClasses`).
+The reclassification is done by searching the focal neighbourhood for a replacement forested cover class (up to a radius of 1250m from the focal cell).
+If no forested class is found within this perimeter, the pixel is not used to simulate forest dynamics.
+Reclassified pixels are omitted from the fitting of statistical models used for parameter estimation, but are assigned predicted values from these models.
 
 Sub-regional spatial variation in `maxBiomass`, `maxANPP`, and SEP species
 traits is accounted for by ecolocation. Ecolocations are used as proxies for
@@ -239,26 +226,21 @@ automatically obtained and pre-processed by *Biomass_borealDataPrep*. The module
 ensures that:
 
 1.  all data have the same geospatial properties (extent, resolution);
-2.  all layers these are correctly re-projected to `studyAreaLarge` and
-    `rasterToMatchLarge`;
+2.  all layers these are correctly re-projected to `studyArea_biomassParam` and
+    `rasterToMatch_biomassParam`;
 3.  species with no cover values above 10(ref:percent) are excluded.
 
-By default it uses species (ref:percent) cover rasters derived from the MODIS
-satellite imagery from 2001, obtained from the Canadian National Forest
-Inventory [@BeaudoinEtAl2017] -- hereafter 'kNN species data'.
+By default it uses species (ref:percent) cover rasters derived from the Spatialized Canadian National Forest Inventory [`SCANFI`; @Guindon2023, @Guindon2024] -- hereafter 'SCANFI species data'.
 
 #### Initial species age and biomass per pixel {#bboreal-init-B-age}
 
-Stand age and aboveground stand biomass (hereafter 'stand biomass') are used to
-derive parameters and define initial species age and biomass across the
-landscape. These are also derived from MODIS satellite imagery from 2001
-prepared by the NFI [@BeaudoinEtAl2017] by default.
+Stand age and aboveground stand biomass (hereafter 'stand biomass') are used to derive parameters and define initial species age and biomass across the
+landscape.
+These are also derived from SCANFI [@Guindon2023, @Guindon2024] by default.
 
 *Biomass_borealDataPrep* downloads these data and performs a number of data
-harmonization operations to deal with data inconsistencies. It first searches
-for mismatches between stand age (`standAge`), stand biomass (`standB`) and
-total stand cover (`standCover`), assuming that cover is the most accurate of
-the three, and biomass the least, and in the following order:
+harmonization operations to deal with data inconsistencies.
+It first searches for mismatches between stand age (`standAge`), stand biomass (`standB`) and total stand cover (`standCover`), assuming that cover is the most accurate of the three, and biomass the least, and in the following order:
 
 1.  Pixels with `standCover < 5%` are removed;
 
@@ -268,9 +250,9 @@ the three, and biomass the least, and in the following order:
 
 Then, species is assigned one cohort per pixel according to the corrected stand
 age, stand biomass and (ref:percent) cover values. Cohort age is assumed to be
-the same as stand age and biomass is the product of stand biomass and species
-(ref:percent) cover. Before doing so, stand cover is rescaled to vary between 0
-and 100(ref:percent).
+the same as stand age and biomass is the product of stand biomass and
+species (ref:percent) cover. Before doing so, stand cover is rescaled to vary
+between 0 and 100(ref:percent).
 
 A next set of data inconsistencies in cohort age (`age`), biomass (`B`) and
 cover (`cover`) is looked for and solved in the following order:
@@ -285,8 +267,8 @@ estimated using the remainder of the data to fit the model supplied by
 
 ```
 ## [[1]]
-## lme4::lmer(age ~ log(totalBiomass) * cover * speciesCode + (log(totalBiomass) | 
-##     initialEcoregionCode))
+## lme4::lmer(log(age) ~ log(totalBiomass) * cover * speciesCode + 
+##     (log(totalBiomass) | initialEcoregionCode))
 ```
 
 Cohort biomass is then adjusted to reflect the different cover to biomass
@@ -296,23 +278,17 @@ species biomass](#bboreal-adjustB)).
 #### Replacing initial biomass and age within known fire perimeters {#bboreal-spin-up}
 
 *Biomass_borealDataPrep* can use fire perimeters to correct stand ages. To do
-so, it downloads the latest fire perimeter data from the [Canadian Wildfire Data
-Base](https://cwfis.cfs.nrcan.gc.ca/datamart) and changes pixel age inside fire
-perimeters to match the time since last fire, using fire years up to the first
-year of the simulation.
+so, it downloads the latest fire perimeter data from the [Canadian Wildfire Data Base](https://cwfis.cfs.nrcan.gc.ca/datamart) and changes pixel age inside fire perimeters to match the time since last fire, using fire years up to the first year of the simulation.
 
 Taking two independent datasets for stand age (fire perimeters) and stand
-biomass (derived from MODIS satellite imagery) can cause discrepancies (e.g.
-stand age = 5 and aboveground biomass = 10000 m2/ha). This may be due to errors
-coming from a) a stand replacing disturbance that reset age to zero a few years
-before, but the biomass layer was no zeroed, or b) the disturbance was not
-stand-replacing (leaving biomass), but age was still zeroed. This means that
-either, aboveground biomass is wrong or age is.
+biomass (derived from MODIS satellite imagery) can cause discrepancies (e.g.,
+stand age = 5 and aboveground biomass = 10000 $m^2 / ha$). This may be due to errors coming from:
+  a) a stand replacing disturbance that reset age to zero a few years before, but the biomass layer was no zeroed;
+  b) the disturbance was not stand-replacing (leaving biomass), but age was still zeroed.
+This means that either, aboveground biomass is wrong or age is.
 
-Options to address this include 1) get better data for these two variables that
-do not contradict one another (not currently available to us) or 2) estimate one
-or the other. There is no obvious way to decide which one is incorrect, unless
-there is an independent data source.
+Options to address this include 1) get better data for these two variables that do not contradict one another (not currently available to us) or 2) estimate one or the other.
+There is no obvious way to decide which one is incorrect, unless there is an independent data source.
 
 In the current *Biomass_borealDataPrep* module version, we chose to correct
 both. If `P(sim)$fireURL` is provided and `P(sim)$overrideBiomassInFires` is
@@ -321,18 +297,12 @@ TRUE, fire perimeters are used as the source of information for age, and
 estimated growth parameters and known species presence/absence (from the species
 cover layers).
 
-This assumes that 1) recorded fires were stand-replacing, and so time since fire
-is the new stand age and 2) that the first year of the simulation is later than
-the first fire year in the fire perimeter data. The biomass spin-up with
-*Biomass_core* is only run in pixels were stand ages were corrected, for as long
-as the new stand age (i.e., the time since last fire). All specie start with age
-= 0 and biomass = 0, and grow until time since last fire is achieved. The
-resulting species biomass is used as the initial biomass values for each species
-cohort in the actual simulation.
+This assumes that 1) recorded fires were stand-replacing, and so time since fire is the new stand age and 2) that the first year of the simulation is later than the first fire year in the fire perimeter data.
+The biomass spin-up with *Biomass_core* is only run in pixels were stand ages were corrected, for as long as the new stand age (i.e., the time since last fire).
+All specie start with age = 0 and biomass = 0, and grow until time since last fire is achieved.
+The resulting species biomass is used as the initial biomass values for each species cohort in the actual simulation.
 
-If the user does not want to perform this imputation, this step can be bypassed
-by setting the parameter `P(sim)$overrideBiomassInFires` to FALSE or
-`P(sim)$fireURL` to NULL or NA.
+If the user does not want to perform this imputation, this step can be bypassed by setting the parameter `P(sim)$overrideBiomassInFires` to `FALSE` or `P(sim)$fireURL` to `NULL` or `NA`.
 
 Also pixels that suffered *any kind* of data imputation (e.g., the age
 corrections detailed in the [previous section](#bboreal-init-B-age)) can be
@@ -344,16 +314,14 @@ Most invariant species traits are obtained from available species trait tables
 used in LANDIS-II applications in Canada's boreal forests (available in [Dominic
 Cyr's GitHub repository](https://github.com/dcyr/LANDIS-II_IA_generalUseFiles)).
 Some are then adapted with minor adjustments to match Western Canadian boreal
-forests using published literature. Others (key growth and mortality traits) can
-be calibrated by *Biomass_speciesParameters* (see [Calibrating species
-growth/mortality traits using
-*Biomass_speciesParameters*](#bboreal-B_sppParams-calib)).
+forests using published literature.
+Others (key growth and mortality traits) can be calibrated by *Biomass_speciesParameters* (see [Calibrating species
+growth/mortality traits using *Biomass_speciesParameters*](#bboreal-B_sppParams-calib)).
 
 The LANDIS-II species trait table contains species trait values for each
 Canadian Ecozone [@NRCan2013], which are by default filtered to the Boreal
-Shield West (BSW), Boreal Plains (BP) and Montane Cordillera Canadian Ecozones
-(via `P(sim)$speciesTableAreas`). Most trait values do not vary across these
-ecozones for a given species, but when they do the minimum value is used.
+Shield West (BSW), Boreal Plains (BP) and Montane Cordillera Canadian Ecozones (via `P(sim)$speciesTableAreas`).
+Most trait values do not vary across these ecozones for a given species, but when they do the minimum value is used.
 
 The function `LandR::speciesTableUpdate` is used by default to do further
 adjustments to trait values in this table (if this is not intended, a custom
@@ -391,26 +359,38 @@ cover. Initial `B` is estimated for each species in each pixel by multiplying
 `standB` by species (ref:percent) cover. Because the default cover layers are
 satellite-derived, the relationship between relative cover and relative biomass
 of broadleaf and conifer species needs to be adjusted to reflect their different
-canopy architectures (using `P(sim)$deciduousCoverDiscount`).
+canopy architectures (using `P(sim)$deciduousCoverWeight`).
 
-By default, *Biomass_borealDataPrep* uses a previously estimated
-`P(sim)$deciduousCoverDiscount` based on Northwest Territories data. However,
-the user can chose to re-estimate it by setting
-`P(sim)$fitDeciduousCoverDiscount == TRUE`. In this case, by default
-*Biomass_borealDataPrep* will fit the the following model:
+`P(sim)$deciduousCoverWeight` is how much biomass a unit of deciduous cover
+carries relative to a unit of conifer cover. Broadleaf crowns are wider per unit
+of wood, so it is expected below 1.
 
+By default (`P(sim)$fitDeciduousCoverWeight == TRUE`) it is **estimated from
+`studyArea_biomassParam`** rather than taken from the parameter, because it is
+not a universal constant: on 100 km of Alberta boreal mixedwood the fit gives
+0.90, and per ecoregion inside that one window it ranges 0.80 to 1.11.
 
-```
-## [[1]]
-## glm(I(log(B/100)) ~ logAge * I(log(totalBiomass/100)) * speciesCode * 
-##     lcc)
-```
+`partitionBiomass()` splits a pixel's `standB` among its cohorts and so says
+nothing about the total it divides; what identifies the weight is a statement
+about the total,
 
-which relates the estimated biomass (`B`) with an interaction term between
-log-age (`logAge`), `standB` ('totalBiomass'), `speciesCode` (i.e. species ID)
-and land cover ('lcc'). The model is fitted to the `standB` and species cover on
-`studyAreaLarge`, using an optimization routine that searches for the best
-conversion factor between broadleaf species cover and `B` by minimizing AIC.
+$$standB_p = k_p \times (C_p + w \times D_p)$$
+
+where $C_p$ and $D_p$ are the pixel's total conifer and deciduous cover. What
+$k$ is decides what is estimated. Held constant within an ecoregion, $w$ absorbs
+site quality -- in the boreal, broadleaf grows on richer, better-drained ground
+than black spruce, so the estimate comes back **above** 1 and has credited the
+site to the species. Made a function of the pixel's own canopy height and
+closure (`sim$rstCanopyHeight`, `sim$rstCanopyClosure`, SCANFI's own layers),
+it compares composition between stands carrying the *same* amount of structure,
+which is the canopy-architecture difference the parameter is for. That is what
+the module fits, by profiling $w$ with $k$ concentrated out; the design matrix
+does not depend on $w$, so the whole search costs a few seconds.
+
+Where the study area cannot identify it -- too little deciduous cover, no canopy
+height and closure layers (only SCANFI publishes them), or an estimate sitting on
+the search bound -- the module says so and keeps `P(sim)$deciduousCoverWeight`.
+Set `P(sim)$fitDeciduousCoverWeight == FALSE` to always use the parameter.
 
 #### Maximum biomass and maximum aboveground net primary productivity {#bboreal-maxB-maxANPP}
 
@@ -657,11 +637,11 @@ group). To do so, the name of the species group in `sppEquivCol` column of the
 `sppEquiv` table must be identical for each grouped species.
 
 <table class="table" style="margin-left: auto; margin-right: auto;">
-<caption>(\#tab:mergingSpp-Biomass-borealDataPrep)Example of species merging for simulation. Here the user wants to model (ref:Abie-bal), (ref:Abie-las) and (ref:Pinu-con) as separate species, but all (ref:Pice-sp) as a genus-level group. For this, all six species are identified in the 'KNN' column, so that their (ref:percent) cover layers can be obtained, but in the 'Boreal' column (which defines the naming convention used in the simulation in this example) all (ref:Pice-sp) have the same name. (ref:Biomass-borealDataPrep) will merge their (ref:percent) cover data into a single layer by summing their cover per pixel.</caption>
+<caption>(\#tab:mergingSpp-Biomass-borealDataPrep)Example of species merging for simulation. Here the user wants to model (ref:Abie-bal), (ref:Abie-las) and (ref:Pinu-con) as separate species, but all (ref:Pice-sp) as a genus-level group. For this, all six species are identified in the 'SCANFI' column, so that their (ref:percent) cover layers can be obtained, but in the 'Boreal' column (which defines the naming convention used in the simulation in this example) all (ref:Pice-sp) have the same name. (ref:Biomass-borealDataPrep) will merge their (ref:percent) cover data into a single layer by summing their cover per pixel.</caption>
  <thead>
   <tr>
    <th style="text-align:left;"> Species </th>
-   <th style="text-align:left;"> KNN </th>
+   <th style="text-align:left;"> SCANFI </th>
    <th style="text-align:left;"> Boreal </th>
    <th style="text-align:left;"> Modelled as </th>
   </tr>
@@ -669,57 +649,63 @@ group). To do so, the name of the species group in `sppEquivCol` column of the
 <tbody>
   <tr>
    <td style="text-align:left;font-style: italic;"> Abies balsamea </td>
-   <td style="text-align:left;"> Abie_Bal </td>
+   <td style="text-align:left;"> ABIE_BAL </td>
    <td style="text-align:left;"> Abie_Bal </td>
    <td style="text-align:left;font-style: italic;"> Abies balsamea </td>
   </tr>
   <tr>
    <td style="text-align:left;font-style: italic;"> Abies lasiocarpa </td>
-   <td style="text-align:left;"> Abie_Las </td>
+   <td style="text-align:left;"> ABIE_LAS </td>
    <td style="text-align:left;"> Abie_Las </td>
    <td style="text-align:left;font-style: italic;"> Abies lasiocarpa </td>
   </tr>
   <tr>
    <td style="text-align:left;font-style: italic;"> Picea engelmannii </td>
+   <td style="text-align:left;"> PICE_ENG </td>
    <td style="text-align:left;"> Pice_Eng </td>
-   <td style="text-align:left;"> Pice_Spp </td>
-   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
+   <td style="text-align:left;font-style: italic;"> Picea engelmannii </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;font-style: italic;"> Picea engelmannii x glauca </td>
+   <td style="text-align:left;"> PICE_ENG_GLA </td>
+   <td style="text-align:left;"> Pice_Eng_Gla </td>
+   <td style="text-align:left;font-style: italic;"> Picea engelmannii x glauca </td>
   </tr>
   <tr>
    <td style="text-align:left;font-style: italic;"> Picea glauca </td>
+   <td style="text-align:left;"> PICE_GLA </td>
    <td style="text-align:left;"> Pice_Gla </td>
-   <td style="text-align:left;"> Pice_Spp </td>
-   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
+   <td style="text-align:left;font-style: italic;"> Picea glauca </td>
   </tr>
   <tr>
    <td style="text-align:left;font-style: italic;"> Picea mariana </td>
+   <td style="text-align:left;"> PICE_MAR </td>
    <td style="text-align:left;"> Pice_Mar </td>
+   <td style="text-align:left;font-style: italic;"> Picea mariana </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
+   <td style="text-align:left;">  </td>
    <td style="text-align:left;"> Pice_Spp </td>
    <td style="text-align:left;font-style: italic;"> Picea spp. </td>
   </tr>
   <tr>
-   <td style="text-align:left;font-style: italic;"> Picea engelmannii x glauca </td>
-   <td style="text-align:left;"> Pice_Eng_Gla </td>
-   <td style="text-align:left;"> Pice_Spp </td>
-   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;font-style: italic;"> Picea engelmannii x glauca </td>
-   <td style="text-align:left;"> Pice_Eng_Gla </td>
-   <td style="text-align:left;"> Pice_Spp </td>
-   <td style="text-align:left;font-style: italic;"> Picea spp. </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;font-style: italic;"> Pinus contorta var. contorta </td>
+   <td style="text-align:left;font-style: italic;"> Pinus contorta </td>
    <td style="text-align:left;">  </td>
    <td style="text-align:left;"> Pinu_Con </td>
+   <td style="text-align:left;font-style: italic;"> Pinus contorta </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;font-style: italic;"> Pinus contorta var. contorta </td>
+   <td style="text-align:left;"> PINU_CON_CON </td>
+   <td style="text-align:left;"> Pinu_Con </td>
    <td style="text-align:left;font-style: italic;"> Pinus contorta var. contorta </td>
   </tr>
   <tr>
-   <td style="text-align:left;font-style: italic;"> Pinus contorta </td>
+   <td style="text-align:left;font-style: italic;"> Pinus contorta var. latifolia </td>
+   <td style="text-align:left;"> PINU_CON_LAT </td>
    <td style="text-align:left;"> Pinu_Con </td>
-   <td style="text-align:left;"> Pinu_Con </td>
-   <td style="text-align:left;font-style: italic;"> Pinus contorta </td>
+   <td style="text-align:left;font-style: italic;"> Pinus contorta var. latifolia </td>
   </tr>
 </tbody>
 </table>
@@ -737,7 +723,7 @@ expects.
 
 The only inputs that **must** be provided (i.e., *Biomass_borealDataPrep* does
 not have a default for) are `studyArea` (the study area used to simulate forest
-dynamics *Biomass_core*) and `studyAreaLarge` (a potentially larger study area
+dynamics *Biomass_core*) and `studyArea_biomassParam` (a potentially larger study area
 used to derive parameter values -- e.g., species traits).
 
 All other input objects and parameters have internal defaults.
@@ -764,7 +750,7 @@ attention:
     determining where the simulation will take place. This input object **must
     be supplied by the user**.
 
--   `studyAreaLarge` -- shapefile. A `SpatialPolygonsDataFrame` with a single
+-   `studyArea_biomassParam` -- shapefile. A `SpatialPolygonsDataFrame` with a single
     polygon determining the where the statistical models for parameter
     estimation will be fitted. It **must** contain `studyArea` fully, if they
     are not identical. This object **must be supplied by the user**.
@@ -803,19 +789,19 @@ and *Biomass_core* manual for further detail about these columns.
   <tr>
    <td style="text-align:left;"> columnsForPixelGroups </td>
    <td style="text-align:left;"> character </td>
-   <td style="text-align:left;"> The names of the columns in `cohortData` that define unique `pixelGroup`s. Default is `c('ecoregionGroup', 'speciesCode', 'age')`; see `?LandR::columnsForPixelGroups`). </td>
+   <td style="text-align:left;"> The names of the columns in `cohortData` that define unique `pixelGroup`s. Default is `c('ecoregionGroup', 'speciesCode', 'age', 'B')`; see `?LandR::columnsForPixelGroups()`). </td>
    <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
    <td style="text-align:left;"> ecoregionLayer </td>
    <td style="text-align:left;"> sf </td>
-   <td style="text-align:left;"> A `sf` polygon object that characterizes the unique ecological regions (`ecoregionGroup`) used to parameterize the biomass, cover, and species establishment probability models. It will be overlaid with landcover to generate classes for every ecoregion/LCC combination. It must have same extent and crs as `studyAreaLarge`. It is superseded by `sim$ecoregionRst` if that object is supplied by the user </td>
+   <td style="text-align:left;"> A `sf` polygon object that characterizes the unique ecological regions (`ecoregionGroup`) used to parameterize the biomass, cover, and species establishment probability models. It will be overlaid with landcover to generate classes for every ecoregion/LCC combination. It must have same extent and crs as `studyArea_biomassParam`. It is superseded by `sim$ecoregionRst` if that object is supplied by the user </td>
    <td style="text-align:left;"> https://sis.agr.gc.ca/cansis/nsdb/ecostrat/district/ecodistrict_shp.zip </td>
   </tr>
   <tr>
    <td style="text-align:left;"> ecoregionRst </td>
    <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> A raster that characterizes the unique ecological regions used to parameterize the biomass, cover, and species establishment probability models. If this object is provided, it will supercede `sim$ecoregionLayer`. It will be overlaid with landcover to generate classes for every ecoregion/LCC combination. It must have same extent and crs as `rasterToMatchLarge` if supplied by user - use `reproducible::postProcess`. If it uses an attribute table, it must contain the field 'ecoregion' to represent raster values </td>
+   <td style="text-align:left;"> A raster that characterizes the unique ecological regions used to parameterize the biomass, cover, and species establishment probability models. If this object is provided, it will supercede `sim$ecoregionLayer`. It will be overlaid with landcover to generate classes for every ecoregion/LCC combination. It must have same extent and crs as `rasterToMatch_biomassParam` if supplied by user - use `reproducible::postProcess`. If it uses an attribute table, it must contain the field 'ecoregion' to represent raster values </td>
    <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
@@ -833,7 +819,25 @@ and *Biomass_core* manual for further detail about these columns.
   <tr>
    <td style="text-align:left;"> rstLCC </td>
    <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> A land classification map in study area. It must be 'corrected', in the sense that: 1) Every class must not conflict with any other map in this module (e.g., `speciesLayers` should not have data in LCC classes that are non-treed); 2) It can have treed and non-treed classes. The non-treed will be removed within this module if `P(sim)$omitNonTreedPixels` is `TRUE`; 3) It can have transient pixels, such as 'young fire'. These will be converted to a the nearest non-transient class, probabilistically if there is more than 1 nearest neighbour class, based on `P(sim)$LCCClassesToReplaceNN`. The default layer used, if not supplied, is Canada national land classification in 2010. The metadata (res, proj, ext, origin) need to match `rasterToMatchLarge`. </td>
+   <td style="text-align:left;"> A land classification map in study area. It must be 'corrected', in the sense that: 1) Every class must not conflict with any other map in this module (e.g., `speciesLayers` should not have data in LCC classes that are non-treed); 2) It can have treed and non-treed classes. The non-treed will be removed within this module if `P(sim)$omitNonTreedPixels` is `TRUE`; 3) It can have transient pixels, such as 'young fire'. These will be converted to a the nearest non-transient class, probabilistically if there is more than 1 nearest neighbour class, based on `P(sim)$LCCClassesToReplaceNN`. The default layer used, if not supplied, is SCANFI-derived data product for 2020 updated to use NTEMS land cover codes. See &lt;https://open.canada.ca/data/en/dataset/18e6a919-53fd-41ce-b4e2-44a9707c52dc&gt; for SCANFI metadata. The metadata (res, proj, ext, origin) need to match `rasterToMatch_biomassParam`. </td>
+   <td style="text-align:left;"> NA </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> rstWetland </td>
+   <td style="text-align:left;"> SpatRaster </td>
+   <td style="text-align:left;"> Site layer on `rasterToMatch_biomassParam`: non-zero where the ground is wetland. Used to add NTEMS classes 80 (wetland) and 81 (treed wetland) to `rstLCC`, and as the site axis of `P(sim)$stratumType = 'siteComposition'`. If not supplied and `P(sim)$wetlandSource` is `'CWIM'`, built from the Canadian Wetland Inventory Map v3A (bog, fen, marsh and swamp are wet). </td>
+   <td style="text-align:left;"> NA </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> rstCanopyHeight </td>
+   <td style="text-align:left;"> SpatRaster </td>
+   <td style="text-align:left;"> Canopy height (m) on `rasterToMatch_biomassParam`. Used only to estimate `P(sim)$deciduousCoverWeight`, as one of the two structural controls that let composition be compared between stands carrying the same amount of structure. Defaults to SCANFI's own height layer for `P(sim)$dataYear` when `P(sim)$fitDeciduousCoverWeight` is `TRUE` and `P(sim)$dataSource` is SCANFI. </td>
+   <td style="text-align:left;"> NA </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> rstCanopyClosure </td>
+   <td style="text-align:left;"> SpatRaster </td>
+   <td style="text-align:left;"> Canopy closure (percent) on `rasterToMatch_biomassParam`. The other structural control for `P(sim)$deciduousCoverWeight`; see `rstCanopyHeight`. </td>
    <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
@@ -843,22 +847,22 @@ and *Biomass_core* manual for further detail about these columns.
    <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> rasterToMatchLarge </td>
+   <td style="text-align:left;"> rasterToMatch_biomassParam </td>
    <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> A raster of the `studyAreaLarge` in the same resolution and projection as `rawBiomassMap`. This is the scale used for all inputs for use in the simulation. If not supplied will be forced to match the default `rawBiomassMap`. </td>
+   <td style="text-align:left;"> A raster of the `studyArea_biomassParam` in the same resolution and projection as `rawBiomassMap`. This is the scale used for all inputs for use in the simulation. If not supplied will be forced to match the default `rawBiomassMap`. </td>
    <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
    <td style="text-align:left;"> rawBiomassMap </td>
    <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> total biomass raster layer in study area. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived total aboveground biomass map from 2001 (in tonnes/ha), unless 'dataYear' != 2001. See https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata. </td>
-   <td style="text-align:left;"> https://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/canada-forests-attributes_attributs-forests-canada/2001-attributes_attributs-2001/NFI_MODIS250m_2001_kNN_Structure_Biomass_TotalLiveAboveGround_v1.tif </td>
+   <td style="text-align:left;"> total biomass raster layer in study area. Defaults to the Canadian Forestry Service, National Forest Inventory, SCANFI-derived total aboveground biomass map from 2020 (in tonnes/ha), unless `dataYear != 2020`. See &lt;https://open.canada.ca/data/en/dataset/18e6a919-53fd-41ce-b4e2-44a9707c52dc&gt; for metadata. </td>
+   <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
    <td style="text-align:left;"> speciesLayers </td>
    <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> cover percentage raster layers by species in Canada species map. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived species cover maps from 2001 using a cover threshold of 10 - see https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata </td>
-   <td style="text-align:left;"> http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/canada-forests-attributes_attributs-forests-canada/2001-attributes_attributs-2001/ </td>
+   <td style="text-align:left;"> cover percentage raster layers by species in Canada species map. Defaults to the Canadian Forestry Service, National Forest Inventory, SCANFI-derived species cover maps from 2020 using a cover threshold of 10 - see &lt;https://open.canada.ca/data/en/dataset/18e6a919-53fd-41ce-b4e2-44a9707c52dc&gt; for metadata </td>
+   <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
    <td style="text-align:left;"> speciesTable </td>
@@ -887,19 +891,19 @@ and *Biomass_core* manual for further detail about these columns.
   <tr>
    <td style="text-align:left;"> standAgeMap </td>
    <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> stand age map in study area. Must have a 'imputedPixID' attribute (a vector of pixel IDs) indicating which pixels suffered age imputation. If no pixel ages were imputed, please set this attribute to `integer(0)`. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived biomass map from 2001, unless 'dataYear' != 2001. See https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990 for metadata </td>
-   <td style="text-align:left;"> http://ftp.maps.canada.ca/pub/nrcan_rncan/Forests_Foret/canada-forests-attributes_attributs-forests-canada/2001-attributes_attributs-2001/NFI_MODIS250m_2001_kNN_Structure_Stand_Age_v1.tif </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> studyArea </td>
-   <td style="text-align:left;"> sfc </td>
-   <td style="text-align:left;"> Polygon to use as the study area. Must be supplied by the user. Can also be a SpatVector. </td>
+   <td style="text-align:left;"> stand age map in study area. Must have a 'imputedPixID' attribute (a vector of pixel IDs) indicating which pixels suffered age imputation. If no pixel ages were imputed, please set this attribute to `integer(0)`. Defaults to the Canadian Forestry Service, National Forest Inventory, SCANFI-derived biomass map from 2020, unless `dataYear != 2020`. See &lt;https://open.canada.ca/data/en/dataset/18e6a919-53fd-41ce-b4e2-44a9707c52dc&gt; for metadata. </td>
    <td style="text-align:left;"> NA </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> studyAreaLarge </td>
-   <td style="text-align:left;"> sfc </td>
-   <td style="text-align:left;"> multipolygon (potentially larger than `studyArea`) used for parameter estimation, Must be supplied by the user. If larger than `studyArea`, it must fully contain it. Can also be a SpatVector. </td>
+   <td style="text-align:left;"> studyArea </td>
+   <td style="text-align:left;"> sf </td>
+   <td style="text-align:left;"> `sf` polygon or terra `SpatVector` to use as the study area - `nrow` must be one </td>
+   <td style="text-align:left;"> NA </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> studyArea_biomassParam </td>
+   <td style="text-align:left;"> sf </td>
+   <td style="text-align:left;"> Polygon to use as the parametrisation study area. Must be provided by the user. Note that `studyArea_biomassParam` is only used for parameter estimation, and can be larger than the actual study area used for LandR simulations (e.g., larger than `studyArea` in LandR `Biomass_core`). </td>
    <td style="text-align:left;"> NA </td>
   </tr>
 </tbody>
@@ -948,11 +952,11 @@ Of these parameters, the following are particularly important:
     classes in `rstLCC` are forested and which should be reclassified to
     forested classes, respectively.
 
--   `deciduousCoverDiscount`, `coverPctToBiomassPctModel` and
-    `fitDeciduousCoverDiscount` -- the first is the adjustment factor for
-    broadleaf species cover to biomass relationships; the second and third are
-the model used to refit `deciduousCoverDiscount` in the supplied
-`studyAreaLarge` and whether refitting should be attempted (respectively).
+-   `deciduousCoverWeight` and `fitDeciduousCoverWeight` -- the first is the
+    adjustment factor for broadleaf species cover to biomass relationships; the
+    second decides whether it is estimated from `studyArea_biomassParam` (the
+    default) instead, in which case the first is only the fallback for a study
+    area that cannot identify it.
 
 \newpage
 \blandscape
@@ -987,6 +991,14 @@ the model used to refit `deciduousCoverDiscount` in the supplied
    <td style="text-align:left;"> Model and formula used for estimating cover from `ecoregionGroup` and `speciesCode` and potentially others. Defaults to a GLMEM if there are &gt; 1 grouping levels. A custom model call can also be provided, as long as the 'data' argument is NOT included </td>
   </tr>
   <tr>
+   <td style="text-align:left;"> earliestFireYear </td>
+   <td style="text-align:left;"> integer </td>
+   <td style="text-align:left;"> 1950 </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> if using fires to impute stand age and biomass, the earliest year for which fire data should be obtained </td>
+  </tr>
+  <tr>
    <td style="text-align:left;"> fixModelBiomass </td>
    <td style="text-align:left;"> logical </td>
    <td style="text-align:left;"> FALSE </td>
@@ -1005,42 +1017,50 @@ the model used to refit `deciduousCoverDiscount` in the supplied
   <tr>
    <td style="text-align:left;"> subsetDataBiomassModel </td>
    <td style="text-align:left;"> integer </td>
-   <td style="text-align:left;"> 50 </td>
+   <td style="text-align:left;"> 500 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> the number of samples to use when subsampling the biomass data model (`biomassModel`); Can be `TRUE`/`FALSE`/`NULL` or numeric; if `TRUE`, uses 50, the default. If `FALSE`/`NULL` no subsetting is done. </td>
+   <td style="text-align:left;"> the number of samples per `ecoregionGroup` x `speciesCode` to use when subsampling the biomass data model (`biomassModel`). Can be `TRUE`/`FALSE`/`NULL` or numeric; if `TRUE`, uses `LandR::subsetDataSize()`. If `FALSE`/`NULL` no subsetting is done. Default: `LandR::subsetDataSize()`, i.e. option `LandR.subsetDataSize` (500). </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> coverPctToBiomassPctModel </td>
-   <td style="text-align:left;"> call </td>
-   <td style="text-align:left;"> glm, I(l.... </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Model to estimate the relationship between % cover and % biomass, referred to as `P(sim)$fitDeciduousCoverDiscount` It is a number between 0 and 1 that translates % cover, as provided in several databases, to % biomass. It is assumed that all hardwoods are equivalent and all softwoods are equivalent and that % cover of hardwoods will be an overesimate of the % biomass of hardwoods. E.g., 30% cover of hardwoods might translate to 20% biomass of hardwoods. The reason this discount exists is because hardwoods in Canada have a much wider canopy than softwoods. </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> deciduousCoverDiscount </td>
+   <td style="text-align:left;"> deciduousCoverWeight </td>
    <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;"> 0.8418911 </td>
+   <td style="text-align:left;"> 0.93 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> This was estimated with data from NWT on March 18, 2020 and may or may not be universal. Will not be used if `P(sim)$fitDeciduousCoverDiscount == TRUE` </td>
+   <td style="text-align:left;"> How much biomass a unit of deciduous cover carries, relative to a unit of conifer cover: the weight `LandR::partitionBiomass()` applies to deciduous cover before it splits a pixel's `totalBiomass` among its cohorts. Broadleaf crowns are wider per unit of wood, so this is expected below 1. This default is only a fallback. With `fitDeciduousCoverWeight = TRUE` (the default) it is estimated from the study area and this value is not used; it is kept for landscapes that cannot identify it -- too little deciduous cover, too little variation in deciduous share between pixels, or no canopy height/closure layers. 0.93 is the mean of the fit on the three landscapes tested so far that can identify it (two Alberta boreal mixedwood areas and NW Ontario boreal shield: 0.90, 1.00, 0.91); it replaces 0.8418911, estimated from NWT data on 2020-03-18 by an estimator since removed. </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> fitDeciduousCoverDiscount </td>
+   <td style="text-align:left;"> fitDeciduousCoverWeight </td>
+   <td style="text-align:left;"> logical </td>
+   <td style="text-align:left;"> TRUE </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> If `TRUE` (default), estimate `P(sim)$deciduousCoverWeight` from this study area rather than using the parameter's value. Needs `sim$rstCanopyHeight` and `sim$rstCanopyClosure`, which default to SCANFI's own layers; without them, or where there is too little deciduous cover to identify it, the parameter value is kept and a message says so. The fit costs a few seconds. </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> adjustAgeAndLongevity </td>
    <td style="text-align:left;"> logical </td>
    <td style="text-align:left;"> FALSE </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> If TRUE, this will re-estimate `P(sim)$fitDeciduousCoverDiscount` This may be unstable and is not recommended currently. If `FALSE`, will use the current default </td>
+   <td style="text-align:left;"> Adjust species longevity to the ages observed on the landscape. Cohort ages are capped at `0.9 longevity`. Any cohort ages exceeding this threshold are lowered using a smoothed function. If `FALSE`, no adjustments are applied to age or longevity. </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> dataSource </td>
+   <td style="text-align:left;"> character </td>
+   <td style="text-align:left;"> SCANFI </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> Source for species cover, biomass, age, and landcover data used to initialize cohorts. kNN (2001, 2011) and SCANFI (V2: every 5 years, 1985-2025) provide all necessary layers. Mixing multiple datasets requires additonal raster geoprocessing and is not recommended. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> dataYear </td>
    <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;"> 2001 </td>
+   <td style="text-align:left;"> 2020 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Used to override the default 'sourceURL' of KNN datasets (species cover, stand biomass and stand age), which point to 2001 data, to fetch KNN data for another year. Currently, the only other possible year is 2011. Will also select NTEMS landcover from appropriate year. </td>
+   <td style="text-align:left;"> the year for which `dataSource` data will be fetched for use with the module. For SCANFI, any year from 1985 to 2025 in steps of 5; `LandR::prepRawBiomassMap()` stops on a year the source does not provide. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> ecoregionLayerField </td>
@@ -1059,12 +1079,20 @@ the model used to refit `deciduousCoverDiscount` in the supplied
    <td style="text-align:left;"> Controls whether models used to estimate maximum B/ANPP (`biomassModel`) and species establishment (`coverModel`) probabilities are exported for posterior analyses or not. This may be important when models fail to converge or hit singularity (but can still be used to make predictions) and the user wants to investigate them further. Can be set to 'none' (no models are exported), 'all' (both are exported), 'biomassModel' or 'coverModel'. BEWARE: because this is intended for posterior model inspection, the models will be exported with data, which may mean very large simList(s)! </td>
   </tr>
   <tr>
+   <td style="text-align:left;"> floorMaxBAtObserved </td>
+   <td style="text-align:left;"> logical </td>
+   <td style="text-align:left;"> TRUE </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> If `TRUE`, a `maxB` that the fit clamped to 0 is replaced by the 95th percentile of the biomass the species was observed at in that `ecoregionGroup`: a negative fit would otherwise stop a species growing where it demonstrably grows. A percentile rather than the maximum, so one freak cohort cannot set the ceiling. Fitted (positive) values are never changed. `maxANPP` is recomputed for any replaced row (`maxB / 30`). </td>
+  </tr>
+  <tr>
    <td style="text-align:left;"> forestedLCCClasses </td>
    <td style="text-align:left;"> numeric </td>
    <td style="text-align:left;"> 81, 210,.... </td>
    <td style="text-align:left;"> 0 </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> The classes in the `rstLCC` layer that are 'treed' and will therefore be run in Biomass_core. Defaults to forested classes in NTEMS map (210 = conif, 220 deciduous, 230 mixed) plus LandR-generated 240 class, which is recently disturbed forest. </td>
+   <td style="text-align:left;"> The classes in the `rstLCC` layer that are 'treed' and will therefore be run in `Biomass_core`. Defaults to forested classes in NTEMS map (210 conif, 220 deciduous, 230 mixed) plus LandR-generated 240 class, which is recently disturbed forest. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> imputeBadAgeModel </td>
@@ -1072,7 +1100,15 @@ the model used to refit `deciduousCoverDiscount` in the supplied
    <td style="text-align:left;"> lme4::lm.... </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Model and formula used for imputing ages that are either missing or do not match well with biomass or cover. Specifically, if biomass or cover is 0, but age is not, or if age is missing (`NA`), then age will be imputed. Note that this is independent from replacing ages inside fire perimeters (see `P(sim)$overrideAgeInFires`) </td>
+   <td style="text-align:left;"> Model and formula used for imputing ages that are either missing or do not match well with biomass or cover. Specifically, if biomass or cover is 0, but age is not, or if age is missing (`NA`), then age will be imputed. Note that this is independent from replacing ages inside fire perimeters (see `P(sim)$overrideAgeInFires`). Defaults to `LandR::imputeBadAgeModelDefault()`, whose response is `log(age)`, so an imputed age can never come back negative and be clamped to 0. </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> landis </td>
+   <td style="text-align:left;"> logical </td>
+   <td style="text-align:left;"> FALSE </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> If `TRUE`, run in 'LANDIS mode': collapse the forested land-cover (`rstLCC`) classes (`P(sim)$forestedLCCClasses`) to a single class so that `ecoregionGroup` is defined by ecoregion only, not ecoregion x LCC. `maxB`, `maxANPP` and species establishment probability are then estimated per ecoregion, as expected by LANDIS-II Biomass Succession. Default `FALSE` preserves the standard ecoregion x LCC behaviour. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> LCCClassesToReplaceNN </td>
@@ -1083,6 +1119,14 @@ the model used to refit `deciduousCoverDiscount` in the supplied
    <td style="text-align:left;"> This will replace these classes on the landscape with the closest forest class `P(sim)$forestedLCCClasses`. If the user is using the LCC 2005 land-cover data product for `rstLCC`, then they may wish to include 36 (cities -- if running a historic range of variation project), and 34:35 (burns) Since this is about estimating parameters for growth, it doesn't make any sense to have unique estimates for transient classes in most cases. If no classes are to be replaced, pass `'LCCClassesToReplaceNN' = numeric(0)` when supplying parameters. </td>
   </tr>
   <tr>
+   <td style="text-align:left;"> LCCClassesToReplaceNNMethod </td>
+   <td style="text-align:left;"> character </td>
+   <td style="text-align:left;"> nearestR.... </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> Passed to `LandR::convertUnwantedLCC()` as its `method` argument, controlling how each `P(sim)$LCCClassesToReplaceNN` pixel picks among the available classes in its neighbourhood. Both options weight the classes by their local abundance and differ only in reproducibility. `'nearestRandom'` (default) draws from the RNG, so replicates differ -- but note that `Cache()` does not key on RNG state, so a cached call replays a single draw unless the seed is part of the cache key. `'nearestWeighted'` instead keys the draw on the pixel's ground position, making it deterministic and seed-free, and giving the same answer on a grid-aligned crop of the study area as on the full extent. See `?LandR::convertUnwantedLCC`. </td>
+  </tr>
+  <tr>
    <td style="text-align:left;"> minCoverThreshold </td>
    <td style="text-align:left;"> numeric </td>
    <td style="text-align:left;"> 5 </td>
@@ -1091,12 +1135,20 @@ the model used to refit `deciduousCoverDiscount` in the supplied
    <td style="text-align:left;"> Pixels with total cover that is equal to or below this number will be omitted from the dataset </td>
   </tr>
   <tr>
+   <td style="text-align:left;"> minSpeciesEcoregionShare </td>
+   <td style="text-align:left;"> numeric </td>
+   <td style="text-align:left;"> 0.07 </td>
+   <td style="text-align:left;"> 0 </td>
+   <td style="text-align:left;"> 1 </td>
+   <td style="text-align:left;"> Minimum share of an ecoregion's vegetated pixels in which a species must have cover above `minCoverThreshold` to be kept in that ecoregion, within studyArea_biomassParam. Below it, the species is removed from every pixel of the ecoregion (its cover goes to the other species), so it also gets `establishprob = 0` and no `maxB`/`maxANPP` there. 0.07 removes western redcedar from the BC mountain hemlock (MH) zone in every ELF (highest: 6.7%) and from ESSF (highest: 2.2%), and keeps it in CWH and in ICH (lowest kept: 7.3%). 0 turns it off. </td>
+  </tr>
+  <tr>
    <td style="text-align:left;"> minRelativeBFunction </td>
    <td style="text-align:left;"> call </td>
    <td style="text-align:left;"> LandR::m.... </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> A quoted function that makes the table of min. relative B determining a stand shade level for each `ecoregionGroup`. Using the internal object `pixelCohortData` is advisable to access/use the list of `ecoregionGroup`s per pixel. The function must output a `data.frame` with 6 columns, named `ecoregionGroup` and 'X1' to 'X5', with one line per `ecoregionGroup` code, and the min. relative biomass for each stand shade level X1-5. The default function uses values from LANDIS-II available at: https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/biomass-succession-main-inputs_BSW_Baseline.txt and applies them to all ecolocations (`ecoregionGroup` codes) </td>
+   <td style="text-align:left;"> A quoted function that makes the table of min. relative B determining a stand shade level for each `ecoregionGroup`. Using the internal object `pixelCohortData` is advisable to access/use the list of `ecoregionGroup`s per pixel. The function must output a `data.frame` with 6 columns, named `ecoregionGroup` and 'X1' to 'X5', with one line per `ecoregionGroup` code, and the min. relative biomass for each stand shade level X1-5. The default function uses values from LANDIS-II available at: https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/biomass-succession-main-inputs_BSW_Baseline.txt and applies them to all ecolocations (`ecoregionGroup` codes). </td>
   </tr>
   <tr>
    <td style="text-align:left;"> omitNonTreedPixels </td>
@@ -1136,7 +1188,7 @@ the model used to refit `deciduousCoverDiscount` in the supplied
    <td style="text-align:left;"> 100 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> When assigning pixelGroup membership, this defines the resolution of biomass that will be considered 'the same pixelGroup', e.g., if it is 100, then 5160 and 5240 will be the same </td>
+   <td style="text-align:left;"> When assigning `pixelGroup` membership, this defines the resolution of biomass that will be considered 'the same `pixelGroup`', e.g., if it is 100, then 5160 and 5240 will be the same </td>
   </tr>
   <tr>
    <td style="text-align:left;"> rmImputedPix </td>
@@ -1171,12 +1223,28 @@ the model used to refit `deciduousCoverDiscount` in the supplied
    <td style="text-align:left;"> One or more of the Ecoprovince short forms that are in the `speciesTable` file, e.g., BSW, MC etc. Default is good for Alberta and other places in the western Canadian boreal forests. </td>
   </tr>
   <tr>
+   <td style="text-align:left;"> stratumMinPixels </td>
+   <td style="text-align:left;"> numeric </td>
+   <td style="text-align:left;"> 100 </td>
+   <td style="text-align:left;"> 0 </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> Under `stratumType = 'siteComposition'`, the minimum number of estimation pixels an ecoregion x site x composition stratum needs to keep its own parameters. A thinner stratum loses its composition first (pooled codes 290 upland, 890 wet) and, if that pool is still thin, its site too (990). `0` pools nothing. </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> stratumType </td>
+   <td style="text-align:left;"> character </td>
+   <td style="text-align:left;"> landcover </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> How pixels are grouped (`ecoregionGroup`) for estimating maxB, maxANPP and establishment probability. `'landcover'`: ecoregion x land-cover class, with the NTEMS wetland classes 80/81 added from `rstWetland` -- one axis, as NTEMS has it. `'siteComposition'`: ecoregion x site x composition, so a species on upland and on wet ground get separate parameters. Codes: upland 210/220/230, wet 810/820/830; pooled 290/890/990 (see `stratumMinPixels`); class-240 pixels with no species cover 240/840. </td>
+  </tr>
+  <tr>
    <td style="text-align:left;"> subsetDataAgeModel </td>
    <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;"> 50 </td>
+   <td style="text-align:left;"> 500 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> the number of samples to use when subsampling the age data model and when fitting `coverPctToBiomassPctModel`; Can be `TRUE`/`FALSE`/`NULL` or numeric; if `TRUE`, uses 50, the default. If `FALSE`/`NULL` no subsetting is done. </td>
+   <td style="text-align:left;"> the number of samples per group to use when subsampling the age data model. Can be `TRUE`/`FALSE`/`NULL` or numeric; if `TRUE`, uses `LandR::subsetDataSize()`. If `FALSE`/`NULL` no subsetting is done. Default: `LandR::subsetDataSize()`, i.e. option `LandR.subsetDataSize` (500). </td>
   </tr>
   <tr>
    <td style="text-align:left;"> successionTimestep </td>
@@ -1197,10 +1265,18 @@ the model used to refit `deciduousCoverDiscount` in the supplied
   <tr>
    <td style="text-align:left;"> vegLeadingProportion </td>
    <td style="text-align:left;"> numeric </td>
-   <td style="text-align:left;"> 0.8 </td>
+   <td style="text-align:left;"> 0.75 </td>
    <td style="text-align:left;"> 0 </td>
    <td style="text-align:left;"> 1 </td>
-   <td style="text-align:left;"> a number that defines whether a species is leading for a given pixel </td>
+   <td style="text-align:left;"> a number that defines whether a species is leading for a given pixel. Default: `LandR::leadingSpeciesProp()`, i.e. option `LandR.leadingSpeciesProp`, which takes `LandR.mixedwoodProp` (0.75) unless set. Setting it in one place moves every module and LandR function together. </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> wetlandSource </td>
+   <td style="text-align:left;"> character </td>
+   <td style="text-align:left;"> CWIM </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> Where `rstWetland` comes from when it is not supplied. `'CWIM'`: the Canadian Wetland Inventory Map v3A via `LandR::prepInputs_CWIM()` -- SCANFI land cover has no wetland classes, so without it treed wetland cannot be told from upland forest. `'none'`: no site layer; every pixel is treated as upland. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .plotInitialTime </td>
@@ -1256,7 +1332,7 @@ the model used to refit `deciduousCoverDiscount` in the supplied
    <td style="text-align:left;"> 64 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
-   <td style="text-align:left;"> Passed to `httr::config(ssl_verifypeer = P(sim)$.sslVerify)` when downloading KNN (NFI) datasets. Set to 0L if necessary to bypass checking the SSL certificate (this may be necessary when NFI's website SSL certificate is not correctly configured). </td>
+   <td style="text-align:left;"> Passed to `httr::config(ssl_verifypeer = P(sim)$.sslVerify)` when downloading NFI datasets. Set to 0L if necessary to bypass checking the SSL certificate (this may be necessary when NFI's website SSL certificate is not correctly configured). </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .studyAreaName </td>
@@ -1273,6 +1349,22 @@ the model used to refit `deciduousCoverDiscount` in the supplied
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Internal. Can be names of events or the whole module name; these will be cached by SpaDES </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> .useCloud </td>
+   <td style="text-align:left;"> logical </td>
+   <td style="text-align:left;"> FALSE </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> should a cloud cache be used for heavy operations </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> .useCacheArgs </td>
+   <td style="text-align:left;"> list </td>
+   <td style="text-align:left;"> list(use.... </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> should this event be cloud cached </td>
   </tr>
 </tbody>
 </table>
@@ -1332,7 +1424,7 @@ The module produces the following outputs (Table
   <tr>
    <td style="text-align:left;"> biomassMap </td>
    <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> total biomass raster layer in study area, filtered for pixels covered by cohortData. Units in $g/m^2$ </td>
+   <td style="text-align:left;"> total biomass raster layer in study area, filtered for pixels covered by `cohortData`. Units in $g/m^2$ </td>
   </tr>
   <tr>
    <td style="text-align:left;"> cohortData </td>
@@ -1352,12 +1444,12 @@ The module produces the following outputs (Table
   <tr>
    <td style="text-align:left;"> firePerimeters </td>
    <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> As the input object `firePerimeters`, but potentially cropped/masked/projected to match `rasterToMatchLarge` </td>
+   <td style="text-align:left;"> As the input object `firePerimeters`, but potentially cropped/masked/projected to match `rasterToMatch_biomassParam` </td>
   </tr>
   <tr>
    <td style="text-align:left;"> imputedPixID </td>
    <td style="text-align:left;"> integer </td>
-   <td style="text-align:left;"> A vector of pixel IDs - matching rasterMatch IDs - that suffered data imputation. Data imputation may be in age (to match last fire event post 1950s, or 0 cover), biomass (to match fire-related imputed ages, correct for missing values or for 0 age/cover), land cover (to convert non-forested classes into to nearest forested class) </td>
+   <td style="text-align:left;"> A vector of pixel IDs - matching `rasterMatch` IDs - that suffered data imputation. Data imputation may be in age (to match last fire event post 1950s, or 0 cover), biomass (to match fire-related imputed ages, correct for missing values or for 0 age/cover), land cover (to convert non-forested classes into to nearest forested class) </td>
   </tr>
   <tr>
    <td style="text-align:left;"> pixelGroupMap </td>
@@ -1387,7 +1479,7 @@ The module produces the following outputs (Table
   <tr>
    <td style="text-align:left;"> rstLCC </td>
    <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> As the input object `rstLCC`, but potentially cropped/projected/masked to match `rasterToMatchLarge` </td>
+   <td style="text-align:left;"> As the input object `rstLCC`, but potentially cropped/projected/masked to match `rasterToMatch_biomassParam` </td>
   </tr>
   <tr>
    <td style="text-align:left;"> species </td>
@@ -1397,7 +1489,7 @@ The module produces the following outputs (Table
   <tr>
    <td style="text-align:left;"> speciesLayers </td>
    <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> cover percentage raster layers by species in Canada species map. Defaults to the Canadian Forestry Service, National Forest Inventory, kNN-derived species cover maps from 2001 using a cover threshold of 10 - see &lt;https://open.canada.ca/data/en/dataset/ec9e2659-1c29-4ddb-87a2-6aced147a990&gt; for metadata. </td>
+   <td style="text-align:left;"> cover percentage raster layers by species in Canada species map. Defaults to the Canadian Forestry Service, National Forest Inventory, SCANFI-derived species cover maps from 2020 using a cover threshold of 10 - see &lt;https://open.canada.ca/data/en/dataset/18e6a919-53fd-41ce-b4e2-44a9707c52dc&gt; for metadata. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> speciesEcoregion </td>
@@ -1407,17 +1499,7 @@ The module produces the following outputs (Table
   <tr>
    <td style="text-align:left;"> standAgeMap </td>
    <td style="text-align:left;"> SpatRaster </td>
-   <td style="text-align:left;"> As the input object `standAgeMap`, but potentially cropped, projected, masked to match `rasterToMatchLarge`. </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> studyArea </td>
-   <td style="text-align:left;"> sfc </td>
-   <td style="text-align:left;"> As the input object `studyArea`, but potentially projected to match `rasterToMatch` CRS. </td>
-  </tr>
-  <tr>
-   <td style="text-align:left;"> studyAreaLarge </td>
-   <td style="text-align:left;"> sfc </td>
-   <td style="text-align:left;"> As the input object `studyAreaLarge`, but potentially projected to match `studyArea` and `rasterToMatch` CRS. </td>
+   <td style="text-align:left;"> As the input object `standAgeMap`, but potentially cropped, projected, masked to match `rasterToMatch_biomassParam`. </td>
   </tr>
   <tr>
    <td style="text-align:left;"> sufficientLight </td>
@@ -1477,3 +1559,4 @@ repository](https://github.com/CeresBarros/LandRBiomass_publication) and in
 @Barros2023.
 
 ## References {#bboreal-refs}
+

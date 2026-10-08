@@ -12,17 +12,19 @@ updateYoungBiomasses <- function(young, modelBiomass, ...) {
   useRescaled <- !is.null(modelBiomass$scaledVarsModelB)
 
   if (useRescaled) {
-    if (!is(modelBiomass$scaledVarsModelB, "list"))
+    if (!is(modelBiomass$scaledVarsModelB, "list")) {
       stop("modelBiomass$scaledVarsModelB must be a list")
+    }
 
-    if (!all(names(modelBiomass$scaledVarsModelB) %in% c("cover", "logAge")))
+    if (!all(names(modelBiomass$scaledVarsModelB) %in% c("cover", "logAge"))) {
       stop("modelBiomass$scaledVarsModelB must be a list with 'cover' and 'logAge' entries")
+    }
 
     setnames(young, c("logAge", "cover"), c("logAge_orig", "cover_orig")) ## original, unscaled vars
-    young[, `:=`(logAge = scale(logAge_orig,
+    young[, `:=`(logAge = scale(logAge_orig,                            # nolint: conflicting_fn_unqualified
                                 center = attr(modelBiomass$scaledVarsModelB$logAge, "scaled:center"),
                                 scale = attr(modelBiomass$scaledVarsModelB$logAge, "scaled:scale")),
-                 cover = scale(cover_orig,
+                 cover = scale(cover_orig,                              # nolint: conflicting_fn_unqualified
                                center = attr(modelBiomass$scaledVarsModelB$cover, "scaled:center"),
                                scale = attr(modelBiomass$scaledVarsModelB$cover, "scaled:scale")))]
   }
@@ -32,12 +34,12 @@ updateYoungBiomasses <- function(young, modelBiomass, ...) {
     young2 <- unique(young, by = columns)
     message(green("  -- Calculating bootstrap estimates around B; will replace B in young data if it is beyond 95% CI"))
     message(green("     This will take some time."))
-    PI.time <- system.time({
-      PI <- predictInterval(merMod = modelBiomass$mod, newdata = young2,
-                            level = 0.95, n.sims = 15,
-                            stat = "median", type = "linear.prediction",
-                            include.resid.var = TRUE)
-    })
+    ## Not wrapped in system.time(): it defaults to gcFirst = TRUE, so this forced a
+    ## full garbage collection every call, and `PI.time` was never read.
+    PI <- predictInterval(merMod = modelBiomass$mod, newdata = young2,
+                          level = 0.95, n.sims = 15,
+                          stat = "median", type = "linear.prediction",
+                          include.resid.var = TRUE)
     PI <- setDT(PI)
     young2 <- cbind(PI, young2)
     setnames(young2, old = "fit", new = "pred")
@@ -98,13 +100,27 @@ updateYoungBiomasses <- function(young, modelBiomass, ...) {
 #' @param currentModule A character string of the current module e.g., from currentModule(sim)
 #' @param modules A list of character strings of the modules in the sim, e.g., from modules(sim)
 #' @export
-spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
-                          # rasterToMatch, speciesLayers,
-                          minRelativeB, species, sppEquiv, sppEquivCol,
-                          sppColorVect, paths, currentModule, modules) {
+spinUpPartial <- function(
+  pixelCohortData,
+  speciesEcoregion,
+  maxAge,
+  # rasterToMatch, speciesLayers,
+  minRelativeB,
+  species,
+  sppEquiv,
+  sppEquivCol,
+  sppColorVect,
+  paths,
+  currentModule,
+  modules
+) {
   rng <- range(pixelCohortData$age)
-  if (rng[1] <= 0) stop("This spinup is only tested with age > 0")
-  if (rng[2] > maxAge) stop("This spinup is only tested with age <= maxAge")
+  if (rng[1] <= 0) {
+    stop("This spinup is only tested with age > 0")
+  }
+  if (rng[2] > maxAge) {
+    stop("This spinup is only tested with age <= maxAge")
+  }
   cd <- copy(pixelCohortData)
   cd[, `:=`(pixelGroup = as.integer(factor(pixelIndex)))]
   pixelGroupMap <- pixelGroupMapGenerate(cd)
@@ -112,24 +128,31 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
   studyArea <- vect(ext(pixelGroupMap), crs(pixelGroupMap))
   rasterToMatch <- pixelGroupMap
   ecoregionMap <- pixelGroupMap
-  levels(ecoregionMap) <- data.frame(ID = 1:max(cd$pixelGroup, na.rm = TRUE),
-                                     ecoregion = 1, ecoregionGroup = 1, stringsAsFactors = TRUE)
+  levels(ecoregionMap) <- data.frame( # nolint: conflicting_fn_unqualified
+    ID = 1:max(cd$pixelGroup, na.rm = TRUE),
+    ecoregion = 1,
+    ecoregionGroup = 1,
+    stringsAsFactors = TRUE
+  )
   # minRelativeB <- sim$minRelativeB
   ecoregion <- makeEcoregionDT(cd, speciesEcoregion)
   parameters <- list(
-    Biomass_core = list(.saveInitialTime = NA,
-                        .saveInterval = NA,
-                        .useParallel = 1,
-                        seedingAlgorithm = "noSeeding",
-                        calcSummaryBGM = NULL,
-                        .plots = NULL,
-                        .maxMemory = 1e9,
-                        sppEquivCol = sppEquivCol,
-                        .useCache = NULL,
-                        successionTimestep = 10,
-                        initialBiomassSource = "cohortData",
-                        vegLeadingProportion = 0
-    ))
+    Biomass_core = list(
+      .saveInitialTime = NA,
+      .saveInterval = NA,
+      .useParallel = 1,
+      seedingAlgorithm = "noSeeding",
+      calcSummaryBGM = NULL,
+      .plots = NULL,
+      .maxMemory = 1e9,
+      sppEquivCol = sppEquivCol,
+      .useCache = NULL,
+      successionTimestep = 10,
+      minCohortBiomass = 0,
+      initialBiomassSource = "cohortData",
+      vegLeadingProportion = 0
+    )
+  )
   #sppEquiv needed or module stops, but object unused, likewise with speciesLayers
   speciesLayers <- "species"
 
@@ -186,15 +209,18 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
     moduleNameAndBranch <- paste0("PredictiveEcology/Biomass_core@development (>= ", bcVersion, ")")
     modules <- Require::extractPkgName(moduleNameAndBranch)
     paths$modulePath <- file.path(submodulePath, "Biomass_core")
-    getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) # will only overwrite if wrong version
+    getModule(moduleNameAndBranch, modulePath = paths$modulePath, overwrite = TRUE) ## will only overwrite if wrong version
   } else {
     modules <- "Biomass_core"
   }
-  
-  outputs <- data.frame(expand.grid(objectName = "cohortData",
-                                    saveTime = unique(seq(times$start, times$end, by = 1)),
-                                    eventPriority = 1, fun = "qs::qsave",
-                                    stringsAsFactors = FALSE))
+
+  outputs <- data.frame(expand.grid(
+    objectName = "cohortData",
+    saveTime = unique(seq(times$start, times$end, by = 1)),
+    eventPriority = 1,
+    fun = "qs2::qs_save",
+    stringsAsFactors = FALSE
+  ))
   suppressMessages({
     ss <- simInit(paths = paths, outputs = outputs, times = times)
   })
@@ -202,9 +228,12 @@ spinUpPartial <- function(pixelCohortData, speciesEcoregion, maxAge,
   mySimOut <- simInitAndSpades(
     # .cacheExtra = list(knownDigest, paths$outputPath),
     # omitArgs = c("objects", "params", "debug", "paths"),
-    times = times, params = parameters, modules = modules, # quick = "paths",
+    times = times,
+    params = parameters,
+    modules = modules, # quick = "paths",
     paths = paths,
-    objects = objectsForYoungSim, outputs = outputs,
+    objects = objectsForYoungSim,
+    outputs = outputs,
     # outputObjects = "pixelGroupMap",
     debug = 1
   )

@@ -1,13 +1,212 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
-version 1.5.4
-=============
+# Biomass_borealDataPrep 1.8.0
 
-## dependency changes
-* terra is now a dependency
+This release brings more than two years of work to the main branch. The module now builds its forest inputs from SCANFI, the national satellite forest inventory, for any year SCANFI covers, and it can use the Canadian Wetland Inventory to tell treed wetland from upland forest. Species can get separate growth and establishment values on upland and wet ground. How much deciduous trees count toward cover is now estimated from each study area instead of using one fixed number. Model fits use samples ten times larger, so their values change much less from run to run.
 
-## new features
+Several fixes change the numbers a simulation starts with. Less common species were given establishment chances that were too low, and a rare species could be told it cannot grow at all; both are fixed. Estimated stand ages can no longer be negative. A stand is now called "leading" by a species at 75% instead of 80%, which shifts vegetation type maps. Study areas with no tree species, or where every species grows everywhere, no longer stop the run. Projects should expect different starting parameters from earlier versions.
 
+* The message for an unset `.studyAreaName` comes from `reproducible::studyAreaName(notSupplied = ".studyAreaName")` (PredictiveEcology/reproducible#638), so it reads the same in every module that uses it: "`.studyAreaName` not supplied; using a hash of `<object>`: <hash>". With an older reproducible the name is the same and there is no message.
+
+* **`imputeBadAgeModel` now defaults to `LandR::imputeBadAgeModelDefault()`** instead of
+  duplicating the formula here. The old default fit age directly, so `predict()` could return a
+  negative value for a young, high-cover, low-biomass stand; that got clamped to age 0 while
+  biomass/cover stayed positive, which `CBMutils::cumPoolsCreateAGB()` rejects (#131). The new
+  default fits `log(age)`, so an imputed age can no longer be negative. Requires
+  `LandR@development (>= 1.2.0.9043)`.
+
+* `reqdPkgs` now lists `crayon`, `curl`, `httr`, `lme4`, `Require` and `tidyterra`, which the module's code uses.
+
+# Biomass_borealDataPrep 1.7.1
+
+* **The deciduous cover weight fit now declines on landscapes that cannot identify it.** What
+  identifies the weight is how much the deciduous share of cover varies *between pixels*, not how
+  much deciduous there is: a uniformly deciduous landscape is as uninformative as one with none.
+  The existing guards only set a floor on the mean, so e.g. ELF 10.1 (Manitoba parkland, ~100%
+  deciduous everywhere) returned a meaningless 1.12 -- with a bootstrap SD of 0.004, so precision
+  did not flag it either. New `deciduousCoverWeightFn(minDeciduousShareSD = 0.1)`: below that
+  between-pixel SD the fit returns `NA` and the parameter value is used, with a message.
+
+* **`deciduousCoverWeight` default 0.8418911 -> 0.93**, the mean fit on the three landscapes tested
+  that can identify it (0.90, 1.00, 0.91). Provisional: more landscapes are being tested.
+
+# Biomass_borealDataPrep 1.7.0
+
+* **`deciduousCoverDiscount` is now `deciduousCoverWeight`, and it is estimated rather than
+  hardcoded.** `fitDeciduousCoverWeight` defaults to `TRUE`: the weight is fit from
+  `studyArea_biomassParam` on every run. The parameter's number (still 0.8418911, from NWT data in
+  March 2020) is now only the fallback for a study area that cannot identify it. It is not a
+  universal constant -- on 100 km of Alberta boreal mixedwood the fit gives 0.90, and per
+  ecoregion inside that window it ranges 0.80 to 1.11.
+
+* **The old estimator is gone**, and with it the `coverPctToBiomassPctModel` parameter and
+  `R/coverOptimFn.R`. It searched `optimize(interval = c(0.1, 1))` for the x minimising the AIC of
+  `glm(log(B/100) ~ logAge * log(totalBiomass/100) * speciesCode * lcc)`. Two problems, both
+  measured:
+  - `B` is the response and `B` is built from x, so every candidate was scored on a different
+    response vector; those AICs are not comparable likelihoods. (Returning the R-squared it already
+    computed does not fix this -- R-squared rises monotonically to whichever search bound.)
+  - the `c(0.1, 1)` cap was binding. On a study area with enough deciduous cover to identify
+    anything, that estimator's own objective wants 1.2 and the cap returned 0.9999.
+  It also cost 200-400 s per study area, against about 5 s for the new fit.
+
+* **New: `rstCanopyHeight` and `rstCanopyClosure` inputs**, defaulting to SCANFI's own layers via
+  `LandR::prepInputs_SCANFI_structure()` when the weight is being fit on SCANFI data. They are what
+  separate canopy architecture from site quality: broadleaf grows on richer ground than black
+  spruce, so comparing composition between pixels without controlling for structure credits the
+  site to the species -- uncontrolled, the same Alberta window returns 1.74 instead of 0.90.
+  kNN and NTEMS publish no equivalent pair, so on those sources the fit is skipped and the
+  parameter kept.
+
+* `speciesLeadingClass()`'s `deciduousCoverDiscount` argument is renamed to `deciduousCoverWeight`
+  and is no longer required to be <= 1.
+
+* Requires LandR >= 1.2.0.9025.
+
+# Biomass_borealDataPrep 1.6.4
+
+* **The model subsamples are 10x larger: 500 rows per group, was 50.** `subsetDataBiomassModel`
+  and `subsetDataAgeModel` now default to `LandR::subsetDataSize()` (option
+  `LandR.subsetDataSize`), so the number lives in one place and a project can move it once for
+  every module. 50 was chosen years ago when these fits were computationally expensive. It was
+  small enough to show: repeated runs of one simulation gave a median `maxB` coefficient of
+  variation of 10% across ecoregion x species, up to 62%, on a 60 km boreal test window. Fits
+  take longer, and parameters change. Requires LandR >= 1.2.0.9024
+  (PredictiveEcology/LandR#234).
+# Biomass_borealDataPrep 1.6.3
+
+* `vegLeadingProportion` now defaults to `LandR::leadingSpeciesProp()` (option
+  `LandR.leadingSpeciesProp`, which takes `LandR.mixedwoodProp`, 0.75, unless set), so the
+  leading-species threshold is set once for every module and LandR function instead of being
+  hard-coded per module. **The default changes from 0.8 to 0.75**, which changes vegetation type
+  maps. Requires LandR >= 1.2.0.9024 (PredictiveEcology/LandR#234).
+
+
+# Biomass_borealDataPrep 1.6.2
+
+* The SCANFI species layers are requested with LandR's `*to` family (`cropTo`, `projectTo`,
+  `maskTo`) instead of the legacy `studyArea` + `rasterToMatch` pair, which LandR is retiring.
+  Requires LandR >= 1.2.0.9017 (PredictiveEcology/LandR#227), which also fixed the legacy pair:
+  when both were given, the mask had been taken from the raster instead of the study area.
+
+
+# Biomass_borealDataPrep 1.6.1
+
+* **A maxB clamped to 0 is replaced by the 95th percentile of observed biomass** (new parameter
+  `floorMaxBAtObserved`, default `TRUE`). maxB is predicted from the biomass model and a negative
+  prediction is clamped to 0, so where a species is rare the model could say it cannot grow at all --
+  on a 60 km boreal test window white birch got maxB = 0 on wet ground. Such rows now take the 95th
+  percentile of the biomass the species was observed at in that `ecoregionGroup`, and `maxANPP`
+  follows (`maxB / 30`). A percentile rather than the maximum, so one freak cohort cannot set the
+  ceiling; this matches the module's `quantile(age, 0.99)` longevity rule and LandR's maxB quantile
+  summaries. Fitted values are never changed: flooring every row overrode genuine fits (black spruce
+  upland 5,541 -> 10,800).
+* **Establishment denominator counts pixels.** `coverNum`, the number of pixels in an
+  `ecoregionGroup` that the cover-presence (establishment) model divides by, counted cohort rows:
+  a pixel with three species counted three times, so presence probabilities were deflated by
+  roughly the number of species per pixel. Through `establishprob = 1 - (1 - p)^successionTimestep`
+  this barely moves common species but understates less common ones substantially (jack pine
+  0.147 -> 0.278 on a 60 km boreal test window). `coverNumByGroup()` now counts each pixel once.
+
+# Biomass_borealDataPrep 1.6.0
+
+* **Wetland site layer.** New input `rstWetland` (default: Canadian Wetland Inventory Map v3A via
+  `LandR::prepInputs_CWIM()`, parameter `wetlandSource`). SCANFI land cover has no wetland classes,
+  so treed wetland could not be told from upland forest; `rstLCC` now carries NTEMS classes 80 and
+  81 from it (wet and treed, including 240, is 81; wet otherwise is 80).
+* **Class 240 is resolved without NTEMS.** The year-fill loop, its NTEMS download and its
+  1000-pixel threshold are gone. A class-240 pixel takes its composition from species cover
+  (`speciesLeadingClass()`, NTEMS' 0.75 threshold after the deciduous cover discount) and its site
+  from `rstWetland`; only pixels with no species cover go to `convertUnwantedLCC()`.
+* **One "inferred" flag.** Every former class-240 pixel is now left out of parameter estimation
+  and added to `imputedPixID`. Previously only the pixels `convertUnwantedLCC()` handled were; the
+  ones the year-fill loop re-typed went into every fit unrecorded. `coverNum` now counts
+  estimation pixels only, matching `coverPres`. This changes estimates wherever class 240 occurs.
+* **New stratification** `stratumType = "siteComposition"`: ecoregion x site x composition, so a
+  species on upland and on wet ground gets separate maxB, maxANPP and establishment probability.
+  Codes stay three digits (upland 210/220/230, wet 810/820/830); strata with fewer than
+  `stratumMinPixels` estimation pixels pool composition first (290/890), then site (990). The
+  default, `"landcover"`, keeps one land-cover axis, now with 80/81.
+
+# Biomass_borealDataPrep 1.5.15
 
 ## bug fixes
-* Comment fixes
+* `noSpeciesCoreInputs()` declares `@importFrom data.table data.table`. The package rendition the
+  testthat-module CI builds imports `data.table` only through the module's explicit `@importFrom`
+  tags (an explicit `importFrom` suppresses the blanket `@import`), so the bare `data.table()` call
+  was not found and `test-noSpeciesCoreInputs.R` failed on CI.
+
+# Biomass_borealDataPrep 1.5.14
+
+## bug fixes
+* `dataYear` can be any year SCANFI V2 provides (1985-2025, every 5 years), not only 2000, 2010 or 2020.
+  The module no longer stops on other years; `LandR::prepRawBiomassMap()` checks the year for the data
+  source. Needed for fireSense's `dataYears = c(1985, 1990, 2000, 2010, 2020)`.
+* `SCANFIfinalYearForLCC()` is removed. It listed the SCANFI V1 Google Drive folder to find the last year
+  for filling "disturbed" (240) pixels. The fill keeps its 2000, 2010, 2020 order until #110 is decided.
+
+# Biomass_borealDataPrep 1.5.13
+
+## bug fixes
+* A study area in which every species is present in every pixel of its `ecoregionGroup` (e.g., one
+  tree species, cover 100 everywhere) no longer stops with "contrasts can be applied only to factors
+  with 2 or more levels". Rows with 100% presence are left out of `coverModel` and given probability
+  1; when that was every row, the model was fitted to an empty table. The cover model is now skipped
+  in that case and every row gets probability 1, as those rows already did. The step is in
+  `estimateCoverModel()` (`R/estimateCoverModel.R`), with tests.
+
+# Biomass_borealDataPrep 1.5.12
+
+## dependency changes
+* requires `LandR (>= 1.2.0.9005)`, which added the `method` argument to
+  `convertUnwantedLCC()` and removed that function's deterministic lowest-class tie-break.
+  1.2.0.9004 had also dropped the `newPossLCC` column this module uses to write
+  replacement classes back into `rstLCCAdj`, where the `is.null()` guard silently stopped
+  firing and left `rstLCCAdj` (hence `ecoregionMap`) showing the un-replaced classes;
+  1.2.0.9005 restores it.
+
+## new features
+* new parameter `LCCClassesToReplaceNNMethod`, passed to `LandR::convertUnwantedLCC()` as
+  its `method`. Default `"nearestRandom"` preserves the stochastic allocation this module
+  has always had. `"nearestWeighted"` gives the same abundance weighting but keys the draw
+  on the pixel's ground position, so it is deterministic without a seed and a grid-aligned
+  crop of the study area agrees with the full extent.
+
+# Biomass_borealDataPrep 1.5.11 (2026-06-02)
+
+* New `landis` mode parameter (default `FALSE`): when enabled, the forested LCC classes are collapsed to a single class in `createBiomass_coreInputs()` (before `prepEcoregions`/`makePixelTable`) so `ecoregionGroup` is defined by ecoregion only, not ecoregion x LCC; `maxB`, `maxANPP`, and species establishment probability are then estimated per ecoregion, as expected by LANDIS-II Biomass Succession. Default `FALSE` preserves the standard ecoregion x LCC behaviour.
+* Support study areas with more than one polygon: allow `sim$studyArea` with `NROW > 1` (only the local `studyArea` object needs a single feature).
+* Switch serialization/caching from `qs` to `qs2`, with an accompanying refactor of `updateYoungBiomasses()`; add `googledrive` to `reqdPkgs` and use cloud storage for the module event.
+* Address multiple:1 mapping in `sppEquiv`, and bump the minimum `LandR` version several times to pull in upstream bugfixes (`prepEcoregions`, fire effects).
+* Fixes: use `terra::aggregate`; drop the invalid `startYear` argument from `prepInputsStandAgeMap`; move `sim` assignment inside its block in `.inputObjects`; complete the remaining `crayon` to `cli` conversions.
+
+# Biomass_borealDataPrep 1.5.10 (2025-10-09)
+
+* Add stand-age adjustment: cap pixel ages to species longevity via a new function, plus a diagnostic plot comparing age distributions before and after adjustment.
+* Merge SCANFI support (updated data source with corresponding manual/Rmd rebuild and bibliography updates).
+* Package metadata: switch from `crayon` to `cli`; general cleanup.
+
+# Biomass_borealDataPrep 1.5.9 (2025-09-11)
+
+* Overhaul the land-cover (LCC) adjustment function: fix the adjustment logic, remove hard-coded 34:36 class references, and improve handling of empty pixels.
+* Fixes to the `dataYear` logic and to the `lastYrOnNTEMS` handling (NTEMS annual data).
+* Caching improvements: add `.functionName` to several `Cache` calls for a speedup; address a `data.table` warning; update `sf` metadata.
+
+# Biomass_borealDataPrep 1.5.8 (2025-05-27)
+
+* Refactor biomass parameterization into a dedicated parameterization object (`biomassParam`), including guarding against negative biomass at low cover values (via `pmax`), fixing backwards and lat/lon tests, and ensuring the rasterToMatch is projected in metres.
+* Fire behavior corrections and cleanup.
+* Land cover: add treed wetland (class 81) to the forested classes; default `sppEquivCol` to `"LandR"`.
+* Reprojection safety: disable `gdalwarp` for `postProcess` of raster indices to avoid unintended reprojection, and fix use of the temporary `reproducible.gdalwarp` option.
+* Misc: `studyArea` is no longer a module output; skip redundant subsetting when `subsetDataBiomassModel` is `FALSE`; bump `LandR` for a `prepRTM` bugfix; replace deprecated `filename2`.
+
+# Biomass_borealDataPrep 1.5.7 (2024-06-06)
+
+* Use CRAN versions of package dependencies.
+* Spinup: install `Biomass_core` via `SpaDES.project` (guarded to versions < 1.3.5) and qualify `getModule` with `SpaDES.project::`.
+* Fixes: correct `initialEcoregionGroup` to `initialEcoregionCode`; stop forcing `reproducible.useTerra` before `prepInputsStandAgeMap`; fix a `.plots` bug; add missing `lme4::` namespace; drop use of the removed `SpaDES.core` `dotSeed`.
+* Extensive GitHub Actions workflow and manual (Rmd) rebuild maintenance.
+
+# Biomass_borealDataPrep 1.5.4 (2022-05-27)
+
+* Baseline release (pre-2023): `terra` added as a dependency; comment fixes. Earlier history not detailed here.
