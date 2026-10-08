@@ -2,8 +2,6 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 
 # Biomass_borealDataPrep (development version)
 
-* `reqdPkgs` no longer lists `curl`, `httr`, `lme4`, `Require` and `tidyterra`. The module calls them only as `pkg::fun()`, which resolves whether or not the package is attached or imported into the module, and LandR already installs each of them as a hard dependency; listed, they were attached for every module in a simulation under the default `spades.reqdPkgsAttach = TRUE`. `crayon` stays: `green()` is called unqualified in `R/updateYoungBiomasses.R`.
-
 * **`imputeBadAgeModel` now defaults to `LandR::imputeBadAgeModelDefault()`** instead of
   duplicating the formula here. The old default fit age directly, so `predict()` could return a
   negative value for a young, high-cover, low-biomass stand; that got clamped to age 0 while
