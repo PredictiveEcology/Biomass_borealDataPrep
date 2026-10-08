@@ -1,5 +1,7 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
+# Biomass_borealDataPrep (development version)
+
 # Biomass_borealDataPrep 1.8.0
 
 This release brings more than two years of work to the main branch. The module now builds its forest inputs from SCANFI, the national satellite forest inventory, for any year SCANFI covers, and it can use the Canadian Wetland Inventory to tell treed wetland from upland forest. Species can get separate growth and establishment values on upland and wet ground. How much deciduous trees count toward cover is now estimated from each study area instead of using one fixed number. Model fits use samples ten times larger, so their values change much less from run to run.
