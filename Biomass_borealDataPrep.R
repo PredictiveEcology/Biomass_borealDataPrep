@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.7.1.9001"),
+  version = list(Biomass_borealDataPrep = "1.8.0.9001"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -182,6 +182,11 @@ defineModule(sim, list(
                              "LandisInputs/BSW/biomass-succession-main-inputs_BSW_Baseline.txt"),
                       "and applies them to all ecolocations (`ecoregionGroup` codes)."
                     )),
+    defineParameter("initialB", "numeric", 10, 1, NA,
+                    desc = paste("Initial biomass values of new age-1 cohorts. Used here as the starting biomass",
+                                 "of the young-cohort spin-up; must match Biomass_core's `initialB`.",
+                                 "If `NA` or `NULL`, initial biomass will be calculated as in LANDIS-II Biomass Suc. Extension",
+                                 "(see Scheller and Miranda, 2015 or `?LandR::.initiateNewCohorts`)")),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by `P(sim)$forestedLCCClasses`?"),
     defineParameter("overrideAgeInFires", "logical", TRUE, NA, NA,
@@ -1430,7 +1435,8 @@ createBiomass_coreInputs <- function(sim) {
             sppColorVect = sim$sppColorVect,
             paths = paths(sim),
             currentModule = currentModule(sim),
-            modules = modules(sim) ## will also check modules in paths$moduelPath
+            modules = modules(sim), ## will also check modules in paths$moduelPath
+            initialB = P(sim)$initialB
           ) |>
             Cache(
               userTags = c(cacheTags, "spinUpYoungBiomasses"),
@@ -1464,8 +1470,8 @@ createBiomass_coreInputs <- function(sim) {
         
         ## TODO: reassess 2.8x multiplier; it's high, but needed in RoF_shield
         assertthat::assert_that(
-          all(inRange(na.omit(young$B), 0, 2.8 * maxRawB / min(sim$species$longevity/maxAgeHighQualityData)))
-        ) ## /4 is too strong -- 25 years is a lot of time
+          all(inRange(na.omit(young$B), 0, youngBiomassLimit(maxRawB, sim$species$longevity, maxAgeHighQualityData)))
+        )
       } else {
         ## return maxAgeHighQualityData to -1
         message(cli::col_blue("Simulation start year is lower than oldest fire."))
@@ -1676,11 +1682,9 @@ Save <- function(sim) {
     }
   }
   
-  if (is.na(P(sim)$.studyAreaName)) {
-    params(sim)[[currentModule(sim)]][[".studyAreaName"]] <- reproducible::studyAreaName(sim$studyArea_biomassParam)
-    message("The .studyAreaName is not supplied; derived name from sim$studyArea_biomassParam: ",
-            params(sim)[[currentModule(sim)]][[".studyAreaName"]])
-  }
+  if (is.null(P(sim)$.studyAreaName) || is.na(P(sim)$.studyAreaName))
+    P(sim)$.studyAreaName <- reproducible::studyAreaName(sim$studyArea_biomassParam,
+                                                         notSupplied = ".studyAreaName")
   
   studyArea <- sf::st_as_sf(sim$studyArea)
   studyArea_biomassParam <- sf::st_as_sf(sim$studyArea_biomassParam)
@@ -1860,6 +1864,7 @@ Save <- function(sim) {
   ## check parameter consistency across modules
   paramCheckOtherMods(sim, "dataYear", ifSetButDifferent = "warning")
   paramCheckOtherMods(sim, "minCoverThreshold", ifSetButDifferent = "warning")
+  paramCheckOtherMods(sim, "initialB", ifSetButDifferent = "warning")
   
   paramCheckOtherMods(sim, "sppEquivCol", ifSetButDifferent = "error")
   paramCheckOtherMods(sim, "vegLeadingProportion", ifSetButDifferent = "error")
