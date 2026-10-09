@@ -76,7 +76,7 @@ test_that("parameters are the expected names", {
            "coverModel", "dataSource", "dataYear",
            "deciduousCoverWeight", "earliestFireYear", "ecoregionLayerField",
            "exportModels", "fitDeciduousCoverWeight", "fixModelBiomass",
-           "forestedLCCClasses", "imputeBadAgeModel", "landis", "LCCClassesToReplaceNN",
+           "forestedLCCClasses", "imputeBadAgeModel", "initialB", "landis", "LCCClassesToReplaceNN",
            "LCCClassesToReplaceNNMethod", "minCoverThreshold", "minSpeciesEcoregionShare", "minRelativeBFunction",
            "omitNonTreedPixels", "overrideAgeInFires", "overrideBiomassInFires",
            "pixelGroupAgeClass", "pixelGroupBiomassClass", "rmImputedPix",

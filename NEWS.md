@@ -2,6 +2,8 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 
 # Biomass_borealDataPrep (development version)
 
+* The spin-up that re-estimates biomass of young cohorts inside fire perimeters now starts each cohort at `initialB` (new parameter, default 10 g/m2, must match Biomass_core's; `NA` starts at `maxANPP`) instead of 0, so growthcurve-1 species such as spruce are no longer held to the 1 g/m2/yr growth floor while pioneers take the pixel. The sanity check on the result now allows 1.2 x the age-based limit, capped at the raw biomass map maximum, so fast-growing pioneers no longer stop runs.
+
 # Biomass_borealDataPrep 1.8.0
 
 This release brings more than two years of work to the main branch. The module now builds its forest inputs from SCANFI, the national satellite forest inventory, for any year SCANFI covers, and it can use the Canadian Wetland Inventory to tell treed wetland from upland forest. Species can get separate growth and establishment values on upland and wet ground. How much deciduous trees count toward cover is now estimated from each study area instead of using one fixed number. Model fits use samples ten times larger, so their values change much less from run to run.
