@@ -101,7 +101,8 @@ updateYoungBiomasses <- function(young, modelBiomass, ...) {
 #' @param modules A list of character strings of the modules in the sim, e.g., from modules(sim)
 #' @param initialB Biomass (g/m2) at which every cohort starts the spin-up. Also passed to
 #'   Biomass_core as its `initialB`, i.e. the biomass a newly established cohort gets there
-#'   (`LandR:::.initiateNewCohorts`). The default matches Biomass_core's default.
+#'   (`LandR:::.initiateNewCohorts`). The default matches Biomass_core's default. If `NA`,
+#'   cohorts start at `maxANPP` from `speciesEcoregion`, as Biomass_core does.
 #' @export
 spinUpPartial <- function(
   pixelCohortData,
@@ -165,7 +166,7 @@ spinUpPartial <- function(
 
   speciesEcoregion2 <- copy(speciesEcoregion)
   speciesEcoregion2[, year := times$start]
-  cdZeroed <- spinUpStartCohorts(cd, initialB)
+  cdZeroed <- spinUpStartCohorts(cd, initialB, speciesEcoregion)
   objectsForYoungSim <- list(
     studyArea = studyArea,
     rasterToMatch = rasterToMatch,
@@ -252,9 +253,19 @@ spinUpPartial <- function(
 ## Cohorts at the start of the spin-up: age 1 at the biomass a new cohort gets in Biomass_core.
 ## Starting at B = 0 left growthcurve-1 species (e.g. spruce) with only the 1 g/m2/yr growth
 ## floor, so they ended at B = age - 1 while pioneers took the pixel.
-spinUpStartCohorts <- function(cd, initialB) {
+spinUpStartCohorts <- function(cd, initialB, speciesEcoregion) {
   cd <- copy(cd)
-  cd[, `:=`(age = 1L, B = as.integer(initialB))]
+  if (is.null(initialB) || is.na(initialB)) {
+    ## As LandR::.initiateNewCohorts (cohorts.R, `isTRUE(is.na(initialB))` branch) with sumB = 0:
+    ## asInteger(pmin(maxANPP, asInteger(pmax(1, maxANPP * exp(-1.6 * 0 / maxB_eco)))))
+    se <- unique(speciesEcoregion[, c("speciesCode", "ecoregionGroup", "maxANPP")],
+                 by = c("speciesCode", "ecoregionGroup"))
+    se[, startB := asInteger(pmin(maxANPP, asInteger(pmax(1, maxANPP))))]
+    cd[, `:=`(age = 1L, B = se$startB[match(paste(speciesCode, ecoregionGroup),
+                                           paste(se$speciesCode, se$ecoregionGroup))])]
+  } else {
+    cd[, `:=`(age = 1L, B = as.integer(initialB))]
+  }
   cd[]
 }
 

@@ -17,8 +17,18 @@ test_that("young-cohort limit passes a pioneer 17% over the age-based limit but 
 test_that("spin-up starts every cohort at the new-cohort biomass, not zero", {
   cd <- data.table::data.table(pixelIndex = 1:2, speciesCode = c("Pice_mar", "Betu_pap"),
                                age = c(12L, 7L), B = c(500L, 800L))
-  out <- spinUpStartCohorts(cd, initialB = 10)
+  out <- spinUpStartCohorts(cd, initialB = 10, speciesEcoregion = NULL)
   expect_identical(out$B, c(10L, 10L))
   expect_identical(out$age, c(1L, 1L))
   expect_identical(cd$B, c(500L, 800L)) # input untouched
+})
+
+test_that("spin-up with NA initialB starts cohorts at maxANPP from speciesEcoregion", {
+  cd <- data.table::data.table(pixelIndex = 1:3, speciesCode = c("Pice_mar", "Betu_pap", "Pice_mar"),
+                               ecoregionGroup = c("a", "a", "b"), age = c(12L, 7L, 9L), B = c(500L, 800L, 5L))
+  se <- data.table::data.table(speciesCode = c("Pice_mar", "Betu_pap", "Pice_mar"),
+                               ecoregionGroup = c("a", "a", "b"), maxANPP = c(107L, 150L, 0L), maxB = 3000L)
+  out <- spinUpStartCohorts(cd, initialB = NA, speciesEcoregion = se)
+  expect_identical(out$B, c(107L, 150L, 0L))
+  expect_identical(out$age, c(1L, 1L, 1L))
 })

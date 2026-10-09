@@ -182,6 +182,11 @@ defineModule(sim, list(
                              "LandisInputs/BSW/biomass-succession-main-inputs_BSW_Baseline.txt"),
                       "and applies them to all ecolocations (`ecoregionGroup` codes)."
                     )),
+    defineParameter("initialB", "numeric", 10, 1, NA,
+                    desc = paste("Initial biomass values of new age-1 cohorts. Used here as the starting biomass",
+                                 "of the young-cohort spin-up; must match Biomass_core's `initialB`.",
+                                 "If `NA` or `NULL`, initial biomass will be calculated as in LANDIS-II Biomass Suc. Extension",
+                                 "(see Scheller and Miranda, 2015 or `?LandR::.initiateNewCohorts`)")),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by `P(sim)$forestedLCCClasses`?"),
     defineParameter("overrideAgeInFires", "logical", TRUE, NA, NA,
@@ -1430,7 +1435,8 @@ createBiomass_coreInputs <- function(sim) {
             sppColorVect = sim$sppColorVect,
             paths = paths(sim),
             currentModule = currentModule(sim),
-            modules = modules(sim) ## will also check modules in paths$moduelPath
+            modules = modules(sim), ## will also check modules in paths$moduelPath
+            initialB = P(sim)$initialB
           ) |>
             Cache(
               userTags = c(cacheTags, "spinUpYoungBiomasses"),
@@ -1858,6 +1864,7 @@ Save <- function(sim) {
   ## check parameter consistency across modules
   paramCheckOtherMods(sim, "dataYear", ifSetButDifferent = "warning")
   paramCheckOtherMods(sim, "minCoverThreshold", ifSetButDifferent = "warning")
+  paramCheckOtherMods(sim, "initialB", ifSetButDifferent = "warning")
   
   paramCheckOtherMods(sim, "sppEquivCol", ifSetButDifferent = "error")
   paramCheckOtherMods(sim, "vegLeadingProportion", ifSetButDifferent = "error")
