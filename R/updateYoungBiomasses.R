@@ -99,6 +99,9 @@ updateYoungBiomasses <- function(young, modelBiomass, ...) {
 #' @param paths A list of spades paths e.g., from paths(sim)
 #' @param currentModule A character string of the current module e.g., from currentModule(sim)
 #' @param modules A list of character strings of the modules in the sim, e.g., from modules(sim)
+#' @param initialB Biomass (g/m2) at which every cohort starts the spin-up. Also passed to
+#'   Biomass_core as its `initialB`, i.e. the biomass a newly established cohort gets there
+#'   (`LandR:::.initiateNewCohorts`). The default matches Biomass_core's default.
 #' @export
 spinUpPartial <- function(
   pixelCohortData,
@@ -112,7 +115,8 @@ spinUpPartial <- function(
   sppColorVect,
   paths,
   currentModule,
-  modules
+  modules,
+  initialB = 10
 ) {
   rng <- range(pixelCohortData$age)
   if (rng[1] <= 0) {
@@ -149,6 +153,7 @@ spinUpPartial <- function(
       .useCache = NULL,
       successionTimestep = 10,
       minCohortBiomass = 0,
+      initialB = initialB,
       initialBiomassSource = "cohortData",
       vegLeadingProportion = 0
     )
@@ -160,8 +165,7 @@ spinUpPartial <- function(
 
   speciesEcoregion2 <- copy(speciesEcoregion)
   speciesEcoregion2[, year := times$start]
-  cdZeroed <- copy(cd)
-  cdZeroed[, `:=`(age = 1, B = 0)]
+  cdZeroed <- spinUpStartCohorts(cd, initialB)
   objectsForYoungSim <- list(
     studyArea = studyArea,
     rasterToMatch = rasterToMatch,
@@ -245,6 +249,15 @@ spinUpPartial <- function(
   return(cd1[])
 }
 
+## Cohorts at the start of the spin-up: age 1 at the biomass a new cohort gets in Biomass_core.
+## Starting at B = 0 left growthcurve-1 species (e.g. spruce) with only the 1 g/m2/yr growth
+## floor, so they ended at B = age - 1 while pioneers took the pixel.
+spinUpStartCohorts <- function(cd, initialB) {
+  cd <- copy(cd)
+  cd[, `:=`(age = 1L, B = as.integer(initialB))]
+  cd[]
+}
+
 pixelGroupMapGenerate <- function(cohortData) {
   pixelGroupMap <- rast(res = c(1, 1))
   nrow(pixelGroupMap) <- round(sqrt(max(cohortData$pixelGroup)), 0)
@@ -270,4 +283,22 @@ ReadExperimentFiles <- function(outputs) {
   cds <- rbindlist(cdsList, use.names = TRUE, fill = TRUE)
 
   return(invisible(cds))
+}
+
+#' Upper limit for the biomass of young cohorts re-estimated inside fire perimeters
+#'
+#' The age-based limit (2.8 x the raw map maximum, scaled by how much of a species' longevity
+#' the young cohort has lived) is widened by 1.2 and capped at the raw map maximum.
+#' The 1.2 is there because fast-growing pioneers legitimately exceed the age-based limit while
+#' still below their own `maxB`: a 59-year Lari_lar cohort was 17% over (3,290 vs 2,817 g/m2)
+#' and Pinu_con cohorts up to 2.9% over (ELF 3.2.3 and 10.3.1, 2026-10-09).
+#' A single scalar limit is kept on purpose, not a per-species x ecoregion `maxB`.
+#'
+#' @param maxRawB Maximum of the raw biomass map, in g/m2.
+#' @param longevity Species longevities (`sim$species$longevity`).
+#' @param maxAgeHighQualityData Age up to which ages (and so biomass) are considered high quality.
+#' @return A numeric scalar.
+#' @noRd
+youngBiomassLimit <- function(maxRawB, longevity, maxAgeHighQualityData) {
+  min(maxRawB, 1.2 * 2.8 * maxRawB / min(longevity / maxAgeHighQualityData))
 }

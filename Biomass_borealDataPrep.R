@@ -1464,8 +1464,8 @@ createBiomass_coreInputs <- function(sim) {
         
         ## TODO: reassess 2.8x multiplier; it's high, but needed in RoF_shield
         assertthat::assert_that(
-          all(inRange(na.omit(young$B), 0, 2.8 * maxRawB / min(sim$species$longevity/maxAgeHighQualityData)))
-        ) ## /4 is too strong -- 25 years is a lot of time
+          all(inRange(na.omit(young$B), 0, youngBiomassLimit(maxRawB, sim$species$longevity, maxAgeHighQualityData)))
+        )
       } else {
         ## return maxAgeHighQualityData to -1
         message(cli::col_blue("Simulation start year is lower than oldest fire."))
