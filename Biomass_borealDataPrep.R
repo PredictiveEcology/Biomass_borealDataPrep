@@ -21,7 +21,7 @@ defineModule(sim, list(
   ),
   reqdPkgs = list(
     "archive", "assertthat", "cli", "crayon", "curl", "data.table", "dplyr", "ggplot2", "httr", "httr2",
-    "lme4", "merTools", "plyr", "qs2", "rasterVis", "Require", "sf", "terra", "tidyterra", "googledrive",
+    "lme4", "merTools", "plyr", "qs2", "rasterVis", "Require", "sf", "terra", "tidyterra", "googledrive", "quickPlot",
     "reproducible (>= 2.1.0)", "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
     "PredictiveEcology/LandR@development (>= 1.2.0.9046)", # makeAndCleanInitialCohortData(minSpeciesEcoregionShare), LandR#264
     "PredictiveEcology/pemisc@development",
