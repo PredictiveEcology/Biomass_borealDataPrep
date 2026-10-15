@@ -23,7 +23,7 @@ defineModule(sim, list(
     "archive", "assertthat", "cli", "crayon", "curl", "data.table", "dplyr", "ggplot2", "httr", "httr2",
     "lme4", "merTools", "plyr", "qs2", "rasterVis", "Require", "sf", "terra", "tidyterra", "googledrive", "quickPlot",
     "reproducible (>= 2.1.0)", "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
-    "PredictiveEcology/LandR@development (>= 1.2.0.9046)", # makeAndCleanInitialCohortData(minSpeciesEcoregionShare), LandR#264
+    "PredictiveEcology/LandR@development (>= 1.2.0.9057)", # makeAndCleanInitialCohortData(minSpeciesEcoregionShare), LandR#264; prepInputsFireYear(latestYear)
     "PredictiveEcology/pemisc@development",
     "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)"
   ),
@@ -1812,7 +1812,8 @@ Save <- function(sim) {
         studyArea = sa,
         rasterToMatch = sim$rasterToMatch_biomassParam,
         url = extractURL("firePerimeters"),
-        fireField = "YEAR"
+        fireField = "YEAR",
+        latestYear = P(sim)$dataYear ## the latest fire at or before dataYear, not the most recent
       ) |>
         Cache(
           omitArgs = "destinationPath",
@@ -1916,7 +1917,9 @@ Save <- function(sim) {
     
     ## make sure empty pixels inside study area have 0 cover, instead of NAs.
     ## this can happen when data has NAs instead of 0s and is not merged/overlayed (e.g. CASFRI)
-    sim$speciesLayers <- NAcover2zero(sim$speciesLayers, sim$rasterToMatch_biomassParam)
+    ## NULL is no tree species at all (a non-forested study area); there is nothing to fill
+    if (!is.null(sim$speciesLayers))
+      sim$speciesLayers <- NAcover2zero(sim$speciesLayers, sim$rasterToMatch_biomassParam)
   }
   
   ## 3. species maps
