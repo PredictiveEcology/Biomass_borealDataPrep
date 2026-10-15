@@ -36,3 +36,26 @@ test_that("the SCANFI species-layer call passes dataYear, not year", {
   expect_true("dataYear" %in% argNames)
   expect_false("year" %in% argNames)
 })
+
+## `prepInputsFireYear()` rasterizes with fun = max, so each pixel holds its most recent fire of any
+## year; replaceAgeInFires() then skipped a pixel that burned in 1980 and 2015 for dataYear 1990.
+## The data year must reach the fire raster as `latestYear`. Static, so it needs no download.
+test_that("the fire-year call passes dataYear as latestYear", {
+  skip_if_not_installed("LandR")
+  expect_true("latestYear" %in% names(formals(LandR::prepInputsFireYear)))
+
+  code <- parse(file.path(moduleRoot, paste0(moduleName, ".R")))
+  found <- list()
+  walk <- function(x) {
+    if (is.call(x)) {
+      if (identical(x[[1]], as.name("prepInputsFireYear"))) {
+        found[[length(found) + 1L]] <<- x
+      }
+      lapply(as.list(x), walk)
+    }
+    invisible(NULL)
+  }
+  lapply(as.list(code), walk)
+  expect_length(found, 1L)
+  expect_identical(found[[1L]]$latestYear, quote(P(sim)$dataYear))
+})

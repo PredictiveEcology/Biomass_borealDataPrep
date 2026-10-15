@@ -2,6 +2,8 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 
 # Biomass_borealDataPrep (development version)
 
+* Stand age inside fire perimeters is now the time since the latest fire at or before `dataYear`. The fire raster used to hold each pixel's most recent fire of any year, so a pixel that burned in 1980 and 2015 was skipped for `dataYear` 1990 and kept its satellite age. It now uses `LandR::prepInputsFireYear(latestYear = dataYear)`, which needs LandR (>= 1.2.0.9057). The biomass re-estimate inside fire perimeters uses the same raster, so it now covers those pixels too. A `firePerimeters` input supplied by another module is used as given.
+
 * Without Biomass_speciesData, a study area with no tree species no longer stops in `.inputObjects` ("unable to find an inherited method for function `cover`"): the `NULL` species layers from SCANFI now pass through to the no-species branch.
 * `quickPlot` is now in `reqdPkgs` (`dev()`, `clearPlot()` are used).
 * The spin-up that re-estimates biomass of young cohorts inside fire perimeters now starts each cohort at `initialB` (new parameter, default 10 g/m2, must match Biomass_core's; `NA` starts at `maxANPP`) instead of 0, so growthcurve-1 species such as spruce are no longer held to the 1 g/m2/yr growth floor while pioneers take the pixel. The sanity check on the result now allows 1.2 x the age-based limit, capped at the raw biomass map maximum, so fast-growing pioneers no longer stop runs.
