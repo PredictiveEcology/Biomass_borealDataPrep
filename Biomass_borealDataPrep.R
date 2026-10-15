@@ -1916,7 +1916,9 @@ Save <- function(sim) {
     
     ## make sure empty pixels inside study area have 0 cover, instead of NAs.
     ## this can happen when data has NAs instead of 0s and is not merged/overlayed (e.g. CASFRI)
-    sim$speciesLayers <- NAcover2zero(sim$speciesLayers, sim$rasterToMatch_biomassParam)
+    ## NULL is no tree species at all (a non-forested study area); there is nothing to fill
+    if (!is.null(sim$speciesLayers))
+      sim$speciesLayers <- NAcover2zero(sim$speciesLayers, sim$rasterToMatch_biomassParam)
   }
   
   ## 3. species maps

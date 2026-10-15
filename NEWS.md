@@ -2,6 +2,7 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 
 # Biomass_borealDataPrep (development version)
 
+* Without Biomass_speciesData, a study area with no tree species no longer stops in `.inputObjects` ("unable to find an inherited method for function `cover`"): the `NULL` species layers from SCANFI now pass through to the no-species branch.
 * `quickPlot` is now in `reqdPkgs` (`dev()`, `clearPlot()` are used).
 * The spin-up that re-estimates biomass of young cohorts inside fire perimeters now starts each cohort at `initialB` (new parameter, default 10 g/m2, must match Biomass_core's; `NA` starts at `maxANPP`) instead of 0, so growthcurve-1 species such as spruce are no longer held to the 1 g/m2/yr growth floor while pioneers take the pixel. The sanity check on the result now allows 1.2 x the age-based limit, capped at the raw biomass map maximum, so fast-growing pioneers no longer stop runs.
 
