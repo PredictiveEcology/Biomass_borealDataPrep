@@ -12,7 +12,7 @@
 ## nothing was fitted) and `cohortDataShort` (with a `pred` column when probabilities were set).
 estimateCoverModel <- function(cohortDataShort, fitCover) {
   cdsWh <- cohortDataShort$coverPres == cohortDataShort$coverNum
-  cds <- Copy(cohortDataShort)
+  cds <- data.table::copy(cohortDataShort)
   cds <- cds[!cdsWh]
 
   if (!NROW(cds)) {
