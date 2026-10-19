@@ -1754,7 +1754,8 @@ Save <- function(sim) {
       destinationPath = dPath,
       writeTo = .suffix("rstLCC.tif", paste0("_", P(sim)$.studyAreaName, "_", P(sim)$dataYear))
     ) |>
-      Cache(userTags = c("rstLCC", currentModule(sim), P(sim)$.studyAreaName, P(sim)$dataYear))
+      Cache(omitArgs = "destinationPath", ## download folder; inputPath differs per run/rep
+            userTags = c("rstLCC", currentModule(sim), P(sim)$.studyAreaName, P(sim)$dataYear))
   }
 
   ## Wetland (site) layer -----------------------------------------------
@@ -1779,7 +1780,8 @@ Save <- function(sim) {
           to = sim$rasterToMatch_biomassParam,
           destinationPath = dPath
         ) |>
-          Cache(userTags = c(objName, currentModule(sim), P(sim)$.studyAreaName, P(sim)$dataYear))
+          Cache(omitArgs = "destinationPath",
+                userTags = c(objName, currentModule(sim), P(sim)$.studyAreaName, P(sim)$dataYear))
       }
     }
   }
@@ -1799,6 +1801,7 @@ Save <- function(sim) {
     ) |>
       Cache(
         .functionName = "prepInputs_forEcoregionLayer",
+        omitArgs = "destinationPath",
         userTags = c("prepInputsEcoDistrict_SA", currentModule(sim), cacheTags)
       )
   }
@@ -1915,7 +1918,7 @@ Save <- function(sim) {
         Cache(
           userTags = c(cacheTags, "speciesLayers"),
           .functionName = paste0("prepSpeciesLayers_SCANFI_", P(sim)$.studyAreaName),
-          omitArgs = c("userTags")
+          omitArgs = c("userTags", "destinationPath", "outputPath")
         )
     })
     

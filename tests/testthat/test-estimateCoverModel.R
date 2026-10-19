@@ -1,3 +1,5 @@
+library(reproducible) ## estimateCoverModel() calls Copy(), which a running module has attached
+
 ## ELF 3.1.2 has one tree species with cover 100 in every pixel, so every ecoregionGroup row had
 ## coverPres == coverNum. Those rows are left out of the cover model, which left nothing to fit,
 ## and glm() on the empty table stopped with "contrasts can be applied only to factors with 2 or

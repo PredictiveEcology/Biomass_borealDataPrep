@@ -1,3 +1,5 @@
+library(terra) ## attached by SpaDES when the module runs (values(), setValues(), ncell() in the code under test)
+
 ## When `studyArea` is smaller than `studyArea_biomassParam`, createBiomass_coreInputs() renumbers
 ## `pixelIndex` from the `rasterToMatch_biomassParam` grid to the `rasterToMatch` grid, but
 ## `sim$firePerimeters` stays on `rasterToMatch_biomassParam`. The young-cohort spin-up looked up
