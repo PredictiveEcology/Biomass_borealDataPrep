@@ -1315,6 +1315,9 @@ createBiomass_coreInputs <- function(sim) {
   ##    that are common across the two rasters
   ## 3. Re-do pixel ID numbering so that it matches the final rasterToMatch
   ## Note: if SA and SALarge are the same, no subsetting will take place.
+  ## Old (rasterToMatch_biomassParam) to new (rasterToMatch) pixelIndex, kept for lookups in rasters
+  ## still on rasterToMatch_biomassParam (sim$firePerimeters); NULL if nothing is renumbered.
+  newPixelIndexDT <- NULL
   if (sum(is.na(as.vector(values(sim$rasterToMatch)))) != sum(is.na(as.vector(values(sim$rasterToMatch_biomassParam))))) {
     message(cli::col_blue("Subsetting to studyArea"))
     rasterToMatch_biomassParam <- sim$rasterToMatch_biomassParam
@@ -1360,7 +1363,7 @@ createBiomass_coreInputs <- function(sim) {
     ## now convert imputedPixID to RTM
     sim$imputedPixID <- newPixelIndexDT[pixelIndex %in% sim$imputedPixID, newPixelIndex]
     
-    rm(pixToKeep, rasterToMatch_biomassParamCropped, newPixelIndexDT)
+    rm(pixToKeep, rasterToMatch_biomassParamCropped)
     if (ncell(sim$rasterToMatch) > 3e7) replicate(3, gc())
   }
   ## subset ecoregionFiles$ecoregionMap to smaller area.
@@ -1412,7 +1415,8 @@ createBiomass_coreInputs <- function(sim) {
         youngRows <- pixelCohortData$age <= maxAgeHighQualityData
         young <- pixelCohortData[youngRows == TRUE]
         
-        youngRows2 <- !is.na(sim$firePerimeters[][young$pixelIndex])
+        ## sim$firePerimeters is on rasterToMatch_biomassParam; pixelIndex may be on rasterToMatch
+        youngRows2 <- inFirePerimeters(young$pixelIndex, sim$firePerimeters, newPixelIndexDT)
         young <- young[youngRows2]
         
         # whYoungBEqZero <- which(young$B == 0)
