@@ -2,6 +2,8 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 
 # Biomass_borealDataPrep (development version)
 
+* The CWIM wetland layer is now downloaded into the module's input path: `LandR::prepInputs_CWIM()` is called with `destinationPath = dPath`. With no `destinationPath` it fell back to the working directory, so a run without a shared copy fetched the 5.4 GB national file into the project folder. Needs LandR (>= 1.2.0.9060).
+
 * When `studyArea` is smaller than `studyArea_biomassParam`, the spin-up that re-estimates the biomass of young cohorts inside fire perimeters now selects the cohorts that are inside them. Pixel indices are renumbered to the `rasterToMatch` grid before this step, but `firePerimeters` stays on the wider `rasterToMatch_biomassParam` grid, so each cohort was checked against an unrelated cell: some young cohorts outside fire perimeters were re-estimated and some inside were not. Starting biomass of young cohorts changes in those projects; projects whose two study areas are the same are not affected.
 
 * Stand age inside fire perimeters is now the time since the latest fire at or before `dataYear`. The fire raster used to hold each pixel's most recent fire of any year, so a pixel that burned in 1980 and 2015 was skipped for `dataYear` 1990 and kept its satellite age. It now uses `LandR::prepInputsFireYear(latestYear = dataYear)`, which needs LandR (>= 1.2.0.9057). The biomass re-estimate inside fire perimeters uses the same raster, so it now covers those pixels too. A `firePerimeters` input supplied by another module is used as given.
