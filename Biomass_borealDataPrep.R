@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.8.0.9003"),
+  version = list(Biomass_borealDataPrep = "1.8.0.9004"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -23,7 +23,7 @@ defineModule(sim, list(
     "archive", "assertthat", "cli", "crayon", "curl", "data.table", "dplyr", "ggplot2", "httr", "httr2",
     "lme4", "merTools", "plyr", "qs2", "rasterVis", "Require", "sf", "terra", "tidyterra", "googledrive", "quickPlot",
     "reproducible (>= 2.1.0)", "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
-    "PredictiveEcology/LandR@development (>= 1.2.0.9057)", # makeAndCleanInitialCohortData(minSpeciesEcoregionShare), LandR#264; prepInputsFireYear(latestYear)
+    "PredictiveEcology/LandR@development (>= 1.2.0.9060)", # makeAndCleanInitialCohortData(minSpeciesEcoregionShare), LandR#264; prepInputsFireYear(latestYear); prepInputs_CWIM(destinationPath), LandR#280
     "PredictiveEcology/pemisc@development",
     "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)"
   ),
@@ -1315,6 +1315,9 @@ createBiomass_coreInputs <- function(sim) {
   ##    that are common across the two rasters
   ## 3. Re-do pixel ID numbering so that it matches the final rasterToMatch
   ## Note: if SA and SALarge are the same, no subsetting will take place.
+  ## Old (rasterToMatch_biomassParam) to new (rasterToMatch) pixelIndex, kept for lookups in rasters
+  ## still on rasterToMatch_biomassParam (sim$firePerimeters); NULL if nothing is renumbered.
+  newPixelIndexDT <- NULL
   if (sum(is.na(as.vector(values(sim$rasterToMatch)))) != sum(is.na(as.vector(values(sim$rasterToMatch_biomassParam))))) {
     message(cli::col_blue("Subsetting to studyArea"))
     rasterToMatch_biomassParam <- sim$rasterToMatch_biomassParam
@@ -1360,7 +1363,7 @@ createBiomass_coreInputs <- function(sim) {
     ## now convert imputedPixID to RTM
     sim$imputedPixID <- newPixelIndexDT[pixelIndex %in% sim$imputedPixID, newPixelIndex]
     
-    rm(pixToKeep, rasterToMatch_biomassParamCropped, newPixelIndexDT)
+    rm(pixToKeep, rasterToMatch_biomassParamCropped)
     if (ncell(sim$rasterToMatch) > 3e7) replicate(3, gc())
   }
   ## subset ecoregionFiles$ecoregionMap to smaller area.
@@ -1412,7 +1415,8 @@ createBiomass_coreInputs <- function(sim) {
         youngRows <- pixelCohortData$age <= maxAgeHighQualityData
         young <- pixelCohortData[youngRows == TRUE]
         
-        youngRows2 <- !is.na(sim$firePerimeters[][young$pixelIndex])
+        ## sim$firePerimeters is on rasterToMatch_biomassParam; pixelIndex may be on rasterToMatch
+        youngRows2 <- inFirePerimeters(young$pixelIndex, sim$firePerimeters, newPixelIndexDT)
         young <- young[youngRows2]
         
         # whYoungBEqZero <- which(young$B == 0)
@@ -1756,7 +1760,7 @@ Save <- function(sim) {
   ## Wetland (site) layer -----------------------------------------------
   ## SCANFI land cover has no wetland classes; CWIM3A says which ground is wet.
   if (!suppliedElsewhere("rstWetland", sim) && identical(P(sim)$wetlandSource, "CWIM")) {
-    sim$rstWetland <- LandR::prepInputs_CWIM(to = sim$rasterToMatch_biomassParam) |>
+    sim$rstWetland <- LandR::prepInputs_CWIM(to = sim$rasterToMatch_biomassParam, destinationPath = dPath) |>
       Cache(userTags = c("rstWetland", currentModule(sim), P(sim)$.studyAreaName))
   }
 
