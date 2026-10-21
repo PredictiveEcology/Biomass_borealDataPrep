@@ -1,6 +1,6 @@
 ---
 title: "LandR _Biomass_borealDataPrep_ Manual"
-date: "Last updated: 2026-10-14"
+date: "Last updated: 2026-10-21"
 output:
   bookdown::html_document2:
     toc: true
@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrepc23445cc2c7a7557d9708c1047fb86127f41408a)
+[![module-version-Badge](figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep60964782b087369abe7a9f3458e90013d250cc8d)
 
 [![Issues-badge](figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -971,6 +971,7 @@ Of these parameters, the following are particularly important:
    <th style="text-align:left;"> min </th>
    <th style="text-align:left;"> max </th>
    <th style="text-align:left;"> paramDesc </th>
+   <th style="text-align:left;"> cacheKey </th>
   </tr>
  </thead>
 <tbody>
@@ -981,6 +982,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Model and formula for estimating biomass (B) from `ecoregionGroup` (currently `ecoregionLayer` `LandCoverClass`), `speciesCode`, `logAge` (gives a downward curving relationship), and `cover`. Defaults to a LMEM, which can be slow if dealing with very large datasets (e.g., 36,000 points takes 20 minutes). For faster fitting try `P(sim)$subsetDataBiomassModel == TRUE`, or `quote(RcppArmadillo::fastLm(formula = B ~ logAge speciesCode ecoregionGroup + cover speciesCode ecoregionGroup))`. A custom model call can also be provided, as long as the 'data' argument is NOT included. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> coverModel </td>
@@ -989,6 +991,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Model and formula used for estimating cover from `ecoregionGroup` and `speciesCode` and potentially others. Defaults to a GLMEM if there are &gt; 1 grouping levels. A custom model call can also be provided, as long as the 'data' argument is NOT included </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> earliestFireYear </td>
@@ -997,6 +1000,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> if using fires to impute stand age and biomass, the earliest year for which fire data should be obtained </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> fixModelBiomass </td>
@@ -1005,6 +1009,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> should `biomassModel` be fixed in the case of non-convergence? Only scaling of variables and attempting to fit with a new optimizer (bobyqa, see `?lme4`) are implemented at this time. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> subsetDataAttempts </td>
@@ -1013,6 +1018,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> 1 </td>
    <td style="text-align:left;"> 10 </td>
    <td style="text-align:left;"> How many times should `biomassModel` be attempted to fit with a new data subset in case of non-convergence? Each time, the data is resampled (if `subsetDataBiomassModel = TRUE`) and the model re-fit with the original data, scaled variables and/or a different optimizer if `fixModelBiomass = TRUE`. Model refiting with original data, rescaled variables and/or a new optimizer occurs up to three times for each data subset, regardless of this parameter's value. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> subsetDataBiomassModel </td>
@@ -1021,6 +1027,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> the number of samples per `ecoregionGroup` x `speciesCode` to use when subsampling the biomass data model (`biomassModel`). Can be `TRUE`/`FALSE`/`NULL` or numeric; if `TRUE`, uses `LandR::subsetDataSize()`. If `FALSE`/`NULL` no subsetting is done. Default: `LandR::subsetDataSize()`, i.e. option `LandR.subsetDataSize` (500). </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> deciduousCoverWeight </td>
@@ -1029,6 +1036,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> How much biomass a unit of deciduous cover carries, relative to a unit of conifer cover: the weight `LandR::partitionBiomass()` applies to deciduous cover before it splits a pixel's `totalBiomass` among its cohorts. Broadleaf crowns are wider per unit of wood, so this is expected below 1. This default is only a fallback. With `fitDeciduousCoverWeight = TRUE` (the default) it is estimated from the study area and this value is not used; it is kept for landscapes that cannot identify it -- too little deciduous cover, too little variation in deciduous share between pixels, or no canopy height/closure layers. 0.93 is the mean of the fit on the three landscapes tested so far that can identify it (two Alberta boreal mixedwood areas and NW Ontario boreal shield: 0.90, 1.00, 0.91); it replaces 0.8418911, estimated from NWT data on 2020-03-18 by an estimator since removed. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> fitDeciduousCoverWeight </td>
@@ -1037,6 +1045,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> If `TRUE` (default), estimate `P(sim)$deciduousCoverWeight` from this study area rather than using the parameter's value. Needs `sim$rstCanopyHeight` and `sim$rstCanopyClosure`, which default to SCANFI's own layers; without them, or where there is too little deciduous cover to identify it, the parameter value is kept and a message says so. The fit costs a few seconds. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> adjustAgeAndLongevity </td>
@@ -1045,6 +1054,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Adjust species longevity to the ages observed on the landscape. Cohort ages are capped at `0.9 longevity`. Any cohort ages exceeding this threshold are lowered using a smoothed function. If `FALSE`, no adjustments are applied to age or longevity. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> dataSource </td>
@@ -1053,6 +1063,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Source for species cover, biomass, age, and landcover data used to initialize cohorts. kNN (2001, 2011) and SCANFI (V2: every 5 years, 1985-2025) provide all necessary layers. Mixing multiple datasets requires additonal raster geoprocessing and is not recommended. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> dataYear </td>
@@ -1061,6 +1072,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> the year for which `dataSource` data will be fetched for use with the module. For SCANFI, any year from 1985 to 2025 in steps of 5; `LandR::prepRawBiomassMap()` stops on a year the source does not provide. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> ecoregionLayerField </td>
@@ -1069,6 +1081,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> the name of the field used to distinguish ecoregions, if supplying a polygon. Defaults to `NULL` and tries to use 'ECODISTRIC' where available (for legacy reasons), or the row numbers of `sim$ecoregionLayer`. If this field is not numeric, it will be coerced to numeric. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> exportModels </td>
@@ -1077,6 +1090,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Controls whether models used to estimate maximum B/ANPP (`biomassModel`) and species establishment (`coverModel`) probabilities are exported for posterior analyses or not. This may be important when models fail to converge or hit singularity (but can still be used to make predictions) and the user wants to investigate them further. Can be set to 'none' (no models are exported), 'all' (both are exported), 'biomassModel' or 'coverModel'. BEWARE: because this is intended for posterior model inspection, the models will be exported with data, which may mean very large simList(s)! </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> floorMaxBAtObserved </td>
@@ -1085,6 +1099,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> If `TRUE`, a `maxB` that the fit clamped to 0 is replaced by the 95th percentile of the biomass the species was observed at in that `ecoregionGroup`: a negative fit would otherwise stop a species growing where it demonstrably grows. A percentile rather than the maximum, so one freak cohort cannot set the ceiling. Fitted (positive) values are never changed. `maxANPP` is recomputed for any replaced row (`maxB / 30`). </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> forestedLCCClasses </td>
@@ -1093,6 +1108,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> 0 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> The classes in the `rstLCC` layer that are 'treed' and will therefore be run in `Biomass_core`. Defaults to forested classes in NTEMS map (210 conif, 220 deciduous, 230 mixed) plus LandR-generated 240 class, which is recently disturbed forest. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> imputeBadAgeModel </td>
@@ -1101,6 +1117,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Model and formula used for imputing ages that are either missing or do not match well with biomass or cover. Specifically, if biomass or cover is 0, but age is not, or if age is missing (`NA`), then age will be imputed. Note that this is independent from replacing ages inside fire perimeters (see `P(sim)$overrideAgeInFires`). Defaults to `LandR::imputeBadAgeModelDefault()`, whose response is `log(age)`, so an imputed age can never come back negative and be clamped to 0. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> landis </td>
@@ -1109,6 +1126,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> If `TRUE`, run in 'LANDIS mode': collapse the forested land-cover (`rstLCC`) classes (`P(sim)$forestedLCCClasses`) to a single class so that `ecoregionGroup` is defined by ecoregion only, not ecoregion x LCC. `maxB`, `maxANPP` and species establishment probability are then estimated per ecoregion, as expected by LANDIS-II Biomass Succession. Default `FALSE` preserves the standard ecoregion x LCC behaviour. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> LCCClassesToReplaceNN </td>
@@ -1117,6 +1135,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> This will replace these classes on the landscape with the closest forest class `P(sim)$forestedLCCClasses`. If the user is using the LCC 2005 land-cover data product for `rstLCC`, then they may wish to include 36 (cities -- if running a historic range of variation project), and 34:35 (burns) Since this is about estimating parameters for growth, it doesn't make any sense to have unique estimates for transient classes in most cases. If no classes are to be replaced, pass `'LCCClassesToReplaceNN' = numeric(0)` when supplying parameters. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> LCCClassesToReplaceNNMethod </td>
@@ -1125,6 +1144,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Passed to `LandR::convertUnwantedLCC()` as its `method` argument, controlling how each `P(sim)$LCCClassesToReplaceNN` pixel picks among the available classes in its neighbourhood. Both options weight the classes by their local abundance and differ only in reproducibility. `'nearestRandom'` (default) draws from the RNG, so replicates differ -- but note that `Cache()` does not key on RNG state, so a cached call replays a single draw unless the seed is part of the cache key. `'nearestWeighted'` instead keys the draw on the pixel's ground position, making it deterministic and seed-free, and giving the same answer on a grid-aligned crop of the study area as on the full extent. See `?LandR::convertUnwantedLCC`. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> minCoverThreshold </td>
@@ -1133,6 +1153,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> 0 </td>
    <td style="text-align:left;"> 100 </td>
    <td style="text-align:left;"> Pixels with total cover that is equal to or below this number will be omitted from the dataset </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> minSpeciesEcoregionShare </td>
@@ -1141,6 +1162,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> 0 </td>
    <td style="text-align:left;"> 1 </td>
    <td style="text-align:left;"> Minimum share of an ecoregion's vegetated pixels in which a species must have cover above `minCoverThreshold` to be kept in that ecoregion, within studyArea_biomassParam. Below it, the species is removed from every pixel of the ecoregion (its cover goes to the other species), so it also gets `establishprob = 0` and no `maxB`/`maxANPP` there. 0.07 removes western redcedar from the BC mountain hemlock (MH) zone in every ELF (highest: 6.7%) and from ESSF (highest: 2.2%), and keeps it in CWH and in ICH (lowest kept: 7.3%). 0 turns it off. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> minRelativeBFunction </td>
@@ -1149,6 +1171,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> A quoted function that makes the table of min. relative B determining a stand shade level for each `ecoregionGroup`. Using the internal object `pixelCohortData` is advisable to access/use the list of `ecoregionGroup`s per pixel. The function must output a `data.frame` with 6 columns, named `ecoregionGroup` and 'X1' to 'X5', with one line per `ecoregionGroup` code, and the min. relative biomass for each stand shade level X1-5. The default function uses values from LANDIS-II available at: https://github.com/dcyr/LANDIS-II_IA_generalUseFiles/blob/master/LandisInputs/BSW/biomass-succession-main-inputs_BSW_Baseline.txt and applies them to all ecolocations (`ecoregionGroup` codes). </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> initialB </td>
@@ -1157,6 +1180,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> 1 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Initial biomass values of new age-1 cohorts. Used here as the starting biomass of the young-cohort spin-up; must match Biomass_core's `initialB`. If `NA` or `NULL`, initial biomass will be calculated as in LANDIS-II Biomass Suc. Extension (see Scheller and Miranda, 2015 or `?LandR::.initiateNewCohorts`) </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> omitNonTreedPixels </td>
@@ -1165,6 +1189,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> FALSE </td>
    <td style="text-align:left;"> TRUE </td>
    <td style="text-align:left;"> Should this module use only treed pixels, as identified by `P(sim)$forestedLCCClasses`? </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> overrideAgeInFires </td>
@@ -1173,6 +1198,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> should stand age values inside fire perimeters be replaced with number of years since last fire? </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> overrideBiomassInFires </td>
@@ -1181,6 +1207,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> should B values be re-estimated using Biomass_core for pixels within the fire perimeters for which age was replaced with time since last fire? Ignored if `P(sim)$overrideAgeInFires = FALSE`. See `firePerimeters` input object and `P(sim)$overrideAgeInFires` for further detail. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> pixelGroupAgeClass </td>
@@ -1189,6 +1216,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> When assigning `pixelGroup` membership, this defines the resolution of ages that will be considered 'the same pixelGroup', e.g., if it is 10, then 6 and 14 will be the same </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> pixelGroupBiomassClass </td>
@@ -1197,6 +1225,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> When assigning `pixelGroup` membership, this defines the resolution of biomass that will be considered 'the same `pixelGroup`', e.g., if it is 100, then 5160 and 5240 will be the same </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> rmImputedPix </td>
@@ -1205,6 +1234,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Should `sim$imputedPixID` be removed from the simulation? </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> speciesUpdateFunction </td>
@@ -1213,6 +1243,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Unnamed list of (one or more) quoted functions that updates species table to customize values. By default, `LandR::speciesTableUpdate` is used to change longevity and shade tolerance values, using values appropriate to Boreal Shield West (BSW), Boreal Plains (BP) and Montane Cordillera (MC) ecoprovinces (see `?LandR::speciesTableUpdate` for details). Set to `NULL` if default trait values from `speciesTable` are to be kept instead. The user can supply other or additional functions to change trait values (see `LandR::updateSpeciesTable`) </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> sppEquivCol </td>
@@ -1221,6 +1252,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> The column in `sim$speciesEquivalency` data.table to use as a naming convention. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> speciesTableAreas </td>
@@ -1229,6 +1261,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> One or more of the Ecoprovince short forms that are in the `speciesTable` file, e.g., BSW, MC etc. Default is good for Alberta and other places in the western Canadian boreal forests. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> stratumMinPixels </td>
@@ -1237,6 +1270,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> 0 </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Under `stratumType = 'siteComposition'`, the minimum number of estimation pixels an ecoregion x site x composition stratum needs to keep its own parameters. A thinner stratum loses its composition first (pooled codes 290 upland, 890 wet) and, if that pool is still thin, its site too (990). `0` pools nothing. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> stratumType </td>
@@ -1245,6 +1279,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> How pixels are grouped (`ecoregionGroup`) for estimating maxB, maxANPP and establishment probability. `'landcover'`: ecoregion x land-cover class, with the NTEMS wetland classes 80/81 added from `rstWetland` -- one axis, as NTEMS has it. `'siteComposition'`: ecoregion x site x composition, so a species on upland and on wet ground get separate parameters. Codes: upland 210/220/230, wet 810/820/830; pooled 290/890/990 (see `stratumMinPixels`); class-240 pixels with no species cover 240/840. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> subsetDataAgeModel </td>
@@ -1253,6 +1288,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> the number of samples per group to use when subsampling the age data model. Can be `TRUE`/`FALSE`/`NULL` or numeric; if `TRUE`, uses `LandR::subsetDataSize()`. If `FALSE`/`NULL` no subsetting is done. Default: `LandR::subsetDataSize()`, i.e. option `LandR.subsetDataSize` (500). </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> successionTimestep </td>
@@ -1261,6 +1297,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> defines the simulation time step, default is 10 years </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> useCloudCacheForStats </td>
@@ -1269,6 +1306,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Some of the statistical models take long (at least 30 minutes, likely longer). If this is `TRUE`, then it will try to get previous cached runs from googledrive. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> vegLeadingProportion </td>
@@ -1277,6 +1315,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> 0 </td>
    <td style="text-align:left;"> 1 </td>
    <td style="text-align:left;"> a number that defines whether a species is leading for a given pixel. Default: `LandR::leadingSpeciesProp()`, i.e. option `LandR.leadingSpeciesProp`, which takes `LandR.mixedwoodProp` (0.75) unless set. Setting it in one place moves every module and LandR function together. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> wetlandSource </td>
@@ -1285,6 +1324,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Where `rstWetland` comes from when it is not supplied. `'CWIM'`: the Canadian Wetland Inventory Map v3A via `LandR::prepInputs_CWIM()` -- SCANFI land cover has no wetland classes, so without it treed wetland cannot be told from upland forest. `'none'`: no site layer; every pixel is treated as upland. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .plotInitialTime </td>
@@ -1293,6 +1333,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> This is here for backwards compatibility. Please use `.plots` </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .plots </td>
@@ -1301,6 +1342,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> This describes the type of 'plotting' to do. See `?Plots` for possible types. To omit, set to NA </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .plotInterval </td>
@@ -1309,6 +1351,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> This describes the simulation time interval between plot events </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .saveInitialTime </td>
@@ -1317,6 +1360,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> This describes the simulation time at which the first save event should occur </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .saveInterval </td>
@@ -1325,6 +1369,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> This describes the simulation time interval between save events </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .seed </td>
@@ -1333,6 +1378,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Named list of seeds to use for each event (names). E.g., `list('init' = 123)` will `set.seed(123)` at the start of the init event and unset it at the end. Defaults to `NULL`, meaning that no seeds will be set </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .sslVerify </td>
@@ -1341,6 +1387,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Passed to `httr::config(ssl_verifypeer = P(sim)$.sslVerify)` when downloading NFI datasets. Set to 0L if necessary to bypass checking the SSL certificate (this may be necessary when NFI's website SSL certificate is not correctly configured). </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .studyAreaName </td>
@@ -1349,6 +1396,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Human-readable name for the study area used. If `NA`, a hash of studyArea will be used. </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .useCache </td>
@@ -1357,6 +1405,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> Internal. Can be names of events or the whole module name; these will be cached by SpaDES </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .useCloud </td>
@@ -1365,6 +1414,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> should a cloud cache be used for heavy operations </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
   <tr>
    <td style="text-align:left;"> .useCacheArgs </td>
@@ -1373,6 +1423,7 @@ Of these parameters, the following are particularly important:
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> NA </td>
    <td style="text-align:left;"> should this event be cloud cached </td>
+   <td style="text-align:left;"> TRUE </td>
   </tr>
 </tbody>
 </table>
