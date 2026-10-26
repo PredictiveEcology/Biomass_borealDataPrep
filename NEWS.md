@@ -2,6 +2,8 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 
 # Biomass_borealDataPrep (development version)
 
+* The check that no cohort `B` is above the raw biomass map's maximum no longer fails on rounding. A cohort's `B` is rounded half up twice on its way from the map (to whole g/m2, then to `pixelGroupBiomassClass`), but the check rounded the maximum once, half even, to a fixed 100. In NorthernAlbertaUplands the maximum, 329.4970703 t/ha, became a single-species cohort of 33000 g/m2 against a limit of 32900, and the run stopped. The limit is now the maximum rounded the same way as the cohorts, or the maximum itself if that is larger, since young cohorts re-estimated inside fire perimeters are capped there and not rounded.
+
 * The CWIM wetland layer is now downloaded into the module's input path: `LandR::prepInputs_CWIM()` is called with `destinationPath = dPath`. With no `destinationPath` it fell back to the working directory, so a run without a shared copy fetched the 5.4 GB national file into the project folder. Needs LandR (>= 1.2.0.9060).
 
 * When `studyArea` is smaller than `studyArea_biomassParam`, the spin-up that re-estimates the biomass of young cohorts inside fire perimeters now selects the cohorts that are inside them. Pixel indices are renumbered to the `rasterToMatch` grid before this step, but `firePerimeters` stays on the wider `rasterToMatch_biomassParam` grid, so each cohort was checked against an unrelated cell: some young cohorts outside fire perimeters were re-estimated and some inside were not. Starting biomass of young cohorts changes in those projects; projects whose two study areas are the same are not affected.

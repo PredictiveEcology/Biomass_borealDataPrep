@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.8.0.9004"),
+  version = list(Biomass_borealDataPrep = "1.8.0.9005"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -1485,7 +1485,10 @@ createBiomass_coreInputs <- function(sim) {
     }
   }
   
-  assertthat::assert_that(all(inRange(na.omit(pixelCohortData$B), 0, round(maxRawB, -2)))) # should they all be below the initial biomass map?
+  ## should they all be below the initial biomass map? Cohort B was rounded twice on the way from
+  ## the map, so the limit is maxRawB rounded the same way; see R/cohortBiomassLimit.R.
+  assertthat::assert_that(all(inRange(na.omit(pixelCohortData$B), 0,
+                                      cohortBiomassLimit(maxRawB, P(sim)$pixelGroupBiomassClass))))
   
   ## Fill in any remaining B values that are still NA -- the previous chunk filled in B for young cohorts only
   if (anyNA(pixelCohortData$B)) {
