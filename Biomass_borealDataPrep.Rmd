@@ -174,7 +174,8 @@ from the drop-down menu to see potential linkages.
     *Biomass_borealDataPrep*;
 
 -   [*Biomass_speciesData*](https://github.com/PredictiveEcology/Biomass_speciesData):
-    grabs and merges several sources of species cover data, making species
+    grabs species cover data from SCANFI (the default source, and the only one since
+    [PR #60](https://github.com/PredictiveEcology/Biomass_speciesData/pull/60)), making species
     percent cover ((ref:percent) cover) layers used by other LandR Biomass
     modules. Default source data spans the entire Canadian territory. Used
     upstream from *Biomass_borealDataPrep*;
@@ -264,9 +265,8 @@ SCANFI data are used for the year set by `P(sim)$dataYear` (2020 by default; any
 The previous default using the Canadian National Forest Inventory (NFI) forest attributes kNN dataset [`KNN`; @BeaudoinEtAl2014, @BeaudoinEtAl2017] for `dataYear = 2001` or `2011` is only partly available: with `P(sim)$dataSource = "KNN"` only stand biomass and stand age come from kNN, while land cover and species cover still come from SCANFI, which has no 2001 or 2011 layers.
 So `rstLCC` and `speciesLayers` must then be supplied by the user, and the inputs will mix two datasets.
 
-If no other inputs are supplied, *Biomass_borealDataPrep* will create a 240 m
-raster layer version of `studyArea` (`rasterToMatch`), and use it as `rasterToMatch_biomassParam` too.
-So if `studyArea_biomassParam` is larger than `studyArea`, the user should also supply `rasterToMatch_biomassParam`.
+If no other inputs are supplied, *Biomass_borealDataPrep* will create 240 m raster
+layer versions of `studyArea_biomassParam` and `studyArea` (`rasterToMatch_biomassParam` and `rasterToMatch`), on the same grid.
 
 #### Defining simulation pixels and ecolocations {#bboreal-forestedPix-ecolocations}
 
@@ -681,24 +681,25 @@ If using *Biomass_borealDataPrep* and *Biomass_speciesParameters*, the later
 module calibrates several species traits that are first prepared by
 *Biomass_borealDataPrep*:
 
--   `growthcurve`, `mortalityshape` -- which initially come from publicly
+-   `growthcurve`, `mortalityshape`, `longevity` -- which initially come from publicly
     available LANDIS-II tables;
 
--   `maxBiomass`, `maxANPP` -- which are estimated statistically by
+-   `maxB`, `maxANPP` -- which are estimated statistically by
     *Biomass_borealDataPrep* (see [Maximum biomass and maximum aboveground net
     primary productivity](#bboreal-maxB-maxANPP)).
 
 Briefly, *Biomass_speciesParameters*:
 
-1.  Uses \~41,000,000 hypothetical species' growth curves (generated with
+1.  Uses \~6,700,000 hypothetical species' growth curves (generated with
 *Biomass_core*), that cover a fully factorial combination of longevity,
 ratio of `maxANPP` to `maxBiomass`, `growthcurve`, `mortalityshape`;
 
 2.  Takes permanent and temporary sample plot (PSP) data in or near the study
     area for the target species, and finds which hypothetical species' growth
-    curve most closely matches the growth curve observed in the PSP data -- on a
+    curves most closely match the growth curve observed in the PSP data, and averages
+    their traits weighted by how closely they match -- on a
     species-by-species base. This gives us each species' `growthcurve`,
-    `mortalityshape`, and a new species trait, `mANPPproportion`, a ratio of
+    `mortalityshape`, `longevity`, and a new species trait, `mANPPproportion`, a ratio (in percent) of
     maximum aboveground net primary productivity (`maxANPP`) to maximum biomass
     (`maxBiomass`, not to be confounded with `maxB`) in the study area.
 
@@ -716,9 +717,12 @@ ratio of `maxANPP` to `maxBiomass`, `growthcurve`, `mortalityshape`;
     empirically estimated `maxB`.
 
 4.  Estimates species-specific `maxANPP` by multiplying the final `maxB` above
-by `mANPPproportion` (estimated in step 2).
+by `mANPPproportion`/100 (estimated in step 2).
 
-In cases where there is insufficient PSP data to perform the above steps, `maxB`
+In cases where there is insufficient PSP data to perform the above steps for a species,
+its `growthcurve`, `mortalityshape`, `mANPPproportion` and `inflationFactor` are the
+averages of the calibrated species of the same type (hardwood or softwood). If no
+PSP data are used (`P(sim)$PSPdataTypes = "none"`), `maxB`
 and `maxANPP` are left as estimated by *Biomass_borealDataPrep* (see [Maximum
 biomass and maximum aboveground net primary
 productivity](#bboreal-maxB-maxANPP)) and `inflationFactor` and
