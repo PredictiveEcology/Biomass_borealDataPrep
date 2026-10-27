@@ -20,3 +20,10 @@ test_that("a studyArea spanning two studyArea_biomassParam polygons counts as in
   sa_bp <- rbind(squarePoly(0, 1000), squarePoly(1000, 2000))
   expect_true(studyAreaIsWithin(squarePoly(500, 1500, 100, 900), sa_bp))
 })
+
+test_that("studyAreaIsWithin projects studyArea_biomassParam to studyArea's CRS", {
+  sa_bp <- squarePoly(0, 1000)
+  sa_bp_ll <- sf::st_transform(sa_bp, 4326)
+  expect_true(studyAreaIsWithin(squarePoly(100, 900, 100, 900), sa_bp_ll))
+  expect_false(studyAreaIsWithin(squarePoly(500, 1500), sa_bp_ll))
+})
