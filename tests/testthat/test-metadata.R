@@ -94,7 +94,7 @@ test_that("metadata descriptions do not hard-code years or a required studyArea_
   inDesc <- stats::setNames(md$inputObjects$desc, md$inputObjects$objectName)
   outDesc <- stats::setNames(md$outputObjects$desc, md$outputObjects$objectName)
   expect_no_match(inDesc[["studyArea_biomassParam"]], "Must be provided")
-  expect_match(inDesc[["studyArea_biomassParam"]], "defaults to `studyArea`")
+  expect_match(inDesc[["studyArea_biomassParam"]], "otherwise to `studyArea`")
   expect_no_match(inDesc[["firePerimeters"]], "1985")
   expect_no_match(inDesc[["speciesLayers"]], "2020")
   expect_no_match(outDesc[["speciesLayers"]], "2020")
