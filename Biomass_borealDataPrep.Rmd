@@ -256,7 +256,7 @@ and parameter estimation steps carried out by *Biomass_borealDataPrep*.
 ### Data acquisition and treatment {#bboreal-dataprep}
 
 The two objects that the user should supply are spatial polygons that define the study area used to derive parameters (`studyArea_biomassParam`), and the study area where the simulation will happen (`studyArea`).
-If they are not supplied, `studyArea` defaults to a small random study area (useful only for testing) and `studyArea_biomassParam` defaults to `studyArea`.
+If they are not supplied, `studyArea` defaults to a small random study area (useful only for testing) and `studyArea_biomassParam` defaults to the area covered by `rasterToMatch_biomassParam` if that is supplied, otherwise to `studyArea`.
 The two objects can be identical if the user chooses to parametrise and run the simulations in the same area.
 If not identical, `studyArea` must be fully within `studyArea_biomassParam`.
 If `studyArea_biomassParam` and `studyArea` are in Canada, the module can automatically estimate and prepare all input parameters and objects for *Biomass_core*.
@@ -813,7 +813,7 @@ attention:
 -   `studyArea_biomassParam` -- shapefile. An `sf` or `SpatVector`
     polygon determining the where the statistical models for parameter
     estimation will be fitted. It **must** contain `studyArea` fully, if they
-    are not identical. This object **should be supplied by the user** (it defaults to `studyArea`).
+    are not identical. This object **should be supplied by the user** (it defaults to the area covered by `rasterToMatch_biomassParam` if that is supplied, otherwise to `studyArea`).
 
 **Tables**
 
