@@ -1712,8 +1712,10 @@ Save <- function(sim) {
   }
   
   if (!studyAreaIsWithin(studyArea, studyArea_biomassParam)) {
-    warning("studyArea is not fully within studyArea_biomassParam.
-         Please check the aligment, projection and shapes of these polygons")
+    stop("studyArea is not fully inside studyArea_biomassParam, so parameters would not be ",
+         "estimated for part of the area being simulated. Supply a studyArea_biomassParam ",
+         "(or rasterToMatch_biomassParam) that contains studyArea, or check that the two ",
+         "polygons line up.")
   }
   rm(studyArea, studyArea_biomassParam)
   

@@ -4,7 +4,7 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 
 * A `studyArea_biomassParam` larger than `studyArea` is now used to estimate parameters even when `rasterToMatch_biomassParam` is not supplied. The default `rasterToMatch_biomassParam` was a copy of `rasterToMatch`, so the input layers were cut to `studyArea` and the larger area had no effect. It is now the `rasterToMatch` grid extended over `studyArea_biomassParam`. Likewise, a `rasterToMatch_biomassParam` supplied without `studyArea_biomassParam` now sets the parametrisation area (its non-NA cells) instead of `studyArea_biomassParam` defaulting to the smaller `studyArea`. Projects that supplied only one of the two will get different parameters; projects that supply both, or neither, are not affected.
 
-* A `studyArea` that is not inside `studyArea_biomassParam` now gives a warning. The check was meant to catch this but never fired.
+* A `studyArea` that is not inside `studyArea_biomassParam` now stops the run with a message saying so, as the check always intended; it never fired before, so such projects ran with part of their area unparametrised. The two polygons may now be in different projections.
 
 * Several input descriptions, which also print in the LandR Manual, now match what the module does: `studyArea_biomassParam` defaults to `studyArea` rather than being required; default `speciesLayers` and `rstLCC` are for `dataYear`, not always 2020; biomass is re-estimated in fires from `earliestFireYear` on, not 1985; and the default `rasterToMatch` is a 240 m grid of `studyArea`. The `dataSource` description now says that kNN only supplies biomass and age.
 
