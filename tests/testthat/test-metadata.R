@@ -87,3 +87,16 @@ test_that("parameters are the expected names", {
            "floorMaxBAtObserved", "wetlandSource"))
   )
 })
+
+## These descriptions print in the LandR Manual's tables; they had drifted from the code.
+test_that("metadata descriptions do not hard-code years or a required studyArea_biomassParam", {
+  md <- SpaDES.core::moduleMetadata(module = moduleName, path = modulePath)
+  inDesc <- stats::setNames(md$inputObjects$desc, md$inputObjects$objectName)
+  outDesc <- stats::setNames(md$outputObjects$desc, md$outputObjects$objectName)
+  expect_no_match(inDesc[["studyArea_biomassParam"]], "Must be provided")
+  expect_match(inDesc[["studyArea_biomassParam"]], "defaults to `studyArea`")
+  expect_no_match(inDesc[["firePerimeters"]], "1985")
+  expect_no_match(inDesc[["speciesLayers"]], "2020")
+  expect_no_match(outDesc[["speciesLayers"]], "2020")
+  expect_no_match(inDesc[["rasterToMatch"]], "forced to match")
+})

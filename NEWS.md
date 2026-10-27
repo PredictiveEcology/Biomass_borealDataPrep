@@ -2,6 +2,10 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 
 # Biomass_borealDataPrep (development version)
 
+* A `studyArea` that is not inside `studyArea_biomassParam` now gives a warning. The check was meant to catch this but never fired.
+
+* Several input descriptions, which also print in the LandR Manual, now match what the module does: `studyArea_biomassParam` defaults to `studyArea` rather than being required; default `speciesLayers` and `rstLCC` are for `dataYear`, not always 2020; biomass is re-estimated in fires from `earliestFireYear` on, not 1985; and the default `rasterToMatch` is a 240 m grid of `studyArea`. The `dataSource` description now says that kNN only supplies biomass and age.
+
 * The spin-up that re-estimates biomass of young cohorts inside fire perimeters now leaves out cohorts whose `speciesCode` x `ecoregionGroup` has no `speciesEcoregion` row (zero-biomass or imputed pixels), and says how many. Biomass_core (>= PR #124) stops on such cohorts, which stopped data preparation (ELF 14.1); before, it dropped them silently. They get `B = NA` as before and are filled from the biomass model, so results are unchanged.
 
 * The CWIM wetland layer is now downloaded into the module's input path: `LandR::prepInputs_CWIM()` is called with `destinationPath = dPath`. With no `destinationPath` it fell back to the working directory, so a run without a shared copy fetched the 5.4 GB national file into the project folder. Needs LandR (>= 1.2.0.9060).
