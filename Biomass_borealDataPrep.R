@@ -1747,7 +1747,7 @@ Save <- function(sim) {
       sim$rasterToMatch_biomassParam <- sim$rasterToMatch
     }
   }
-
+  
   ## biomass map
   if (!suppliedElsewhere("rawBiomassMap", sim)) {
     sim$rawBiomassMap <- prepRawBiomassMap(
