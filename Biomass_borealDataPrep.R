@@ -364,7 +364,7 @@ defineModule(sim, list(
     expectsInput("rasterToMatch_biomassParam", "SpatRaster",
                  desc = paste("A raster of the `studyArea_biomassParam` in the same resolution and projection as `rawBiomassMap`.",
                               "This is the scale used for all *inputs* for use in the simulation.",
-                              "If not supplied, defaults to `rasterToMatch`.")),
+                              "If not supplied, defaults to `rasterToMatch`, extended to cover `studyArea_biomassParam` if that differs from `studyArea`.")),
     expectsInput("rawBiomassMap", "SpatRaster",
                  paste(
                    "total biomass raster layer in study area. Defaults to the Canadian Forestry",
@@ -1729,11 +1729,25 @@ Save <- function(sim) {
     if (!is.null(sim$rasterToMatchLarge)) {
       warning("please use rasterToMatch_biomassParam in place of rasterToMatchLarge")
       sim$rasterToMatch_biomassParam <- sim$rasterToMatchLarge
+    } else if (!identical(sim$studyArea_biomassParam, sim$studyArea)) {
+      ## studyArea_biomassParam differs from studyArea, but no rasterToMatch_biomassParam was supplied:
+      ## extend the rasterToMatch grid (same resolution, CRS and origin) over studyArea_biomassParam,
+      ## so parameters are estimated on the larger area and the grid can be cropped back to rasterToMatch.
+      studyArea_biomassParam <- sim$studyArea_biomassParam
+      if (!inherits(studyArea_biomassParam, "SpatVector")) {
+        studyArea_biomassParam <- terra::vect(studyArea_biomassParam)
+      }
+      studyArea_biomassParam <- terra::project(studyArea_biomassParam, terra::crs(sim$rasterToMatch))
+      sim$rasterToMatch_biomassParam <- terra::rast(sim$rasterToMatch) |>
+        terra::extend(terra::ext(studyArea_biomassParam), snap = "out") |>
+        terra::init(1) |>
+        terra::mask(mask = studyArea_biomassParam)
+      rm(studyArea_biomassParam)
     } else {
       sim$rasterToMatch_biomassParam <- sim$rasterToMatch
     }
   }
-  
+
   ## biomass map
   if (!suppliedElsewhere("rawBiomassMap", sim)) {
     sim$rawBiomassMap <- prepRawBiomassMap(
