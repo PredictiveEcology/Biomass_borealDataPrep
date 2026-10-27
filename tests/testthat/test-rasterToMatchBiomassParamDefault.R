@@ -80,3 +80,45 @@ test_that("a studyArea_biomassParam in another CRS is projected to the rasterToM
   expect_equal(terra::origin(out), terra::origin(rtm))
   expect_true(terra::ncell(out) > terra::ncell(rtm))
 })
+
+## The reverse: rasterToMatch_biomassParam supplied without studyArea_biomassParam. The polygon
+## defaulted to studyArea, so the masks used the smaller area.
+saBiomassParamBranch <- function() {
+  exprs <- parse(testthat::test_path("..", "..", "Biomass_borealDataPrep.R"), keep.source = FALSE)
+  def <- Filter(function(x) is.call(x) && identical(x[[1]], as.name("<-")) &&
+                  identical(x[[2]], as.name(".inputObjects")), exprs)
+  bod <- as.list(body(eval(def[[1]][[3]])))
+  branch <- Filter(function(x) is.call(x) && identical(x[[1]], as.name("if")) &&
+                     identical(deparse(x[[2]]), "!suppliedElsewhere(\"studyArea_biomassParam\", sim)"),
+                   bod)
+  stopifnot(length(branch) == 1L)
+  branch[[1]]
+}
+
+runSaBiomassParamDefault <- function(studyArea, rasterToMatch_biomassParam = NULL) {
+  e <- new.env()
+  e$sim <- new.env()
+  e$sim$studyArea <- studyArea
+  e$sim$rasterToMatch_biomassParam <- rasterToMatch_biomassParam
+  supplied <- if (is.null(rasterToMatch_biomassParam)) character(0) else "rasterToMatch_biomassParam"
+  e$suppliedElsewhere <- function(object, ...) object %in% supplied
+  eval(saBiomassParamBranch(), envir = e)
+  e$sim$studyArea_biomassParam
+}
+
+test_that("without either biomassParam object, studyArea_biomassParam is studyArea", {
+  expect_identical(runSaBiomassParamDefault(sa), sa)
+})
+
+test_that("a supplied rasterToMatch_biomassParam sets studyArea_biomassParam, not studyArea", {
+  sa_bp <- squarePolyRTM(-5000, 8000, -4000, 9000)
+  rtm_bp <- terra::rast(terra::vect(sa_bp), res = c(240, 240), vals = 1) |>
+    terra::mask(mask = terra::vect(sa_bp))
+  out <- runSaBiomassParamDefault(sa, rtm_bp)
+  expect_s4_class(out, "SpatVector")
+  expect_equal(nrow(out), 1L)
+  expect_true(terra::same.crs(out, rtm_bp))
+  ## covers the raster's non-NA cells, so it is larger than studyArea
+  expect_equal(as.vector(terra::ext(out)), as.vector(terra::ext(rtm_bp)))
+  expect_true(terra::expanse(out) > as.numeric(sf::st_area(sa)))
+})

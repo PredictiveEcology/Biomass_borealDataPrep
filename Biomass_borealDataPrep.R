@@ -411,7 +411,7 @@ defineModule(sim, list(
                  desc = paste("`sf` polygon or terra `SpatVector` to use as the study area - multiple polygons are merged into one.",
                               "If not supplied, a small random study area is made with `LandR::randomStudyArea()`.")),
     expectsInput("studyArea_biomassParam", "sf",
-                 desc = paste("Polygon to use as the parametrisation study area. If not supplied, defaults to `studyArea`.",
+                 desc = paste("Polygon to use as the parametrisation study area. If not supplied, defaults to the non-NA area of `rasterToMatch_biomassParam` if that is supplied, otherwise to `studyArea`.",
                               "Note that `studyArea_biomassParam` is only used for parameter estimation, and",
                               "can be larger than the actual study area used for LandR simulations",
                               "(e.g., larger than `studyArea` in LandR `Biomass_core`)."))
@@ -1681,11 +1681,18 @@ Save <- function(sim) {
   }
   
   if (!suppliedElsewhere("studyArea_biomassParam", sim)) {
-    if (is.null(sim$studyAreaLarge)) {
-      sim$studyArea_biomassParam <- sim$studyArea
-    } else {
+    if (!is.null(sim$studyAreaLarge)) {
       warning("please replace studyAreaLarge with studyArea_biomassParam")
       sim$studyArea_biomassParam <- sim$studyAreaLarge
+    } else if (suppliedElsewhere("rasterToMatch_biomassParam", sim) || !is.null(sim$rasterToMatchLarge)) {
+      ## a rasterToMatch_biomassParam was supplied without its polygon: use its non-NA
+      ## footprint, rather than falling back to the smaller studyArea
+      rtmBP <- if (is.null(sim$rasterToMatch_biomassParam)) sim$rasterToMatchLarge else sim$rasterToMatch_biomassParam
+      sim$studyArea_biomassParam <- terra::as.polygons(terra::ifel(is.na(rtmBP[[1]]), NA, 1L)) |>
+        terra::aggregate()
+      rm(rtmBP)
+    } else {
+      sim$studyArea_biomassParam <- sim$studyArea
     }
   }
   
