@@ -837,7 +837,8 @@ createBiomass_coreInputs <- function(sim) {
     imputeBadAgeModel = P(sim)$imputeBadAgeModel,
     minCoverThreshold = P(sim)$minCoverThreshold,
     doSubset = P(sim)$subsetDataAgeModel,
-    minSpeciesEcoregionShare = P(sim)$minSpeciesEcoregionShare
+    minSpeciesEcoregionShare = P(sim)$minSpeciesEcoregionShare,
+    rasterToMatch = sim$rasterToMatch_biomassParam
   ) |>
     Cache(userTags = c(cacheTags, "pixelCohortData"))
   assertCohortDataAttr(pixelCohortData)
