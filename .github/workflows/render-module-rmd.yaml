@@ -29,11 +29,13 @@ on:
       - main
       - master
       - development
+      - modsForFireSense
   push:
     branches:
       - main
       - master
       - development
+      - modsForFireSense
     paths:
       - .github/workflows/render-module-rmd.yaml
       - Biomass_borealDataPrep.Rmd
