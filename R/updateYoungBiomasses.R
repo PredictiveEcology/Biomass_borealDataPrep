@@ -167,6 +167,17 @@ spinUpPartial <- function(
   speciesEcoregion2 <- copy(speciesEcoregion)
   speciesEcoregion2[, year := times$start]
   cdZeroed <- spinUpStartCohorts(cd, initialB, speciesEcoregion)
+  ## Biomass_core stops on cohorts with no speciesEcoregion row. Leave them out of the sim: they
+  ## come back with B = NA (the join onto `cd` below), as when Biomass_core dropped them silently.
+  keep <- sort(cdZeroed[unique(speciesEcoregion2[, c("speciesCode", "ecoregionGroup")]),
+                        on = c("speciesCode", "ecoregionGroup"), nomatch = NULL, which = TRUE])
+  if (length(keep) < nrow(cdZeroed)) {
+    noTraits <- unique(cdZeroed[-keep, c("speciesCode", "ecoregionGroup")])
+    message("Leaving out of the spin-up ", nrow(cdZeroed) - length(keep), " cohort(s) in ", NROW(noTraits),
+            " speciesCode x ecoregionGroup combination(s) with no speciesEcoregion row, e.g. ",
+            paste(head(paste(noTraits$speciesCode, noTraits$ecoregionGroup, sep = " x "), 5), collapse = ", "))
+    cdZeroed <- cdZeroed[keep]
+  }
   objectsForYoungSim <- list(
     studyArea = studyArea,
     rasterToMatch = rasterToMatch,

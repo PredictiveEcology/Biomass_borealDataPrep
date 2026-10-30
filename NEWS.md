@@ -2,6 +2,10 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 
 # Biomass_borealDataPrep (development version)
 
+* `makeAndCleanInitialCohortData()` gets `rasterToMatch = sim$rasterToMatch_biomassParam`, so when a species needs imputed ages only where it has no known ages, LandR borrows them from the nearest ecoregion group (LandR#291). Before, data preparation stopped with "no coefficient for species" (fireSense ELF 4.2.1, `Abie_las`). Study areas that ran before are unchanged.
+
+* The spin-up that re-estimates biomass of young cohorts inside fire perimeters now leaves out cohorts whose `speciesCode` x `ecoregionGroup` has no `speciesEcoregion` row (zero-biomass or imputed pixels), and says how many. Biomass_core (>= PR #124) stops on such cohorts, which stopped data preparation (ELF 14.1); before, it dropped them silently. They get `B = NA` as before and are filled from the biomass model, so results are unchanged.
+
 * The CWIM wetland layer is now downloaded into the module's input path: `LandR::prepInputs_CWIM()` is called with `destinationPath = dPath`. With no `destinationPath` it fell back to the working directory, so a run without a shared copy fetched the 5.4 GB national file into the project folder. Needs LandR (>= 1.2.0.9060).
 
 * When `studyArea` is smaller than `studyArea_biomassParam`, the spin-up that re-estimates the biomass of young cohorts inside fire perimeters now selects the cohorts that are inside them. Pixel indices are renumbered to the `rasterToMatch` grid before this step, but `firePerimeters` stays on the wider `rasterToMatch_biomassParam` grid, so each cohort was checked against an unrelated cell: some young cohorts outside fire perimeters were re-estimated and some inside were not. Starting biomass of young cohorts changes in those projects; projects whose two study areas are the same are not affected.
