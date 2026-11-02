@@ -1868,7 +1868,7 @@ Save <- function(sim) {
   }
   
   ## check parameter consistency across modules
-  paramCheckOtherMods(sim, "dataYear", ifSetButDifferent = "warning")
+  paramCheckOtherMods(sim, "dataYear", ifSetButDifferent = "error")
   paramCheckOtherMods(sim, "minCoverThreshold", ifSetButDifferent = "warning")
   paramCheckOtherMods(sim, "initialB", ifSetButDifferent = "warning")
   
