@@ -2,6 +2,9 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 
 # Biomass_borealDataPrep (development version)
 
+* A `dataYear` different from another module's is now an error, not a warning (`paramCheckOtherMods()`), as in Biomass_core, Biomass_speciesData, burnSummaries and fireSense_dataPrepPredict.
+
+
 * `makeAndCleanInitialCohortData()` gets `rasterToMatch = sim$rasterToMatch_biomassParam`, so when a species needs imputed ages only where it has no known ages, LandR borrows them from the nearest ecoregion group (LandR#291). Before, data preparation stopped with "no coefficient for species" (fireSense ELF 4.2.1, `Abie_las`). Study areas that ran before are unchanged.
 
 * The spin-up that re-estimates biomass of young cohorts inside fire perimeters now leaves out cohorts whose `speciesCode` x `ecoregionGroup` has no `speciesEcoregion` row (zero-biomass or imputed pixels), and says how many. Biomass_core (>= PR #124) stops on such cohorts, which stopped data preparation (ELF 14.1); before, it dropped them silently. They get `B = NA` as before and are filled from the biomass model, so results are unchanged.
