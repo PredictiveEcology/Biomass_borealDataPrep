@@ -97,7 +97,9 @@ defineModule(sim, list(
     defineParameter("dataSource", "character", "SCANFI", NA, NA,
                     paste(
                       "Source for species cover, biomass, age, and landcover data used to initialize cohorts.",
-                      "kNN (2001, 2011) and SCANFI (V2: every 5 years, 1985-2025) provide all necessary layers.",
+                      "SCANFI (V2: every 5 years, 1985-2025) provides all necessary layers. kNN (2001, 2011) is only used for",
+                      "`rawBiomassMap` and `standAgeMap`; `rstLCC` and `speciesLayers` still come from SCANFI, so they must be",
+                      "supplied for kNN years.",
                       "Mixing multiple datasets requires additonal raster geoprocessing and is not recommended."
                     )),
     defineParameter("dataYear", "numeric", 2020, NA, NA,
@@ -310,7 +312,7 @@ defineModule(sim, list(
                  desc = paste("Fire perimeters raster, with fire year information used to 'update' stand",
                               "age using time since last fire as the imputed value. Only used if",
                               "`P(sim)$overrideAgeInFires = TRUE`. Biomass will also be updated in these pixels",
-                              "if `P(sim)$overrideBiomassInFires = TRUE` and the last fire was later than 1985.",
+                              "if `P(sim)$overrideBiomassInFires = TRUE` and the last fire was in or after `P(sim)$earliestFireYear`.",
                               "Defaults to using fire perimeters in the Canadian National Fire Database, downloaded",
                               "as a zipped shapefile with fire polygons, an attribute (i.e., a column) named 'YEAR',",
                               "which is used to rasterize to the study area."),
@@ -333,7 +335,7 @@ defineModule(sim, list(
                    "3) It can have transient pixels, such as 'young fire'. These will be converted to a\n",
                    "    the nearest non-transient class, probabilistically if there is more than 1 nearest\n",
                    "    neighbour class, based on `P(sim)$LCCClassesToReplaceNN`.\n",
-                   "The default layer used, if not supplied, is SCANFI-derived data product for 2020 updated to use NTEMS land cover codes.",
+                   "The default layer used, if not supplied, is SCANFI-derived data product for `P(sim)$dataYear` updated to use NTEMS land cover codes.",
                    "See <https://open.canada.ca/data/en/dataset/18e6a919-53fd-41ce-b4e2-44a9707c52dc> for SCANFI metadata.",
                    "The metadata (res, proj, ext, origin) need to match `rasterToMatch_biomassParam`."),
                  sourceURL = NA), ## uses P(sim)$rstLCCYear and LandR::prepInputsLCC() defaults
@@ -358,11 +360,11 @@ defineModule(sim, list(
     expectsInput("rasterToMatch", "SpatRaster",
                  desc = paste("A raster of the `studyArea` in the same resolution and projection as `rawBiomassMap`.",
                               "This is the scale used for all *outputs* for use in the simulation.",
-                              "If not supplied will be forced to match the *default* `rawBiomassMap`.")),
+                              "If not supplied, a 240 m raster of `studyArea` is made, in SCANFI's projection if `studyArea` is not projected.")),
     expectsInput("rasterToMatch_biomassParam", "SpatRaster",
                  desc = paste("A raster of the `studyArea_biomassParam` in the same resolution and projection as `rawBiomassMap`.",
                               "This is the scale used for all *inputs* for use in the simulation.",
-                              "If not supplied will be forced to match the *default* `rawBiomassMap`.")),
+                              "If not supplied, defaults to `rasterToMatch`, extended to cover `studyArea_biomassParam` if that differs from `studyArea`.")),
     expectsInput("rawBiomassMap", "SpatRaster",
                  paste(
                    "total biomass raster layer in study area. Defaults to the Canadian Forestry",
@@ -374,7 +376,7 @@ defineModule(sim, list(
                  paste(
                    "cover percentage raster layers by species in Canada species map.",
                    "Defaults to the Canadian Forestry Service, National Forest Inventory,",
-                   "SCANFI-derived species cover maps from 2020 using a cover threshold of 10 -",
+                   "SCANFI-derived species cover maps for `P(sim)$dataYear` using a cover threshold of 10 -",
                    "see <https://open.canada.ca/data/en/dataset/18e6a919-53fd-41ce-b4e2-44a9707c52dc> for metadata"
                  )),
     expectsInput("speciesTable", "data.table",
@@ -402,13 +404,14 @@ defineModule(sim, list(
                    "indicating which pixels suffered age imputation. If no pixel ages were imputed, please set",
                    "this attribute to `integer(0)`.",
                    "Defaults to the Canadian Forestry Service, National Forest Inventory,",
-                   "SCANFI-derived biomass map from 2020, unless `dataYear != 2020`.",
+                   "SCANFI-derived stand age map from 2020, unless `dataYear != 2020`.",
                    "See <https://open.canada.ca/data/en/dataset/18e6a919-53fd-41ce-b4e2-44a9707c52dc> for metadata."
                  )),
     expectsInput("studyArea", "sf",
-                 desc = paste("`sf` polygon or terra `SpatVector` to use as the study area - `nrow` must be one")),
+                 desc = paste("`sf` polygon or terra `SpatVector` to use as the study area - multiple polygons are merged into one.",
+                              "If not supplied, a small random study area is made with `LandR::randomStudyArea()`.")),
     expectsInput("studyArea_biomassParam", "sf",
-                 desc = paste("Polygon to use as the parametrisation study area. Must be provided by the user.",
+                 desc = paste("Polygon to use as the parametrisation study area. If not supplied, defaults to the non-NA area of `rasterToMatch_biomassParam` if that is supplied, otherwise to `studyArea`.",
                               "Note that `studyArea_biomassParam` is only used for parameter estimation, and",
                               "can be larger than the actual study area used for LandR simulations",
                               "(e.g., larger than `studyArea` in LandR `Biomass_core`)."))
@@ -462,7 +465,7 @@ defineModule(sim, list(
     createsOutput("speciesLayers", "SpatRaster",
                   paste("cover percentage raster layers by species in Canada species map.",
                         "Defaults to the Canadian Forestry Service, National Forest Inventory,",
-                        "SCANFI-derived species cover maps from 2020 using a cover threshold of 10 -",
+                        "SCANFI-derived species cover maps for `P(sim)$dataYear` using a cover threshold of 10 -",
                         "see <https://open.canada.ca/data/en/dataset/18e6a919-53fd-41ce-b4e2-44a9707c52dc>",
                         "for metadata.")),
     createsOutput("speciesEcoregion", "data.table",
@@ -1678,11 +1681,18 @@ Save <- function(sim) {
   }
   
   if (!suppliedElsewhere("studyArea_biomassParam", sim)) {
-    if (is.null(sim$studyAreaLarge)) {
-      sim$studyArea_biomassParam <- sim$studyArea
-    } else {
+    if (!is.null(sim$studyAreaLarge)) {
       warning("please replace studyAreaLarge with studyArea_biomassParam")
       sim$studyArea_biomassParam <- sim$studyAreaLarge
+    } else if (suppliedElsewhere("rasterToMatch_biomassParam", sim) || !is.null(sim$rasterToMatchLarge)) {
+      ## a rasterToMatch_biomassParam was supplied without its polygon: use its non-NA
+      ## footprint, rather than falling back to the smaller studyArea
+      rtmBP <- if (is.null(sim$rasterToMatch_biomassParam)) sim$rasterToMatchLarge else sim$rasterToMatch_biomassParam
+      sim$studyArea_biomassParam <- terra::as.polygons(terra::ifel(is.na(rtmBP[[1]]), NA, 1L)) |>
+        terra::aggregate()
+      rm(rtmBP)
+    } else {
+      sim$studyArea_biomassParam <- sim$studyArea
     }
   }
   
@@ -1701,9 +1711,11 @@ Save <- function(sim) {
            "which will incorrectly segment ecoregions. Try `terra::aggregate`")
   }
   
-  if (length(st_within(studyArea, studyArea_biomassParam))[[1]] == 0) {
-    stop("studyArea is not fully within studyArea_biomassParam.
-         Please check the aligment, projection and shapes of these polygons")
+  if (!studyAreaIsWithin(studyArea, studyArea_biomassParam)) {
+    stop("studyArea is not fully inside studyArea_biomassParam, so parameters would not be ",
+         "estimated for part of the area being simulated. Supply a studyArea_biomassParam ",
+         "(or rasterToMatch_biomassParam) that contains studyArea, or check that the two ",
+         "polygons line up.")
   }
   rm(studyArea, studyArea_biomassParam)
   
@@ -1726,6 +1738,20 @@ Save <- function(sim) {
     if (!is.null(sim$rasterToMatchLarge)) {
       warning("please use rasterToMatch_biomassParam in place of rasterToMatchLarge")
       sim$rasterToMatch_biomassParam <- sim$rasterToMatchLarge
+    } else if (!identical(sim$studyArea_biomassParam, sim$studyArea)) {
+      ## studyArea_biomassParam differs from studyArea, but no rasterToMatch_biomassParam was supplied:
+      ## extend the rasterToMatch grid (same resolution, CRS and origin) over studyArea_biomassParam,
+      ## so parameters are estimated on the larger area and the grid can be cropped back to rasterToMatch.
+      studyArea_biomassParam <- sim$studyArea_biomassParam
+      if (!inherits(studyArea_biomassParam, "SpatVector")) {
+        studyArea_biomassParam <- terra::vect(studyArea_biomassParam)
+      }
+      studyArea_biomassParam <- terra::project(studyArea_biomassParam, terra::crs(sim$rasterToMatch))
+      sim$rasterToMatch_biomassParam <- terra::rast(sim$rasterToMatch) |>
+        terra::extend(terra::ext(studyArea_biomassParam), snap = "out") |>
+        terra::init(1) |>
+        terra::mask(mask = studyArea_biomassParam)
+      rm(studyArea_biomassParam)
     } else {
       sim$rasterToMatch_biomassParam <- sim$rasterToMatch
     }
