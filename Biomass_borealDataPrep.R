@@ -1086,7 +1086,7 @@ createBiomass_coreInputs <- function(sim) {
   }
   
   message(cli::col_blue("Estimating Species Establishment Probability using P(sim)$coverModel, which is"))
-  message(cli::col_magenta(paste0(format(P(sim)$coverModel, appendLF = FALSE), collapse = "")))
+  message(cli::col_magenta(paste(trimws(deparse(P(sim)$coverModel)), collapse = " ")))
   
   useCloud <- if (!is.null(sim$cloudFolderID)) {
     (isTRUE(getOption("reproducible.useCache", FALSE)) && P(sim)$useCloudCacheForStats)
@@ -1152,7 +1152,7 @@ createBiomass_coreInputs <- function(sim) {
     ## If using mixed effect model, see here for good discussion of
     ##  shrinkage https://www.tjmahr.com/plotting-partial-pooling-in-mixed-effects-models/
     message(cli::col_blue("Estimating biomass using P(sim)$biomassModel as:"), "\n",
-            cli::col_magenta(paste0(format(P(sim)$biomassModel, appendLF = FALSE), collapse = "")))
+            cli::col_magenta(paste(trimws(deparse(P(sim)$biomassModel)), collapse = " ")))
     
     ## NOTE: we are NOT using logB because the relationship between B~age should be hump-shaped
     ## (or at least capped at high age values). Ideally, we would want a non-linear model

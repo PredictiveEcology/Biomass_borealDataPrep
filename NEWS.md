@@ -2,6 +2,8 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 
 # Biomass_borealDataPrep (development version)
 
+* The messages that print `P(sim)$coverModel` and `P(sim)$biomassModel` show each model call on one line, without the run of spaces where it was wrapped (e.g. `(logAge +     cover | ecoregionGroup)`).
+
 * The spin-up that re-estimates biomass of young cohorts inside fire perimeters now leaves out cohorts whose `speciesCode` x `ecoregionGroup` has no `speciesEcoregion` row (zero-biomass or imputed pixels), and says how many. Biomass_core (>= PR #124) stops on such cohorts, which stopped data preparation (ELF 14.1); before, it dropped them silently. They get `B = NA` as before and are filled from the biomass model, so results are unchanged.
 
 * The CWIM wetland layer is now downloaded into the module's input path: `LandR::prepInputs_CWIM()` is called with `destinationPath = dPath`. With no `destinationPath` it fell back to the working directory, so a run without a shared copy fetched the 5.4 GB national file into the project folder. Needs LandR (>= 1.2.0.9060).
