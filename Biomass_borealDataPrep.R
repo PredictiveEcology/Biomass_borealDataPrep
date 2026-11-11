@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.8.0.9006"),
+  version = list(Biomass_borealDataPrep = "1.9.0.9000"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -23,7 +23,7 @@ defineModule(sim, list(
     "archive", "assertthat", "cli", "crayon", "curl", "data.table", "dplyr", "ggplot2", "httr", "httr2",
     "lme4", "merTools", "plyr", "qs2", "rasterVis", "Require", "sf", "terra", "tidyterra", "googledrive", "quickPlot",
     "reproducible (>= 2.1.0)", "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
-    "PredictiveEcology/LandR@modsForFireSense (>= 1.2.0.9065)", # makeAndCleanInitialCohortData(rasterToMatch), LandR#291; makeAndCleanInitialCohortData(minSpeciesEcoregionShare), LandR#264; prepInputsFireYear(latestYear); prepInputs_CWIM(destinationPath), LandR#280
+    "PredictiveEcology/LandR@development (>= 1.2.0.9060)", # makeAndCleanInitialCohortData(minSpeciesEcoregionShare), LandR#264; prepInputsFireYear(latestYear); prepInputs_CWIM(destinationPath), LandR#280
     "PredictiveEcology/pemisc@development",
     "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)"
   ),
@@ -837,8 +837,7 @@ createBiomass_coreInputs <- function(sim) {
     imputeBadAgeModel = P(sim)$imputeBadAgeModel,
     minCoverThreshold = P(sim)$minCoverThreshold,
     doSubset = P(sim)$subsetDataAgeModel,
-    minSpeciesEcoregionShare = P(sim)$minSpeciesEcoregionShare,
-    rasterToMatch = sim$rasterToMatch_biomassParam
+    minSpeciesEcoregionShare = P(sim)$minSpeciesEcoregionShare
   ) |>
     Cache(userTags = c(cacheTags, "pixelCohortData"))
   assertCohortDataAttr(pixelCohortData)
@@ -1868,7 +1867,7 @@ Save <- function(sim) {
   }
   
   ## check parameter consistency across modules
-  paramCheckOtherMods(sim, "dataYear", ifSetButDifferent = "error")
+  paramCheckOtherMods(sim, "dataYear", ifSetButDifferent = "warning")
   paramCheckOtherMods(sim, "minCoverThreshold", ifSetButDifferent = "warning")
   paramCheckOtherMods(sim, "initialB", ifSetButDifferent = "warning")
   

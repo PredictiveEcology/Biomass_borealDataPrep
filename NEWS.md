@@ -7,6 +7,10 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 
 * `makeAndCleanInitialCohortData()` gets `rasterToMatch = sim$rasterToMatch_biomassParam`, so when a species needs imputed ages only where it has no known ages, LandR borrows them from the nearest ecoregion group (LandR#291). Before, data preparation stopped with "no coefficient for species" (fireSense ELF 4.2.1, `Abie_las`). Study areas that ran before are unchanged.
 
+# Biomass_borealDataPrep 1.9.0
+
+This release changes how the starting biomass of young stands inside old fire perimeters is estimated. Stand age there is now the time since the latest fire at or before the data year, young cohorts start at a set biomass (new parameter `initialB`) instead of zero, and the right cohorts are picked when the study area is smaller than the area used to estimate parameters. Starting biomass of young cohorts changes in many projects. The national wetland layer is now downloaded into the module's input folder, and two inputs that used to stop data preparation no longer do.
+
 * The spin-up that re-estimates biomass of young cohorts inside fire perimeters now leaves out cohorts whose `speciesCode` x `ecoregionGroup` has no `speciesEcoregion` row (zero-biomass or imputed pixels), and says how many. Biomass_core (>= PR #124) stops on such cohorts, which stopped data preparation (ELF 14.1); before, it dropped them silently. They get `B = NA` as before and are filled from the biomass model, so results are unchanged.
 
 * The CWIM wetland layer is now downloaded into the module's input path: `LandR::prepInputs_CWIM()` is called with `destinationPath = dPath`. With no `destinationPath` it fell back to the working directory, so a run without a shared copy fetched the 5.4 GB national file into the project folder. Needs LandR (>= 1.2.0.9060).
