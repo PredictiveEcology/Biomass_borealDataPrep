@@ -10,7 +10,7 @@ defineModule(sim, list(
     person(c("Alex", "M."), "Chubaty", email = "achubaty@for-cast.ca", role = c("aut"))
   ),
   childModules = character(0),
-  version = list(Biomass_borealDataPrep = "1.8.0"),
+  version = list(Biomass_borealDataPrep = "1.9.0"),
   timeframe = as.POSIXlt(c(NA, NA)),
   timeunit = "year",
   citation = list("citation.bib"),
@@ -21,9 +21,9 @@ defineModule(sim, list(
   ),
   reqdPkgs = list(
     "archive", "assertthat", "cli", "crayon", "curl", "data.table", "dplyr", "ggplot2", "httr", "httr2",
-    "lme4", "merTools", "plyr", "qs2", "rasterVis", "Require", "sf", "terra", "tidyterra", "googledrive",
+    "lme4", "merTools", "plyr", "qs2", "rasterVis", "Require", "sf", "terra", "tidyterra", "googledrive", "quickPlot",
     "reproducible (>= 2.1.0)", "SpaDES.core (>= 2.1.0)", "SpaDES.tools (>= 2.0.0)",
-    "PredictiveEcology/LandR@development (>= 1.2.0.9046)", # makeAndCleanInitialCohortData(minSpeciesEcoregionShare), LandR#264
+    "PredictiveEcology/LandR@development (>= 1.2.0.9060)", # makeAndCleanInitialCohortData(minSpeciesEcoregionShare), LandR#264; prepInputsFireYear(latestYear); prepInputs_CWIM(destinationPath), LandR#280
     "PredictiveEcology/pemisc@development",
     "PredictiveEcology/SpaDES.project@development (>= 0.0.8.9026)"
   ),
@@ -182,6 +182,11 @@ defineModule(sim, list(
                              "LandisInputs/BSW/biomass-succession-main-inputs_BSW_Baseline.txt"),
                       "and applies them to all ecolocations (`ecoregionGroup` codes)."
                     )),
+    defineParameter("initialB", "numeric", 10, 1, NA,
+                    desc = paste("Initial biomass values of new age-1 cohorts. Used here as the starting biomass",
+                                 "of the young-cohort spin-up; must match Biomass_core's `initialB`.",
+                                 "If `NA` or `NULL`, initial biomass will be calculated as in LANDIS-II Biomass Suc. Extension",
+                                 "(see Scheller and Miranda, 2015 or `?LandR::.initiateNewCohorts`)")),
     defineParameter("omitNonTreedPixels", "logical", TRUE, FALSE, TRUE,
                     "Should this module use only treed pixels, as identified by `P(sim)$forestedLCCClasses`?"),
     defineParameter("overrideAgeInFires", "logical", TRUE, NA, NA,
@@ -1310,6 +1315,9 @@ createBiomass_coreInputs <- function(sim) {
   ##    that are common across the two rasters
   ## 3. Re-do pixel ID numbering so that it matches the final rasterToMatch
   ## Note: if SA and SALarge are the same, no subsetting will take place.
+  ## Old (rasterToMatch_biomassParam) to new (rasterToMatch) pixelIndex, kept for lookups in rasters
+  ## still on rasterToMatch_biomassParam (sim$firePerimeters); NULL if nothing is renumbered.
+  newPixelIndexDT <- NULL
   if (sum(is.na(as.vector(values(sim$rasterToMatch)))) != sum(is.na(as.vector(values(sim$rasterToMatch_biomassParam))))) {
     message(cli::col_blue("Subsetting to studyArea"))
     rasterToMatch_biomassParam <- sim$rasterToMatch_biomassParam
@@ -1355,7 +1363,7 @@ createBiomass_coreInputs <- function(sim) {
     ## now convert imputedPixID to RTM
     sim$imputedPixID <- newPixelIndexDT[pixelIndex %in% sim$imputedPixID, newPixelIndex]
     
-    rm(pixToKeep, rasterToMatch_biomassParamCropped, newPixelIndexDT)
+    rm(pixToKeep, rasterToMatch_biomassParamCropped)
     if (ncell(sim$rasterToMatch) > 3e7) replicate(3, gc())
   }
   ## subset ecoregionFiles$ecoregionMap to smaller area.
@@ -1407,7 +1415,8 @@ createBiomass_coreInputs <- function(sim) {
         youngRows <- pixelCohortData$age <= maxAgeHighQualityData
         young <- pixelCohortData[youngRows == TRUE]
         
-        youngRows2 <- !is.na(sim$firePerimeters[][young$pixelIndex])
+        ## sim$firePerimeters is on rasterToMatch_biomassParam; pixelIndex may be on rasterToMatch
+        youngRows2 <- inFirePerimeters(young$pixelIndex, sim$firePerimeters, newPixelIndexDT)
         young <- young[youngRows2]
         
         # whYoungBEqZero <- which(young$B == 0)
@@ -1430,7 +1439,8 @@ createBiomass_coreInputs <- function(sim) {
             sppColorVect = sim$sppColorVect,
             paths = paths(sim),
             currentModule = currentModule(sim),
-            modules = modules(sim) ## will also check modules in paths$moduelPath
+            modules = modules(sim), ## will also check modules in paths$moduelPath
+            initialB = P(sim)$initialB
           ) |>
             Cache(
               userTags = c(cacheTags, "spinUpYoungBiomasses"),
@@ -1464,8 +1474,8 @@ createBiomass_coreInputs <- function(sim) {
         
         ## TODO: reassess 2.8x multiplier; it's high, but needed in RoF_shield
         assertthat::assert_that(
-          all(inRange(na.omit(young$B), 0, 2.8 * maxRawB / min(sim$species$longevity/maxAgeHighQualityData)))
-        ) ## /4 is too strong -- 25 years is a lot of time
+          all(inRange(na.omit(young$B), 0, youngBiomassLimit(maxRawB, sim$species$longevity, maxAgeHighQualityData)))
+        )
       } else {
         ## return maxAgeHighQualityData to -1
         message(cli::col_blue("Simulation start year is lower than oldest fire."))
@@ -1750,7 +1760,7 @@ Save <- function(sim) {
   ## Wetland (site) layer -----------------------------------------------
   ## SCANFI land cover has no wetland classes; CWIM3A says which ground is wet.
   if (!suppliedElsewhere("rstWetland", sim) && identical(P(sim)$wetlandSource, "CWIM")) {
-    sim$rstWetland <- LandR::prepInputs_CWIM(to = sim$rasterToMatch_biomassParam) |>
+    sim$rstWetland <- LandR::prepInputs_CWIM(to = sim$rasterToMatch_biomassParam, destinationPath = dPath) |>
       Cache(userTags = c("rstWetland", currentModule(sim), P(sim)$.studyAreaName))
   }
 
@@ -1806,7 +1816,8 @@ Save <- function(sim) {
         studyArea = sa,
         rasterToMatch = sim$rasterToMatch_biomassParam,
         url = extractURL("firePerimeters"),
-        fireField = "YEAR"
+        fireField = "YEAR",
+        latestYear = P(sim)$dataYear ## the latest fire at or before dataYear, not the most recent
       ) |>
         Cache(
           omitArgs = "destinationPath",
@@ -1858,6 +1869,7 @@ Save <- function(sim) {
   ## check parameter consistency across modules
   paramCheckOtherMods(sim, "dataYear", ifSetButDifferent = "warning")
   paramCheckOtherMods(sim, "minCoverThreshold", ifSetButDifferent = "warning")
+  paramCheckOtherMods(sim, "initialB", ifSetButDifferent = "warning")
   
   paramCheckOtherMods(sim, "sppEquivCol", ifSetButDifferent = "error")
   paramCheckOtherMods(sim, "vegLeadingProportion", ifSetButDifferent = "error")
@@ -1909,7 +1921,9 @@ Save <- function(sim) {
     
     ## make sure empty pixels inside study area have 0 cover, instead of NAs.
     ## this can happen when data has NAs instead of 0s and is not merged/overlayed (e.g. CASFRI)
-    sim$speciesLayers <- NAcover2zero(sim$speciesLayers, sim$rasterToMatch_biomassParam)
+    ## NULL is no tree species at all (a non-forested study area); there is nothing to fill
+    if (!is.null(sim$speciesLayers))
+      sim$speciesLayers <- NAcover2zero(sim$speciesLayers, sim$rasterToMatch_biomassParam)
   }
   
   ## 3. species maps

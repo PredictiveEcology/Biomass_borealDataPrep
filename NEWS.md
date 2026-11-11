@@ -1,5 +1,21 @@
 Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues>
 
+# Biomass_borealDataPrep 1.9.0
+
+This release changes how the starting biomass of young stands inside old fire perimeters is estimated. Stand age there is now the time since the latest fire at or before the data year, young cohorts start at a set biomass (new parameter `initialB`) instead of zero, and the right cohorts are picked when the study area is smaller than the area used to estimate parameters. Starting biomass of young cohorts changes in many projects. The national wetland layer is now downloaded into the module's input folder, and two inputs that used to stop data preparation no longer do.
+
+* The spin-up that re-estimates biomass of young cohorts inside fire perimeters now leaves out cohorts whose `speciesCode` x `ecoregionGroup` has no `speciesEcoregion` row (zero-biomass or imputed pixels), and says how many. Biomass_core (>= PR #124) stops on such cohorts, which stopped data preparation (ELF 14.1); before, it dropped them silently. They get `B = NA` as before and are filled from the biomass model, so results are unchanged.
+
+* The CWIM wetland layer is now downloaded into the module's input path: `LandR::prepInputs_CWIM()` is called with `destinationPath = dPath`. With no `destinationPath` it fell back to the working directory, so a run without a shared copy fetched the 5.4 GB national file into the project folder. Needs LandR (>= 1.2.0.9060).
+
+* When `studyArea` is smaller than `studyArea_biomassParam`, the spin-up that re-estimates the biomass of young cohorts inside fire perimeters now selects the cohorts that are inside them. Pixel indices are renumbered to the `rasterToMatch` grid before this step, but `firePerimeters` stays on the wider `rasterToMatch_biomassParam` grid, so each cohort was checked against an unrelated cell: some young cohorts outside fire perimeters were re-estimated and some inside were not. Starting biomass of young cohorts changes in those projects; projects whose two study areas are the same are not affected.
+
+* Stand age inside fire perimeters is now the time since the latest fire at or before `dataYear`. The fire raster used to hold each pixel's most recent fire of any year, so a pixel that burned in 1980 and 2015 was skipped for `dataYear` 1990 and kept its satellite age. It now uses `LandR::prepInputsFireYear(latestYear = dataYear)`, which needs LandR (>= 1.2.0.9057). The biomass re-estimate inside fire perimeters uses the same raster, so it now covers those pixels too. A `firePerimeters` input supplied by another module is used as given.
+
+* Without Biomass_speciesData, a study area with no tree species no longer stops in `.inputObjects` ("unable to find an inherited method for function `cover`"): the `NULL` species layers from SCANFI now pass through to the no-species branch.
+* `quickPlot` is now in `reqdPkgs` (`dev()`, `clearPlot()` are used).
+* The spin-up that re-estimates biomass of young cohorts inside fire perimeters now starts each cohort at `initialB` (new parameter, default 10 g/m2, must match Biomass_core's; `NA` starts at `maxANPP`) instead of 0, so growthcurve-1 species such as spruce are no longer held to the 1 g/m2/yr growth floor while pioneers take the pixel. The sanity check on the result now allows 1.2 x the age-based limit, capped at the raw biomass map maximum, so fast-growing pioneers no longer stop runs.
+
 # Biomass_borealDataPrep 1.8.0
 
 This release brings more than two years of work to the main branch. The module now builds its forest inputs from SCANFI, the national satellite forest inventory, for any year SCANFI covers, and it can use the Canadian Wetland Inventory to tell treed wetland from upland forest. Species can get separate growth and establishment values on upland and wet ground. How much deciduous trees count toward cover is now estimated from each study area instead of using one fixed number. Model fits use samples ten times larger, so their values change much less from run to run.
