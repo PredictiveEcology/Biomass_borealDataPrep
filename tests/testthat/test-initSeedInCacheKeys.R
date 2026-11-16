@@ -20,6 +20,11 @@ test_that("the cached random draws of init have the .seed of init in their key",
     extra <- hit[[1]][[".cacheExtra"]]
     expect_identical(extra, as.name("initSeed"), info = fn)
   }
+  ## the biomass model is keyed on the total biomass of the whole data, not on its random subset
+  stats <- Filter(function(cl) identical(cl[[2]], as.name("statsModel")) && !is.null(cl[[".cacheExtra"]]) &&
+                    identical(cl[["modelFn"]], as.name("modelFn")), cacheCalls)
+  expect_length(stats, 1L)
+  expect_true("initSeed" %in% all.names(stats[[1]][[".cacheExtra"]]))
   ## and initSeed is the .seed of init, NULL (no key change) when none is set
   txt <- paste(deparse(src), collapse = "\n")
   expect_match(txt, "initSeed <- P\\(sim\\)\\$\\.seed\\[\\[\"init\"\\]\\]", fixed = FALSE)

@@ -527,7 +527,7 @@ createBiomass_coreInputs <- function(sim) {
   
   cacheTags <- c(currentModule(sim), "init")
   ## `Cache()` does not key on RNG state: a call that draws random numbers (age-model subset,
-  ## replacement land cover) replays its first draw under any other seed unless the seed is in the key.
+  ## replacement land cover, biomass-model subset) replays its first draw under any other seed unless the seed is in the key.
   ## `.seed` of `init` (SpaDES.core sets it before this event) is NULL, i.e. no change, when not used.
   initSeed <- P(sim)$.seed[["init"]]
   
@@ -1180,7 +1180,7 @@ createBiomass_coreInputs <- function(sim) {
         statsModel,
         modelFn = modelFn,
         uniqueEcoregionGroups = ueg,
-        .cacheExtra = sumResponse, ## only digest on this
+        .cacheExtra = c(sumResponse, initSeed), ## only digest on this (and the seed: the subset is random, but not in the key)
         .specialData = specDat,
         useCloud = useCloud,
         cloudFolderID = sim$cloudFolderID,
