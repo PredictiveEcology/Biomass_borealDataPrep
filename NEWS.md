@@ -2,6 +2,8 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 
 # Biomass_borealDataPrep (development version)
 
+* `.seed` for `init` now reaches the random draws that `Cache()` wraps: the seed is in the cache key of `makeAndCleanInitialCohortData()` (the random subset for the age model) and of `convertUnwantedLCC()` (`LCCClassesToReplaceNNMethod = "nearestRandom"`). Before, `Cache()` does not key on the RNG state, so a second seed replayed the first seed's draw whenever those calls were cached. Without a `.seed` the keys are unchanged. Used by `fireSense_dataPrepFit`'s `vegInitSeed` (`Depends-on` there).
+
 * A `dataYear` different from another module's is now an error, not a warning (`paramCheckOtherMods()`), as in Biomass_core, Biomass_speciesData, burnSummaries and fireSense_dataPrepPredict.
 
 
