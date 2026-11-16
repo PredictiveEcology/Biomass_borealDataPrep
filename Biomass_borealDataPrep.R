@@ -526,6 +526,10 @@ createBiomass_coreInputs <- function(sim) {
   }
   
   cacheTags <- c(currentModule(sim), "init")
+  ## `Cache()` does not key on RNG state: a call that draws random numbers (age-model subset,
+  ## replacement land cover, biomass-model subset) replays its first draw under any other seed unless the seed is in the key.
+  ## `.seed` of `init` (SpaDES.core sets it before this event) is NULL, i.e. no change, when not used.
+  initSeed <- P(sim)$.seed[["init"]]
   
   message(cli::col_blue("Starting to createBiomass_coreInputs in Biomass_borealDataPrep: ", Sys.time()))
   ## Some ecological land units have no tree species at all. `sppEquiv` is where that is
@@ -840,7 +844,7 @@ createBiomass_coreInputs <- function(sim) {
     minSpeciesEcoregionShare = P(sim)$minSpeciesEcoregionShare,
     rasterToMatch = sim$rasterToMatch_biomassParam
   ) |>
-    Cache(userTags = c(cacheTags, "pixelCohortData"))
+    Cache(userTags = c(cacheTags, "pixelCohortData"), .cacheExtra = initSeed)
   assertCohortDataAttr(pixelCohortData)
   
   ## adjust longevity based on age distributions per species
@@ -997,7 +1001,7 @@ createBiomass_coreInputs <- function(sim) {
         availableERC_by_Sp = availableCombinations2,
         method = P(sim)$LCCClassesToReplaceNNMethod
       ) |>
-        Cache(userTags = c(cacheTags, "newLCCClasses", "stable"))
+        Cache(userTags = c(cacheTags, "newLCCClasses", "stable"), .cacheExtra = initSeed)
       if (nrow(newLCCClasses) && !is.null(newLCCClasses$newPossLCC)) {
         rstLCCAdj[newLCCClasses$pixelIndex] <- newLCCClasses$newPossLCC
       }
@@ -1176,7 +1180,7 @@ createBiomass_coreInputs <- function(sim) {
         statsModel,
         modelFn = modelFn,
         uniqueEcoregionGroups = ueg,
-        .cacheExtra = sumResponse, ## only digest on this
+        .cacheExtra = c(sumResponse, initSeed), ## only digest on this (and the seed: the subset is random, but not in the key)
         .specialData = specDat,
         useCloud = useCloud,
         cloudFolderID = sim$cloudFolderID,
