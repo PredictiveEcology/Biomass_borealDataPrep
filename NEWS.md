@@ -2,6 +2,8 @@ Known issues: <https://github.com/PredictiveEcology/Biomass_borealDataPrep/issue
 
 # Biomass_borealDataPrep (development version)
 
+* The README shows the module's events, the objects each reads and writes, and a figure per event, generated from the code (needs SpaDES.core 3.2.1.9068 or later; older versions leave them out).
+
 # Biomass_borealDataPrep 1.9.0
 
 This release changes how the starting biomass of young stands inside old fire perimeters is estimated. Stand age there is now the time since the latest fire at or before the data year, young cohorts start at a set biomass (new parameter `initialB`) instead of zero, and the right cohorts are picked when the study area is smaller than the area used to estimate parameters. Starting biomass of young cohorts changes in many projects. The national wetland layer is now downloaded into the module's input folder, and two inputs that used to stop data preparation no longer do.

@@ -951,6 +951,25 @@ when during the run of the `.inputObjects` function]
 
 11. (OPTIONAL) Save outputs (`save` event)
 
+```{r eventFlowCheck-Biomass-borealDataPrep, include = FALSE, eval = TRUE, cache = FALSE}
+## the generated figures need SpaDES.core 3.2.1.9068 or later; older versions skip them
+.efOK <- utils::packageVersion("SpaDES.core") >= "3.2.1.9068"
+```
+
+```{r eventFlow-Biomass-borealDataPrep, echo = FALSE, eval = .efOK, cache = FALSE, out.width = "100%", fig.pos = "H", fig.cap = "(ref:Biomass-borealDataPrep) events, as read from the module code with its default parameters."}
+ef <- tryCatch(SpaDES.core::moduleEventFlow("Biomass_borealDataPrep", path = ".."), error = function(e) e)
+SpaDES.core::includeModuleEventFlow(ef, "figures/Biomass_borealDataPrep_eventFlow.png")
+```
+
+```{r eventObjects-Biomass-borealDataPrep, echo = FALSE, eval = .efOK, cache = FALSE}
+SpaDES.core::kableModuleObjects(ef, caption = "Where each object of (ref:Biomass-borealDataPrep) is written and read, in run order.",
+                                lead = "Table \\@ref(tab:eventObjects-Biomass-borealDataPrep) lists, for each object, the code that writes it and the code that only reads it.")
+```
+
+```{r eventFigures-Biomass-borealDataPrep, echo = FALSE, eval = .efOK, cache = FALSE, results = "asis"}
+SpaDES.core::moduleEventFigures(ef, figDir = "figures", level = 4)
+```
+
 ## Usage example {#bboreal-example}
 
 This module can be run stand-alone, but it won't do much more than prepare
