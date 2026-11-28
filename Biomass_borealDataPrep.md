@@ -1,6 +1,6 @@
 ---
 title: "LandR _Biomass_borealDataPrep_ Manual"
-date: "Last updated: 2026-11-24"
+date: "Last updated: 2026-11-28"
 output:
   bookdown::html_document2:
     toc: true
@@ -38,7 +38,7 @@ always_allow_html: true
 
 
 
-[![module-version-Badge](figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep43c77a83f025175659b3c28d5bf4fa8efd8f8e7c)
+[![module-version-Badge](figures/moduleVersionBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrepd96ed51ebd607b71435413714f01e2f0de8c0d45)
 
 [![Issues-badge](figures/issuesBadge.png)](https://github.com/PredictiveEcology/Biomass_borealDataPrep/issues)
 
@@ -1642,163 +1642,163 @@ Table \@ref(tab:eventObjects-Biomass-borealDataPrep) lists, for each object, the
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> cloudFolderID </td>
    <td style="text-align:left;">  </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> columnsForPixelGroups </td>
    <td style="text-align:left;"> .inputObjects (default) </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> ecoregionLayer </td>
    <td style="text-align:left;"> .inputObjects (default) </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> ecoregionRst </td>
    <td style="text-align:left;">  </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> rasterToMatch </td>
    <td style="text-align:left;"> .inputObjects (default) </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> rasterToMatch_biomassParam </td>
    <td style="text-align:left;"> .inputObjects (default) </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> rawBiomassMap </td>
    <td style="text-align:left;"> .inputObjects (default) </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> rstCanopyClosure </td>
    <td style="text-align:left;">  </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> rstCanopyHeight </td>
    <td style="text-align:left;">  </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> rstWetland </td>
-   <td style="text-align:left;"> .inputObjects (default), init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> .inputObjects (default), init </td>
    <td style="text-align:left;">  </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> speciesTable </td>
    <td style="text-align:left;"> .inputObjects (default) </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> sppColorVect </td>
    <td style="text-align:left;"> .inputObjects (default) </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> sppEquiv </td>
    <td style="text-align:left;"> .inputObjects (default) </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> studyArea </td>
    <td style="text-align:left;"> .inputObjects (default) </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
   </tr>
   <tr grouplength="5"><td colspan="3" style="border-bottom: 1px solid;"><strong>Inputs the module also updates</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> firePerimeters </td>
-   <td style="text-align:left;"> .inputObjects (default), init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> .inputObjects (default), init </td>
    <td style="text-align:left;">  </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> imputedPixID </td>
-   <td style="text-align:left;"> .inputObjects (default), init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> .inputObjects (default), init </td>
    <td style="text-align:left;">  </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> rstLCC </td>
-   <td style="text-align:left;"> .inputObjects (default), init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> .inputObjects (default), init </td>
    <td style="text-align:left;">  </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> speciesLayers </td>
-   <td style="text-align:left;"> .inputObjects (default), init: createBiomass_coreInputs() </td>
-   <td style="text-align:left;"> init (own code) </td>
+   <td style="text-align:left;"> .inputObjects (default), init </td>
+   <td style="text-align:left;">  </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> standAgeMap </td>
-   <td style="text-align:left;"> .inputObjects (default), init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> .inputObjects (default), init </td>
    <td style="text-align:left;">  </td>
   </tr>
   <tr grouplength="12"><td colspan="3" style="border-bottom: 1px solid;"><strong>Outputs</strong></td></tr>
 <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> biomassMap </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
    <td style="text-align:left;">  </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> cohortData </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
    <td style="text-align:left;">  </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> ecoregion </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
    <td style="text-align:left;">  </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> ecoregionMap </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
-   <td style="text-align:left;"> init: plottingFn() </td>
+   <td style="text-align:left;"> init </td>
+   <td style="text-align:left;">  </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> minRelativeB </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
    <td style="text-align:left;">  </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> modelBiomass </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
    <td style="text-align:left;">  </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> modelCover </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
    <td style="text-align:left;">  </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> pixelFateDT </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
    <td style="text-align:left;">  </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> pixelGroupMap </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
    <td style="text-align:left;">  </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> species </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
    <td style="text-align:left;">  </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> speciesEcoregion </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
-   <td style="text-align:left;"> init: plottingFn() </td>
+   <td style="text-align:left;"> init </td>
+   <td style="text-align:left;">  </td>
   </tr>
   <tr>
    <td style="text-align:left;padding-left: 2em;" indentlevel="1"> sufficientLight </td>
-   <td style="text-align:left;"> init: createBiomass_coreInputs() </td>
+   <td style="text-align:left;"> init </td>
    <td style="text-align:left;">  </td>
   </tr>
 </tbody>
 <tfoot><tr><td style="padding: 0; " colspan="100%">
-<sup></sup> Not shown, off with the default parameters: save.</td></tr></tfoot>
+<sup></sup> Not shown, off with the default parameters: plottingFn(), save.</td></tr></tfoot>
 </table>
 
 
@@ -1810,27 +1810,11 @@ during simInit: defaults for inputs not supplied
 
 
 
-#### createBiomass\_coreInputs() {-}
+#### init {-}
 
-init event, step 1 of 2
+the init event
 
-![](figures/Biomass_borealDataPrep_io_init_createBiomass_coreInputs.png){width=100%}
-
-
-
-#### plottingFn() {-}
-
-init event, step 2 of 2
-
-![](figures/Biomass_borealDataPrep_io_init_plottingFn.png){width=100%}
-
-
-
-#### init (own code) {-}
-
-the init event's own code, outside the functions it calls
-
-![](figures/Biomass_borealDataPrep_io_init_own.png){width=100%}
+![](figures/Biomass_borealDataPrep_io_init.png){width=100%}
 
 ## Usage example {#bboreal-example}
 
